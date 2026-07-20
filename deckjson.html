@@ -43,8 +43,8 @@
   .pageDel{position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;border-radius:50%;background:rgba(224,93,93,.9);color:#fff;font-size:11px;text-align:center;cursor:pointer;display:none;z-index:2}
   .pageItem:hover .pageDup,.pageItem:hover .pageDel{display:block}
   #btnAddPage{margin-top:2px}
-  #stageScroll{flex:1;overflow:auto;padding:24px}
-  #stageOuter{margin:0 auto}
+  #stageScroll{flex:1;overflow:auto;padding:0}   /* 留白全由 stage margin 控制，避免 padding 重複計入置中 */
+  #stageOuter{margin:0 auto;display:flow-root}   /* flow-root：擋 margin collapse，stage 的置中邊距才留在 outer 內 */
   /* overflow 刻意可見：物件拖出投影片仍看得到、救得回（外圍由 .outmask 壓半灰） */
   #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:"Poppins","Noto Sans TC",sans-serif}
   .outmask{position:absolute;background:rgba(30,31,36,.55);pointer-events:none;z-index:20}
@@ -85,6 +85,9 @@
   .trd{position:absolute;left:-15px;width:13px;background:rgba(120,125,135,.15);border-radius:2px;cursor:pointer;pointer-events:auto;color:transparent;font-size:9px;display:flex;align-items:center;justify-content:center;user-select:none;z-index:30}
   .tcd:hover,.trd:hover{background:rgba(224,93,93,.85);color:#fff}
   .lh{position:absolute;width:12px;height:12px;margin:-6px;background:#fff;border:2px solid var(--accent);border-radius:50%;pointer-events:auto;cursor:crosshair;z-index:31}
+  /* 形狀 adj 黃點（同 PPT）：畫布上直接拖，蓋過縮放把手 */
+  .ah{position:absolute;width:12px;height:12px;margin:-6px;background:#ffc72c;border:1.5px solid #a97e00;border-radius:50%;pointer-events:auto;cursor:grab;z-index:33;box-shadow:0 0 3px rgba(0,0,0,.4)}
+  .ah:active{cursor:grabbing}
   .el.multisel{outline:1.5px solid rgba(77,157,224,.7)}
   #marquee{position:absolute;border:1px solid var(--accent);background:rgba(77,157,224,.12);z-index:35;pointer-events:none}
   #pageJsonPanel{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,.5);width:380px;display:flex;flex-direction:column;overflow:hidden}
@@ -111,8 +114,10 @@
   .layerRow.dragover{box-shadow:inset 0 2px 0 0 var(--accent)}
   #shapeGrid h5{margin:12px 0 6px;color:var(--accent);font-size:12px;font-weight:600}
   .shapeCat{display:flex;flex-wrap:wrap;gap:6px}
-  .shapeBtn{width:46px;height:40px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .shapeBtn{position:relative;width:46px;height:40px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   .shapeBtn:hover{border-color:var(--accent)}
+  /* 支援畫布 adj 黃點的形狀，在縮圖右上角標一顆黃點 */
+  .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
   #propPanel textarea{width:100%;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 inherit;padding:6px;resize:vertical}
   .scopeBtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
   #propPanel{width:220px;flex-shrink:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:12px;font-size:12px}
@@ -235,7 +240,7 @@
   <div class="mbox">
     <div class="mhead"><b>插入形狀</b><button id="btnShapeClose">×</button></div>
     <div id="shapeGrid"></div>
-    <div class="mnote">匯出為 PowerPoint 原生幾何（prstGeom），可在 PPT 內再調整。圓角矩形／梯形／平行四邊形／V 形選取後，右欄有 <b>adj 滑桿</b>（黃點微調），匯出注入原生 avLst。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊。</div>
+    <div class="mnote">匯出為 PowerPoint 原生幾何（prstGeom），可在 PPT 內再調整。可調形狀（圓角／梯形／箭號／六八邊形／圖說框…）選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄 adj 滑桿微調，匯出注入原生 avLst。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊。</div>
   </div>
 </div>
 
@@ -312,7 +317,7 @@
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
         <li><b>行距</b>：文字框與表格可設行距（×字級），匯出鎖為精確 spcPts；單格行距可透過 JSON 微調。</li>
-        <li><b>形狀 adj 控點</b>：圓角矩形／梯形／平行四邊形／V 形選取後，右欄滑桿即時調圓角／斜度／箭深，匯出為 PPT 原生 avLst（黃點）。</li>
+        <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標（同 PPT 手感，拖曳時顯示數值）；右欄滑桿可精修，匯出為 PPT 原生 avLst。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
@@ -338,7 +343,7 @@
       <ul class="dim">
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
-        <li>動畫／轉場本版不支援（資料格式已預留 transition 欄位與元素 id 配對）。</li>
+        <li>轉場支援 Morph／淡出／推入／擦去（頁面屬性設定，進入該頁時播放）；Morph 依元素 id 跨頁配對，「複製此頁」保留元素 id 即為此用；元素進出動畫不支援。</li>
       </ul>
     </div>
   </div>
@@ -499,8 +504,8 @@ const SHAPES={
   trapezoid:{label:'梯形',cat:'基本',d:(w,h,adj)=>{const a=adj==null?0.25:Math.max(0,Math.min(0.5,adj));return SP([[a,0],[1-a,0],[1,1],[0,1]])(w,h);}},
   diamond:{label:'菱形',cat:'基本',size:[150,150],d:SP([[0.5,0],[1,0.5],[0.5,1],[0,0.5]])},
   pentagon:{label:'五邊形',cat:'基本',size:[150,150],d:SP([[0.5,0],[1,0.38],[0.81,1],[0.19,1],[0,0.38]])},
-  hexagon:{label:'六邊形',cat:'基本',d:SP([[0.25,0],[0.75,0],[1,0.5],[0.75,1],[0.25,1],[0,0.5]])},
-  octagon:{label:'八邊形',cat:'基本',size:[150,150],d:SP([[OCT,0],[1-OCT,0],[1,OCT],[1,1-OCT],[1-OCT,1],[OCT,1],[0,1-OCT],[0,OCT]])},
+  hexagon:{label:'六邊形',cat:'基本',d:(w,h,adj)=>{const x1=Math.min(w,h)*(adj==null?0.25:adj);return SP([[x1/w,0],[1-x1/w,0],[1,0.5],[1-x1/w,1],[x1/w,1],[0,0.5]])(w,h);}},
+  octagon:{label:'八邊形',cat:'基本',size:[150,150],d:(w,h,adj)=>{const x=Math.min(w,h)*(adj==null?OCT:adj);return `M${x},0H${w-x}L${w},${x}V${h-x}L${w-x},${h}H${x}L0,${h-x}V${x}Z`;}},
   chevron:{label:'箭號 V 形',cat:'基本',d:(w,h,adj)=>{const a=adj==null?0.25:Math.max(0,Math.min(0.9,adj));return SP([[0,0],[1-a,0],[1,0.5],[1-a,1],[0,1],[a,0.5]])(w,h);}},
   can:{label:'圓柱',cat:'基本',size:[130,160],d:canD},
   cube:{label:'立方體',cat:'基本',size:[160,150],d:(w,h)=>`M0,${0.25*h}L${0.75*w},${0.25*h}L${0.75*w},${h}L0,${h}Z M0,${0.25*h}L${0.25*w},0L${w},0L${0.75*w},${0.25*h}Z M${0.75*w},${0.25*h}L${w},0L${w},${0.75*h}L${0.75*w},${h}Z`},
@@ -510,12 +515,13 @@ const SHAPES={
   sun:{label:'太陽',cat:'基本',size:[150,150],d:(w,h)=>{let s=circleD(0.5,0.5,0.26,0.26)(w,h);for(let i=0;i<8;i++){const a=i*Math.PI/4,c=Math.cos(a),sn=Math.sin(a);const tip=[0.5+0.5*c,0.5+0.5*sn],b1=[0.5+0.32*Math.cos(a-0.22),0.5+0.32*Math.sin(a-0.22)],b2=[0.5+0.32*Math.cos(a+0.22),0.5+0.32*Math.sin(a+0.22)];s+=SP([tip,b1,b2])(w,h);}return s;}},
   moon:{label:'月亮',cat:'基本',size:[130,150],d:(w,h)=>`M${0.68*w},${0.02*h}A${0.5*w},${0.48*h} 0 1 0 ${0.68*w},${0.98*h}A${0.44*w},${0.4*h} 0 1 1 ${0.68*w},${0.02*h}Z`},
   cloud:{label:'雲朵',cat:'基本',size:[170,120],d:(w,h)=>`M${0.22*w},${0.85*h}A${0.16*w},${0.24*h} 0 1 1 ${0.24*w},${0.4*h}A${0.2*w},${0.3*h} 0 1 1 ${0.62*w},${0.32*h}A${0.17*w},${0.26*h} 0 1 1 ${0.82*w},${0.8*h}Z`},
-  rightArrow:{label:'右箭號',cat:'箭號',size:[200,110],d:SP([[0,0.25],[0.6,0.25],[0.6,0],[1,0.5],[0.6,1],[0.6,0.75],[0,0.75]])},
-  leftArrow:{label:'左箭號',cat:'箭號',size:[200,110],d:SP([[1,0.25],[0.4,0.25],[0.4,0],[0,0.5],[0.4,1],[0.4,0.75],[1,0.75]])},
-  upArrow:{label:'上箭號',cat:'箭號',size:[110,200],d:SP([[0.25,1],[0.25,0.4],[0,0.4],[0.5,0],[1,0.4],[0.75,0.4],[0.75,1]])},
-  downArrow:{label:'下箭號',cat:'箭號',size:[110,200],d:SP([[0.25,0],[0.25,0.6],[0,0.6],[0.5,1],[1,0.6],[0.75,0.6],[0.75,0]])},
-  leftRightArrow:{label:'左右箭號',cat:'箭號',size:[220,110],d:SP([[0,0.5],[0.22,0],[0.22,0.3],[0.78,0.3],[0.78,0],[1,0.5],[0.78,1],[0.78,0.7],[0.22,0.7],[0.22,1]])},
-  upDownArrow:{label:'上下箭號',cat:'箭號',size:[110,220],d:SP([[0.5,0],[1,0.28],[0.7,0.28],[0.7,0.72],[1,0.72],[0.5,1],[0,0.72],[0.3,0.72],[0.3,0.28],[0,0.28]])},
+  // 箭號雙 adj（同 OOXML 公式：a1=桿寬佔比、a2=箭頭長÷min(w,h)，預覽＝PPT 輸出）
+  rightArrow:{label:'右箭號',cat:'箭號',size:[200,110],d:(w,h,a1,a2)=>{const dx=Math.min((a2==null?0.5:a2)*Math.min(w,h),w),hw=h*(a1==null?0.5:a1)/2,x1=w-dx,y1=h/2-hw,y2=h/2+hw;return `M0,${y1}H${x1}V0L${w},${h/2}L${x1},${h}V${y2}H0Z`;}},
+  leftArrow:{label:'左箭號',cat:'箭號',size:[200,110],d:(w,h,a1,a2)=>{const dx=Math.min((a2==null?0.5:a2)*Math.min(w,h),w),hw=h*(a1==null?0.5:a1)/2,x1=dx,y1=h/2-hw,y2=h/2+hw;return `M${w},${y1}H${x1}V0L0,${h/2}L${x1},${h}V${y2}H${w}Z`;}},
+  upArrow:{label:'上箭號',cat:'箭號',size:[110,200],d:(w,h,a1,a2)=>{const dy=Math.min((a2==null?0.5:a2)*Math.min(w,h),h),hw=w*(a1==null?0.5:a1)/2,y1=dy,x1=w/2-hw,x2=w/2+hw;return `M${x1},${h}V${y1}H0L${w/2},0L${w},${y1}H${x2}V${h}Z`;}},
+  downArrow:{label:'下箭號',cat:'箭號',size:[110,200],d:(w,h,a1,a2)=>{const dy=Math.min((a2==null?0.5:a2)*Math.min(w,h),h),hw=w*(a1==null?0.5:a1)/2,y1=h-dy,x1=w/2-hw,x2=w/2+hw;return `M${x1},0V${y1}H0L${w/2},${h}L${w},${y1}H${x2}V0Z`;}},
+  leftRightArrow:{label:'左右箭號',cat:'箭號',size:[220,110],d:(w,h,a1,a2)=>{const dx=Math.min((a2==null?0.5:a2)*Math.min(w,h),w/2),hw=h*(a1==null?0.5:a1)/2,y1=h/2-hw,y2=h/2+hw;return `M0,${h/2}L${dx},0V${y1}H${w-dx}V0L${w},${h/2}L${w-dx},${h}V${y2}H${dx}V${h}Z`;}},
+  upDownArrow:{label:'上下箭號',cat:'箭號',size:[110,220],d:(w,h,a1,a2)=>{const dy=Math.min((a2==null?0.5:a2)*Math.min(w,h),h/2),hw=w*(a1==null?0.5:a1)/2,x1=w/2-hw,x2=w/2+hw;return `M${w/2},0L${w},${dy}H${x2}V${h-dy}H${w}L${w/2},${h}L0,${h-dy}H${x1}V${dy}H0Z`;}},
   mathPlus:{label:'加',cat:'方程式',size:[130,130],d:SP(PLUS)},
   mathMinus:{label:'減',cat:'方程式',size:[130,130],d:SP([[0,0.38],[1,0.38],[1,0.62],[0,0.62]])},
   mathMultiply:{label:'乘',cat:'方程式',size:[130,130],d:SP(rotFit(PLUS,45))},
@@ -536,10 +542,43 @@ const SHAPES={
   star6:{label:'六角星',cat:'星星綵帶',size:[150,150],d:SP(starPts(6,0.5))},
   star8:{label:'八角星',cat:'星星綵帶',size:[150,150],d:SP(starPts(8,0.55))},
   ribbon2:{label:'綵帶',cat:'星星綵帶',size:[220,110],d:multiD(SP([[0,0.25],[0.18,0.25],[0.18,0.95],[0,0.95],[0.07,0.6]]),SP([[1,0.25],[0.82,0.25],[0.82,0.95],[1,0.95],[0.93,0.6]]),SP([[0.12,0.05],[0.88,0.05],[0.88,0.75],[0.12,0.75]]))},
-  wedgeRectCallout:{label:'矩形圖說',cat:'圖說',size:[200,140],d:SP([[0,0],[1,0],[1,0.72],[0.42,0.72],[0.18,1],[0.26,0.72],[0,0.72]])},
-  wedgeRoundRectCallout:{label:'圓角圖說',cat:'圖說',size:[200,140],d:(w,h)=>roundRectD(w,h*0.72)+SP([[0.18,1],[0.2,0.7],[0.4,0.7]])(w,h)},
-  wedgeEllipseCallout:{label:'橢圓圖說',cat:'圖說',size:[200,140],d:(w,h)=>ellipseD(w,h*0.75)+SP([[0.2,1],[0.28,0.66],[0.46,0.7]])(w,h)},
+  // 圖說框：本體佔滿整個 bbox、尾標伸出框外（同 OOXML wedge* 幾何——PPT 的文字區＝本體矩形，
+  // 舊版把本體壓成 72% 高、尾巴畫在框內，導致畫布文字置中位置與 PPT 不符）
+  wedgeRectCallout:{label:'矩形圖說',cat:'圖說',size:[200,140],d:(w,h,ax,ay)=>{
+    const t=calloutTail(w,h,ax,ay,w*0.12,h*0.12); if(!t) return `M0,0H${w}V${h}H0Z`;
+    const P=p=>p.join(',');
+    if(t.edge==='b') return `M0,0H${w}V${h}L${P(t.b2)}L${P(t.tip)}L${P(t.b1)}L0,${h}Z`;
+    if(t.edge==='t') return `M0,0L${P(t.b1)}L${P(t.tip)}L${P(t.b2)}L${w},0V${h}H0Z`;
+    if(t.edge==='r') return `M0,0H${w}L${P(t.b1)}L${P(t.tip)}L${P(t.b2)}L${w},${h}H0Z`;
+    return `M0,0H${w}V${h}H0L${P(t.b2)}L${P(t.tip)}L${P(t.b1)}Z`;}},
+  wedgeRoundRectCallout:{label:'圓角圖說',cat:'圖說',size:[200,140],d:(w,h,ax,ay)=>{
+    const r=Math.min(w,h)*0.16, bw=w*0.08, bh=h*0.08;
+    const t=calloutTail(w,h,ax,ay,Math.max(w*0.12,r+bw+2),Math.max(h*0.12,r+bh+2));
+    const P=p=>p.join(','), I=(cond,first,second)=>cond?`L${P(first)}L${P(t.tip)}L${P(second)}`:'';
+    return `M${r},0`+I(t&&t.edge==='t',t&&t.b1,t&&t.b2)+`H${w-r}A${r},${r} 0 0 1 ${w},${r}`
+      +I(t&&t.edge==='r',t&&t.b1,t&&t.b2)+`V${h-r}A${r},${r} 0 0 1 ${w-r},${h}`
+      +I(t&&t.edge==='b',t&&t.b2,t&&t.b1)+`H${r}A${r},${r} 0 0 1 0,${h-r}`
+      +I(t&&t.edge==='l',t&&t.b2,t&&t.b1)+`V${r}A${r},${r} 0 0 1 ${r},0Z`;}},
+  wedgeEllipseCallout:{label:'橢圓圖說',cat:'圖說',size:[200,140],d:ellipseD,
+    dTail:(w,h,ax,ay)=>{
+      const t=calloutTail(w,h,ax,ay,0,0); if(!t) return '';
+      const ang=Math.atan2((t.tip[1]-h/2)/h,(t.tip[0]-w/2)/w), da=0.35;
+      const px=a=>w/2+w/2*Math.cos(a), py=a=>h/2+h/2*Math.sin(a);
+      return `M${px(ang-da)},${py(ang-da)}L${t.tip[0]},${t.tip[1]}L${px(ang+da)},${py(ang+da)}Z`;}},
 };
+// 圖說尾標：尖端＝(中心 + ax·w, 中心 + ay·h)（同 OOXML adj1/adj2 語意，可為負）。
+// 尖端落在本體內回 null（不畫尾巴）；mx/my＝基座沿邊緣的最小內縮（避開圓角）
+function calloutTail(w,h,ax,ay,mx,my){
+  const tx=(0.5+(ax==null?-0.208:ax))*w, ty=(0.5+(ay==null?0.625:ay))*h;
+  const dx=tx-w/2, dy=ty-h/2;
+  if(Math.abs(dx)<=w/2&&Math.abs(dy)<=h/2) return null;
+  if(Math.abs(dy)*w>=Math.abs(dx)*h){
+    const ey=dy>0?h:0, bw=w*0.08, bx=Math.max(mx+bw,Math.min(w-mx-bw,tx));
+    return {b1:[bx-bw,ey],tip:[tx,ty],b2:[bx+bw,ey],edge:dy>0?'b':'t'};
+  }
+  const ex=dx>0?w:0, bh=h*0.08, by=Math.max(my+bh,Math.min(h-my-bh,ty));
+  return {b1:[ex,by-bh],tip:[tx,ty],b2:[ex,by+bh],edge:dx>0?'r':'l'};
+}
 // 線條類：兩端點模型（bbox＋flipH/flipV），P2 為箭頭端
 const LINE_KINDS={
   line:{label:'直線',pptx:'line'},
@@ -558,14 +597,64 @@ const SHAPE_CATS=[
   ['星星及綵帶',Object.keys(SHAPES).filter(k=>SHAPES[k].cat==='星星綵帶')],
   ['圖說文字',Object.keys(SHAPES).filter(k=>SHAPES[k].cat==='圖說')],
 ];
-// 形狀 adj 控點（黃點）：目前支援單一 adj 的常用形狀。adjOf 一律回值（el.adj 或預設），匯出一律注入 → 預覽＝輸出
+// 形狀 adj 控點（黃點）：每形狀一組參數描述（gd＝OOXML avLst 名、key＝JSON 欄位）。
+// adjVals 一律回值（el 值 clamp 或預設），匯出一律注入 → 預覽＝輸出
 const SHAPE_ADJ={
-  roundRect:{def:0.16,min:0,max:0.5,label:'圓角'},
-  trapezoid:{def:0.25,min:0,max:0.5,label:'斜度'},
-  parallelogram:{def:0.25,min:0,max:0.9,label:'斜度'},
-  chevron:{def:0.25,min:0,max:0.9,label:'箭深'},
+  roundRect:[{gd:'adj',key:'adj',def:0.16,min:0,max:0.5,label:'圓角'}],
+  trapezoid:[{gd:'adj',key:'adj',def:0.25,min:0,max:0.5,label:'斜度'}],
+  parallelogram:[{gd:'adj',key:'adj',def:0.25,min:0,max:0.9,label:'斜度'}],
+  chevron:[{gd:'adj',key:'adj',def:0.25,min:0,max:0.9,label:'箭深'}],
+  // ⚠ avLst 要嘛不注入、要注入就得含該 preset 的「全部」調整值——部分注入（如 hexagon 只給 adj 缺 vf）
+  //   PowerPoint 會判定形狀損毀、修復時整個移除（實測 Mac PPT，2026-07-20）。fix 參數＝補齊用固定值，不出滑桿。
+  hexagon:[{gd:'adj',key:'adj',def:0.25,min:0,max:0.5,label:'切角'},{gd:'vf',fix:1.1547}],
+  octagon:[{gd:'adj',key:'adj',def:0.29289,min:0,max:0.5,label:'切角'}],
 };
-function adjOf(el){ const m=el&&SHAPE_ADJ[el.shape]; if(!m) return null; return el.adj!=null? Math.max(m.min,Math.min(m.max,el.adj)) : m.def; }
+// 箭號：adj1 桿寬（÷高或寬）、adj2 箭頭長（÷min(w,h)，超出可用長度時 OOXML pin 與預覽同步夾住）
+for(const k of ['rightArrow','leftArrow','upArrow','downArrow','leftRightArrow','upDownArrow'])
+  SHAPE_ADJ[k]=[{gd:'adj1',key:'adj',def:0.5,min:0,max:1,label:'桿寬'},
+                {gd:'adj2',key:'adj2',def:0.5,min:0,max:1.5,label:'箭頭'}];
+// 圖說框：尾標尖端相對中心的偏移（÷寬、÷高，可為負；同 OOXML wedge* adj1/adj2 語意）
+// wedgeRoundRectCallout 的 preset 有第三個調整值 adj3（圓角比），須一併注入（見上方 ⚠）
+for(const k of ['wedgeRectCallout','wedgeRoundRectCallout','wedgeEllipseCallout'])
+  SHAPE_ADJ[k]=[{gd:'adj1',key:'adj',def:-0.208,min:-1.5,max:1.5,label:'尾標 X'},
+                {gd:'adj2',key:'adj2',def:0.625,min:-1.5,max:1.5,label:'尾標 Y'},
+                ...(k==='wedgeRoundRectCallout'?[{gd:'adj3',fix:0.16667}]:[])];
+function adjVals(el){ const m=el&&SHAPE_ADJ[el.shape]; if(!m) return [];
+  return m.map(p=>{ if(p.fix!=null) return p.fix;
+    const v=el[p.key]; return v!=null? Math.max(p.min,Math.min(p.max,+v)) : p.def; }); }
+function adjOf(el){ const v=adjVals(el); return v.length? v[0]:null; }
+// 畫布黃點（同 PPT 操作手感）：pos＝由 adj 值算黃點座標（元素本地 px），apply＝由拖曳點反推 adj。
+// pos 必須跟 SHAPES.d() 的幾何公式一致（含箭頭長度的 Math.min 夾住），黃點才會落在實際頂點上。
+function setAdj(el,pi,v){ const p=SHAPE_ADJ[el.shape][pi];
+  el[p.key]=Math.round(Math.max(p.min,Math.min(p.max,v))*1000)/1000; }
+const ADJ_DOTS={
+  roundRect:    [{pos:(w,h,A)=>[Math.min(w,h)*A[0],0],apply:(el,x,y,w,h)=>setAdj(el,0,x/Math.min(w,h))}],
+  trapezoid:    [{pos:(w,h,A)=>[A[0]*w,0],            apply:(el,x,y,w,h)=>setAdj(el,0,x/w)}],
+  parallelogram:[{pos:(w,h,A)=>[A[0]*w,0],            apply:(el,x,y,w,h)=>setAdj(el,0,x/w)}],
+  chevron:      [{pos:(w,h,A)=>[(1-A[0])*w,0],        apply:(el,x,y,w,h)=>setAdj(el,0,1-x/w)}],
+  hexagon:      [{pos:(w,h,A)=>[Math.min(w,h)*A[0],0],apply:(el,x,y,w,h)=>setAdj(el,0,x/Math.min(w,h))}],
+  octagon:      [{pos:(w,h,A)=>[Math.min(w,h)*A[0],0],apply:(el,x,y,w,h)=>setAdj(el,0,x/Math.min(w,h))}],
+};
+// 箭號：單顆黃點在「箭頭根部×桿緣」內角，X 向調箭頭長（adj2）、Y 向調桿寬（adj1）——同 PPT 一點雙控
+{
+  const arrowDot=(px,ax)=>[{pos:px,apply:ax}];
+  ADJ_DOTS.rightArrow=arrowDot((w,h,A)=>[w-Math.min(A[1]*Math.min(w,h),w),h/2-h*A[0]/2],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*y/h); setAdj(el,1,(w-x)/Math.min(w,h)); });
+  ADJ_DOTS.leftArrow=arrowDot((w,h,A)=>[Math.min(A[1]*Math.min(w,h),w),h/2-h*A[0]/2],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*y/h); setAdj(el,1,x/Math.min(w,h)); });
+  ADJ_DOTS.upArrow=arrowDot((w,h,A)=>[w/2-w*A[0]/2,Math.min(A[1]*Math.min(w,h),h)],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*x/w); setAdj(el,1,y/Math.min(w,h)); });
+  ADJ_DOTS.downArrow=arrowDot((w,h,A)=>[w/2-w*A[0]/2,h-Math.min(A[1]*Math.min(w,h),h)],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*x/w); setAdj(el,1,(h-y)/Math.min(w,h)); });
+  ADJ_DOTS.leftRightArrow=arrowDot((w,h,A)=>[Math.min(A[1]*Math.min(w,h),w/2),h/2-h*A[0]/2],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*y/h); setAdj(el,1,x/Math.min(w,h)); });
+  ADJ_DOTS.upDownArrow=arrowDot((w,h,A)=>[w/2-w*A[0]/2,Math.min(A[1]*Math.min(w,h),h/2)],
+    (el,x,y,w,h)=>{ setAdj(el,0,1-2*x/w); setAdj(el,1,y/Math.min(w,h)); });
+}
+// 圖說框：黃點＝尾標尖端（可拖出框外，超出即長尾巴）
+for(const k of ['wedgeRectCallout','wedgeRoundRectCallout','wedgeEllipseCallout'])
+  ADJ_DOTS[k]=[{pos:(w,h,A)=>[(0.5+A[0])*w,(0.5+A[1])*h],
+    apply:(el,x,y,w,h)=>{ setAdj(el,0,x/w-0.5); setAdj(el,1,y/h-0.5); }}];
 function isLineEl(el){ return el&&el.type==='shape'&&!!LINE_KINDS[el.shape]; }
 function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左上角
   const x1=el.flipH? el.w:0, y1=el.flipV? el.h:0;
@@ -714,18 +803,25 @@ function renderShapeInto(box,el){
     return;
   }
   const def=SHAPES[el.shape]||SHAPES.rect;
+  svg.style.overflow='visible';   // 圖說框尾標會伸出 bbox（同 PPT）
   // 翻轉只鏡射幾何（svg），文字不鏡射——同 PPT flip 行為
   const fl=[]; if(el.flipH) fl.push('scaleX(-1)'); if(el.flipV) fl.push('scaleY(-1)');
   if(fl.length){ svg.style.transform=fl.join(' '); svg.style.transformOrigin='50% 50%'; }
-  const path=document.createElementNS(NS,'path');
-  path.setAttribute('d',def.d(el.w,el.h,adjOf(el)));
+  const A=adjVals(el);
+  const mkPath=d=>{
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',d);
+    p.setAttribute('fill', el.fill? '#'+el.fill:'none');
+    if(el.lineColor!=null){
+      p.setAttribute('stroke','#'+el.lineColor);
+      p.setAttribute('stroke-width',Math.max(1,pt2px(el.linePt||1)));
+      p.setAttribute('stroke-linejoin','round');
+    }
+    return p;
+  };
+  if(def.dTail){ const td=def.dTail(el.w,el.h,...A); if(td) svg.appendChild(mkPath(td)); }  // 尾標墊底，基座線被本體蓋住
+  const path=mkPath(def.d(el.w,el.h,...A));
   if(def.evenodd) path.setAttribute('fill-rule','evenodd');
-  path.setAttribute('fill', el.fill? '#'+el.fill:'none');
-  if(el.lineColor!=null){
-    path.setAttribute('stroke','#'+el.lineColor);
-    path.setAttribute('stroke-width',Math.max(1,pt2px(el.linePt||1)));
-    path.setAttribute('stroke-linejoin','round');
-  }
   svg.appendChild(path); box.appendChild(svg);
   if(el.paras){
     const t=txtBlock(el);
@@ -850,6 +946,17 @@ function updateSelBox(){
   sb.style.outline='';
   const dirs= el.type==='image'? ['nw','ne','se','sw'] : ['nw','n','ne','e','se','s','sw','w'];
   for(const d of dirs){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; sb.appendChild(hd); }
+  if(el.type==='shape'&&ADJ_DOTS[el.shape]){   // adj 黃點：直接畫在對應頂點上（翻轉時跟著鏡射）
+    const A=adjVals(el);
+    ADJ_DOTS[el.shape].forEach((d,i)=>{
+      let [px,py]=d.pos(w,h,A);
+      if(el.flipH) px=w-px;
+      if(el.flipV) py=h-py;
+      const hd=document.createElement('div'); hd.className='ah'; hd.dataset.i=i;
+      hd.style.left=px+'px'; hd.style.top=py+'px'; hd.title='拖曳調整形狀（同 PPT 黃點）';
+      sb.appendChild(hd);
+    });
+  }
   if(el.type==='table'){
     let x=0;
     el.colW.forEach((cw,i)=>{
@@ -1051,6 +1158,68 @@ document.querySelectorAll('#palettePop .ptab').forEach(t=>t.onclick=()=>{ palTab
   document.querySelectorAll('#palettePop .ptab').forEach(x=>x.classList.toggle('on',x===t)); buildPalBody(); });
 document.addEventListener('pointerdown',e=>{ if(!$('#palettePop').hidden && !e.target.closest('#palettePop') && !e.target.closest('.swatchBtn')) closePalette(); },true);
 
+/* ===== JSON 模式色票複製小窗 =====
+   本頁 JSON 面板開啟＋選中表格/圖表（這兩者的細部樣式主要靠 JSON 手改）時，右下角浮出三頁籤色票；
+   點色塊是「複製色碼」不是套用（JSON 用不帶 # 的 6 位碼，故複製 4D9DE0 這種格式）。點開其他元素即收起。 */
+let copyPalTab='designer';
+function buildCopyPalWin(){
+  let w=$('#palCopyWin');
+  if(!w){
+    w=document.createElement('div'); w.id='palCopyWin';
+    w.style.cssText='position:fixed;right:12px;bottom:12px;width:300px;max-height:44vh;overflow:auto;z-index:60;'
+      +'background:var(--panel,#23252b);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.5);';
+    document.body.appendChild(w);
+  }
+  w.innerHTML='';
+  const head=document.createElement('div'); head.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+  const title=document.createElement('span'); title.textContent='色票 → 複製色碼'; title.style.cssText='font-size:11px;color:var(--fg-dim);margin-right:auto;';
+  const toast=document.createElement('span'); toast.style.cssText='font-size:11px;color:#69db7c;';
+  head.appendChild(title); head.appendChild(toast); w.appendChild(head);
+  const copy=async hex=>{ hex=String(hex).replace('#','').toUpperCase();
+    try{ await navigator.clipboard.writeText(hex); }catch(e){}
+    toast.textContent='已複製 '+hex;
+    setTimeout(()=>{ if(toast.textContent==='已複製 '+hex) toast.textContent=''; },1600); };
+  const tabs=document.createElement('div'); tabs.style.cssText='display:flex;gap:4px;margin-bottom:6px;';
+  for(const [k,label] of [['designer','精選'],['open','Open Color'],['full','全色域']]){
+    const b=document.createElement('button'); b.textContent=label;
+    b.style.cssText='font-size:11px;padding:2px 8px;'+(copyPalTab===k?'outline:1px solid var(--accent);':'');
+    b.onclick=()=>{ copyPalTab=k; buildCopyPalWin(); };
+    tabs.appendChild(b);
+  }
+  w.appendChild(tabs);
+  const sw=c=>{ const s=document.createElement('div'); s.className='palSw'; s.style.background=(String(c)[0]==='#'?c:'#'+c); s.title=String(c).replace('#','').toUpperCase(); s.style.cursor='copy'; s.onclick=()=>copy(c); return s; };
+  if(copyPalTab==='designer'){
+    for(const p of DESIGNER_PALETTES){
+      const row=document.createElement('div'); row.className='palRow';
+      const nm=document.createElement('span'); nm.className='palName'; nm.textContent=p.name; nm.title=p.name; row.appendChild(nm);
+      for(const c of p.colors) row.appendChild(sw(c));
+      w.appendChild(row);
+    }
+  }else if(copyPalTab==='open'){
+    for(const hue of Object.keys(OPEN_COLOR)){
+      const g=document.createElement('div'); g.className='ocGrid';
+      for(const c of OPEN_COLOR[hue]) g.appendChild(sw(c));
+      w.appendChild(g);
+    }
+  }else{
+    const wrap=document.createElement('div'); wrap.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 2px;';
+    const ci=document.createElement('input'); ci.type='color'; ci.value='#4D9DE0';
+    const tx=document.createElement('input'); tx.type='text'; tx.value='4D9DE0'; tx.style.width='84px'; tx.maxLength=7;
+    ci.oninput=()=>{ tx.value=ci.value.slice(1).toUpperCase(); };
+    const ok=document.createElement('button'); ok.textContent='複製'; ok.className='primary';
+    ok.onclick=()=>{ const h=(tx.value||'').replace('#','').toUpperCase(); if(/^[0-9A-F]{6}$/.test(h)) copy(h); else alert('請輸入 6 位十六進位色碼'); };
+    wrap.appendChild(ci); wrap.appendChild(tx); wrap.appendChild(ok);
+    w.appendChild(wrap);
+  }
+}
+function updateCopyPalWin(){
+  const el=selEl();
+  const show=pageJsonOpen()&&el&&(el.type==='table'||el.type==='chart');
+  const w=$('#palCopyWin');
+  if(show) { buildCopyPalWin(); $('#palCopyWin').hidden=false; }
+  else if(w) w.hidden=true;
+}
+
 function colorRow(label,val,onSet,allowNone){
   const row=document.createElement('div'); row.className='row';
   const lb=document.createElement('label'); lb.textContent=label; row.appendChild(lb);
@@ -1168,11 +1337,30 @@ function renderMultiProps(pp){
 }
 function renderProps(){
   const pp=$('#propPanel'); pp.innerHTML='';
-  if(APP.selIds.length>1){ renderMultiProps(pp); return; }
+  if(APP.selIds.length>1){ renderMultiProps(pp); updateCopyPalWin(); return; }
   const el=selEl();
   if(!el){
     pp.innerHTML='<h4>頁面</h4>';
     pp.appendChild(colorRow('底色',curPage().bg,v=>{curPage().bg=v||'FFFFFF';},false));
+    // 轉場（進入此頁時播放；Morph 依元素 id 跨頁配對，複製頁改版面即可平滑補間）
+    const trRow=document.createElement('div'); trRow.className='row'; trRow.innerHTML='<label>轉場</label>';
+    const trSel=document.createElement('select');
+    trSel.innerHTML='<option value="">無</option>'+Object.entries(TRANSITIONS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+    trSel.value=(curPage().transition&&curPage().transition.type)||'';
+    trSel.onchange=()=>{ commitUndo();
+      curPage().transition= trSel.value? (trSel.value==='morph'? {type:'morph',dur:600}:{type:trSel.value}) : null;
+      renderProps(); syncPageJson(); };
+    trRow.appendChild(trSel); pp.appendChild(trRow);
+    if(curPage().transition&&curPage().transition.type==='morph'){
+      const dr=document.createElement('div'); dr.className='row'; dr.innerHTML='<label>時長</label>';
+      const di=document.createElement('input'); di.type='number'; di.min=100; di.max=10000; di.step=100; di.value=curPage().transition.dur||600;
+      di.onchange=()=>{ commitUndo(); curPage().transition.dur=Math.max(100,Math.min(10000,Math.round(+di.value)||600)); syncPageJson(); };
+      dr.appendChild(di); dr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'ms'}));
+      pp.appendChild(dr);
+      const mn=document.createElement('div'); mn.className='row';
+      mn.innerHTML='<span class="unit">Morph 依元素 id 配對前一頁同名元素；「複製此頁」保留 id 即為此用。舊版 PPT 退回淡出。</span>';
+      pp.appendChild(mn);
+    }
     const nl=document.createElement('div'); nl.className='row'; nl.innerHTML='<label style="min-width:auto">講者備忘稿</label>';
     pp.appendChild(nl);
     const nt=document.createElement('textarea'); nt.rows=4; nt.placeholder='此頁備忘稿（匯出寫入 pptx 備忘稿）'; nt.value=curPage().notes||'';
@@ -1183,6 +1371,7 @@ function renderProps(){
     const note=document.createElement('div'); note.className='row';
     note.innerHTML='<span class="unit">點選元素編輯屬性；Shift／框選可多選。</span>';
     pp.appendChild(note);
+    updateCopyPalWin();
     return;
   }
   const names={text:'文字框',table:'表格',image:'圖片',shape:'形狀',chart:'圖表'};
@@ -1242,18 +1431,21 @@ function renderProps(){
       ['⇵',()=>{ commitUndo(); el.flipV=!el.flipV; renderStage(); renderProps(); },'垂直翻轉',!!el.flipV],
     ]));
   }
-  // 形狀 adj 控點（黃點微調）：圓角/斜度/箭深等，即時預覽、匯出注入原生 avLst
+  // 形狀 adj 控點（黃點微調）：圓角/斜度/箭深/桿寬/尾標等，每參數一條滑桿，即時預覽、匯出注入原生 avLst
   if(el.type==='shape'&&SHAPE_ADJ[el.shape]){
-    const m=SHAPE_ADJ[el.shape];
-    const ar=document.createElement('div'); ar.className='row'; ar.innerHTML=`<label>${m.label}</label>`;
-    const ai=document.createElement('input'); ai.type='range'; ai.min=m.min; ai.max=m.max; ai.step='0.01'; ai.value=adjOf(el); ai.style.flex='1'; ai.style.minWidth='70px';
-    const av=Object.assign(document.createElement('span'),{className:'unit'}); av.textContent=(+adjOf(el)).toFixed(2);
-    let adjDirty=false;
-    ai.addEventListener('pointerdown',()=>adjDirty=false);
-    ai.oninput=()=>{ if(!adjDirty){ commitUndo(); adjDirty=true; } el.adj=parseFloat(ai.value); av.textContent=el.adj.toFixed(2);
-      const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el); };
-    ar.appendChild(ai); ar.appendChild(av);
-    pp.appendChild(ar);
+    SHAPE_ADJ[el.shape].forEach((m,mi)=>{
+      if(m.fix!=null) return;   // 補齊用固定 gd，不出滑桿
+      const cur=()=>adjVals(el)[mi];
+      const ar=document.createElement('div'); ar.className='row'; ar.innerHTML=`<label>${m.label}</label>`;
+      const ai=document.createElement('input'); ai.type='range'; ai.min=m.min; ai.max=m.max; ai.step='0.01'; ai.value=cur(); ai.style.flex='1'; ai.style.minWidth='70px';
+      const av=Object.assign(document.createElement('span'),{className:'unit'}); av.textContent=(+cur()).toFixed(2);
+      let adjDirty=false;
+      ai.addEventListener('pointerdown',()=>adjDirty=false);
+      ai.oninput=()=>{ if(!adjDirty){ commitUndo(); adjDirty=true; } el[m.key]=parseFloat(ai.value); av.textContent=el[m.key].toFixed(2);
+        const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el); };
+      ar.appendChild(ai); ar.appendChild(av);
+      pp.appendChild(ar);
+    });
   }
   pp.appendChild(document.createElement('div')).className='sep';
 
@@ -1329,9 +1521,45 @@ function renderProps(){
     tli.onchange=()=>{ commitUndo(); const v=parseFloat(tli.value); el.cells.forEach(r=>r.forEach(c=>{ if(v&&Math.abs(v-1.2)>1e-6)c.lineSpacing=v; else delete c.lineSpacing; })); renderStage(); };
     tls.appendChild(tli); tls.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'×字級（全表；單格走 JSON）'}));
     pp.appendChild(tls);
+    // 全表樣式（作用於所有儲存格；逐格差異化仍走 JSON）
+    const c0=el.cells.flat().find(c=>!c.covered)||el.cells[0][0];
+    const allCells=fn=>{ commitUndo(); el.cells.forEach(r=>r.forEach(c=>fn(c))); renderStage(); renderProps(); };
+    pp.appendChild(btnRow([
+      ['B',()=>{ const on=!c0.bold; allCells(c=>c.bold=on); },'全表粗體',c0.bold],
+      ['I',()=>{ const on=!c0.italic; allCells(c=>c.italic=on); },'全表斜體',c0.italic],
+    ]));
+    pp.appendChild(colorRow('文字',c0.color||'1A1A1A',v=>el.cells.forEach(r=>r.forEach(c=>c.color=v)),false));
+    pp.appendChild(btnRow([['左',()=>allCells(c=>c.align='left'),'',(c0.align||'left')==='left'],
+      ['中',()=>allCells(c=>c.align='center'),'',c0.align==='center'],
+      ['右',()=>allCells(c=>c.align='right'),'',c0.align==='right']]));
+    pp.appendChild(btnRow([['上',()=>allCells(c=>c.valign='top'),'',c0.valign==='top'],
+      ['中',()=>allCells(c=>c.valign='middle'),'',(c0.valign||'middle')==='middle'],
+      ['下',()=>allCells(c=>c.valign='bottom'),'',c0.valign==='bottom']]));
+    pp.appendChild(colorRow('底色',c0.fill,v=>el.cells.forEach(r=>r.forEach(c=>c.fill=v)),true));
     pp.appendChild(colorRow('框線',el.border&&el.border.color,v=>{ el.border= v==null? null : {pt:(el.border&&el.border.pt)||0.75,color:v}; },true));
+    // 合併儲存格：以「最後雙擊編輯過的儲存格」為左上錨點設定跨欄/跨列
+    const lc=APP.lastCell&&APP.lastCell.id===el.id? APP.lastCell:null;
+    if(lc&&el.cells[lc.r]&&el.cells[lc.r][lc.c]){
+      const anchor=el.cells[lc.r][lc.c];
+      const mr=document.createElement('div'); mr.className='row';
+      mr.innerHTML=`<label>合併 R${lc.r+1}C${lc.c+1}</label>`;
+      const csI=document.createElement('input'); csI.type='number'; csI.min=1; csI.max=el.colW.length-lc.c; csI.value=anchor.colspan||1; csI.title='跨欄數'; csI.style.width='52px';
+      const rsI=document.createElement('input'); rsI.type='number'; rsI.min=1; rsI.max=el.rowH.length-lc.r; rsI.value=anchor.rowspan||1; rsI.title='跨列數'; rsI.style.width='52px';
+      const go=document.createElement('button'); go.textContent='套用';
+      go.onclick=()=>{ commitUndo(); tableMerge(el,lc.r,lc.c,+csI.value||1,+rsI.value||1); renderStage(); renderProps(); };
+      const un=document.createElement('button'); un.textContent='取消合併';
+      un.onclick=()=>{ commitUndo(); tableMerge(el,lc.r,lc.c,1,1); renderStage(); renderProps(); };
+      mr.appendChild(csI); mr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'欄×'}));
+      mr.appendChild(rsI); mr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'列'}));
+      mr.appendChild(go); mr.appendChild(un);
+      pp.appendChild(mr);
+    }else{
+      const mh=document.createElement('div'); mh.className='row';
+      mh.innerHTML='<span class="unit">合併：先雙擊要當左上角的儲存格，回到此面板即可設定跨欄×跨列。</span>';
+      pp.appendChild(mh);
+    }
     const note=document.createElement('div'); note.className='row';
-    note.innerHTML='<span class="unit">儲存格個別底色／合併／逐格行距請透過 JSON 編輯。</span>';
+    note.innerHTML='<span class="unit">以上樣式套用全表；逐格底色／逐格行距請透過 JSON 編輯。</span>';
     pp.appendChild(note);
   }
   if(el.type==='chart'){
@@ -1354,8 +1582,26 @@ function renderProps(){
     ['刪除',()=>deleteEl(el),'Delete'],
   ]));
   pp.appendChild(pageJsonBtn());
+  updateCopyPalWin();
 }
 function defCell(){ return {text:'',bold:false,italic:false,color:'1A1A1A',sizePt:12,fill:null,align:'left',valign:'middle',colspan:1,rowspan:1,covered:false}; }
+// 合併儲存格：(r,c) 為左上錨點，跨 cs 欄 rs 列。範圍內其他格標 covered；
+// 會先清掉錨點舊 span 與範圍內其他合併的 covered 標記（被覆蓋的舊合併直接還原為 1×1）
+function tableMerge(el,r,c,cs,rs){
+  const clearSpan=(i,j)=>{ const cc=el.cells[i][j];
+    for(let y=i;y<Math.min(el.rowH.length,i+(cc.rowspan||1));y++)
+      for(let x=j;x<Math.min(el.colW.length,j+(cc.colspan||1));x++)
+        el.cells[y][x].covered=false;
+    cc.colspan=1; cc.rowspan=1; };
+  cs=Math.max(1,Math.min(cs,el.colW.length-c)); rs=Math.max(1,Math.min(rs,el.rowH.length-r));
+  clearSpan(r,c);
+  for(let i=r;i<r+rs;i++) for(let j=c;j<c+cs;j++){
+    const cc=el.cells[i][j];
+    if(!cc.covered&&(cc.colspan>1||cc.rowspan>1)) clearSpan(i,j);   // 吃掉範圍內舊合併
+    cc.covered=!(i===r&&j===c);
+  }
+  el.cells[r][c].colspan=cs; el.cells[r][c].rowspan=rs; el.cells[r][c].covered=false;
+}
 // 刪除指定欄／列（合併儲存格 span 自動縮減，port 自 xlsx2pptx removeCol/RowFromModel）
 function tableDeleteCol(el,i){
   if(el.colW.length<=1) return;
@@ -1481,7 +1727,7 @@ function buildShapeGrid(){
     const row=document.createElement('div'); row.className='shapeCat';
     for(const key of keys){
       const def=LINE_KINDS[key]||SHAPES[key];
-      const b=document.createElement('button'); b.className='shapeBtn'; b.title=def.label;
+      const b=document.createElement('button'); b.className='shapeBtn'+(ADJ_DOTS[key]?' hasAdj':''); b.title=def.label+(ADJ_DOTS[key]?'（支援黃點微調）':'');
       const svg=document.createElementNS(NS,'svg');
       svg.setAttribute('width',36); svg.setAttribute('height',26);
       if(LINE_KINDS[key]){
@@ -1569,8 +1815,14 @@ stage.addEventListener('pointerdown',e=>{
     return;
   }
   if(e.target.closest('.tcd,.trd')) return;   // 表格刪欄列鈕：交給 click 處理，不啟動拖曳
-  const rh=e.target.closest('.rh'), tch=e.target.closest('.tch'), trh=e.target.closest('.trh'), lh=e.target.closest('.lh');
+  const rh=e.target.closest('.rh'), tch=e.target.closest('.tch'), trh=e.target.closest('.trh'), lh=e.target.closest('.lh'), ah=e.target.closest('.ah');
   const el=selEl();
+  if(ah&&el&&el.type==='shape'&&ADJ_DOTS[el.shape]){
+    drag={type:'adj',el,i:+ah.dataset.i,sx:e.clientX,sy:e.clientY};
+    e.preventDefault(); pendingUndo=snapshot();
+    try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+    return;
+  }
   // 群組比例縮放把手（多選）
   if(rh&&rh.dataset.group&&APP.selIds.length>1){
     const bb=groupBBox(selEls()), dir=rh.dataset.dir;
@@ -1648,6 +1900,25 @@ stage.addEventListener('pointerdown',e=>{
   pendingUndo=snapshot();
   try{ stage.setPointerCapture(e.pointerId); }catch(err){}
 });
+// 拖欄/列尺寸的懸浮數值（px 為內部單位；cm/pt 換算供對照，1px=1/96in）
+let dragTip=null;
+function showDragTipText(e,text){
+  if(!dragTip){
+    dragTip=document.createElement('div');
+    dragTip.style.cssText='position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;'
+      +'padding:2px 7px;border-radius:4px;pointer-events:none;white-space:nowrap;';
+    document.body.appendChild(dragTip);
+  }
+  dragTip.textContent=text;
+  dragTip.style.left=(e.clientX+14)+'px'; dragTip.style.top=(e.clientY+18)+'px';
+  dragTip.style.display='block';
+}
+function pxLabel(label,px){
+  const inch=px/96;
+  return `${label} ${px}px ≈ ${(inch*2.54).toFixed(2)}cm ≈ ${(inch*72).toFixed(1)}pt`;
+}
+function showDragTip(e,label,px){ showDragTipText(e,pxLabel(label,px)); }
+function hideDragTip(){ if(dragTip) dragTip.style.display='none'; }
 stage.addEventListener('pointermove',e=>{
   if(!drag) return;
   if(pendingUndo){ commitUndo(pendingUndo); pendingUndo=null; }
@@ -1661,6 +1932,20 @@ stage.addEventListener('pointermove',e=>{
     for(const g of [(STAGE_H-h)/2,0,STAGE_H-h,ZONE_FOOTER.y-h,ZONE_MARK.h]) if(Math.abs(ny-g)<SNAP){ ny=g; break; }
     el.x=Math.round(nx); el.y=Math.round(ny);
     updateElStyle(el);
+  }else if(drag.type==='adj'){
+    const {w,h}=elSize(el);
+    // 指標 → 元素本地座標（含旋轉逆轉換：繞中心反轉 rot，黃點在旋轉後的形狀上仍拖得準）
+    const r=stage.getBoundingClientRect();
+    let lx=(e.clientX-r.left)/APP.zoom-el.x, ly=(e.clientY-r.top)/APP.zoom-el.y;
+    if(el.rot){ const a=-el.rot*Math.PI/180, cx=lx-w/2, cy=ly-h/2;
+      lx=w/2+cx*Math.cos(a)-cy*Math.sin(a); ly=h/2+cx*Math.sin(a)+cy*Math.cos(a); }
+    if(el.flipH) lx=w-lx;   // 翻轉：鏡射回未翻轉幾何再反推 adj
+    if(el.flipV) ly=h-ly;
+    ADJ_DOTS[el.shape][drag.i].apply(el,lx,ly,w,h);
+    const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el);
+    updateSelBox();
+    showDragTipText(e,SHAPE_ADJ[el.shape].filter(p=>p.fix==null)
+      .map((p,i)=>`${p.label} ${adjVals(el)[i].toFixed(2)}`).join('｜'));
   }else if(drag.type==='lineEnd'){
     let px=drag.mx+dx, py=drag.my+dy;
     if(Math.abs(px-drag.fixed.x)<8) px=drag.fixed.x;   // 貼齊垂直
@@ -1679,6 +1964,8 @@ stage.addEventListener('pointermove',e=>{
     let s=(Math.abs(nx-drag.anchor.x)/(Math.abs(drag.ox-drag.anchor.x)||1)
           +Math.abs(ny-drag.anchor.y)/(Math.abs(drag.oy-drag.anchor.y)||1))/2;
     groupScaleTo(drag,Math.max(.05,s));
+    const bb=groupBBox(selEls());
+    showDragTipText(e,pxLabel('寬',Math.round(bb.w))+'　'+pxLabel('高',Math.round(bb.h)));
   }else if(drag.type==='marquee'){
     const r=stage.getBoundingClientRect();
     const cx=(e.clientX-r.left)/APP.zoom, cy=(e.clientY-r.top)/APP.zoom;
@@ -1688,17 +1975,22 @@ stage.addEventListener('pointermove',e=>{
     drag.rect={x,y,w,h};
   }else if(drag.type==='resize'){
     resizeBy(el,drag,dx,dy);
+    const {w,h}=elSize(el);
+    showDragTipText(e,pxLabel('寬',Math.round(w))+'　'+pxLabel('高',Math.round(h)));
   }else if(drag.type==='tcol'){
     el.colW[drag.i]=Math.max(16,Math.round(drag.w+dx));
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     renderTableInto(box,el); updateSelBox(); checkZones();
+    showDragTip(e,`欄 ${drag.i+1} 寬`,el.colW[drag.i]);
   }else if(drag.type==='trow'){
     el.rowH[drag.i]=Math.max(12,Math.round(drag.h+dy));
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     renderTableInto(box,el); updateSelBox(); checkZones();
+    showDragTip(e,`列 ${drag.i+1} 高`,el.rowH[drag.i]);
   }
 });
 stage.addEventListener('pointerup',()=>{
+  hideDragTip();
   if(!drag) return;
   if(drag.type==='marquee'){
     const m=$('#marquee'); if(m) m.remove();
@@ -1814,6 +2106,8 @@ function startCellEdit(el,td){
   const r=+td.dataset.r,c=+td.dataset.c;
   const cell=el.cells[r][c];
   APP.editing=el.id;
+  APP.lastCell={id:el.id,r,c};   // 屬性面板「合併」以此為錨點
+  focusCellJson(el.id,r,c);   // JSON 面板開著時捲至該格
   td.textContent='';
   const ed=editableDiv();
   ed.style.cssText='min-height:1em;';
@@ -1853,6 +2147,54 @@ document.addEventListener('keydown',e=>{
     updateSelBox(); }
 });
 
+/* ================= 剪貼簿：跨頁／跨檔複製元素 =================
+   Cmd/Ctrl+C 把選取元素序列化為 JSON 寫入系統剪貼簿（copy 事件，不需權限），
+   Cmd/Ctrl+V 解析貼回（paste 事件）：換新 id／群組 id，僅當目標頁有同位置同型元素才偏移 16px（同 PPT 手感）。
+   系統剪貼簿天然跨瀏覽器分頁 → 開兩份 DeckJSON 也能互貼；也接受整頁物件或單一元素 JSON。 */
+function clipboardGuard(){
+  return APP.editing||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||document.activeElement.isContentEditable;
+}
+document.addEventListener('copy',e=>{
+  if(clipboardGuard()||!APP.selIds.length) return;
+  const els=selEls().map(el=>structuredClone(el));
+  e.clipboardData.setData('text/plain',JSON.stringify({format:'deckjson-elements',elements:els},null,1));
+  e.preventDefault();
+});
+document.addEventListener('cut',e=>{
+  if(clipboardGuard()||!APP.selIds.length) return;
+  const els=selEls().map(el=>structuredClone(el));
+  e.clipboardData.setData('text/plain',JSON.stringify({format:'deckjson-elements',elements:els},null,1));
+  e.preventDefault();
+  deleteSelected();
+});
+document.addEventListener('paste',e=>{
+  if(clipboardGuard()) return;
+  const t=e.clipboardData.getData('text/plain'); if(!t||t[0]!=='{'&&t[0]!=='[') return;
+  let o; try{ o=JSON.parse(t); }catch(err){ return; }
+  let els=null;
+  if(o&&o.format==='deckjson-elements'&&Array.isArray(o.elements)) els=o.elements;
+  else if(o&&Array.isArray(o.elements)&&!o.pages) els=o.elements;            // 整頁物件 → 取其元素
+  else if(o&&o.type&&o.x!=null) els=[o];                                     // 單一元素物件
+  const OK={text:1,table:1,image:1,shape:1,chart:1};
+  els=els&&els.filter(x=>x&&typeof x==='object'&&OK[x.type]);
+  if(!els||!els.length) return;
+  e.preventDefault();
+  // @asset 佔位 → 還原 base64（同檔內複製時；跨檔貼遮罩 JSON 找不到位元組則擋下）
+  try{ resolveAssets({elements:els}); }catch(err){ alert('貼上失敗：'+err.message); return; }
+  commitUndo();
+  const clash=els.some(src=>curPage().elements.some(t2=>t2.x===src.x&&t2.y===src.y&&t2.type===src.type));
+  const off=clash?16:0;
+  const gidMap=new Map(), ids=[];
+  for(const src of els){
+    const cp=structuredClone(src); cp.id=uid('e');
+    if(cp.groupId){ if(!gidMap.has(cp.groupId)) gidMap.set(cp.groupId,uid('g')); cp.groupId=gidMap.get(cp.groupId); }
+    cp.x=(cp.x||0)+off; cp.y=(cp.y||0)+off;
+    curPage().elements.push(cp); ids.push(cp.id);
+  }
+  try{ normalizeDeck(APP.deck); }catch(err){ undo(); alert('貼上的元素格式不完整：'+err.message); return; }
+  setSel(ids); renderAll(); syncPageJson();
+});
+
 /* ================= 檢視縮放 ================= */
 const WORK_PAD=240;   // 投影片四周工作區留白（CSS px）：拖出畫布的物件落在可捲範圍內，救得回
 function setZoom(pct){
@@ -1860,17 +2202,33 @@ function setZoom(pct){
   APP.zoom=pct/100;
   $('#zoomNum').value=pct;
   stage.style.transform=`scale(${APP.zoom})`;
-  stage.style.margin=WORK_PAD+'px';
-  $('#stageOuter').style.width=(STAGE_W*APP.zoom+WORK_PAD*2)+'px';
-  $('#stageOuter').style.height=(STAGE_H*APP.zoom+WORK_PAD*2)+'px';
+  // 邊距取「WORK_PAD」與「置中所需」較大者：投影片小於檢視區的軸自動置中（不捲也居中），
+  // 大於檢視區時維持 WORK_PAD 工作區留白（拖出畫布的物件救得回）
+  const sc=$('#stageScroll');
+  const mw=Math.max(WORK_PAD,Math.round((sc.clientWidth -STAGE_W*APP.zoom)/2));
+  const mh=Math.max(WORK_PAD,Math.round((sc.clientHeight-STAGE_H*APP.zoom)/2));
+  stage.style.margin=mh+'px '+mw+'px';
+  $('#stageOuter').style.width=(STAGE_W*APP.zoom+mw*2)+'px';
+  $('#stageOuter').style.height=(STAGE_H*APP.zoom+mh*2)+'px';
 }
 $('#zoomNum').addEventListener('change',e=>setZoom(+e.target.value));
-// 適寬/適高：讓白色投影片本身填滿檢視區（不把外圍 WORK_PAD 黑區算進去），再捲動把 pad 藏到視窗外
-function scrollToSlide(){ const sc=$('#stageScroll'); sc.scrollLeft=WORK_PAD+24; sc.scrollTop=WORK_PAD+24; }
-function fitWidth(){ const avail=$('#stageScroll').clientWidth-48; if(avail<200) return; setZoom(Math.floor(avail/STAGE_W*100)); scrollToSlide(); }
-function fitHeight(){ const avail=$('#stageScroll').clientHeight-48; if(avail<160) return; setZoom(Math.floor(avail/STAGE_H*100)); scrollToSlide(); }
+// 適寬/適高：投影片留 16px 邊距後貼近檢視區，並於兩軸置中（另一軸的黑區左右/上下均分，不再單側一條黑）
+// 置中不靠邊距常數回推，直接量白色投影片的實際座標（getBoundingClientRect 含縮放）對齊檢視區中心
+function centerSlide(){ const sc=$('#stageScroll');
+  const sr=sc.getBoundingClientRect(), st=stage.getBoundingClientRect();
+  // 用 client 區域中心（排除傳統捲軸佔位；rect 含捲軸會偏 15px）
+  sc.scrollLeft+=Math.round((st.left+st.width /2)-(sr.left+sc.clientLeft+sc.clientWidth /2));
+  sc.scrollTop +=Math.round((st.top +st.height/2)-(sr.top +sc.clientTop +sc.clientHeight/2)); }
+// 算兩次：第一次縮放後另一軸可能冒出/收起捲軸使 clientWidth/Height 改變，第二次以新值修正
+function fitWidth(){ const sc=$('#stageScroll'); if(sc.clientWidth<200) return;
+  for(let i=0;i<2;i++) setZoom(Math.floor((sc.clientWidth -32)/STAGE_W*100));
+  requestAnimationFrame(centerSlide); }
+function fitHeight(){ const sc=$('#stageScroll'); if(sc.clientHeight<160) return;
+  for(let i=0;i<2;i++) setZoom(Math.floor((sc.clientHeight-32)/STAGE_H*100));
+  requestAnimationFrame(centerSlide); }
 $('#btnFitW').onclick=fitWidth;
 $('#btnFitH').onclick=fitHeight;
+window.addEventListener('resize',()=>setZoom(Math.round(APP.zoom*100)));   // 視窗改尺寸：重算置中邊距
 
 /* ================= 標題／字體模式／undo 按鈕 ================= */
 $('#deckTitle').addEventListener('change',e=>{ APP.deck.title=e.target.value||'未命名簡報'; });
@@ -1886,18 +2244,28 @@ function normalizeDeck(d){
   d.fonts=Object.assign({...FONTS},d.fonts||{});
   for(const pg of d.pages){
     pg.id=pg.id||uid('p'); pg.bg=pg.bg||'FFFFFF';
-    if(!('transition' in pg)) pg.transition=null;
+    pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
+    if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
     pg.notes= pg.notes==null? '' : String(pg.notes);
     pg.elements=Array.isArray(pg.elements)?pg.elements:[];
+    const seenIds=new Set();   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
     for(const el of pg.elements){
       el.id=el.id||uid('e');
+      if(seenIds.has(el.id)) el.id=uid('e');
+      seenIds.add(el.id);
       el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
       if(el.opacity!=null){ const o=Math.round(+el.opacity); el.opacity=(isFinite(o)&&o>=0&&o<100)?o:undefined; if(el.opacity===undefined) delete el.opacity; }
       if(el.groupId!=null) el.groupId=String(el.groupId); else delete el.groupId;
       el.hidden=!!el.hidden||undefined; if(!el.hidden) delete el.hidden;
       el.locked=!!el.locked||undefined; if(!el.locked) delete el.locked;
       if(el.lineSpacing!=null){ const ls=+el.lineSpacing; el.lineSpacing=(isFinite(ls)&&ls>=0.5&&ls<=5)?ls:undefined; if(el.lineSpacing===undefined) delete el.lineSpacing; }
-      if(el.adj!=null){ const a=+el.adj; el.adj=(isFinite(a)&&a>=0&&a<=1)?a:undefined; if(el.adj===undefined) delete el.adj; }
+      // adj/adj2 依該形狀參數表 clamp（圖說框可為負）；非 adj 形狀或非數值一律移除
+      {const AP=(el.type==='shape'&&SHAPE_ADJ[el.shape])||null;
+       [['adj',0],['adj2',1]].forEach(([k,i])=>{
+         if(el[k]==null){ delete el[k]; return; }
+         const a=+el[k], p=(AP&&AP[i]&&AP[i].fix==null)?AP[i]:null;   // fix＝補齊用固定 gd，非使用者欄位
+         if(isFinite(a)&&p) el[k]=Math.max(p.min,Math.min(p.max,a)); else delete el[k];
+       });}
       if(el.type==='table'){
         if(!Array.isArray(el.colW)||!Array.isArray(el.rowH)||!Array.isArray(el.cells)) throw new Error(`表格 ${el.id} 缺 colW/rowH/cells`);
         el.cells=el.cells.map(row=>row.map(c=>Object.assign(defCell(),c)));
@@ -2001,14 +2369,37 @@ function focusElementJson(id){
   const lh=parseFloat(getComputedStyle(ta).lineHeight)||16;
   ta.scrollTop=Math.max(0,(line-2)*lh);
 }
+// 表格儲存格 → 該格 JSON：從元素 id 起找 "cells"，字串感知走訪括號深度定位第 r 列第 c 格
+// （covered 佔位格也在 cells 陣列內，r/c 與 td.dataset 同一索引空間）
+function focusCellJson(id,r,c){
+  if(!pageJsonOpen()) return;
+  const ta=$('#pageJsonArea'), txt=ta.value;
+  let i=txt.indexOf('"id": "'+id+'"'); if(i<0) return;
+  i=txt.indexOf('"cells"',i); if(i<0) return;
+  i=txt.indexOf('[',i); if(i<0) return;
+  let depth=0,row=-1,col=-1,inStr=false,esc=false,start=-1;
+  for(let k=i;k<txt.length;k++){
+    const ch=txt[k];
+    if(inStr){ if(esc)esc=false; else if(ch==='\\')esc=true; else if(ch==='"')inStr=false; continue; }
+    if(ch==='"'){ inStr=true; continue; }
+    if(ch==='['){ depth++; if(depth===2){ row++; col=-1; } }
+    else if(ch==='{'){ if(depth===2){ col++; if(row===r&&col===c) start=k; } depth++; }
+    else if(ch==='}'){ depth--; if(start>=0&&depth===2){
+      ta.setSelectionRange(start,k+1);
+      const line=txt.slice(0,start).split('\n').length;
+      const lh=parseFloat(getComputedStyle(ta).lineHeight)||16;
+      ta.scrollTop=Math.max(0,(line-2)*lh); return; } }
+    else if(ch===']'){ depth--; if(depth===0) return; }
+  }
+}
 function syncPageJson(){
   if(!pageJsonOpen()) return;
   if(!pageJsonDirty) refreshPageJson();
   if(APP.selIds.length===1) focusElementJson(APP.selIds[0]);
 }
-function openPageJson(){ $('#pageJsonPanel').hidden=false; refreshPageJson(); if(APP.selIds.length===1) focusElementJson(APP.selIds[0]); }
+function openPageJson(){ $('#pageJsonPanel').hidden=false; refreshPageJson(); if(APP.selIds.length===1) focusElementJson(APP.selIds[0]); updateCopyPalWin(); }
 $('#pageJsonArea').addEventListener('input',()=>pageJsonDirty=true);
-$('#btnPageJsonClose').onclick=()=>$('#pageJsonPanel').hidden=true;
+$('#btnPageJsonClose').onclick=()=>{ $('#pageJsonPanel').hidden=true; updateCopyPalWin(); };
 $('#btnPageJsonRefresh').onclick=refreshPageJson;
 $('#btnPageJsonCopy').onclick=async()=>{
   const t=$('#pageJsonArea').value;
@@ -2303,6 +2694,28 @@ async function addElToSlide(slide,el){
 }
 // 字體後處理：兩種模式都明確填 latin/ea/cs（不剝離、不切 run），全 run lang=zh-TW
 // 鎖定模式寫死三字體；繼承模式寫 +mn-lt/+mn-ea/+mn-cs 主題槽引用（貼上時由目的端母版接手）
+// 頁面轉場（進入此頁時播放）。morph 走 mc:AlternateContent（p159 命名空間，PowerPoint 2019+/365），
+// 舊版開啟時自動退回 fallback 的 fade；morph 跨頁配對靠「同名同型」shape——本工具 shape 名＝元素 JSON id，
+// 複製頁刻意保留元素 id 即為此用（改位置/大小/adj 後兩頁同 id 元素會平滑補間）
+const TRANSITIONS={
+  morph:{label:'平滑（Morph）'},
+  fade:{label:'淡出'},
+  push:{label:'推入'},
+  wipe:{label:'擦去'},
+};
+function transitionXml(tr){
+  if(!tr||!TRANSITIONS[tr.type]) return '';
+  if(tr.type==='morph'){
+    const dur=Math.max(100,Math.min(10000,Math.round(tr.dur||600)));
+    const opt={byObject:1,byWord:1,byChar:1}[tr.option]? tr.option:'byObject';
+    return '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
+      +'<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">'
+      +`<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="slow" p14:dur="${dur}"><p159:morph option="${opt}"/></p:transition>`
+      +'</mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>';
+  }
+  const inner={fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'}[tr.type];
+  return `<p:transition spd="med">${inner}</p:transition>`;
+}
 function patchFonts(xml,latinFont,mode,F){
   const mk= mode==='inherit'
     ? '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>'
@@ -2338,6 +2751,44 @@ async function exportPptx(download=true){
   // sldSz 精確（PptxGenJS 吋換算會差 ~30 EMU）
   let pres=await zip.file('ppt/presentation.xml').async('string');
   pres=pres.replace(/<p:sldSz[^>]*\/>/,'<p:sldSz cx="12192000" cy="6858000" type="screen16x9"/>');
+
+  /* ---- 套件級修復：PptxGenJS 3.12 已知缺陷（上游停更，gitbrent/PptxGenJS#1449），
+          多頁＋備忘稿時會觸發 PowerPoint「需要修復」並丟元素 ---- */
+  // (1) presentation.xml：notesMasterIdLst 依 CT_Presentation schema 應在 sldIdLst 之前（PptxGenJS 寫在其後）
+  {const nm=pres.match(/<p:notesMasterIdLst>[\s\S]*?<\/p:notesMasterIdLst>/);
+   if(nm){ pres=pres.replace(nm[0],''); pres=pres.replace('</p:sldMasterIdLst>','</p:sldMasterIdLst>'+nm[0]); }}
+  // (2) 備忘稿基建：全 deck 無備忘稿時整組拆除（PptxGenJS 的 notesMaster 含畸形佔位形狀，修復時被 PPT 移除）；
+  //     有備忘稿時給 notesMaster 專屬 theme（誤共用 slideMaster 的 theme1 也是修復觸發點）
+  const hasNotes=APP.deck.pages.some(p=>p.notes&&String(p.notes).trim());
+  if(!hasNotes){
+    for(const n of Object.keys(zip.files)) if(/^ppt\/(notesMasters|notesSlides)\//.test(n)) zip.remove(n);
+    zip.remove('ppt/notesMasters'); zip.remove('ppt/notesSlides');
+    pres=pres.replace(/<p:notesMasterIdLst>[\s\S]*?<\/p:notesMasterIdLst>/,'');
+    let prels=await zip.file('ppt/_rels/presentation.xml.rels').async('string');
+    prels=prels.replace(/<Relationship[^>]*notesMaster[^>]*\/>/g,'');
+    zip.file('ppt/_rels/presentation.xml.rels',prels);
+    for(const n of Object.keys(zip.files)){
+      if(!/^ppt\/slides\/_rels\/slide\d+\.xml\.rels$/.test(n)) continue;
+      let r=await zip.file(n).async('string');
+      zip.file(n,r.replace(/<Relationship[^>]*notesSlide[^>]*\/>/g,''));
+    }
+  }else{
+    const th=await zip.file('ppt/theme/theme1.xml').async('string');
+    zip.file('ppt/theme/theme2.xml',th);
+    let nrels=await zip.file('ppt/notesMasters/_rels/notesMaster1.xml.rels').async('string');
+    zip.file('ppt/notesMasters/_rels/notesMaster1.xml.rels',nrels.replace('theme/theme1.xml','theme/theme2.xml'));
+  }
+  // (3) 空鷹架目錄（charts/embeddings/media 沒內容仍佔 zip 條目）
+  for(const d of ['ppt/charts','ppt/embeddings','ppt/media'])
+    if(!Object.keys(zip.files).some(n=>n.startsWith(d+'/')&&!zip.files[n].dir)) zip.remove(d);
+  // (4) Content_Types：移除指向不存在部件的 Override（PptxGenJS 每頁多寫一個幽靈 slideMaster）
+  //     與沒用到的 Default 副檔名；有備忘稿時補 theme2 Override
+  let ct=await zip.file('[Content_Types].xml').async('string');
+  if(hasNotes) ct=ct.replace('</Types>','<Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/></Types>');
+  ct=ct.replace(/<Override PartName="\/([^"]+)"[^>]*\/>\s*/g,(m,p)=>zip.file(p)?m:'');
+  const usedExt=new Set(Object.keys(zip.files).filter(n=>!zip.files[n].dir).map(n=>n.split('.').pop().toLowerCase()));
+  ct=ct.replace(/<Default Extension="([^"]+)"[^>]*\/>/g,(m,e)=>(e==='rels'||usedExt.has(e.toLowerCase()))?m:'');
+  zip.file('[Content_Types].xml',ct);
   zip.file('ppt/presentation.xml',pres);
   const mode=APP.deck.fontMode, F=APP.deck.fonts;
   for(const name of Object.keys(zip.files)){
@@ -2355,9 +2806,15 @@ async function exportPptx(download=true){
     const sIdx=+name.match(/slide(\d+)\.xml/)[1]-1, pgA=APP.deck.pages[sIdx];
     if(pgA) for(const el of pgA.elements){
       if(el.hidden||el.type!=='shape'||!SHAPE_ADJ[el.shape]) continue;
-      const val=Math.round(adjOf(el)*100000);
+      const vals=adjVals(el);
+      const gds=SHAPE_ADJ[el.shape].map((p,i)=>`<a:gd name="${p.gd}" fmla="val ${Math.round(vals[i]*100000)}"/>`).join('');
       const re=new RegExp(`(name="${el.id}"[\\s\\S]*?<a:prstGeom prst="${el.shape}">)<a:avLst\\s*(?:/>|>\\s*</a:avLst>)`);
-      s=s.replace(re,`$1<a:avLst><a:gd name="adj" fmla="val ${val}"/></a:avLst>`);
+      s=s.replace(re,`$1<a:avLst>${gds}</a:avLst>`);
+    }
+    // 頁面轉場：schema 順序為 cSld, clrMapOvr, transition —— 插在 </p:sld> 前即合法
+    if(pgA&&pgA.transition){
+      const tx=transitionXml(pgA.transition);
+      if(tx) s=s.replace(/<\/p:sld>\s*$/,tx+'</p:sld>');
     }
     // 字體：表格區塊 latin=Roboto，其餘 latin=Poppins；ea 一律 Noto Sans TC（繼承模式則全走主題槽）
     const parts=s.split(/(<p:graphicFrame>[\s\S]*?<\/p:graphicFrame>)/g);
