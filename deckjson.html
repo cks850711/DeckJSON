@@ -114,7 +114,7 @@
   .layerRow.dragover{box-shadow:inset 0 2px 0 0 var(--accent)}
   #shapeGrid h5{margin:12px 0 6px;color:var(--accent);font-size:12px;font-weight:600}
   .shapeCat{display:flex;flex-wrap:wrap;gap:6px}
-  .shapeBtn{position:relative;width:46px;height:40px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .shapeBtn{position:relative;width:44px;height:44px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   .shapeBtn:hover{border-color:var(--accent)}
   /* 支援畫布 adj 黃點的形狀，在縮圖右上角標一顆黃點 */
   .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
@@ -240,7 +240,7 @@
   <div class="mbox">
     <div class="mhead"><b>插入形狀</b><button id="btnShapeClose">×</button></div>
     <div id="shapeGrid"></div>
-    <div class="mnote">匯出為 PowerPoint 原生幾何（prstGeom），可在 PPT 內再調整。可調形狀（圓角／梯形／箭號／六八邊形／圖說框…）選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄 adj 滑桿微調，匯出注入原生 avLst。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊。</div>
+    <div class="mnote">匯出為 PowerPoint 原生幾何（prstGeom），可在 PPT 內再調整。可調形狀（圓角／梯形／箭號／六八邊形／圖說框…）選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄 adj 滑桿微調，匯出注入原生 avLst。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊；肘形連接線另有<b>黃點</b>可調直角折點位置。</div>
   </div>
 </div>
 
@@ -317,7 +317,7 @@
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
         <li><b>行距</b>：文字框與表格可設行距（×字級），匯出鎖為精確 spcPts；單格行距可透過 JSON 微調。</li>
-        <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標（同 PPT 手感，拖曳時顯示數值）；右欄滑桿可精修，匯出為 PPT 原生 avLst。</li>
+        <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標／肘形折點（同 PPT 手感，拖曳時顯示數值）；右欄滑桿可精修，匯出為 PPT 原生 avLst。形狀選單縮圖右上角有黃點者即支援。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
@@ -619,6 +619,9 @@ for(const k of ['wedgeRectCallout','wedgeRoundRectCallout','wedgeEllipseCallout'
   SHAPE_ADJ[k]=[{gd:'adj1',key:'adj',def:-0.208,min:-1.5,max:1.5,label:'尾標 X'},
                 {gd:'adj2',key:'adj2',def:0.625,min:-1.5,max:1.5,label:'尾標 Y'},
                 ...(k==='wedgeRoundRectCallout'?[{gd:'adj3',fix:0.16667}]:[])];
+// 肘形連接線（bentConnector3）：單一 adj1＝直角折點沿橫向的位置（÷寬），同 PPT 黃點
+for(const k of ['elbow','elbowArrow','elbowDoubleArrow'])
+  SHAPE_ADJ[k]=[{gd:'adj1',key:'adj',def:0.5,min:0.03,max:0.97,label:'折點'}];
 function adjVals(el){ const m=el&&SHAPE_ADJ[el.shape]; if(!m) return [];
   return m.map(p=>{ if(p.fix!=null) return p.fix;
     const v=el[p.key]; return v!=null? Math.max(p.min,Math.min(p.max,+v)) : p.def; }); }
@@ -655,6 +658,9 @@ const ADJ_DOTS={
 for(const k of ['wedgeRectCallout','wedgeRoundRectCallout','wedgeEllipseCallout'])
   ADJ_DOTS[k]=[{pos:(w,h,A)=>[(0.5+A[0])*w,(0.5+A[1])*h],
     apply:(el,x,y,w,h)=>{ setAdj(el,0,x/w-0.5); setAdj(el,1,y/h-0.5); }}];
+// 肘形連接線：黃點在直角折點的縱段中點（bendX, h/2），左右拖動＝移動折點
+for(const k of ['elbow','elbowArrow','elbowDoubleArrow'])
+  ADJ_DOTS[k]=[{pos:(w,h,A)=>[A[0]*w,h/2], apply:(el,x,y,w,h)=>setAdj(el,0,x/w)}];
 function isLineEl(el){ return el&&el.type==='shape'&&!!LINE_KINDS[el.shape]; }
 function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左上角
   const x1=el.flipH? el.w:0, y1=el.flipV? el.h:0;
@@ -786,9 +792,9 @@ function renderShapeInto(box,el){
     const {x1,y1,x2,y2}=lineEnds(el);
     const col='#'+(el.lineColor||'333333'), sw=Math.max(1,pt2px(el.linePt||1.5));
     let node;
-    if(kind.pptx==='bentConnector3'){  // 肘形：水平→垂直→水平（同 PPT 預設 adj 0.5）
+    if(kind.pptx==='bentConnector3'){  // 肘形：水平→垂直→水平，折點 x＝adj×寬（黃點可調，同 PPT）
       node=document.createElementNS(NS,'polyline');
-      const mx=(x1+x2)/2;
+      const mx=adjVals(el)[0]*el.w;
       node.setAttribute('points',`${x1},${y1} ${mx},${y1} ${mx},${y2} ${x2},${y2}`);
       node.setAttribute('fill','none');
     }else{
@@ -939,6 +945,12 @@ function updateSelBox(){
     for(const [px,py,end] of [[E.x1,E.y1,'1'],[E.x2,E.y2,'2']]){
       const hd=document.createElement('div'); hd.className='lh'; hd.dataset.end=end;
       hd.style.left=px+'px'; hd.style.top=py+'px';
+      sb.appendChild(hd);
+    }
+    if(ADJ_DOTS[el.shape]){   // 肘形：折點黃點（縱段中點），可左右拖動
+      const [px,py]=ADJ_DOTS[el.shape][0].pos(w,h,adjVals(el));
+      const hd=document.createElement('div'); hd.className='ah'; hd.dataset.i=0;
+      hd.style.left=px+'px'; hd.style.top=py+'px'; hd.title='拖曳調整折點（同 PPT 黃點）';
       sb.appendChild(hd);
     }
     return;
@@ -1442,7 +1454,7 @@ function renderProps(){
       let adjDirty=false;
       ai.addEventListener('pointerdown',()=>adjDirty=false);
       ai.oninput=()=>{ if(!adjDirty){ commitUndo(); adjDirty=true; } el[m.key]=parseFloat(ai.value); av.textContent=el[m.key].toFixed(2);
-        const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el); };
+        const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el); updateSelBox(); };
       ar.appendChild(ai); ar.appendChild(av);
       pp.appendChild(ar);
     });
@@ -1725,31 +1737,42 @@ function buildShapeGrid(){
   for(const [catName,keys] of SHAPE_CATS){
     const h5=document.createElement('h5'); h5.textContent=catName; g.appendChild(h5);
     const row=document.createElement('div'); row.className='shapeCat';
+    // 縮圖畫在方形視窗（VB×VB），依形狀原始長寬比縮放置中——不再壓進寬扁格子（高瘦形狀不再變成一團）
+    const VB=40, MAX=30;
     for(const key of keys){
       const def=LINE_KINDS[key]||SHAPES[key];
       const b=document.createElement('button'); b.className='shapeBtn'+(ADJ_DOTS[key]?' hasAdj':''); b.title=def.label+(ADJ_DOTS[key]?'（支援黃點微調）':'');
       const svg=document.createElementNS(NS,'svg');
-      svg.setAttribute('width',36); svg.setAttribute('height',26);
+      svg.setAttribute('width',VB); svg.setAttribute('height',VB); svg.setAttribute('viewBox',`0 0 ${VB} ${VB}`);
+      // 原始長寬比：形狀用 size（無則預設較瘦的 200×120）；線條給代表性比例
+      let nw,nh;
+      if(LINE_KINDS[key]){ nw=MAX; nh=key.startsWith('elbow')? MAX*0.72 : MAX*0.66; }
+      else{ const sz=SHAPES[key].size||[200,120]; nw=sz[0]; nh=sz[1]; }
+      const sc=MAX/Math.max(nw,nh), dw=nw*sc, dh=nh*sc, ox=(VB-dw)/2, oy=(VB-dh)/2;
       if(LINE_KINDS[key]){
         const k=LINE_KINDS[key];
         let node;
-        if(k.pptx==='bentConnector3'){
+        if(k.pptx==='bentConnector3'){   // 肘形：橫→縱→橫，折點在中間偏右，一眼看得出是直角轉折
           node=document.createElementNS(NS,'polyline');
-          node.setAttribute('points','2,4 18,4 18,22 34,22'); node.setAttribute('fill','none');
-        }else{
+          const bx=ox+dw*0.5;
+          node.setAttribute('points',`${ox},${oy} ${bx},${oy} ${bx},${oy+dh} ${ox+dw},${oy+dh}`); node.setAttribute('fill','none');
+        }else{                            // 直線類：左下→右上斜線
           node=document.createElementNS(NS,'line');
-          node.setAttribute('x1',2); node.setAttribute('y1',22); node.setAttribute('x2',34); node.setAttribute('y2',4);
+          node.setAttribute('x1',ox); node.setAttribute('y1',oy+dh); node.setAttribute('x2',ox+dw); node.setAttribute('y2',oy);
         }
-        node.setAttribute('stroke','#d7dae0'); node.setAttribute('stroke-width',2);
+        node.setAttribute('stroke','#d7dae0'); node.setAttribute('stroke-width',2); node.setAttribute('stroke-linejoin','round');
         if(k.end){ mkMarker(svg,'pe-'+key,'#d7dae0',false); node.setAttribute('marker-end',`url(#pe-${key})`); }
         if(k.begin){ mkMarker(svg,'pb-'+key,'#d7dae0',true); node.setAttribute('marker-start',`url(#pb-${key})`); }
         svg.appendChild(node);
       }else{
+        // 用該形狀的預設 adj 畫（箭號/圖說框才不會退回醜的預設幾何），並保留原始長寬比＝細瘦
+        const A=SHAPE_ADJ[key]? SHAPE_ADJ[key].map(p=>p.fix!=null?p.fix:p.def) : [];
         const p=document.createElementNS(NS,'path');
-        p.setAttribute('d',def.d(32,22));
-        p.setAttribute('transform','translate(2,2)');
+        p.setAttribute('d',def.d(dw,dh,...A));
+        p.setAttribute('transform',`translate(${ox},${oy})`);
         if(def.evenodd) p.setAttribute('fill-rule','evenodd');
         p.setAttribute('fill','#d7dae0');
+        svg.style.overflow='visible';   // 圖說框尾標伸出 bbox
         svg.appendChild(p);
       }
       b.appendChild(svg);
@@ -1939,8 +1962,9 @@ stage.addEventListener('pointermove',e=>{
     let lx=(e.clientX-r.left)/APP.zoom-el.x, ly=(e.clientY-r.top)/APP.zoom-el.y;
     if(el.rot){ const a=-el.rot*Math.PI/180, cx=lx-w/2, cy=ly-h/2;
       lx=w/2+cx*Math.cos(a)-cy*Math.sin(a); ly=h/2+cx*Math.sin(a)+cy*Math.cos(a); }
-    if(el.flipH) lx=w-lx;   // 翻轉：鏡射回未翻轉幾何再反推 adj
-    if(el.flipV) ly=h-ly;
+    // 翻轉：填色形狀的 SVG 是 CSS 鏡射、選取框沒鏡射，故 adj 要鏡射回未翻轉幾何；
+    // 線條類的 flip 已烙進 lineEnds（無 CSS 鏡射），折點與座標直接對應，不鏡射
+    if(!isLineEl(el)){ if(el.flipH) lx=w-lx; if(el.flipV) ly=h-ly; }
     ADJ_DOTS[el.shape][drag.i].apply(el,lx,ly,w,h);
     const box=stage.querySelector(`.el[data-id="${el.id}"]`); if(box) renderShapeInto(box,el);
     updateSelBox();
@@ -2808,8 +2832,14 @@ async function exportPptx(download=true){
       if(el.hidden||el.type!=='shape'||!SHAPE_ADJ[el.shape]) continue;
       const vals=adjVals(el);
       const gds=SHAPE_ADJ[el.shape].map((p,i)=>`<a:gd name="${p.gd}" fmla="val ${Math.round(vals[i]*100000)}"/>`).join('');
-      const re=new RegExp(`(name="${el.id}"[\\s\\S]*?<a:prstGeom prst="${el.shape}">)<a:avLst\\s*(?:/>|>\\s*</a:avLst>)`);
-      s=s.replace(re,`$1<a:avLst>${gds}</a:avLst>`);
+      // 肘形連接線的 prstGeom 名是 bentConnector3（≠ shape key）；一般形狀則 key＝prst
+      const prst=LINE_KINDS[el.shape]? LINE_KINDS[el.shape].pptx : el.shape;
+      const reEmpty=new RegExp(`(name="${el.id}"[\\s\\S]*?<a:prstGeom prst="${prst}">)<a:avLst\\s*(?:/>|>\\s*</a:avLst>)`);
+      if(reEmpty.test(s)) s=s.replace(reEmpty,`$1<a:avLst>${gds}</a:avLst>`);
+      else{  // prstGeom 自閉合、無 avLst（連接線常見）→ 補上帶 gd 的 avLst
+        const reSelf=new RegExp(`(name="${el.id}"[\\s\\S]*?)<a:prstGeom prst="${prst}"\\s*/>`);
+        s=s.replace(reSelf,`$1<a:prstGeom prst="${prst}"><a:avLst>${gds}</a:avLst></a:prstGeom>`);
+      }
     }
     // 頁面轉場：schema 順序為 cSld, clrMapOvr, transition —— 插在 </p:sld> 前即合法
     if(pgA&&pgA.transition){
