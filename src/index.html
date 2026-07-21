@@ -84,6 +84,10 @@
   .tcd{position:absolute;top:-15px;height:13px;background:rgba(120,125,135,.15);border-radius:2px;cursor:pointer;pointer-events:auto;color:transparent;font-size:9px;line-height:13px;text-align:center;user-select:none;z-index:30}
   .trd{position:absolute;left:-15px;width:13px;background:rgba(120,125,135,.15);border-radius:2px;cursor:pointer;pointer-events:auto;color:transparent;font-size:9px;display:flex;align-items:center;justify-content:center;user-select:none;z-index:30}
   .tcd:hover,.trd:hover{background:rgba(224,93,93,.85);color:#fff}
+  /* 表格儲存格反白（拖曳選格）與就近的合併鈕 */
+  .csel{position:absolute;background:rgba(77,157,224,.22);border:1.5px solid var(--accent);pointer-events:none;z-index:29}
+  .cselBtn{position:absolute;pointer-events:auto;cursor:pointer;z-index:32;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+  .cselBtn.unmerge{background:#7a828e}
   .lh{position:absolute;width:12px;height:12px;margin:-6px;background:#fff;border:2px solid var(--accent);border-radius:50%;pointer-events:auto;cursor:crosshair;z-index:31}
   /* 形狀 adj 黃點（同 PPT）：畫布上直接拖，蓋過縮放把手 */
   .ah{position:absolute;width:12px;height:12px;margin:-6px;background:#ffc72c;border:1.5px solid #a97e00;border-radius:50%;pointer-events:auto;cursor:grab;z-index:33;box-shadow:0 0 3px rgba(0,0,0,.4)}
@@ -307,6 +311,7 @@
         <li><b>雙擊</b>文字／形狀＝編輯文字（右側面板也有純文字編輯框）；雙擊表格儲存格＝編輯內容；雙擊圖表＝編輯 option。</li>
         <li>「＋形狀」開啟圖庫：線條／基本／箭號／方程式／流程圖／星星綵帶／圖說，共 40+ 種。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布預覽為近似圖形，匯出為 PPT 原生幾何。</li>
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
+        <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
@@ -582,6 +587,7 @@ function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左
 
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
+  cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
   ratioLock:false,fontSync:false,scaleFont:true};   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
 APP.page=APP.deck.pages[0].id;
 const CHARTS=new Map();   // 圖表元素 id → echarts 實例
@@ -594,6 +600,7 @@ function selEl(){ return APP.selIds.length===1? (curPage().elements.find(e=>e.id
 function setSel(ids){
   const live=[...new Set(ids)].filter(id=>curPage().elements.some(e=>e.id===id));
   APP.selIds=live; APP.sel=live.length? live[live.length-1]:null;
+  if(APP.cellSel&&APP.sel!==APP.cellSel.id) APP.cellSel=null;   // 選取換到別的元素→清掉儲存格反白
 }
 function groupBBox(els){
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
@@ -828,6 +835,7 @@ function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM�
 /* ================= 選取框與把手 ================= */
 function updateSelBox(){
   if(!drag) renderLayers();   // 選取變動時同步圖層高亮；拖曳中跳過以免每幀重建
+  if(APP.cellSel&&(selEl()||{}).id!==APP.cellSel.id) APP.cellSel=null;   // 選取已不是該表→清反白
   let sb=$('#selBox');
   stage.querySelectorAll('.el.multisel').forEach(b=>b.classList.remove('multisel'));
   // 多選：群組包圍盒＋四角比例縮放把手
@@ -904,7 +912,29 @@ function updateSelBox(){
       }
       const rh=document.createElement('div'); rh.className='trh'; rh.dataset.i=i;
       rh.style.top=(tr.offsetTop+tr.offsetHeight)+'px'; sb.appendChild(rh); });
+    if(APP.cellSel&&APP.cellSel.id===el.id) paintCellSel(el,sb);
   }
+}
+// 反白矩形高亮＋就近的合併／取消合併鈕（沿 xlsx2pptx 慣例：操作放對象旁，不塞側欄）。sb＝selBox
+function paintCellSel(el,sb){
+  sb=sb||$('#selBox'); if(!sb) return;
+  sb.querySelectorAll('.csel,.cselBtn').forEach(n=>n.remove());
+  const s=APP.cellSel; if(!s||s.id!==el.id) return;
+  const px=tableEdgePx(el,s.r0,s.c0,s.r1,s.c1);
+  const hl=document.createElement('div'); hl.className='csel';
+  hl.style.left=px.left+'px'; hl.style.top=px.top+'px'; hl.style.width=px.w+'px'; hl.style.height=px.h+'px';
+  sb.appendChild(hl);
+  const cs=s.c1-s.c0+1,rs=s.r1-s.r0+1;
+  const a=el.cells[s.r0][s.c0];
+  const isMerged=((a.colspan||1)>1||(a.rowspan||1)>1)&&(a.colspan||1)===cs&&(a.rowspan||1)===rs;
+  if(cs<2&&rs<2&&!isMerged) return;   // 單一未合併格：不顯示按鈕
+  const btn=document.createElement('button');
+  if(isMerged){ btn.className='cselBtn unmerge'; btn.textContent='⤢ 取消合併'; btn.onclick=ev=>{ ev.stopPropagation(); unmergeCellSel(el); }; }
+  else{ btn.className='cselBtn'; btn.textContent='⛶ 合併儲存格'; btn.onclick=ev=>{ ev.stopPropagation(); mergeCellSel(el); }; }
+  // 置於反白框右上外緣；貼頂時改放框內頂部，避免超出畫布看不到
+  btn.style.left=px.left+'px';
+  btn.style.top=(px.top>=22? px.top-22 : px.top+3)+'px';
+  sb.appendChild(btn);
 }
 
 /* ================= 預留區檢查 ================= */
@@ -1462,27 +1492,10 @@ function renderProps(){
       ['下',()=>allCells(c=>c.valign='bottom'),'',c0.valign==='bottom']]));
     pp.appendChild(colorRow('底色',c0.fill,v=>el.cells.forEach(r=>r.forEach(c=>c.fill=v)),true));
     pp.appendChild(colorRow('框線',el.border&&el.border.color,v=>{ el.border= v==null? null : {pt:(el.border&&el.border.pt)||0.75,color:v}; },true));
-    // 合併儲存格：以「最後雙擊編輯過的儲存格」為左上錨點設定跨欄/跨列
-    const lc=APP.lastCell&&APP.lastCell.id===el.id? APP.lastCell:null;
-    if(lc&&el.cells[lc.r]&&el.cells[lc.r][lc.c]){
-      const anchor=el.cells[lc.r][lc.c];
-      const mr=document.createElement('div'); mr.className='row';
-      mr.innerHTML=`<label>合併 R${lc.r+1}C${lc.c+1}</label>`;
-      const csI=document.createElement('input'); csI.type='number'; csI.min=1; csI.max=el.colW.length-lc.c; csI.value=anchor.colspan||1; csI.title='跨欄數'; csI.style.width='52px';
-      const rsI=document.createElement('input'); rsI.type='number'; rsI.min=1; rsI.max=el.rowH.length-lc.r; rsI.value=anchor.rowspan||1; rsI.title='跨列數'; rsI.style.width='52px';
-      const go=document.createElement('button'); go.textContent='套用';
-      go.onclick=()=>{ commitUndo(); tableMerge(el,lc.r,lc.c,+csI.value||1,+rsI.value||1); renderStage(); renderProps(); };
-      const un=document.createElement('button'); un.textContent='取消合併';
-      un.onclick=()=>{ commitUndo(); tableMerge(el,lc.r,lc.c,1,1); renderStage(); renderProps(); };
-      mr.appendChild(csI); mr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'欄×'}));
-      mr.appendChild(rsI); mr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'列'}));
-      mr.appendChild(go); mr.appendChild(un);
-      pp.appendChild(mr);
-    }else{
-      const mh=document.createElement('div'); mh.className='row';
-      mh.innerHTML='<span class="unit">合併：先雙擊要當左上角的儲存格，回到此面板即可設定跨欄×跨列。</span>';
-      pp.appendChild(mh);
-    }
+    // 合併儲存格：改用畫布拖曳反白＋就近按鈕（見下方提示），不再用側欄數字框
+    const mh=document.createElement('div'); mh.className='row';
+    mh.innerHTML='<span class="unit">合併：在表格內<b>拖曳反白</b>要合併的格子，點反白框旁的<b>「合併儲存格」</b>；反白單一已合併格則點<b>「取消合併」</b>。移動整張表請拖表格邊框。</span>';
+    pp.appendChild(mh);
     const note=document.createElement('div'); note.className='row';
     note.innerHTML='<span class="unit">以上樣式套用全表；逐格底色／逐格行距請透過 JSON 編輯。</span>';
     pp.appendChild(note);
@@ -1526,6 +1539,61 @@ function tableMerge(el,r,c,cs,rs){
     cc.covered=!(i===r&&j===c);
   }
   el.cells[r][c].colspan=cs; el.cells[r][c].rowspan=rs; el.cells[r][c].covered=false;
+}
+/* ---- 拖曳反白選格（PowerPoint 式）：規範化矩形＋外擴到整塊合併，避免切半 ---- */
+// 兩端錨點 → 規範化矩形；反覆外擴，直到框內不再切穿任何合併儲存格
+function normalizeCellSel(el,ra,ca,rb,cb){
+  const R=el.rowH.length,C=el.colW.length;
+  let r0=Math.max(0,Math.min(ra,rb)),r1=Math.min(R-1,Math.max(ra,rb));
+  let c0=Math.max(0,Math.min(ca,cb)),c1=Math.min(C-1,Math.max(ca,cb));
+  for(let guard=0;guard<64;guard++){
+    let changed=false;
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+      const cc=el.cells[r][c]; if(cc.covered) continue;
+      const cs=cc.colspan||1,rs=cc.rowspan||1; if(cs===1&&rs===1) continue;
+      const er=r+rs-1,ec=c+cs-1;
+      if(r<=r1&&er>=r0&&c<=c1&&ec>=c0){   // 此合併塊與現框相交→吃進整塊
+        if(r<r0){r0=r;changed=true;} if(er>r1){r1=er;changed=true;}
+        if(c<c0){c0=c;changed=true;} if(ec>c1){c1=ec;changed=true;}
+      }
+    }
+    if(!changed) break;
+  }
+  return {id:el.id,r0,c0,r1,c1};
+}
+// 指標座標 → 該表格的 (r,c)：靠瀏覽器原生命中測試，旋轉/縮放免自算。covered 格無 td，會命中其跨越的 td（回錨點 r/c，規範化再外擴）
+function cellRC(el,cx,cy){
+  const stack=document.elementsFromPoint(cx,cy);
+  const td=stack.find(n=>n.tagName==='TD'&&n.closest(`.el[data-id="${el.id}"]`));
+  return td? {r:+td.dataset.r,c:+td.dataset.c} : null;
+}
+function tableEdgePx(el,r0,c0,r1,c1){   // 反白矩形在 selBox 內的像素框（欄用 colW 累加、列用 DOM tr offset）
+  const trs=tableDom(el.id)?tableDom(el.id).querySelectorAll('tr'):[];
+  let left=0; for(let i=0;i<c0;i++) left+=el.colW[i];
+  let w=0; for(let i=c0;i<=c1;i++) w+=el.colW[i];
+  const top=trs[r0]?trs[r0].offsetTop:0;
+  const bottom=trs[r1]?trs[r1].offsetTop+trs[r1].offsetHeight:0;
+  return {left,top,w,h:bottom-top};
+}
+// 已選表格時，指標是否落在「移動邊框帶」——落在帶內＝移動整張表，否則＝拖曳選格。
+// 帶寬放寬到 16px（好抓、不易誤選格），但各軸不超過該軸螢幕尺寸的 30%，
+// 以免低縮放下整張表太小、上下（或左右）帶重疊而吃掉全部內部（無處可選格）。
+function nearTableEdge(box,cx,cy){
+  const r=box.getBoundingClientRect();
+  const mx=Math.min(16,r.width*0.3),my=Math.min(16,r.height*0.3);
+  return cx-r.left<mx||r.right-cx<mx||cy-r.top<my||r.bottom-cy<my;
+}
+function mergeCellSel(el){
+  const s=APP.cellSel; if(!s||s.id!==el.id) return;
+  const cs=s.c1-s.c0+1,rs=s.r1-s.r0+1; if(cs<2&&rs<2) return;
+  commitUndo(); tableMerge(el,s.r0,s.c0,cs,rs);
+  renderStage(); renderProps(); updateSelBox();
+}
+function unmergeCellSel(el){
+  const s=APP.cellSel; if(!s||s.id!==el.id) return;
+  commitUndo(); tableMerge(el,s.r0,s.c0,1,1);
+  APP.cellSel={id:el.id,r0:s.r0,c0:s.c0,r1:s.r0,c1:s.c0};
+  renderStage(); renderProps(); updateSelBox();
 }
 // 刪除指定欄／列（合併儲存格 span 自動縮減，port 自 xlsx2pptx removeCol/RowFromModel）
 function tableDeleteCol(el,i){
@@ -1750,7 +1818,7 @@ stage.addEventListener('pointerdown',e=>{
     else { APP.painter=null; updatePainterHint(); }
     return;
   }
-  if(e.target.closest('.tcd,.trd')) return;   // 表格刪欄列鈕：交給 click 處理，不啟動拖曳
+  if(e.target.closest('.tcd,.trd,.cselBtn')) return;   // 表格刪欄列鈕／合併鈕：交給 click 處理，不啟動拖曳
   const rh=e.target.closest('.rh'), tch=e.target.closest('.tch'), trh=e.target.closest('.trh'), lh=e.target.closest('.lh'), ah=e.target.closest('.ah');
   const el=selEl();
   if(ah&&el&&el.type==='shape'&&ADJ_DOTS[el.shape]){
@@ -1803,6 +1871,18 @@ stage.addEventListener('pointerdown',e=>{
         return;
       }
       DBL={id:tel.id,t:now,x:e.clientX,y:e.clientY};
+      // 已選取的表格：格內拖曳＝反白選格（PPT 式）；邊框帶（放寬 16px）＝移動整張表，落下走後面的 move
+      if(tel.type==='table'&&APP.sel===tel.id&&!nearTableEdge(box,e.clientX,e.clientY)){
+        const rc=cellRC(tel,e.clientX,e.clientY);
+        if(rc){
+          drag={type:'cellsel',el:tel,r0:rc.r,c0:rc.c};
+          APP.cellSel=normalizeCellSel(tel,rc.r,rc.c,rc.r,rc.c);
+          updateSelBox();
+          e.preventDefault();
+          try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+          return;
+        }
+      }
       // 軟群組成員 → 選全組並整組移動
       if(tel.groupId){
         const ids=groupMembers(tel).map(m=>m.id);
@@ -1924,6 +2004,9 @@ stage.addEventListener('pointermove',e=>{
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     renderTableInto(box,el); updateSelBox(); checkZones();
     showDragTip(e,`列 ${drag.i+1} 高`,el.rowH[drag.i]);
+  }else if(drag.type==='cellsel'){
+    const rc=cellRC(el,e.clientX,e.clientY);
+    if(rc){ APP.cellSel=normalizeCellSel(el,drag.r0,drag.c0,rc.r,rc.c); paintCellSel(el); }
   }
 });
 stage.addEventListener('pointerup',()=>{
@@ -2043,6 +2126,7 @@ function startCellEdit(el,td){
   const r=+td.dataset.r,c=+td.dataset.c;
   const cell=el.cells[r][c];
   APP.editing=el.id;
+  APP.cellSel=null;   // 進入格內文字編輯→收起反白/合併鈕
   APP.lastCell={id:el.id,r,c};   // 屬性面板「合併」以此為錨點
   focusCellJson(el.id,r,c);   // JSON 面板開著時捲至該格
   td.textContent='';
