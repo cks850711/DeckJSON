@@ -312,6 +312,7 @@
         <li>「＋形狀」開啟圖庫：線條／基本／箭號／方程式／流程圖／星星綵帶／圖說，共 40+ 種。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布預覽為近似圖形，匯出為 PPT 原生幾何。</li>
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
+        <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。框線為整表外框。</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
@@ -1551,40 +1552,51 @@ function renderProps(){
     const dnote=document.createElement('div'); dnote.className='row';
     dnote.innerHTML='<span class="unit">刪欄／刪列：滑到表格上緣（欄）或左緣（列）的灰色區段，變紅後點擊。</span>';
     pp.appendChild(dnote);
+    // ── 樣式套用範圍：畫布有反白選格→只套選中（非 covered）格；否則套全表 ──
+    const cs=APP.cellSel&&APP.cellSel.id===el.id? APP.cellSel : null;
+    const scopedCells=()=>{
+      if(cs){ const a=[];
+        for(let r=cs.r0;r<=cs.r1;r++) for(let c=cs.c0;c<=cs.c1;c++){ const cc=el.cells[r]&&el.cells[r][c]; if(cc&&!cc.covered) a.push(cc); }
+        if(a.length) return a; }
+      return el.cells.flat().filter(c=>!c.covered);
+    };
+    const c0=cs? el.cells[cs.r0][cs.c0] : (el.cells.flat().find(c=>!c.covered)||el.cells[0][0]);
+    const applyCells=fn=>{ commitUndo(); scopedCells().forEach(fn); renderStage(); renderProps(); };
+    // 範圍提示（反白後樣式只作用選取格）
+    const scope=document.createElement('div'); scope.className='row';
+    scope.innerHTML= cs
+      ? `<span class="unit">✎ 樣式套用範圍：<b>選取 ${scopedCells().length} 格</b>（R${cs.r0+1}C${cs.c0+1}${(cs.r1!==cs.r0||cs.c1!==cs.c0)?`–R${cs.r1+1}C${cs.c1+1}`:''}）。點別處取消反白＝改回全表。</span>`
+      : `<span class="unit">✎ 樣式套用範圍：<b>全表</b>。在表格內<b>拖曳反白</b>幾格後，下列樣式（字級／行距／粗斜體／文字色／對齊／底色）只套用到選取格。</span>`;
+    pp.appendChild(scope);
     const fr=document.createElement('div'); fr.className='row'; fr.innerHTML='<label>字級</label>';
-    const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=48;
-    inp.value=(el.cells[0]&&el.cells[0][0]&&el.cells[0][0].sizePt)||12;
-    inp.onchange=()=>{ commitUndo(); el.cells.forEach(r=>r.forEach(c=>c.sizePt=+inp.value)); renderStage(); };
+    const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=48; inp.value=c0.sizePt||12;
+    inp.onchange=()=>{ commitUndo(); scopedCells().forEach(c=>c.sizePt=+inp.value); renderStage(); };
     fr.appendChild(inp); fr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
     pp.appendChild(fr);
     const tls=document.createElement('div'); tls.className='row'; tls.innerHTML='<label>行距</label>';
-    const tli=document.createElement('input'); tli.type='number'; tli.step='0.05'; tli.min='0.5'; tli.max='5';
-    tli.value=(el.cells[0]&&el.cells[0][0]&&el.cells[0][0].lineSpacing)||1.2;
-    tli.onchange=()=>{ commitUndo(); const v=parseFloat(tli.value); el.cells.forEach(r=>r.forEach(c=>{ if(v&&Math.abs(v-1.2)>1e-6)c.lineSpacing=v; else delete c.lineSpacing; })); renderStage(); };
-    tls.appendChild(tli); tls.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'×字級（全表；單格走 JSON）'}));
+    const tli=document.createElement('input'); tli.type='number'; tli.step='0.05'; tli.min='0.5'; tli.max='5'; tli.value=c0.lineSpacing||1.2;
+    tli.onchange=()=>{ commitUndo(); const v=parseFloat(tli.value); scopedCells().forEach(c=>{ if(v&&Math.abs(v-1.2)>1e-6)c.lineSpacing=v; else delete c.lineSpacing; }); renderStage(); };
+    tls.appendChild(tli); tls.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'×字級'}));
     pp.appendChild(tls);
-    // 全表樣式（作用於所有儲存格；逐格差異化仍走 JSON）
-    const c0=el.cells.flat().find(c=>!c.covered)||el.cells[0][0];
-    const allCells=fn=>{ commitUndo(); el.cells.forEach(r=>r.forEach(c=>fn(c))); renderStage(); renderProps(); };
     pp.appendChild(btnRow([
-      ['B',()=>{ const on=!c0.bold; allCells(c=>c.bold=on); },'全表粗體',c0.bold],
-      ['I',()=>{ const on=!c0.italic; allCells(c=>c.italic=on); },'全表斜體',c0.italic],
+      ['B',()=>{ const on=!c0.bold; applyCells(c=>c.bold=on); },'粗體',c0.bold],
+      ['I',()=>{ const on=!c0.italic; applyCells(c=>c.italic=on); },'斜體',c0.italic],
     ]));
-    pp.appendChild(colorRow('文字',c0.color||'1A1A1A',v=>el.cells.forEach(r=>r.forEach(c=>c.color=v)),false));
-    pp.appendChild(btnRow([['左',()=>allCells(c=>c.align='left'),'',(c0.align||'left')==='left'],
-      ['中',()=>allCells(c=>c.align='center'),'',c0.align==='center'],
-      ['右',()=>allCells(c=>c.align='right'),'',c0.align==='right']]));
-    pp.appendChild(btnRow([['上',()=>allCells(c=>c.valign='top'),'',c0.valign==='top'],
-      ['中',()=>allCells(c=>c.valign='middle'),'',(c0.valign||'middle')==='middle'],
-      ['下',()=>allCells(c=>c.valign='bottom'),'',c0.valign==='bottom']]));
-    pp.appendChild(colorRow('底色',c0.fill,v=>el.cells.forEach(r=>r.forEach(c=>c.fill=v)),true));
-    pp.appendChild(colorRow('框線',el.border&&el.border.color,v=>{ el.border= v==null? null : {pt:(el.border&&el.border.pt)||0.75,color:v}; },true));
+    pp.appendChild(colorRow('文字',c0.color||'1A1A1A',v=>scopedCells().forEach(c=>c.color=v),false));
+    pp.appendChild(btnRow([['左',()=>applyCells(c=>c.align='left'),'',(c0.align||'left')==='left'],
+      ['中',()=>applyCells(c=>c.align='center'),'',c0.align==='center'],
+      ['右',()=>applyCells(c=>c.align='right'),'',c0.align==='right']]));
+    pp.appendChild(btnRow([['上',()=>applyCells(c=>c.valign='top'),'',c0.valign==='top'],
+      ['中',()=>applyCells(c=>c.valign='middle'),'',(c0.valign||'middle')==='middle'],
+      ['下',()=>applyCells(c=>c.valign='bottom'),'',c0.valign==='bottom']]));
+    pp.appendChild(colorRow('底色',c0.fill,v=>scopedCells().forEach(c=>c.fill=v),true));
+    pp.appendChild(colorRow('框線（整表外框）',el.border&&el.border.color,v=>{ el.border= v==null? null : {pt:(el.border&&el.border.pt)||0.75,color:v}; },true));
     // 合併儲存格：改用畫布拖曳反白＋就近按鈕（見下方提示），不再用側欄數字框
     const mh=document.createElement('div'); mh.className='row';
     mh.innerHTML='<span class="unit">合併：在表格內<b>拖曳反白</b>要合併的格子，點反白框旁的<b>「合併儲存格」</b>；反白單一已合併格則點<b>「取消合併」</b>。移動整張表請拖表格邊框。</span>';
     pp.appendChild(mh);
     const note=document.createElement('div'); note.className='row';
-    note.innerHTML='<span class="unit">以上樣式套用全表；逐格底色／逐格行距請透過 JSON 編輯。</span>';
+    note.innerHTML='<span class="unit">拖曳反白＝逐格／多格改樣式；未反白＝套全表。單一儲存格內混排等極細緻差異仍可走 JSON。</span>';
     pp.appendChild(note);
   }
   if(el.type==='chart'){
