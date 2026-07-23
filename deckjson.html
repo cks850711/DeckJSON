@@ -313,6 +313,7 @@
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
         <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。框線為整表外框。</li>
+        <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Tab</b>＝跳右一格（列尾自動換到下一列、跳過合併格）、<b>Shift+Tab</b>＝跳左一格、<b>Enter</b>＝跳下一格、<b>Shift+Enter</b>＝格內換行、<b>Esc</b>＝結束編輯。（PowerPoint 的 Enter 是格內換行；此處 Enter 改採試算表式跳下格，換行請用 Shift+Enter。）</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
@@ -771,6 +772,7 @@ function renderTableInto(box,el){
       if(cell.bold)td.style.fontWeight=700;
       if(cell.italic)td.style.fontStyle='italic';
       if(el.border) td.style.border=`${Math.max(1,pt2px(el.border.pt))}px solid #${el.border.color}`;
+      td.style.whiteSpace='pre-wrap';   // 保留格內換行（Shift+Enter）與空白
       td.textContent=String(cell.text||'');
       tr.appendChild(td);
     }
@@ -2221,6 +2223,17 @@ function startTextEdit(el,box){
     renderAll();
   },{once:true});
 }
+// 每個 grid 位置由哪個錨點格佔用（含合併覆蓋範圍）→ 供 Enter 往下找「下方可見格」
+function cellOwnerGrid(el){
+  const R=el.rowH.length,C=el.colW.length;
+  const g=Array.from({length:R},()=>Array(C).fill(null));
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const cc=el.cells[r][c]; if(cc.covered) continue;
+    const rs=cc.rowspan||1,cs=cc.colspan||1;
+    for(let y=r;y<Math.min(R,r+rs);y++)for(let x=c;x<Math.min(C,c+cs);x++) g[y][x]=[r,c];
+  }
+  return g;
+}
 function startCellEdit(el,td){
   const r=+td.dataset.r,c=+td.dataset.c;
   const cell=el.cells[r][c];
@@ -2230,17 +2243,35 @@ function startCellEdit(el,td){
   focusCellJson(el.id,r,c);   // JSON 面板開著時捲至該格
   td.textContent='';
   const ed=editableDiv();
-  ed.style.cssText='min-height:1em;';
+  ed.style.cssText='min-height:1em;white-space:pre-wrap;';   // pre-wrap：Shift+Enter 的格內換行才顯示得出來
   ed.innerText=String(cell.text||'');
   td.appendChild(ed);
   const grab=()=>{ ed.focus(); document.getSelection().selectAllChildren(ed); };
   grab(); requestAnimationFrame(grab);
-  ed.addEventListener('blur',()=>{
-    APP.editing=null;
-    commitUndo();
-    cell.text=ed.innerText.replace(/\n$/,'');
-    renderAll();
-  },{once:true});
+  let done=false;
+  const save=()=>{ if(done) return; done=true; APP.editing=null; commitUndo(); cell.text=ed.innerText.replace(/\n$/,''); };
+  // 存檔→重繪→跳到目標格繼續編輯（跨儲存格快捷）。舊 ed 失焦觸發的 blur 由 done 旗標擋掉，不重複存/重繪
+  const navTo=(nr,nc)=>{
+    save(); renderStage();
+    const nd=tableDom(el.id)&&[...tableDom(el.id).querySelectorAll('td')].find(t=>+t.dataset.r===nr&&+t.dataset.c===nc);
+    if(nd) startCellEdit(el,nd); else renderProps();
+  };
+  ed.addEventListener('keydown',e=>{
+    if(e.key==='Tab'){   // Tab／Shift+Tab＝右／左一格（依 DOM 閱讀順序，自動跳過合併 covered 格、列尾換行）
+      e.preventDefault();
+      const tds=[...tableDom(el.id).querySelectorAll('td')];
+      const i=tds.findIndex(t=>+t.dataset.r===r&&+t.dataset.c===c);
+      const nx=tds[i+(e.shiftKey?-1:1)];
+      if(nx) navTo(+nx.dataset.r,+nx.dataset.c);
+    }else if(e.key==='Enter'&&!e.shiftKey){   // Enter＝跳下方格（跳過合併覆蓋，落在下一個可見格）
+      e.preventDefault();
+      const tr=r+(cell.rowspan||1);
+      if(tr<el.rowH.length){ const own=cellOwnerGrid(el)[tr][c]; if(own) navTo(own[0],own[1]); }
+    }else if(e.key==='Enter'&&e.shiftKey){   // Shift+Enter＝格內換行（明確插入 \n，不依賴瀏覽器預設，跨引擎一致）
+      e.preventDefault(); document.execCommand('insertText',false,'\n');
+    }else if(e.key==='Escape'){ e.preventDefault(); ed.blur(); }   // 結束編輯
+  });
+  ed.addEventListener('blur',()=>{ if(done) return; save(); renderAll(); },{once:true});
 }
 
 /* ================= 鍵盤 ================= */
