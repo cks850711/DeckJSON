@@ -132,6 +132,9 @@
   #propPanel button{padding:3px 8px;font-size:12px}
   #propPanel button.on{background:var(--accent);border-color:var(--accent);color:#fff}
   #propPanel .sep{border-top:1px solid var(--line);margin:10px 0}
+  #propPanel .secTitle{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--fg-dim);text-transform:uppercase;margin:14px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
+  #propPanel .secTitle.first{margin-top:0;padding-top:0;border-top:none}
+  #propPanel .subTitle{font-size:11px;font-weight:600;color:var(--fg-dim);margin:10px 0 2px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
   .modal[hidden]{display:none}
   .mbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:min(720px,92vw);max-height:85vh;overflow-y:auto;padding:6px 24px 18px;display:flex;flex-direction:column}
@@ -312,7 +315,8 @@
         <li>「＋形狀」開啟圖庫：線條／基本／箭號／方程式／流程圖／星星綵帶／圖說，共 40+ 種。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布預覽為近似圖形，匯出為 PPT 原生幾何。</li>
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
-        <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。框線為整表外框。</li>
+        <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色／框線<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。</li>
+        <li><b>逐格框線</b>：右欄「框線筆」設線寬（pt）＋顏色，再點<b>全部／外框／內部／上／下／左／右／無</b>套到反白範圍（未反白＝全表）。每格四邊、顏色線寬各自獨立（同 PowerPoint 儲存格框線）；相鄰共用邊自動雙寫同步，故畫布預覽＝匯出結果。</li>
         <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Tab</b>＝跳右一格（列尾自動換到下一列、跳過合併格）、<b>Shift+Tab</b>＝跳左一格、<b>Enter</b>＝跳下一格、<b>Shift+Enter</b>＝格內換行、<b>Esc</b>＝結束編輯。（PowerPoint 的 Enter 是格內換行；此處 Enter 改採試算表式跳下格，換行請用 Shift+Enter。）</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
@@ -329,7 +333,7 @@
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
         <li>所有元素（表格除外）有<b>淡虛線框</b>顯示框尺寸；圖片／形狀旋轉後選取框與把手跟著轉（resize 已依旋轉換算，仍正確）。</li>
-        <li>右側面板：座標尺寸（cm）、縮放 %、不透明、樣式、角度翻轉、層級（上移下移）、格式刷、複製、刪除。</li>
+        <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／表格／圖表；表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。</li>
         <li>復原／重做：Cmd/Ctrl+Z、Cmd/Ctrl+Shift+Z（60 步）。</li>
       </ul>
       <h4>字體模式</h4>
@@ -590,6 +594,8 @@ function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
+  tblPen:{pt:0.75,color:'999999'},   // 框線筆：線寬＋顏色，供框線按鈕套用
+  dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
   ratioLock:false,fontSync:false,scaleFont:true};   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
 APP.page=APP.deck.pages[0].id;
 const CHARTS=new Map();   // 圖表元素 id → echarts 實例
@@ -684,7 +690,10 @@ function renderTableInto(box,el){
       td.style.color='#'+(cell.color||'1A1A1A');
       if(cell.bold)td.style.fontWeight=700;
       if(cell.italic)td.style.fontStyle='italic';
-      if(el.border) td.style.border=`${Math.max(1,pt2px(el.border.pt))}px solid #${el.border.color}`;
+      for(const [side,key] of [['Top','t'],['Right','r'],['Bottom','b'],['Left','l']]){
+        const s=cellSide(el,cell,key);
+        td.style['border'+side]= s? `${Math.max(1,pt2px(s.pt))}px solid #${s.color}` : 'none';
+      }
       td.style.whiteSpace='pre-wrap';   // 保留格內換行（Shift+Enter）與空白
       td.textContent=String(cell.text||'');
       tr.appendChild(td);
@@ -1037,13 +1046,31 @@ function renderPanel(){
 function setPage(pid){ APP.page=pid; setSel([]); APP.editing=null; renderAll(); syncPageJson(); }
 
 /* ================= 屬性面板 ================= */
-function cmRow(label,get,set,step){
+// 座標尺寸單位換算（內部一律 px）：to＝px→顯示值、from＝顯示值→px、dp＝小數位、step＝輸入步進
+const DIM_UNITS={
+  px:{to:px=>Math.round(px), from:v=>v,        dp:0, step:1},
+  pt:{to:px=>px*72/96,       from:v=>v*96/72,  dp:1, step:0.5},
+  cm:{to:px=>px*PX2CM,       from:v=>v/PX2CM,  dp:2, step:0.05},
+};
+function dimRow(label,get,set){
+  const u=DIM_UNITS[APP.dimUnit]||DIM_UNITS.px;
   const row=document.createElement('div'); row.className='row';
   const lb=document.createElement('label'); lb.textContent=label; row.appendChild(lb);
-  const inp=document.createElement('input'); inp.type='number'; inp.step=step||0.05;
-  inp.value=(get()*PX2CM).toFixed(2); row.appendChild(inp);
-  const un=document.createElement('span'); un.className='unit'; un.textContent='cm'; row.appendChild(un);
-  inp.onchange=()=>{ commitUndo(); set(parseFloat(inp.value)/PX2CM); renderStage(); renderProps(); };
+  const inp=document.createElement('input'); inp.type='number'; inp.step=u.step;
+  inp.value=u.to(get()).toFixed(u.dp); row.appendChild(inp);
+  const un=document.createElement('span'); un.className='unit'; un.textContent=APP.dimUnit; row.appendChild(un);
+  inp.onchange=()=>{ commitUndo(); set(u.from(parseFloat(inp.value)||0)); renderStage(); renderProps(); };
+  return row;
+}
+// 單位切換列（放在 X 上方）：px／pt／cm 三選一，切換即重繪面板
+function dimUnitRow(){
+  const row=document.createElement('div'); row.className='row';
+  const lb=document.createElement('label'); lb.textContent='單位'; row.appendChild(lb);
+  for(const u of ['px','pt','cm']){
+    const b=document.createElement('button'); b.textContent=u; if(APP.dimUnit===u) b.classList.add('on');
+    b.onclick=()=>{ APP.dimUnit=u; renderProps(); };
+    row.appendChild(b);
+  }
   return row;
 }
 /* ================= 色票系統（三頁籤：設計師精選／Open Color／全色域） ================= */
@@ -1193,6 +1220,10 @@ function colorRow(label,val,onSet,allowNone){
   }
   return row;
 }
+// 面板分組標題：細分隔線＋小型灰階字母（非底色色塊，避免窄欄多組時變斑馬紋）。first＝緊接 h4，不畫上緣線
+function secTitle(text,first){ const d=document.createElement('div'); d.className='secTitle'+(first?' first':''); d.textContent=text; return d; }
+// 組內次標題（如表格的「結構／儲存格樣式／框線」）：更輕量，無分隔線
+function subTitle(text){ const d=document.createElement('div'); d.className='subTitle'; d.textContent=text; return d; }
 function btnRow(defs){ // [[label,fn,title,on],...]
   const row=document.createElement('div'); row.className='row';
   for(const [label,fn,title,on] of defs){
@@ -1251,6 +1282,7 @@ function pageJsonBtn(){
 function renderMultiProps(pp){
   const els=selEls();
   pp.innerHTML=`<h4>多選 ${els.length} 個物件</h4>`;
+  pp.appendChild(secTitle('變形',true));
   const row=document.createElement('div'); row.className='row'; row.innerHTML='<label>縮放</label>';
   const inp=document.createElement('input'); inp.type='number'; inp.min=5; inp.max=1000; inp.value=100; inp.step=5;
   inp.onchange=()=>{ const s=(+inp.value)/100; if(!(s>0))return; commitUndo();
@@ -1259,6 +1291,7 @@ function renderMultiProps(pp){
   row.appendChild(inp); row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'%（比例）'}));
   pp.appendChild(row);
   pp.appendChild(opacityRow(els));
+  pp.appendChild(secTitle('對齊與分佈'));
   const alignH=(mode)=>{ commitUndo(); const bb=groupBBox(selEls());
     for(const el of selEls()){ const {w}=elSize(el);
       el.x=Math.round(mode==='l'?bb.x: mode==='c'?bb.x+(bb.w-w)/2 : bb.x+bb.w-w); }
@@ -1283,6 +1316,7 @@ function renderMultiProps(pp){
     renderStage();
   };
   pp.appendChild(btnRow([['⇿ 水平等距',()=>distribute('h'),'水平方向等間距（需 ≥3 個）'],['⇳ 垂直等距',()=>distribute('v'),'垂直方向等間距（需 ≥3 個）']]));
+  pp.appendChild(secTitle('群組與動作'));
   // 軟群組
   pp.appendChild(btnRow([
     ['群組',()=>{ commitUndo(); const gid=uid('g'); for(const el of selEls()) el.groupId=gid; renderStage(); renderProps(); },'綁為軟群組：日後點任一即選全組'],
@@ -1299,6 +1333,7 @@ function renderProps(){
   const el=selEl();
   if(!el){
     pp.innerHTML='<h4>頁面</h4>';
+    pp.appendChild(secTitle('頁面樣式',true));
     pp.appendChild(colorRow('底色',curPage().bg,v=>{curPage().bg=v||'FFFFFF';},false));
     // 轉場（進入此頁時播放；Morph 依元素 id 跨頁配對，複製頁改版面即可平滑補間）
     const trRow=document.createElement('div'); trRow.className='row'; trRow.innerHTML='<label>轉場</label>';
@@ -1319,11 +1354,13 @@ function renderProps(){
       mn.innerHTML='<span class="unit">Morph 依元素 id 配對前一頁同名元素；「複製此頁」保留 id 即為此用。舊版 PPT 退回淡出。</span>';
       pp.appendChild(mn);
     }
+    pp.appendChild(secTitle('備忘稿'));
     const nl=document.createElement('div'); nl.className='row'; nl.innerHTML='<label style="min-width:auto">講者備忘稿</label>';
     pp.appendChild(nl);
     const nt=document.createElement('textarea'); nt.rows=4; nt.placeholder='此頁備忘稿（匯出寫入 pptx 備忘稿）'; nt.value=curPage().notes||'';
     nt.onchange=()=>{ commitUndo(); curPage().notes=nt.value; };
     pp.appendChild(nt);
+    pp.appendChild(secTitle('範本與匯出'));
     pp.appendChild(btnRow([['📋 套範本',()=>openTemplateModal(),'插入版型頁'],['⧉ 合併 .json',()=>$('#mergeInput').click(),'附加另一份簡報的頁']]));
     pp.appendChild(pageJsonBtn());
     const note=document.createElement('div'); note.className='row';
@@ -1335,15 +1372,18 @@ function renderProps(){
   const names={text:'文字框',table:'表格',image:'圖片',shape:'形狀',chart:'圖表'};
   pp.innerHTML=`<h4>${names[el.type]||el.type} <span class="unit" style="font-weight:400">${el.id}</span></h4>`;
   const sz=elSize(el);
-  pp.appendChild(cmRow('X',()=>el.x,v=>el.x=Math.round(v)));
-  pp.appendChild(cmRow('Y',()=>el.y,v=>el.y=Math.round(v)));
-  pp.appendChild(cmRow('寬',()=>elSize(el).w,v=>applyDim(el,true,v)));
-  pp.appendChild(cmRow('高',()=>elSize(el).h,v=>applyDim(el,false,v)));
+  pp.appendChild(secTitle('位置尺寸',true));
+  pp.appendChild(dimUnitRow());
+  pp.appendChild(dimRow('X',()=>el.x,v=>el.x=Math.round(v)));
+  pp.appendChild(dimRow('Y',()=>el.y,v=>el.y=Math.round(v)));
+  pp.appendChild(dimRow('寬',()=>elSize(el).w,v=>applyDim(el,true,v)));
+  pp.appendChild(dimRow('高',()=>elSize(el).h,v=>applyDim(el,false,v)));
   if(el.type!=='image'&&!isLineEl(el)) pp.appendChild(checkRow([
     ['比例鎖定',()=>APP.ratioLock,v=>APP.ratioLock=v,'鎖寬高比：改一邊或拖曳 resize 時另一邊等比放大'],
     ['字級同步',()=>APP.fontSync,v=>APP.fontSync=v,'改尺寸／拖曳 resize 時字級一起放大'],
   ]));
   // 縮放滑桿（0.1–2.0×，停頓於 0.5/0.8/1.0/1.2/1.5）＋含字級（預設開）；放開歸回 1.0×
+  pp.appendChild(secTitle('版面'));
   const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; scWrap.innerHTML='<label>縮放</label>';
   const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.style.flex='1'; sl.style.minWidth='90px'; sl.setAttribute('list','scaleTicks');
   const scVal=Object.assign(document.createElement('span'),{className:'unit'}); scVal.textContent='1.00×';
@@ -1405,7 +1445,12 @@ function renderProps(){
       pp.appendChild(ar);
     });
   }
-  pp.appendChild(document.createElement('div')).className='sep';
+  const contentTitle= el.type==='text'||(el.type==='shape'&&el.paras) ? '文字樣式'
+    : isLineEl(el) ? '線條樣式'
+    : el.type==='shape' ? '形狀樣式'
+    : el.type==='table' ? '表格'
+    : el.type==='chart' ? '圖表' : null;   // 圖片無內容樣式區塊，不印空標題
+  if(contentTitle) pp.appendChild(secTitle(contentTitle));
 
   if(el.type==='text'||(el.type==='shape'&&el.paras)){
     const b=baseRun(el);
@@ -1455,6 +1500,7 @@ function renderProps(){
     pp.appendChild(btnRow([['加入文字',()=>{ commitUndo(); el.paras=mkParas('文字',{sizePt:14,color:'FFFFFF',align:'center'}); el.valign='middle'; renderStage(); renderProps(); }]]));
   }
   if(el.type==='table'){
+    pp.appendChild(subTitle('結構'));
     const row=document.createElement('div'); row.className='row'; row.innerHTML='<label>新增</label>';
     for(const [t,fn] of [['＋欄',()=>{ el.colW.push(el.colW[el.colW.length-1]||100);
         el.cells.forEach(r=>r.push(defCell())); }],
@@ -1477,11 +1523,12 @@ function renderProps(){
     };
     const c0=cs? el.cells[cs.r0][cs.c0] : (el.cells.flat().find(c=>!c.covered)||el.cells[0][0]);
     const applyCells=fn=>{ commitUndo(); scopedCells().forEach(fn); renderStage(); renderProps(); };
+    pp.appendChild(subTitle('儲存格樣式'));
     // 範圍提示（反白後樣式只作用選取格）
     const scope=document.createElement('div'); scope.className='row';
     scope.innerHTML= cs
       ? `<span class="unit">✎ 樣式套用範圍：<b>選取 ${scopedCells().length} 格</b>（R${cs.r0+1}C${cs.c0+1}${(cs.r1!==cs.r0||cs.c1!==cs.c0)?`–R${cs.r1+1}C${cs.c1+1}`:''}）。點別處取消反白＝改回全表。</span>`
-      : `<span class="unit">✎ 樣式套用範圍：<b>全表</b>。在表格內<b>拖曳反白</b>幾格後，下列樣式（字級／行距／粗斜體／文字色／對齊／底色）只套用到選取格。</span>`;
+      : `<span class="unit">✎ 樣式套用範圍：<b>全表</b>。在表格內<b>拖曳反白</b>幾格後，下列樣式（字級／行距／粗斜體／文字色／對齊／底色／框線）只套用到選取格。</span>`;
     pp.appendChild(scope);
     const fr=document.createElement('div'); fr.className='row'; fr.innerHTML='<label>字級</label>';
     const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=48; inp.value=c0.sizePt||12;
@@ -1505,8 +1552,26 @@ function renderProps(){
       ['中',()=>applyCells(c=>c.valign='middle'),'',(c0.valign||'middle')==='middle'],
       ['下',()=>applyCells(c=>c.valign='bottom'),'',c0.valign==='bottom']]));
     pp.appendChild(colorRow('底色',c0.fill,v=>scopedCells().forEach(c=>c.fill=v),true));
-    pp.appendChild(colorRow('框線（整表外框）',el.border&&el.border.color,v=>{ el.border= v==null? null : {pt:(el.border&&el.border.pt)||0.75,color:v}; },true));
+    // ── 框線：逐格四邊，反白＝只套選取範圍，未反白＝全表；筆＝線寬＋顏色 ──
+    pp.appendChild(subTitle('框線'));
+    const brRange=()=> cs? {r0:cs.r0,c0:cs.c0,r1:cs.r1,c1:cs.c1} : null;
+    const pen=APP.tblPen;
+    const penRow=document.createElement('div'); penRow.className='row'; penRow.innerHTML='<label>框線筆</label>';
+    const pw=document.createElement('input'); pw.type='number'; pw.step='0.25'; pw.min='0.25'; pw.max='6'; pw.value=pen.pt; pw.title='線寬（pt）';
+    pw.onchange=()=>{ pen.pt=Math.max(0.25,parseFloat(pw.value)||0.75); };
+    penRow.appendChild(pw); penRow.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
+    const psw=document.createElement('button'); psw.className='swatchBtn'; psw.title='框線顏色'; psw.style.background='#'+pen.color;
+    psw.onclick=()=>openPalette(psw,pen.color,hex=>{ pen.color=hex; psw.style.background='#'+hex; });
+    penRow.appendChild(psw);
+    pp.appendChild(penRow);
+    const bBtn=(label,mode,title)=>[label,()=>applyBorder(el,brRange(),mode, mode==='none'?null:{pt:pen.pt,color:pen.color}),title];
+    pp.appendChild(btnRow([bBtn('全部','all','所有格線'),bBtn('外框','outer','範圍外周'),bBtn('內部','inner','範圍內部格線')]));
+    pp.appendChild(btnRow([bBtn('上','top'),bBtn('下','bottom'),bBtn('左','left'),bBtn('右','right'),bBtn('無','none','清除框線')]));
+    const brNote=document.createElement('div'); brNote.className='row';
+    brNote.innerHTML='<span class="unit">框線逐格逐邊、顏色線寬各自獨立；<b>'+(cs?`套選取 ${scopedCells().length} 格`:'套全表')+'</b>。相鄰共用邊自動同步（預覽＝匯出）。</span>';
+    pp.appendChild(brNote);
     // 合併儲存格：改用畫布拖曳反白＋就近按鈕（見下方提示），不再用側欄數字框
+    pp.appendChild(subTitle('合併'));
     const mh=document.createElement('div'); mh.className='row';
     mh.innerHTML='<span class="unit">合併：在表格內<b>拖曳反白</b>要合併的格子，點反白框旁的<b>「合併儲存格」</b>；反白單一已合併格則點<b>「取消合併」</b>。移動整張表請拖表格邊框。</span>';
     pp.appendChild(mh);
@@ -1517,7 +1582,7 @@ function renderProps(){
   if(el.type==='chart'){
     pp.appendChild(btnRow([['編輯 option',()=>openChartModal(el)]]));
   }
-  pp.appendChild(document.createElement('div')).className='sep';
+  pp.appendChild(secTitle('排列'));
   const pg=curPage(); const idx=pg.elements.indexOf(el);
   pp.appendChild(btnRow([
     ['⤒',()=>{ commitUndo(); pg.elements.splice(idx,1); pg.elements.push(el); renderStage(); renderProps(); },'置頂'],
@@ -1525,6 +1590,7 @@ function renderProps(){
     ['↓',()=>{ if(idx<=0)return; commitUndo(); pg.elements.splice(idx,1); pg.elements.splice(idx-1,0,el); renderStage(); },'下移一層'],
     ['⤓',()=>{ commitUndo(); pg.elements.splice(idx,1); pg.elements.unshift(el); renderStage(); },'置底'],
   ]));
+  pp.appendChild(secTitle('動作'));
   pp.appendChild(btnRow([
     ['🖌 複製樣式',()=>armPainter(el),'格式刷：武裝後點其他元素套用其字體/顏色/填色/框線'],
     ...(el.groupId? [['解散群組',()=>{ commitUndo(); for(const m of groupMembers(el)) delete m.groupId; setSel([el.id]); renderStage(); renderProps(); },'取消此群組']] : []),
@@ -1553,6 +1619,44 @@ function tableMerge(el,r,c,cs,rs){
     cc.covered=!(i===r&&j===c);
   }
   el.cells[r][c].colspan=cs; el.cells[r][c].rowspan=rs; el.cells[r][c].covered=false;
+}
+/* ---- 逐格四邊框線 ----
+   cell.border={t,r,b,l}，每邊 {pt,color}｜null（明確無線）｜缺鍵＝沿用整表 el.border。
+   相鄰兩格共用邊 → 每次設一半必同步對面那一半（雙寫），讓 collapse 預覽與 PPT 逐格 <a:ln*> 一致。*/
+const BSIDE_TWIN={t:['b',-1,0],b:['t',1,0],l:['r',0,-1],r:['l',0,1]};
+function cellSide(el,cell,side){   // side∈'t','r','b','l'；回 {pt,color}｜null
+  if(cell.border&&(side in cell.border)){ const s=cell.border[side]; return s?{pt:s.pt,color:s.color}:null; }
+  return el.border? {pt:el.border.pt,color:el.border.color} : null;
+}
+function setCellSide(el,r,c,side,val){   // val={pt,color}｜null
+  const cell=el.cells[r]&&el.cells[r][c]; if(!cell||cell.covered) return;
+  if(!cell.border) cell.border={};
+  cell.border[side]= val? {pt:val.pt,color:val.color} : null;
+  const [ts,dr,dc]=BSIDE_TWIN[side], tr=r+dr, tc=c+dc;   // 對面半邊同步
+  const nb=el.cells[tr]&&el.cells[tr][tc];
+  if(nb&&!nb.covered){ if(!nb.border) nb.border={}; nb.border[ts]= val? {pt:val.pt,color:val.color} : null; }
+}
+// mode: all｜outer｜inner｜top｜bottom｜left｜right｜none(清除)。range 省略＝全表。
+function applyBorder(el,range,mode,val){
+  commitUndo();
+  const {r0,c0,r1,c1}=range||{r0:0,c0:0,r1:el.rowH.length-1,c1:el.colW.length-1};
+  const S=(r,c,side)=>setCellSide(el,r,c,side,val);
+  const top   =()=>{ for(let c=c0;c<=c1;c++) S(r0,c,'t'); };
+  const bottom=()=>{ for(let c=c0;c<=c1;c++) S(r1,c,'b'); };
+  const left  =()=>{ for(let r=r0;r<=r1;r++) S(r,c0,'l'); };
+  const right =()=>{ for(let r=r0;r<=r1;r++) S(r,c1,'r'); };
+  const innerH=()=>{ for(let r=r0;r<r1;r++) for(let c=c0;c<=c1;c++) S(r,c,'b'); };
+  const innerV=()=>{ for(let r=r0;r<=r1;r++) for(let c=c0;c<c1;c++) S(r,c,'r'); };
+  if(mode==='all'||mode==='none'){ top();bottom();left();right();innerH();innerV(); }
+  else if(mode==='outer'){ top();bottom();left();right(); }
+  else if(mode==='inner'){ innerH();innerV(); }
+  else if(mode==='top') top(); else if(mode==='bottom') bottom();
+  else if(mode==='left') left(); else if(mode==='right') right();
+  // 全表操作時同步整表預設 el.border，讓日後新增欄／列沿用一致基準
+  const whole=!range||(r0===0&&c0===0&&r1===el.rowH.length-1&&c1===el.colW.length-1);
+  if(whole&&mode==='all') el.border= val? {pt:val.pt,color:val.color} : el.border;
+  if(whole&&mode==='none') el.border=null;
+  renderStage(); renderProps(); updateSelBox();
 }
 /* ---- 拖曳反白選格（PowerPoint 式）：規範化矩形＋外擴到整塊合併，避免切半 ---- */
 // 兩端錨點 → 規範化矩形；反覆外擴，直到框內不再切穿任何合併儲存格
@@ -1936,18 +2040,24 @@ function showDragTipText(e,text){
   if(!dragTip){
     dragTip=document.createElement('div');
     dragTip.style.cssText='position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;'
-      +'padding:2px 7px;border-radius:4px;pointer-events:none;white-space:nowrap;';
+      +'padding:3px 7px;border-radius:4px;pointer-events:none;white-space:pre;'
+      +'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4;';
     document.body.appendChild(dragTip);
   }
   dragTip.textContent=text;
   dragTip.style.left=(e.clientX+14)+'px'; dragTip.style.top=(e.clientY+18)+'px';
   dragTip.style.display='block';
 }
-function pxLabel(label,px){
-  const inch=px/96;
-  return `${label} ${px}px ≈ ${(inch*2.54).toFixed(2)}cm ≈ ${(inch*72).toFixed(1)}pt`;
+// 尺寸懸浮：多行時各欄右對齊、位數不足補空白（等寬字型），順序 px→pt→cm
+function fmtDims(rows){   // rows: [[label,px],...]
+  const cells=rows.map(([lab,px])=>{ const inch=px/96;
+    return [String(lab), String(Math.round(px)), (inch*72).toFixed(1), (inch*2.54).toFixed(2)]; });
+  const lw=Math.max(...cells.map(c=>[...c[0]].length));      // 標籤欄寬（以字數計）
+  const w=[0,0,0]; cells.forEach(c=>{ for(let i=0;i<3;i++) w[i]=Math.max(w[i],c[i+1].length); });
+  const padLab=s=>s+' '.repeat(Math.max(0,lw-[...s].length));
+  return cells.map(c=>`${padLab(c[0])} ${c[1].padStart(w[0])}px ${c[2].padStart(w[1])}pt ${c[3].padStart(w[2])}cm`).join('\n');
 }
-function showDragTip(e,label,px){ showDragTipText(e,pxLabel(label,px)); }
+function showDragTip(e,label,px){ showDragTipText(e,fmtDims([[label,px]])); }
 function hideDragTip(){ if(dragTip) dragTip.style.display='none'; }
 stage.addEventListener('pointermove',e=>{
   if(!drag) return;
@@ -1996,7 +2106,7 @@ stage.addEventListener('pointermove',e=>{
           +Math.abs(ny-drag.anchor.y)/(Math.abs(drag.oy-drag.anchor.y)||1))/2;
     groupScaleTo(drag,Math.max(.05,s));
     const bb=groupBBox(selEls());
-    showDragTipText(e,pxLabel('寬',Math.round(bb.w))+'　'+pxLabel('高',Math.round(bb.h)));
+    showDragTipText(e,fmtDims([['寬',bb.w],['高',bb.h]]));
   }else if(drag.type==='marquee'){
     const r=stage.getBoundingClientRect();
     const cx=(e.clientX-r.left)/APP.zoom, cy=(e.clientY-r.top)/APP.zoom;
@@ -2007,7 +2117,7 @@ stage.addEventListener('pointermove',e=>{
   }else if(drag.type==='resize'){
     resizeBy(el,drag,dx,dy);
     const {w,h}=elSize(el);
-    showDragTipText(e,pxLabel('寬',Math.round(w))+'　'+pxLabel('高',Math.round(h)));
+    showDragTipText(e,fmtDims([['寬',w],['高',h]]));
   }else if(drag.type==='tcol'){
     el.colW[drag.i]=Math.max(16,Math.round(drag.w+dx));
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
@@ -2706,7 +2816,8 @@ function addTableToSlide(slide,el){
         fontSize:cell.sizePt||12,
         margin:[0,0.03,0,0.03],   // 單位是「吋」！0.03in ≈ 2.2pt ≈ 預覽 3px（xlsx2pptx 踩坑 #10）
         lineSpacing:Math.round((cell.sizePt||12)*(cell.lineSpacing||1.2)*10)/10};
-      o.border= el.border? {type:'solid',pt:el.border.pt,color:el.border.color} : {type:'none'};
+      // 逐格四邊：PptxGenJS border 陣列順序 [上,右,下,左]，各邊寫成原生 <a:lnT/lnR/lnB/lnL>
+      o.border= ['t','r','b','l'].map(k=>{ const s=cellSide(el,cell,k); return s? {type:'solid',pt:s.pt,color:s.color} : {type:'none'}; });
       if(cell.fill) o.fill={color:cell.fill,...(tr?{transparency:tr}:{})};
       if(cell.colspan>1) o.colspan=cell.colspan;
       if(cell.rowspan>1) o.rowspan=cell.rowspan;
