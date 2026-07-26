@@ -4,16 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DeckJSON 簡報設計器</title>
-<!-- 預覽字體：本機已安裝則直接使用；未安裝且連網時由 Google Fonts 後備（離線失敗不影響功能） -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<!-- 預覽字體一律用「本機已安裝的字體」：不連任何外部網域（單檔離線可用是本工具的前提）。
+     字體名由 deck.fonts 三槽決定，透過 --font-* 變數即時套進畫布；未安裝時瀏覽器自動退回後備字族，
+     頂端 #fontWarn 會明講「預覽用替代字體、匯出仍寫原字體名」。 -->
 <style>
   :root{
     --bg:#1e1f24; --panel:#2a2c33; --line:#3d4048; --fg:#e8e8ea; --fg-dim:#9a9da6;
     --accent:#4d9de0; --danger:#e05d5d;
+    /* 三字體槽（deck.fonts）：JS 於 applyFontVars() 覆寫；此處為中性預設 */
+    --font-latin:Arial; --font-ea:sans-serif; --font-table:Arial;
+    --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{background:var(--bg);color:var(--fg);font:14px/1.5 Poppins,"Noto Sans TC","PingFang TC",sans-serif;display:flex;flex-direction:column}
+  body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--font-ui);display:flex;flex-direction:column}
   header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
   header .grp{display:flex;align-items:center;gap:6px}
   header label{color:var(--fg-dim);font-size:12px}
@@ -39,6 +43,10 @@
   .pageName{flex:1;font-size:11px;color:var(--fg-dim);text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pageNum{font-size:10px;color:var(--fg-dim)}
   .pageItem.active .pageName,.pageItem.active .pageNum{color:var(--fg)}
+  /* 不放映的頁（匯出為 <p:sld show="0">）：縮圖壓暗並加角標，避免忘了自己藏了一頁 */
+  .pageItem.skip canvas{opacity:.4}
+  .pageItem.skip::after{content:'不放映';position:absolute;left:50%;top:26px;transform:translateX(-50%);
+        background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;pointer-events:none}
   .pageDup{position:absolute;top:1px;left:1px;width:16px;height:16px;line-height:15px;border-radius:4px;background:rgba(77,157,224,.9);color:#fff;font-size:11px;text-align:center;cursor:pointer;display:none;z-index:2}
   .pageDel{position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;border-radius:50%;background:rgba(224,93,93,.9);color:#fff;font-size:11px;text-align:center;cursor:pointer;display:none;z-index:2}
   .pageItem:hover .pageDup,.pageItem:hover .pageDel{display:block}
@@ -46,7 +54,8 @@
   #stageScroll{flex:1;overflow:auto;padding:0}   /* 留白全由 stage margin 控制，避免 padding 重複計入置中 */
   #stageOuter{margin:0 auto;display:flow-root}   /* flow-root：擋 margin collapse，stage 的置中邊距才留在 outer 內 */
   /* overflow 刻意可見：物件拖出投影片仍看得到、救得回（外圍由 .outmask 壓半灰） */
-  #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:"Poppins","Noto Sans TC",sans-serif}
+  /* 寬高由 applyStage() 依 deck.stage 設定（此處僅為首次繪製前的預設 16:9） */
+  #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:var(--font-latin),var(--font-ea),sans-serif}
   .outmask{position:absolute;background:rgba(30,31,36,.55);pointer-events:none;z-index:20}
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
   #stage.capturing{box-shadow:none!important}
@@ -54,9 +63,20 @@
   #stage.capturing .el{outline:none!important}
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
-  #zoneMark{left:978px;top:0;width:302px;height:113px}
-  #zoneFooter{left:0;top:675px;width:1280px;height:45px}
   .el{position:absolute;cursor:move}
+  /* 自動頁碼預覽：不是元素（不可選取、不可拖曳），快照與匯出都會有；垂直置中對齊匯出的 anchor="ctr" */
+  .pgnum{position:absolute;pointer-events:none;display:grid;align-content:center;
+         line-height:1.2;font-family:var(--font-latin),var(--font-ea),sans-serif;z-index:5}
+  /* 影片元素：封面圖＋播放徽章／角標。徽章與角標只存在畫布（.vbadge/.vtag），
+     快照與匯出都不含（比照 .pgnum 的預覽層做法），否則使用者在 PPT 換上真影片後還要手動清掉 */
+  .el .vcover{width:100%;height:100%;object-fit:cover;display:block}
+  .el .vph{width:100%;height:100%;display:grid;place-content:center;background:#20242c;color:#8d94a0;font-size:12px;gap:4px;text-align:center}
+  .el .vbadge{position:absolute;inset:0;display:grid;place-content:center;pointer-events:none}
+  .el .vbadge span{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;
+        display:grid;place-content:center;font-size:17px;padding-left:3px}
+  .el .vtag{position:absolute;left:0;bottom:0;max-width:100%;padding:1px 5px;background:rgba(0,0,0,.55);
+        color:#fff;font-size:10px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #stage.capturing .vbadge,#stage.capturing .vtag{display:none!important}
   /* 非表格元素給淡虛線框，方便看出框的尺寸（尤其文字框）；.overflow 紅框在下方規則，優先權相同、後者勝 */
   .el[data-type=text],.el[data-type=image],.el[data-type=shape],.el[data-type=chart]{outline:1px dashed rgba(150,152,160,.4)}
   .el .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
@@ -173,9 +193,10 @@
     <button id="btnAddImage">＋圖片</button>
     <button id="btnAddShape">＋形狀</button>
     <button id="btnAddChart">＋圖表</button>
+    <button id="btnAddVideo" title="插入影片：YouTube 連結（匯出為 PPT 原生線上影片）或本機影片（只取一張封面，匯出後在 PPT 換成真影片）">＋影片</button>
   </div>
   <div class="grp"><label>字體</label>
-    <select id="selFontMode" title="鎖定字體：寫死 Noto Sans TC／Poppins／表格 Roboto。母版繼承：寫 +mn-lt／+mn-ea 主題槽引用，貼上時由目的端母版字體接手。">
+    <select id="selFontMode" title="鎖定字體：匯出寫死你設定的三個字體名。母版繼承：改寫主題槽引用，貼到別的母版時由該母版字體接手。字體名在右欄「頁面 → 字體」設定。">
       <option value="locked">鎖定字體</option><option value="inherit">母版繼承</option>
     </select>
   </div>
@@ -189,23 +210,21 @@
     <button id="btnHelp" title="使用說明">?</button>
   </div>
   <input type="file" id="imgInput" accept="image/png,image/jpeg" hidden>
+  <input type="file" id="bgInput" accept="image/png,image/jpeg" hidden>
   <input type="file" id="jsonInput" accept=".json,application/json" hidden>
   <input type="file" id="mergeInput" accept=".json,application/json" hidden>
+  <input type="file" id="profileInput" accept=".json,application/json" hidden>
+  <input type="file" id="vidInput" accept="video/*" hidden>
+  <input type="file" id="coverInput" accept="image/png,image/jpeg" hidden>
   <datalist id="scaleTicks"><option value="0.5"></option><option value="0.8"></option><option value="1.0"></option><option value="1.2"></option><option value="1.5"></option></datalist>
 </header>
 <main>
   <aside id="pagePanel"></aside>
   <div id="stageScroll">
     <div id="stageOuter">
-      <div id="stage">
-        <!-- 投影片外圍半灰遮罩：拖出去的物件仍可見（半透明），可拖回 -->
-        <div class="outmask" style="left:-2000px;top:-2000px;width:5280px;height:2000px"></div>
-        <div class="outmask" style="left:-2000px;top:720px;width:5280px;height:2000px"></div>
-        <div class="outmask" style="left:-2000px;top:0;width:2000px;height:720px"></div>
-        <div class="outmask" style="left:1280px;top:0;width:2000px;height:720px"></div>
-        <div id="zoneMark" class="safezone">Mark 預留區</div>
-        <div id="zoneFooter" class="safezone">頁尾預留區</div>
-      </div>
+      <!-- 外圍半灰遮罩（.outmask）與預留區（.safezone）都由 JS 依 deck.stage／deck.zones 生成，
+           見 applyStage()／renderZones()——投影片尺寸與預留區已是資料，不再是寫死的常數 -->
+      <div id="stage"></div>
     </div>
   </div>
   <aside id="propPanel"></aside>
@@ -223,7 +242,7 @@
       <button id="btnJsonSave">儲存 .json 檔</button>
       <button id="btnJsonLoad">載入 .json 檔</button>
     </div>
-    <div class="mnote">整份簡報＋全域變數。「複製」→ 貼給 AI 討論修改 → 貼回「套用」。單頁微調請用右欄「本頁 JSON」。座標單位 px（畫布 1280×720 = 33.87×19.05 cm，1cm ≈ 37.8px）。</div>
+    <div class="mnote">整份簡報＋全域變數（標題／字體模式／字型／語言／投影片尺寸／預留區／頁碼／檔案屬性）。「複製」→ 貼給 AI 討論修改 → 貼回「套用」。單頁微調請用右欄「本頁 JSON」。座標單位 px（1px = 1/96 吋，1cm ≈ 37.8px；投影片尺寸見 <code>stage</code>）。</div>
   </div>
 </div>
 
@@ -293,25 +312,51 @@
   </div>
 </div>
 
+<div id="videoModal" class="modal" hidden>
+  <div class="mbox">
+    <div class="mhead"><b>插入影片</b><button id="btnVideoClose">×</button></div>
+    <div class="row" style="display:flex;gap:6px;align-items:center;margin:10px 0">
+      <label style="min-width:auto;color:var(--fg-dim)">YouTube 網址</label>
+      <input type="text" id="vidUrl" style="flex:1;min-width:200px" placeholder="https://www.youtube.com/watch?v=… 或 https://youtu.be/…">
+      <button id="btnVideoOnline" class="primary">插入連結影片</button>
+    </div>
+    <div class="mnote">匯出為 PPT <b>原生線上影片</b>（<code>&lt;a:videoFile&gt;</code> 外部連結）：pptx 內<b>不含任何影片位元組</b>，只有一張封面圖。<b>播放時需要網路</b>。網址可直接貼 watch／youtu.be 形式，會自動轉成 PowerPoint 需要的 embed 形式。</div>
+    <div class="row" style="display:flex;gap:6px;align-items:center;margin:14px 0 0;border-top:1px solid var(--line);padding-top:14px">
+      <button id="btnVideoLocal">選本機影片檔…</button>
+    </div>
+    <div class="mnote">本機影片<b>不會嵌入</b>（20MB 的 mp4 base64 後約 27MB，會塞爆「整份 JSON 貼給 AI」這個用法）。工具只自動抓一格畫面當封面＋記下檔名與長度，匯出後會列出「哪幾頁待插入影片」，請在 PowerPoint 對照該框插入真影片。</div>
+  </div>
+</div>
+
+<div id="pendModal" class="modal" hidden>
+  <div class="mbox">
+    <div class="mhead"><b>匯出完成：待插入影片清單</b><button id="btnPendClose">×</button></div>
+    <textarea id="pendArea" spellcheck="false" style="height:180px"></textarea>
+    <div class="mbtns"><button id="btnPendCopy">複製清單</button></div>
+    <div class="mnote">這些頁只放了封面圖佔位。請在 PowerPoint 開啟該頁，於同一個框的位置「插入 → 視訊」換成真影片（封面圖可直接刪除）。同一份資訊也寫進了各元素的<b>替代文字</b>與該頁<b>備忘稿</b>。</div>
+  </div>
+</div>
+
 <div id="helpModal" class="modal" hidden>
   <div class="mbox">
     <div class="mhead"><b>使用說明</b><button id="btnHelpClose">×</button></div>
     <div id="helpBody">
       <h4>這是什麼</h4>
-      <p>人與 AI 協作設計簡報的單檔工具：在 16:9 畫布上擺放文字、表格、圖片、形狀與 ECharts 圖表，匯出<b>原生 PPTX</b>，位置、大小、格式如實呈現（EMU 精確座標、行距鎖定）。全程本機處理。</p>
+      <p>人與 AI 協作設計簡報的單檔工具：在畫布上擺放文字、表格、圖片、形狀、ECharts 圖表與影片，匯出<b>原生 PPTX</b>，位置、大小、格式如實呈現（EMU 精確座標、行距鎖定）。<b>全程本機處理，不連任何外部網站</b>（字體用你電腦上已安裝的，不下載網路字體）。</p>
       <h4>與 AI 協作</h4>
       <ul>
-        <li>右上「JSON」＝<b>整份簡報＋全域</b>（標題／字體模式／字型）：複製給 AI 討論 → 貼回「套用」。</li>
+        <li>右上「JSON」＝<b>整份簡報＋全域</b>（標題／字體模式／字型／語言／投影片尺寸／預留區）：複製給 AI 討論 → 貼回「套用」。環境設定跟著 JSON 走，所以貼來貼去不會掉。</li>
         <li>右欄「<b>本頁 JSON ▤</b>」＝可拖曳的浮動面板，只顯示目前頁；面板開著時<b>點畫布任一元素／圖片，會自動捲動並選取它的 JSON 區塊</b>，適合針對性微調。</li>
         <li>JSON 內圖片以 <code>@asset:元素id</code> 佔位顯示（base64 不塞爆視窗）；「套用」時自動還原位元組。新圖請由工具插入；存 .json 檔仍含完整圖片。</li>
-        <li>細緻的格式（單一文字框內混用粗體／變色／上下標、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位。</li>
+        <li>細緻的格式（單一文字框內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位（面板操作一律套用到該元素的全部 run／段落）。</li>
         <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。</li>
       </ul>
       <h4>畫布操作</h4>
       <ul>
         <li>點選→拖曳移動（有置中／邊界磁性吸附）；八個把手縮放；方向鍵微調（Shift=10px）；Delete 刪除；Cmd/Ctrl+D 複製元素。</li>
         <li><b>多選</b>：Shift／Cmd 點擊加減選，或在空白處拖曳框選；多選後拖<b>四角＝整組比例縮放</b>（位置、尺寸、字級同步）、拖本體＝整組移動，右欄可輸入縮放 % 與對齊。</li>
-        <li><b>雙擊</b>文字／形狀＝編輯文字（右側面板也有純文字編輯框）；雙擊表格儲存格＝編輯內容；雙擊圖表＝編輯 option。</li>
+        <li><b>雙擊</b>文字／形狀＝就地編輯文字，粗體、顏色、高亮都<b>看得見也改得動</b>：<b>反白幾個字，右欄的格式按鈕就只套那幾個字</b>（沒反白＝套用整個文字框）。編輯中點右欄按鈕不會中斷編輯，反白範圍會保留。雙擊表格儲存格＝編輯內容；雙擊圖表＝編輯 option。</li>
+        <li>右欄的<b>純文字編輯框</b>是「整框覆寫」用的捷徑，會清掉框內的混排格式——若偵測到混排會先跳確認。要保留格式請在畫布上就地編輯。</li>
         <li>「＋形狀」開啟圖庫：線條／基本／箭號／方程式／流程圖／星星綵帶／圖說，共 40+ 種。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布預覽為近似圖形，匯出為 PPT 原生幾何。</li>
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
@@ -328,32 +373,64 @@
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
         <li><b>行距</b>：文字框與表格可設行距（×字級），匯出鎖為精確 spcPts；單格行距可透過 JSON 微調。</li>
+        <li><b>文字格式</b>：除粗斜體外另有 <b>U 底線／S 刪除線</b>、<b>高亮</b>（螢光筆色塊）；「字元進階」有<b>字距</b>、<b>自訂字型</b>（只覆寫此元素，留空＝沿用全域字體模式）、<b>描邊</b>與<b>輝光</b>。全部匯出為 PPT 原生字元屬性。<b>以上每一項都能只套用到反白的那幾個字</b>——同一句話裡混用粗體、顏色、字級都可以，匯出後在 PowerPoint 內仍是<b>同一個文字框裡的一句話</b>（不是被切成好幾個文字方塊）。</li>
+        <li><b>給 AI 的簡寫</b>：JSON 的段落可以只寫 <code>"md"</code> 欄位代替 <code>runs</code>，支援 <code>**粗體**</code>、<code>*斜體*</code>、<code>~~刪除線~~</code>、<code>==高亮==</code>、<code>[文字](網址)</code>（<code>[文字](#3)</code>＝跳頁）。套用時會展開成正式的 runs 並移除 <code>md</code>，存檔裡不留 markdown。<code>text</code> 欄位<b>永遠是字面文字、不會被解析</b>，所以內容本來就含 <code>**</code> 也不會被改壞。</li>
+        <li><b>項目符號／編號</b>：「段落」區可切 <b>無／• 符號／1. 編號</b>，並用 <b>−／＋</b> 調縮排層級（每層 18pt＝PPT 預設 0.25 吋，懸掛縮排）；匯出為原生 <code>buChar</code>／<code>buAutoNum</code>，在 PPT 內仍是真正的清單。另可設<b>段前／段後間距</b>（與行距獨立）。</li>
+        <li><b>超連結</b>：填網址，或填 <code>#3</code> 跳到本簡報第 3 頁。設了連結的文字會自動加底線（PptxGenJS 一律補 <code>u="sng"</code>，預覽同步顯示），顏色仍照你設定的文字色。</li>
+        <li><b>原生陰影</b>：文字框／形狀／圖片／圖表的「陰影」區勾選後可調<b>顏色／模糊／位移／方向／濃度</b>，匯出為 PPT 原生 <code>outerShdw</code>（不是截圖效果，PPT 內可再調）。畫布用 CSS filter 預覽，<b>快照 PNG 不會有陰影</b>（html2canvas 不支援 filter）。</li>
+        <li><b>圖片裁切</b>：預設「完整」＝整張塞進框、強制等比不變形；切「<b>填滿裁切</b>」後寬高可各自調整，圖片填滿框、裁掉超出部分（匯出為原生 <code>srcRect</code>）。另有「<b>圓形裁切</b>」與「<b>替代文字</b>」（無障礙 <code>descr</code>）。</li>
+        <li><b>表格虛線框線</b>：框線筆旁勾「虛線」再套（全部／外框／內部／各邊），匯出為 <code>prstDash sysDash</code>；實線虛線可逐格逐邊混用。</li>
+        <li><b>頁面背景圖</b>：頁面面板「🖼 背景圖」選圖，滿版拉伸、壓在所有元素之下，匯出為原生 <code>&lt;p:bg&gt;</code>。要局部裁切請改用一般圖片元素鋪滿整頁。</li>
+        <li><b>自動頁碼</b>：頁面面板「頁碼（整份簡報）」勾選後可選左下／中下／右下、字級、顏色、首頁不顯示；匯出為原生頁碼<b>欄位</b>（<code>&lt;a:fld type="slidenum"&gt;</code>，插入／刪除頁會自動更新），位置落在底部頁尾預留區。畫布上的頁碼是預覽，不可選取。</li>
+        <li><b>檔案資訊</b>：頁面面板可填作者／公司／主旨，連同標題寫入 pptx 檔案屬性（Finder／PowerPoint「資訊」看得到）；留空則不寫入該欄位。</li>
+        <li><b>線型</b>：形狀外框、線條、文字框框線可選實線／點線／虛線／長虛線／點虛線／長點虛，匯出為原生 <code>prstDash</code>（表格框線另有自己的實／虛線開關）。</li>
+        <li><b>物件超連結</b>：形狀／圖片／圖表／線條可設「整個物件可點」的連結（外部網址或 <code>#3</code> 跳頁），另可填滑過時的提示文字。文字框內個別文字的連結請用「文字樣式 → 超連結」。</li>
+        <li><b>文字框內距／不換行</b>：內距讓有填色的卡片式文字框不再貼邊（匯出為 <code>lIns/tIns/rIns/bIns</code>）；「不自動換行」適合單行標籤（匯出 <code>wrap="none"</code>）。</li>
+        <li><b>不放映此頁</b>：頁面面板勾選後該頁仍在檔案裡、放映時跳過（匯出 <code>&lt;p:sld show="0"&gt;</code>），縮圖會壓暗並標示。</li>
+        <li><b>影片</b>（頂端「＋影片」）：
+          <b>YouTube 連結</b>＝匯出為 PPT 原生線上影片，pptx 內只有封面圖、影片走外部連結（<b>播放需要網路</b>）；
+          <b>本機影片</b>＝<b>不嵌入位元組</b>，只自動抓一格畫面當封面並記下檔名長度，匯出後跳出「待插入影片」清單，請在 PowerPoint 對照該框插入真影片（同一份提示也寫進替代文字與該頁備忘稿）。封面可隨時換成自己的圖。</li>
         <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標／肘形折點（同 PPT 手感，拖曳時顯示數值）；右欄滑桿可精修，匯出為 PPT 原生 avLst。形狀選單縮圖右上角有黃點者即支援。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
         <li>所有元素（表格除外）有<b>淡虛線框</b>顯示框尺寸；圖片／形狀旋轉後選取框與把手跟著轉（resize 已依旋轉換算，仍正確）。</li>
-        <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／表格／圖表；表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。</li>
+        <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／圖片／表格／圖表；文字再細分字元進階／段落／超連結／陰影，表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。未選取任何元素時顯示<b>頁面</b>屬性，其中「頁碼」「檔案資訊」「投影片尺寸」「字體」「預留區」「環境設定檔」六區是<b>整份簡報</b>層級。</li>
         <li>復原／重做：Cmd/Ctrl+Z、Cmd/Ctrl+Shift+Z（60 步）。</li>
+      </ul>
+      <h4>簡報設定（右欄「頁面」）</h4>
+      <ul>
+        <li><b>投影片尺寸</b>：16:9／4:3／16:10 或自訂 px。改尺寸不會自動搬動既有元素，需自行重排。</li>
+        <li><b>字體</b>：中文／英數／表格英數三槽，填<b>你電腦上已安裝</b>的字體名，畫布即時反映、匯出寫同一個名字。未安裝時頂端會提示「預覽用替代字體，匯出仍寫原字體名」。</li>
+        <li><b>語言</b>：寫入每個文字 run 的 <code>lang</code>，決定 PowerPoint 用哪國拼字檢查（預設跟隨瀏覽器語言）。</li>
+        <li><b>預留區</b>：母版上不該被壓到的區域（Logo 位、頁尾…），可加可刪。只是畫布輔助線與吸附，元素壓到會變紅警告但不阻擋，<b>不寫入 pptx</b>。預設沒有任何預留區。</li>
+        <li><b>環境設定檔（profile）</b>：把上面這些（含頁碼樣式與檔案屬性）整包匯出成 <code>.profile.json</code>，或載入套用；也可「設為新簡報預設」記在這台瀏覽器。設定同時存在簡報 JSON 裡，所以貼給 AI 再貼回來不會掉。</li>
       </ul>
       <h4>字體模式</h4>
       <ul>
-        <li><b>鎖定字體</b>（預設）：匯出寫死 中文 Noto Sans TC／英數 Poppins／表格英數 Roboto。預覽＝輸出，折行位置最可靠。</li>
+        <li><b>鎖定字體</b>（預設）：匯出寫死你設定的三個字體名。預覽＝輸出，折行位置最可靠。</li>
         <li><b>母版繼承</b>：匯出寫 <code>+mn-lt</code>／<code>+mn-ea</code> 主題槽引用，貼到任何母版時由該母版字體接手（折行位置隨目的端字體浮動）。</li>
-        <li>兩種模式都不按語言切 run、全文件 lang=zh-TW——xlsx2pptx 的中英交界異常換行病灶已拔除。</li>
-        <li>預覽一律以三字體渲染；本機未安裝時連網會自動載入 Google Fonts，離線則以系統字體近似（建議安裝字體）。</li>
+        <li>兩種模式都不按語言切 run、全文件同一個 lang——xlsx2pptx 的中英交界異常換行病灶已拔除。</li>
       </ul>
       <h4>匯出行為</h4>
       <ul>
         <li>每頁一張投影片；文字框關閉 autofit、行距鎖定 1.2 倍字級精確值；表格為原生 PPTX 表格；圖片嵌原始位元組；圖表以 3× PNG 嵌入。</li>
+        <li>匯出後會修掉 PptxGenJS 3.12 的幾個結構性缺陷（段內混排時重複輸出 <code>&lt;a:pPr&gt;</code>、頁碼佔位形狀 id 寫死撞號、物件超連結沒註冊關聯而寫出懸空 <code>rIdundefined</code>、備忘稿基建畸形等），以免 PowerPoint 判為毀損要求修復。</li>
         <li>每個元素的 pptx 形狀名稱＝其 JSON id（日後 Morph 轉場跨頁配對用）。</li>
-        <li>右上 Mark 區與底部頁尾為預留區，內容侵入變紅警告（不阻擋）。</li>
-        <li>使用方式：開啟匯出的 .pptx，整頁複製到目標簡報（目標需同為標準 16:9）。</li>
+        <li>使用方式：開啟匯出的 .pptx，整頁複製到目標簡報（目標簡報的尺寸需與此處設定相同，否則會被縮放）。</li>
       </ul>
       <h4>已知限制</h4>
       <ul class="dim">
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
+        <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
+        <li>漸層填色、母版／版面配置（placeholder）尚未支援。</li>
+        <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
+        <li><b>線上影片播放需要網路</b>；且在 Keynote／Google Slides／LibreOffice 的支援程度<b>尚未實測</b>，可能只顯示封面圖。</li>
+        <li>本工具不儲存任何東西：<b>關掉或重新整理就全空</b>，請用「JSON → 儲存 .json 檔」保存進度。</li>
+        <li><b>表格儲存格不支援格內混排</b>：一格只能整格同一種格式。若某格需要「只有幾個字變色放大」，請把該格<b>留空</b>，另拉一個文字框疊在上面。疊上去的文字框不會跟著表格移動（建議與表格<b>群組</b>），也不會被格線裁切，內距請對齊儲存格。匯出後在 PowerPoint 裡可以直接把文字打回格內、刪掉覆蓋層——PowerPoint 的儲存格本身是支援格內混排的。</li>
+        <li>自訂字型（fontFace）是整個元素統一覆寫；同一文字框內逐 run 混用不同字型請走 JSON。</li>
+        <li>就地編輯只在 <b>Chrome</b> 實測過；Safari／Firefox <b>尚未測試</b>，行為可能不同。</li>
         <li>轉場支援 Morph／淡出／推入／擦去（頁面屬性設定，進入該頁時播放）；Morph 依元素 id 跨頁配對，「複製此頁」保留元素 id 即為此用；元素進出動畫不支援。</li>
       </ul>
     </div>
@@ -454,34 +531,242 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
 <script>
 'use strict';
 /* ================= 常數 ================= */
-const STAGE_W=1280, STAGE_H=720;                    // 12192000 × 6858000 EMU（1px = 9525 EMU）
-const ZONE_MARK  ={x:978,y:0,w:302,h:113};          // 右上 Mark 區 8×3cm
-const ZONE_FOOTER={x:0,y:675,w:1280,h:45};          // 底部頁尾 1.2cm
-const PX2CM=2.54/96, pt2px=pt=>pt*96/72, px2in=px=>px/96;
-const FONTS={ea:'Noto Sans TC',latin:'Poppins',tableLatin:'Roboto'};
+/* 投影片尺寸不是常數，而是資料（deck.stage）：STAGE_W/H 由 applyStage() 依 deck 設定改寫，
+   全檔所有讀取點（畫布、吸附、頁碼座標、defineLayout、sldSz）都跟著同一份來源。1px = 9525 EMU。 */
+let STAGE_W=1280, STAGE_H=720;
+const PX2CM=2.54/96, pt2px=pt=>pt*96/72, px2in=px=>px/96, px2emu=px=>Math.round(px*9525);
+// 投影片尺寸預設（px；1px=1/96 吋）。type＝OOXML sldSz 的標準名稱，非標準比例則不寫 type
+const STAGE_PRESETS=[
+  {key:'16x9', label:'16:9（寬螢幕）', w:1280,h:720, type:'screen16x9'},
+  {key:'4x3',  label:'4:3（傳統）',    w:960, h:720, type:'screen4x3'},
+  {key:'16x10',label:'16:10',          w:1152,h:720, type:'screen16x10'},
+];
+function stagePresetOf(w,h){ return STAGE_PRESETS.find(p=>p.w===w&&p.h===h)||null; }
+// 自動頁碼：預設樣式與三種位置（貼齊投影片底緣，隨投影片尺寸浮動）
+const PAGENUM_DEF={pos:'br',sizePt:10,color:'888888'};
+const PAGENUM_SIZE={w:160,h:24,m:24,gap:18};   // gap＝距底緣留白
+function pageNumBox(){
+  const p=APP.deck.pageNum||PAGENUM_DEF, {w,h,m,gap}=PAGENUM_SIZE;
+  const pos=p.pos||'br', y=STAGE_H-h-gap;
+  const x= pos==='bl'? m : pos==='bc'? Math.round((STAGE_W-w)/2) : STAGE_W-m-w;
+  return {x,y,w,h,align:{bl:'left',bc:'center',br:'right'}[pos]||'right',
+    sizePt:p.sizePt||PAGENUM_DEF.sizePt,color:p.color||PAGENUM_DEF.color};
+}
+/* ---- 出廠預設 profile（中性）----
+   通用版不帶任何個人／公司母版設定：無預留區、系統可用字體、語言跟隨瀏覽器。
+   個人化設定一律走 profile（deck.profile 欄位群 → localStorage → 這裡），見 §profile。 */
+function defaultEaFont(){   // 中文字體無跨平台通解，依作業系統挑一個「本機一定有」的
+  const ua=navigator.userAgent||'';
+  if(/Mac|iPhone|iPad/.test(ua)) return 'PingFang TC';
+  if(/Windows/.test(ua)) return 'Microsoft JhengHei';
+  return 'Noto Sans CJK TC';
+}
+function defaultLang(){
+  const l=String(navigator.language||'en-US');
+  return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(l)? l : 'en-US';
+}
+function defaultProfile(){
+  return {format:'deckjson-profile',version:1,name:'預設',
+    stage:{w:1280,h:720}, zones:[],
+    fonts:{ea:defaultEaFont(),latin:'Arial',tableLatin:'Arial'},
+    lang:defaultLang()};
+}
+// BUILD_PROFILE：build.sh --profile 可把一份 profile 內嵌成出廠值（公開版留 null＝中性）
+const BUILD_PROFILE=null;
+const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
+/* ================= profile（環境設定檔） =================
+   把「投影片尺寸／預留區／三字體／語言／頁碼樣式／檔案屬性」這些原本寫死在程式裡的客製化，
+   全部降為資料。三層來源，優先序由高到低：
+     1. deck 本身的欄位（stage／zones／fonts／lang／pageNum…）——跟著簡報走，貼 JSON 給 AI 不會掉設定
+     2. localStorage 的「我的預設」——新建空白簡報時帶入，載入一次就長期記住
+     3. BUILD_PROFILE（build.sh --profile 內嵌）→ defaultProfile()（中性出廠值）
+   同一份原始碼即可產出「個人版」與「中性通用版」，不需要維護兩套程式。 */
+const PROFILE_KEY='deckjson.profile';
+const PROFILE_FIELDS=['stage','zones','fonts','lang','pageNum'];
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }   // file:// 下可能被擋
+function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
+function normProfile(p){   // 手改／外來 profile 一律過這裡，壞值夾回或丟棄
+  const d=defaultProfile();
+  if(!p||typeof p!=='object') return d;
+  const o={format:'deckjson-profile',version:1,name:String(p.name||'未命名設定').slice(0,40)};
+  const w=Math.round(+((p.stage||{}).w)), h=Math.round(+((p.stage||{}).h));
+  o.stage={w:(isFinite(w)&&w>=160&&w<=4000)?w:d.stage.w, h:(isFinite(h)&&h>=120&&h<=4000)?h:d.stage.h};
+  o.zones=normZones(p.zones);
+  o.fonts={}; for(const k of ['ea','latin','tableLatin']){
+    const v=String(((p.fonts||{})[k])||'').trim(); o.fonts[k]= v||d.fonts[k]; }
+  o.lang= /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(String(p.lang||''))? String(p.lang) : d.lang;
+  if(p.pageNum&&typeof p.pageNum==='object') o.pageNum=structuredClone(p.pageNum);
+  if(p.docProps&&typeof p.docProps==='object') o.docProps=structuredClone(p.docProps);
+  return o;
+}
+function normZones(v){   // 預留區：僅保留有效矩形，數量上限 12（防手改 JSON 塞爆畫布）
+  if(!Array.isArray(v)) return [];
+  const out=[];
+  for(const z of v.slice(0,12)){
+    if(!z||typeof z!=='object') continue;
+    const x=Math.round(+z.x)||0, y=Math.round(+z.y)||0;
+    const w=Math.round(+z.w), h=Math.round(+z.h);
+    if(!(isFinite(w)&&w>0&&isFinite(h)&&h>0)) continue;
+    out.push({name:String(z.name||'預留區').slice(0,20),x,y,w:Math.min(4000,w),h:Math.min(4000,h)});
+  }
+  return out;
+}
+function startupProfile(){ return normProfile(JSON.parse(lsGet(PROFILE_KEY)||'null')||BUILD_PROFILE); }
+function profileFromDeck(d,name){
+  const p={format:'deckjson-profile',version:1,name:name||d.profileName||'我的設定',
+    stage:{...d.stage},zones:structuredClone(d.zones||[]),fonts:{...d.fonts},lang:d.lang};
+  if(d.pageNum) p.pageNum=structuredClone(d.pageNum);
+  const dp={}; for(const k of ['author','company','subject']) if(d[k]) dp[k]=d[k];
+  if(Object.keys(dp).length) p.docProps=dp;
+  return p;
+}
+function applyProfileToDeck(d,p){
+  p=normProfile(p);
+  d.profileName=p.name;
+  d.stage={...p.stage}; d.zones=structuredClone(p.zones); d.fonts={...p.fonts}; d.lang=p.lang;
+  if(p.pageNum) d.pageNum=structuredClone(p.pageNum);
+  if(p.docProps) for(const k of ['author','company','subject']) if(p.docProps[k]) d[k]=p.docProps[k];
+  return d;
+}
+
 /* ================= 簡報模型 ================= */
 function newPage(){ return {id:uid('p'),name:'',bg:'FFFFFF',transition:null,elements:[]}; }
-function newDeck(){ return {format:'deckjson',version:1,title:'未命名簡報',fontMode:'locked',
-  fonts:{...FONTS},pages:[newPage()]}; }
+function newDeck(){
+  const p=startupProfile();
+  return {format:'deckjson',version:1,title:'未命名簡報',fontMode:'locked',
+    profileName:p.name,stage:{...p.stage},zones:structuredClone(p.zones),
+    fonts:{...p.fonts},lang:p.lang,
+    ...(p.pageNum?{pageNum:structuredClone(p.pageNum)}:{}),
+    ...(p.docProps||{}),
+    pages:[newPage()]};
+}
+// run 級選配樣式（底線／刪除線／高亮／字距／字型／描邊／輝光／超連結）與段落級選配樣式（項目符號／段距）：
+// 有值才寫進 JSON，維持既有簡報的 JSON 不變胖；純文字編輯（textarea）時由 baseRun→mkParas 原樣帶過去
+const RUN_OPT_KEYS=['underline','strike','highlight','charSpacing','fontFace','link','glow','outline','sup','sub'];
+const PARA_OPT_KEYS=['bullet','spaceBefore','spaceAfter'];
 function mkParas(str,style){ // 純文字 → 段落結構
-  return String(str).split('\n').map(t=>({align:(style&&style.align)||'left',
-    runs:[{text:t,bold:!!(style&&style.bold),italic:!!(style&&style.italic),
-           color:(style&&style.color)||'1A1A1A',sizePt:(style&&style.sizePt)||18}]}));
+  const S=style||{};
+  return String(str).split('\n').map(t=>{
+    const p={align:S.align||'left',
+      runs:[{text:t,bold:!!S.bold,italic:!!S.italic,color:S.color||'1A1A1A',sizePt:S.sizePt||18}]};
+    for(const k of RUN_OPT_KEYS) if(S[k]!=null) p.runs[0][k]=structuredClone(S[k]);
+    for(const k of PARA_OPT_KEYS) if(S[k]!=null) p[k]=structuredClone(S[k]);
+    return p;
+  });
 }
 function plainText(el){ return (el.paras||[]).map(p=>(p.runs||[]).map(r=>r.text).join('')).join('\n'); }
 function baseRun(el){ // 元素第一個 run 的樣式（作為畫布純文字編輯後的統一樣式）
-  const r=(((el.paras||[])[0]||{}).runs||[])[0]||{};
-  return {bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',sizePt:r.sizePt||18,align:((el.paras||[])[0]||{}).align||'left'};
+  const p0=(el.paras||[])[0]||{}, r=(p0.runs||[])[0]||{};
+  const o={bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',sizePt:r.sizePt||18,align:p0.align||'left'};
+  for(const k of RUN_OPT_KEYS) if(r[k]!=null) o[k]=r[k];
+  for(const k of PARA_OPT_KEYS) if(p0[k]!=null) o[k]=p0[k];
+  return o;
+}
+/* ---- run 級編輯的資料工具 ----
+   切開（splitAt）、範圍套用（applyRange）、相鄰同樣式合併（mergeRuns）。
+   合併是必要的：不合併的話反白套個幾次格式，runs 就碎成一堆單字，JSON 難讀、AI 也難改。 */
+function runStyle(r){   // run 的「樣式指紋」；鍵序固定，可直接 JSON 比對
+  const o={bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',sizePt:r.sizePt||18};
+  for(const k of RUN_OPT_KEYS) if(r[k]!=null&&r[k]!==false) o[k]=structuredClone(r[k]);
+  return o;
+}
+const sameStyle=(a,b)=>JSON.stringify(runStyle(a))===JSON.stringify(runStyle(b));
+const paraLen=p=>(p.runs||[]).reduce((n,r)=>n+String(r.text||'').length,0);
+function mergeRuns(p){   // 併相鄰同樣式、丟空 run（全空時保留一個空殼，段落才有樣式可繼承）
+  const out=[];
+  for(const r of p.runs||[]){
+    if(!String(r.text||'').length) continue;
+    const last=out[out.length-1];
+    if(last&&sameStyle(last,r)) last.text+=String(r.text);
+    else out.push({...r,text:String(r.text)});
+  }
+  // 全空段落保留一個空殼 run；走 runStyle 才會補上 color／sizePt 預設，否則後續渲染與匯出拿到 undefined
+  if(!out.length) out.push({...runStyle((p.runs||[])[0]||{}),text:''});
+  p.runs=out;
+}
+// 在段落的第 pos 個字元處切開，回傳「pos 起算的那個 run 的索引」（pos 落在邊界時不切）
+function splitAt(p,pos){
+  const runs=p.runs||(p.runs=[]);
+  let acc=0;
+  for(let i=0;i<runs.length;i++){
+    const t=String(runs[i].text||'');
+    if(pos<=acc) return i;
+    if(pos<acc+t.length){
+      const off=pos-acc;
+      runs.splice(i,1,{...runs[i],text:t.slice(0,off)},{...runs[i],text:t.slice(off)});
+      return i+1;
+    }
+    acc+=t.length;
+  }
+  return runs.length;
+}
+// 對選取範圍 {p0,o0,p1,o1} 內的每個 run 執行 fn(run,para)
+function applyRange(el,sel,fn){
+  for(let pi=sel.p0;pi<=sel.p1;pi++){
+    const p=(el.paras||[])[pi]; if(!p) continue;
+    const a= pi===sel.p0? sel.o0 : 0;
+    const b= pi===sel.p1? sel.o1 : paraLen(p);
+    if(b<=a){ if((p.runs||[])[0]) fn(p.runs[0],p); continue; }   // 空段落：套在空殼 run 上，段落級設定也才生效
+    const i0=splitAt(p,a), i1=splitAt(p,b);
+    for(let i=i0;i<i1;i++) fn(p.runs[i],p);
+    mergeRuns(p);
+  }
+}
+/* ---- markdown 輸入糖 ----
+   段落可寫 "md":"這是**粗體**與==標記=="，套用時展開成 runs 並**刪掉 md 鍵**，存檔中不留 markdown。
+   純粹是給 AI 與手寫 JSON 用的簡寫。run 的 text 欄位**永遠是字面文字、絕不解析**——
+   否則內容本來就含 ** 的簡報（程式教材、數學、檔名）會被改壞。 */
+const MD_HL='FFFF00';   // == 高亮沒有顏色參數，固定用這個色（要別的顏色請直接寫 runs）
+const MD_RE=/\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|~~([^~\n]+)~~|==([^=\n]+)==|\[([^\]\n]+)\]\(([^)\n]+)\)/g;
+function mdToRuns(str,styleSrc){
+  const base=runStyle(styleSrc||{}), ESC='';
+  // 先把跳脫字元（\* \~ \= \[ …）換成私用區暫存，避免被當成標記
+  const s=String(str).replace(/\\([*~=[\]()\\])/g,(m,c)=>ESC+c.charCodeAt(0).toString(16).padStart(4,'0')+ESC);
+  const un=t=>t.replace(new RegExp(ESC+'([0-9a-f]{4})'+ESC,'g'),(m,h)=>String.fromCharCode(parseInt(h,16)));
+  const runs=[], push=(t,x)=>{ const v=un(t); if(v) runs.push({...base,...(x||{}),text:v}); };
+  let i=0,m; MD_RE.lastIndex=0;
+  while((m=MD_RE.exec(s))){
+    push(s.slice(i,m.index));
+    if(m[1]!=null) push(m[1],{bold:true});
+    else if(m[2]!=null) push(m[2],{italic:true});
+    else if(m[3]!=null) push(m[3],{strike:true});
+    else if(m[4]!=null) push(m[4],{highlight:MD_HL});
+    else push(m[5], m[6][0]==='#'? {link:{slide:Math.max(1,Math.round(+m[6].slice(1))||1)}} : {link:{url:un(m[6])}});
+    i=m.index+m[0].length;
+  }
+  push(s.slice(i));
+  if(!runs.length) runs.push({...base,text:''});
+  return runs;
+}
+// 項目符號：level 每層縮排 BULLET_INDENT pt（＝PPT 預設 0.25 吋），懸掛縮排讓第二行對齊文字而非符號
+const BULLET_INDENT=18, BULLET_CHAR='2022';   // 2022＝•（OOXML buChar 用 4 位 unicode）
+function bulletMark(p,seq){ // 回傳畫布上要顯示的符號字串（number 型帶流水號）
+  const b=p&&p.bullet; if(!b) return '';
+  if(b.type==='number') return (seq)+'.';
+  return b.code? String.fromCodePoint(parseInt(b.code,16)) : '•';
 }
 function maxPt(el){
   let m=0;
   for(const p of el.paras||[]) for(const r of p.runs||[]) m=Math.max(m,r.sizePt||18);
   return m||18;
 }
+/* 線型（形狀外框／線條／文字框框線）：key＝OOXML <a:prstDash val>，PptxGenJS 的 line.dashType 直寫此值。
+   dash＝畫布 SVG stroke-dasharray 的「線寬倍數」（隨線寬縮放，細線不會看起來像實線）；css＝文字框框線的近似。*/
+const DASH_KINDS=[
+  {key:'solid',     label:'實線',  dash:null,          css:'solid'},
+  {key:'sysDot',    label:'點線',  dash:[1,2],         css:'dotted'},
+  {key:'dash',      label:'虛線',  dash:[4,3],         css:'dashed'},
+  {key:'lgDash',    label:'長虛線',dash:[8,3],         css:'dashed'},
+  {key:'dashDot',   label:'點虛線',dash:[4,3,1,3],     css:'dashed'},
+  {key:'lgDashDot', label:'長點虛',dash:[8,3,1,3],     css:'dashed'},
+];
+const dashKind=el=>DASH_KINDS.find(d=>d.key===(el&&el.dash))||DASH_KINDS[0];
+function dashArray(el,sw){ const d=dashKind(el).dash;
+  return d? d.map(n=>Math.max(1,+(n*sw).toFixed(2))).join(' ') : ''; }
 const SAMPLE_CHART={grid:{left:44,right:16,top:30,bottom:30},
   xAxis:{type:'category',data:['一月','二月','三月','四月']},yAxis:{type:'value'},
   series:[{type:'bar',data:[52,88,64,120],itemStyle:{color:'#4D9DE0'}}]};
@@ -673,6 +958,8 @@ for(const k of ['wedgeRectCallout','wedgeRoundRectCallout','wedgeEllipseCallout'
 for(const k of ['elbow','elbowArrow','elbowDoubleArrow'])
   ADJ_DOTS[k]=[{pos:(w,h,A)=>[A[0]*w,h/2], apply:(el,x,y,w,h)=>setAdj(el,0,x/w)}];
 function isLineEl(el){ return el&&el.type==='shape'&&!!LINE_KINDS[el.shape]; }
+// 圖片預設強制等比（整張塞進框、不變形）；切到「裁切填滿」後框比例自由，超出部分裁掉，故解除鎖定
+function imgLocked(el){ return !!el&&el.type==='image'&&el.fit!=='cover'; }
 function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左上角
   const x1=el.flipH? el.w:0, y1=el.flipV? el.h:0;
   return {x1,y1,x2:el.w-x1,y2:el.h-y1};
@@ -680,8 +967,9 @@ function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左
 
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
+  edit:null,      // 文字框 run 級編輯狀態 {id,root,src,sel:{p0,o0,p1,o1},pushed,snap}
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
-  tblPen:{pt:0.75,color:'999999'},   // 框線筆：線寬＋顏色，供框線按鈕套用
+  tblPen:{pt:0.75,color:'999999',dash:false},   // 框線筆：線寬＋顏色＋實／虛線，供框線按鈕套用
   dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
   ratioLock:false,fontSync:false,scaleFont:true};   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
 APP.page=APP.deck.pages[0].id;
@@ -708,7 +996,7 @@ const UNDO=[],REDO=[];
 function snapshot(){ return {deck:structuredClone(APP.deck),page:APP.page,selIds:[...APP.selIds]}; }
 function updateUndoBtns(){ $('#btnUndo').disabled=!UNDO.length; $('#btnRedo').disabled=!REDO.length; }
 function commitUndo(s){ UNDO.push(s||snapshot()); if(UNDO.length>60)UNDO.shift(); REDO.length=0; updateUndoBtns(); }
-function applySnap(s,into){ into.push(snapshot()); APP.deck=s.deck; APP.page=s.page;
+function applySnap(s,into){ into.push(snapshot()); APP.edit=null; APP.editing=null; APP.deck=s.deck; APP.page=s.page;
   if(!APP.deck.pages.find(p=>p.id===APP.page)) APP.page=APP.deck.pages[0].id;
   setSel(s.selIds||[]);
   renderAll(); }
@@ -726,14 +1014,65 @@ function elSize(el){  // 表格的實際高度以 DOM 為準（wrap 會長高）
   return {w:el.w,h:el.h};
 }
 
+/* ================= 投影片尺寸／字體／預留區（皆由 deck 資料驅動） ================= */
+// 投影片尺寸：改寫 STAGE_W/H 並重畫畫布框與外圍遮罩。遮罩四塊在 JS 生成，跟著尺寸走
+function applyStage(){
+  const s=APP.deck.stage||{w:1280,h:720};
+  STAGE_W=s.w; STAGE_H=s.h;
+  stage.style.width=STAGE_W+'px'; stage.style.height=STAGE_H+'px';
+  let masks=[...stage.querySelectorAll('.outmask')];
+  while(masks.length<4){ const d=document.createElement('div'); d.className='outmask'; stage.appendChild(d); masks.push(d); }
+  const P=2000, box=[   // 上／下／左／右四塊，蓋住投影片以外的工作區
+    [-P,-P,STAGE_W+2*P,P],[-P,STAGE_H,STAGE_W+2*P,P],[-P,0,P,STAGE_H],[STAGE_W,0,P,STAGE_H]];
+  masks.forEach((m,i)=>{ const [x,y,w,h]=box[i];
+    m.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`; });
+}
+// 三字體槽 → CSS 變數（畫布、頁碼、表格都吃這三個變數，故「改字體＝預覽即時跟著變」）
+function applyFontVars(){
+  const F=APP.deck.fonts||FONTS, r=document.documentElement.style;
+  r.setProperty('--font-latin',`"${F.latin}"`);
+  r.setProperty('--font-ea',`"${F.ea}"`);
+  r.setProperty('--font-table',`"${F.tableLatin}"`);
+}
+// 預留區：deck.zones 陣列 → 畫布上的虛線提示框（純輔助，不寫入任何 OOXML）
+function renderZones(){
+  stage.querySelectorAll('.safezone').forEach(n=>n.remove());
+  for(const z of APP.deck.zones||[]){
+    const d=document.createElement('div'); d.className='safezone'; d.dataset.zone=z.name;
+    d.style.cssText=`left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px`;
+    d.textContent=z.name;
+    stage.appendChild(d);
+  }
+}
+
 /* ================= 渲染：畫布 ================= */
-function paraDiv(p,el){
+function paraDiv(p,el,seq){
   const div=document.createElement('div');
   div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
+  // 不換行要下在段落 div 上：CSS 的 `.el .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
+  if(el&&el.nowrap) div.style.whiteSpace='pre';
+  if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
+  if(p.spaceAfter>0) div.style.marginBottom=pt2px(p.spaceAfter)+'px';
   const runs=p.runs||[];
-  if(!runs.length||runs.every(r=>!String(r.text))){ div.appendChild(document.createElement('br')); return div; }
-  for(const r of runs){
+  if(!runs.length||runs.every(r=>!String(r.text))){
+    const br=document.createElement('br'); br.dataset.mk='1';   // 空段落佔位，非硬斷行（編輯器據此不誤判為分段）
+    div.appendChild(br); return div;
+  }
+  if(p.bullet){   // marL＝(level+1)×indent、懸掛 −indent，符號佔一個 indent 寬（同 PPT）
+    const ind=pt2px(BULLET_INDENT), lv=(p.bullet.level||0)+1;
+    div.style.paddingLeft=(ind*lv)+'px'; div.style.textIndent=(-ind)+'px';
+    const mk=document.createElement('span');
+    mk.dataset.mk='1';   // 編輯器據此略過：符號是渲染產物，不屬於任何 run 的文字
+    mk.textContent=bulletMark(p,seq);
+    mk.style.cssText=`display:inline-block;width:${ind}px;text-indent:0`;
+    mk.style.fontSize=pt2px(runs[0].sizePt||18)+'px';
+    mk.style.color='#'+(runs[0].color||'1A1A1A');
+    div.appendChild(mk);
+  }
+  for(let ri=0;ri<runs.length;ri++){
+    const r=runs[ri];
     const sp=document.createElement('span');
+    sp.dataset.r=ri;   // 編輯器用 (段索引, run 索引) 反查樣式
     sp.textContent=String(r.text);
     sp.style.fontSize=pt2px((r.sizePt||18)*((r.sup||r.sub)?0.7:1))+'px';
     sp.style.color='#'+(r.color||'1A1A1A');
@@ -741,6 +1080,15 @@ function paraDiv(p,el){
     if(r.italic)sp.style.fontStyle='italic';
     if(r.sup)sp.style.verticalAlign='super';
     if(r.sub)sp.style.verticalAlign='sub';
+    // 底線／刪除線可疊加；有超連結時 PptxGenJS 會自動補 u="sng"，預覽同步畫底線（預覽＝輸出）
+    const dec=[]; if(r.underline||r.link) dec.push('underline'); if(r.strike) dec.push('line-through');
+    if(dec.length) sp.style.textDecoration=dec.join(' ');
+    if(r.highlight) sp.style.background='#'+r.highlight;
+    if(r.charSpacing) sp.style.letterSpacing=pt2px(r.charSpacing)+'px';
+    if(r.fontFace) sp.style.fontFamily=`"${r.fontFace}"`;
+    if(r.outline) sp.style.webkitTextStroke=`${pt2px(r.outline.size||0.75)}px #${r.outline.color||'FFFFFF'}`;
+    if(r.glow) sp.style.textShadow=`0 0 ${pt2px(r.glow.size||8)}px #${r.glow.color||'FFFF00'}`;
+    if(r.link) sp.title='超連結：'+(r.link.url||('本簡報第 '+r.link.slide+' 頁'));
     div.appendChild(sp);
   }
   return div;
@@ -749,7 +1097,20 @@ function txtBlock(el){
   const t=document.createElement('div'); t.className='txt';
   t.style.justifyContent={top:'flex-start',middle:'center',bottom:'flex-end'}[el.valign||'top'];
   t.style.lineHeight=el.lineSpacing||1.2;
-  for(const p of el.paras||[]) t.appendChild(paraDiv(p,el));
+  if(el.inset>0) t.style.padding=pt2px(el.inset)+'px';   // 文字框內距（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）
+  if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
+  let seq=0;   // 編號清單流水號：連續 number 段落累加，遇非 number 段落歸零（同 PPT）
+  const ps=el.paras||[];
+  for(let pi=0;pi<ps.length;pi++){
+    const p=ps[pi];
+    const num=!!(p.bullet&&p.bullet.type==='number');
+    seq= !num? 0 : (seq? seq+1 : Math.max(1,Math.round(p.bullet.startAt)||1));
+    const d=paraDiv(p,el,seq);
+    d.dataset.p=pi;
+    // data-r 升級成「段:run」絕對鍵：瀏覽器把 span 搬到別段（例如退格併段）後仍查得回原樣式
+    for(const sp of d.querySelectorAll('[data-r]')) sp.dataset.r=pi+':'+sp.dataset.r;
+    t.appendChild(d);
+  }
   return t;
 }
 function renderTableInto(box,el){
@@ -779,7 +1140,7 @@ function renderTableInto(box,el){
       if(cell.italic)td.style.fontStyle='italic';
       for(const [side,key] of [['Top','t'],['Right','r'],['Bottom','b'],['Left','l']]){
         const s=cellSide(el,cell,key);
-        td.style['border'+side]= s? `${Math.max(1,pt2px(s.pt))}px solid #${s.color}` : 'none';
+        td.style['border'+side]= s? `${Math.max(1,pt2px(s.pt))}px ${s.dash?'dashed':'solid'} #${s.color}` : 'none';
       }
       td.style.whiteSpace='pre-wrap';   // 保留格內換行（Shift+Enter）與空白
       td.textContent=String(cell.text||'');
@@ -822,6 +1183,7 @@ function renderShapeInto(box,el){
       node.setAttribute('x2',x2); node.setAttribute('y2',y2);
     }
     node.setAttribute('stroke',col); node.setAttribute('stroke-width',sw);
+    {const da=dashArray(el,sw); if(da) node.setAttribute('stroke-dasharray',da); }
     if(kind.end){ mkMarker(svg,'ae-'+el.id,col,false); node.setAttribute('marker-end',`url(#ae-${el.id})`); }
     if(kind.begin){ mkMarker(svg,'ab-'+el.id,col,true); node.setAttribute('marker-start',`url(#ab-${el.id})`); }
     svg.appendChild(node); box.appendChild(svg);
@@ -838,9 +1200,11 @@ function renderShapeInto(box,el){
     p.setAttribute('d',d);
     p.setAttribute('fill', el.fill? '#'+el.fill:'none');
     if(el.lineColor!=null){
+      const sw=Math.max(1,pt2px(el.linePt||1));
       p.setAttribute('stroke','#'+el.lineColor);
-      p.setAttribute('stroke-width',Math.max(1,pt2px(el.linePt||1)));
+      p.setAttribute('stroke-width',sw);
       p.setAttribute('stroke-linejoin','round');
+      const da=dashArray(el,sw); if(da) p.setAttribute('stroke-dasharray',da);
     }
     return p;
   };
@@ -883,29 +1247,81 @@ function renderEl(el){
   if(el.type!=='table'){ box.style.width=el.w+'px'; box.style.height=el.h+'px'; }
   applyBoxTransform(box,el);
   box.style.opacity=(el.opacity!=null&&el.opacity<100)? el.opacity/100 : '';
+  if(el.shadow) box.style.filter=shadowCss(el);
   if(el.locked) box.classList.add('locked');
   if(el.type==='text'){
     if(el.fill) box.style.background='#'+el.fill;
-    if(el.lineColor!=null) box.style.border=`${Math.max(1,pt2px(el.linePt||1))}px solid #${el.lineColor}`;
+    if(el.lineColor!=null) box.style.border=`${Math.max(1,pt2px(el.linePt||1))}px ${dashKind(el).css} #${el.lineColor}`;
     box.appendChild(txtBlock(el));
   }
   else if(el.type==='table') renderTableInto(box,el);
   else if(el.type==='shape') renderShapeInto(box,el);
-  else if(el.type==='image'){ const im=document.createElement('img'); im.src=el.dataUrl; box.appendChild(im); }
+  else if(el.type==='image'){
+    const im=document.createElement('img'); im.src=el.dataUrl;
+    if(el.fit==='cover') im.style.objectFit='cover';       // 裁切填滿：框比例可自由，超出部分裁掉
+    if(el.round) im.style.borderRadius='50%';              // 圓形／橢圓裁切（PPT prstGeom ellipse）
+    if(el.alt) im.alt=el.alt;
+    box.appendChild(im);
+  }
   else if(el.type==='chart') renderChartInto(box,el);
+  else if(el.type==='video') renderVideoInto(box,el);
+  if(el.link) box.title=(box.title?box.title+'\n':'')+'超連結：'+linkLabel(el.link)
+    +(el.link.tooltip?'（提示：'+el.link.tooltip+'）':'');
   return box;
 }
+function linkLabel(l){ return l? (l.url||('本簡報第 '+l.slide+' 頁')) : ''; }
+/* 影片元素：畫布上只是「封面圖 ＋ 播放徽章 ＋ 角標」。
+   mode:'online'＝YouTube 連結（匯出走 addMedia type:'online'，pptx 只存外部連結）；
+   mode:'local' ＝本機影片（位元組一律不進 JSON，匯出只放封面圖＋待插入提示）。 */
+function renderVideoInto(box,el){
+  box.innerHTML='';
+  if(el.cover){
+    const im=document.createElement('img'); im.className='vcover'; im.src=el.cover;
+    im.alt=el.alt||''; box.appendChild(im);
+    // 播放徽章只在「有封面圖」時疊上去；沒封面時佔位圖本身已有播放符號，再疊會糊成一團
+    const bd=document.createElement('div'); bd.className='vbadge';
+    bd.appendChild(Object.assign(document.createElement('span'),{textContent:'▶'}));
+    box.appendChild(bd);
+  }else{
+    const ph=document.createElement('div'); ph.className='vph';
+    ph.innerHTML='<div style="font-size:20px">▶</div><div>未設封面圖</div>';
+    box.appendChild(ph);
+  }
+  const tag=document.createElement('div'); tag.className='vtag';
+  tag.textContent= el.mode==='online'? 'YouTube 連結影片' : ('待插入：'+((el.src&&el.src.name)||'影片')+durText(el));
+  box.appendChild(tag);
+}
+function durText(el){ const s=el&&el.src&&+el.src.durationSec;
+  if(!(s>0)) return '';
+  return `（${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}）`; }
 function renderStage(){
   // 清掉舊元素與選取框
-  stage.querySelectorAll('.el,#selBox').forEach(e=>e.remove());
+  stage.querySelectorAll('.el,#selBox,.pgnum').forEach(e=>e.remove());
   const pg=curPage();
   stage.style.background='#'+(pg.bg||'FFFFFF');
+  // 頁面背景圖：滿版拉伸（同匯出的 <p:bg> blipFill stretch），壓在所有元素之下
+  stage.style.backgroundImage= pg.bgImage? `url("${pg.bgImage}")` : '';
+  stage.style.backgroundSize='100% 100%'; stage.style.backgroundRepeat='no-repeat';
   const liveIds=new Set();
   for(const el of pg.elements){ if(el.hidden) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
   for(const [id,inst] of CHARTS) if(!liveIds.has(id)){ inst.dispose(); CHARTS.delete(id); }
+  renderPageNum(pg);
   markOverflow();
   updateSelBox();
   checkZones();
+  if(APP.edit) editOpen();   // 編輯中：接管剛渲染好的 .txt 並還原選取，重繪不中斷編輯
+}
+// 頁碼預覽：非元素（不可選、不進圖層、不算超界警告），純粹讓使用者看到匯出後會長在哪
+function renderPageNum(pg){
+  if(!APP.deck.pageNum) return;
+  const idx=APP.deck.pages.indexOf(pg);
+  if(APP.deck.pageNum.skipFirst&&idx===0) return;
+  const b=pageNumBox();
+  const d=document.createElement('div'); d.className='pgnum';
+  d.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;`
+    +`font-size:${pt2px(b.sizePt)}px;color:#${b.color};text-align:${b.align};`;
+  d.textContent=String(idx+1);
+  stage.appendChild(d);
 }
 function markOverflow(){
   for(const el of curPage().elements){
@@ -1039,24 +1455,33 @@ function paintCellSel(el,sb){
 /* ================= 預留區檢查 ================= */
 function rectHit(a,b){ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y; }
 function checkZones(){
-  let hitM=false,hitF=false,out=false;
+  const zones=APP.deck.zones||[];
+  const hit=zones.map(()=>false);
+  let out=false;
   for(const el of curPage().elements){
     if(el.hidden) continue;
     const {w,h}=elSize(el); const b={x:el.x,y:el.y,w,h};
-    if(rectHit(b,ZONE_MARK)) hitM=true;
-    if(rectHit(b,ZONE_FOOTER)) hitF=true;
+    zones.forEach((z,i)=>{ if(rectHit(b,z)) hit[i]=true; });
     if(b.x<0||b.y<0||b.x+b.w>STAGE_W||b.y+b.h>STAGE_H) out=true;
   }
-  $('#zoneMark').classList.toggle('hit',hitM);
-  $('#zoneFooter').classList.toggle('hit',hitF);
-  $('#warn').textContent= out?'⚠ 內容超出投影片':(hitM||hitF)?'⚠ 內容侵入預留區':'';
+  const nodes=[...stage.querySelectorAll('.safezone')];   // 與 renderZones 同序，索引即 zone 索引
+  nodes.forEach((n,i)=>n.classList.toggle('hit',!!hit[i]));
+  const names=zones.filter((z,i)=>hit[i]).map(z=>z.name);
+  $('#warn').textContent= out?'⚠ 內容超出投影片':names.length?('⚠ 內容侵入預留區：'+names.join('、')):'';
 }
 
 /* ================= 頁面面板 ================= */
 const PANEL_DRAG={item:null,order:null};
+const THUMB_BG=new Map();   // 背景圖 dataUrl → Image（縮圖非同步繪製用，載完重畫一次）
 function drawThumb(cv,pg){
   const ctx=cv.getContext('2d'); const s=cv.width/STAGE_W;
   ctx.fillStyle='#'+(pg.bg||'FFFFFF'); ctx.fillRect(0,0,cv.width,cv.height);
+  if(pg.bgImage){
+    let im=THUMB_BG.get(pg.bgImage);
+    if(!im){ im=new Image(); im.src=pg.bgImage; THUMB_BG.set(pg.bgImage,im);
+      im.onload=()=>{ if(cv.isConnected) drawThumb(cv,pg); }; }
+    if(im.complete&&im.naturalWidth) ctx.drawImage(im,0,0,cv.width,cv.height);
+  }
   for(const el of pg.elements){
     if(el.hidden) continue;
     const {w,h}= el.type==='table'? {w:el.colW.reduce((a,b)=>a+b,0),h:el.rowH.reduce((a,b)=>a+b,0)} : el;
@@ -1071,6 +1496,10 @@ function drawThumb(cv,pg){
     }
     else if(el.type==='image'){ ctx.fillStyle='rgba(150,150,150,.5)'; ctx.fillRect(x,y,ww,hh); }
     else if(el.type==='chart'){ ctx.fillStyle='rgba(77,157,224,.35)'; ctx.fillRect(x,y,ww,hh); }
+    else if(el.type==='video'){ ctx.fillStyle='rgba(40,44,52,.75)'; ctx.fillRect(x,y,ww,hh);
+      ctx.fillStyle='rgba(255,255,255,.8)'; ctx.beginPath();
+      const cx=x+ww/2,cy=y+hh/2,r=Math.min(ww,hh)*.22;
+      ctx.moveTo(cx-r*.5,cy-r); ctx.lineTo(cx+r*.7,cy); ctx.lineTo(cx-r*.5,cy+r); ctx.fill(); }
     else if(el.type==='shape'){
       ctx.fillStyle=el.fill?'#'+el.fill:'rgba(120,120,120,.3)';
       if(LINE_KINDS[el.shape]){ ctx.strokeStyle='#'+(el.lineColor||'333'); ctx.beginPath();
@@ -1086,7 +1515,8 @@ function renderPanel(){
   APP.deck.pages.forEach((pg,idx)=>{
     const item=document.createElement('div'); item.className='pageItem'; item.dataset.pid=pg.id;
     if(pg.id===APP.page) item.classList.add('active');
-    const cv=document.createElement('canvas'); cv.width=132; cv.height=74;
+    if(pg.skip) item.classList.add('skip');
+    const cv=document.createElement('canvas'); cv.width=132; cv.height=Math.max(24,Math.round(132*STAGE_H/STAGE_W));
     drawThumb(cv,pg);
     const meta=document.createElement('div'); meta.className='pageMeta';
     const nm=document.createElement('div'); nm.className='pageName'; nm.textContent=pg.name||('頁 '+(idx+1));
@@ -1130,7 +1560,7 @@ function renderPanel(){
   add.onclick=()=>{ commitUndo(); const pg=newPage(); APP.deck.pages.push(pg); setPage(pg.id); };
   panel.appendChild(add);
 }
-function setPage(pid){ APP.page=pid; setSel([]); APP.editing=null; renderAll(); syncPageJson(); }
+function setPage(pid){ APP.page=pid; setSel([]); APP.editing=null; APP.edit=null; renderAll(); syncPageJson(); }
 
 /* ================= 屬性面板 ================= */
 // 座標尺寸單位換算（內部一律 px）：to＝px→顯示值、from＝顯示值→px、dp＝小數位、step＝輸入步進
@@ -1320,6 +1750,95 @@ function btnRow(defs){ // [[label,fn,title,on],...]
   return row;
 }
 function setAllRuns(el,fn){ for(const p of el.paras||[]) for(const r of p.runs||[]) fn(r,p); }
+// 設定／清除 run 級選配樣式：undefined＝刪鍵（維持 JSON 精簡，未用到的功能不留空殼）
+function setRunOpt(el,key,val){ runApply(el,r=>{ if(val===undefined) delete r[key]; else r[key]=val; }); }
+// 數字輸入列：numRow('字距',cur,set,{min,max,step,unit,title})
+function numRow(label,val,onSet,o){
+  o=o||{};
+  const row=document.createElement('div'); row.className='row';
+  row.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
+  const inp=document.createElement('input'); inp.type='number';
+  if(o.min!=null)inp.min=o.min; if(o.max!=null)inp.max=o.max; if(o.step!=null)inp.step=o.step;
+  inp.value=val; if(o.title)inp.title=o.title;
+  inp.onchange=()=>{ let v=parseFloat(inp.value); if(!isFinite(v))v=0;
+    if(o.min!=null)v=Math.max(o.min,v); if(o.max!=null)v=Math.min(o.max,v);
+    commitUndo(); onSet(v); renderStage(); renderProps(); };
+  row.appendChild(inp);
+  if(o.unit) row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:o.unit}));
+  return row;
+}
+/* ---- 原生投影陰影（PPT 真實 <a:outerShdw>，非編輯器 CSS 效果）----
+   PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
+   畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
+const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
+function shadowRows(el){
+  const wrap=document.createDocumentFragment();
+  wrap.appendChild(subTitle('陰影'));
+  const sh=el.shadow;
+  wrap.appendChild(checkRow([['原生投影',()=>!!sh,v=>{ commitUndo();
+    if(v) el.shadow={...SHADOW_DEF}; else delete el.shadow;
+    renderStage(); renderProps(); },'匯出為 PPT 原生 outerShdw；快照 PNG 不呈現']]));
+  if(sh){
+    const set=(k,v)=>{ el.shadow={...el.shadow,[k]:v}; };
+    wrap.appendChild(colorRow('陰影色',sh.color||SHADOW_DEF.color,v=>set('color',v),false));
+    wrap.appendChild(numRow('模糊',sh.blur??SHADOW_DEF.blur,v=>set('blur',v),{min:0,max:100,step:1,unit:'pt'}));
+    wrap.appendChild(numRow('位移',sh.offset??SHADOW_DEF.offset,v=>set('offset',v),{min:0,max:100,step:1,unit:'pt'}));
+    wrap.appendChild(numRow('方向',sh.angle??SHADOW_DEF.angle,v=>set('angle',Math.round(v)%360),{min:0,max:359,step:15,unit:'°',title:'0°＝向右，順時針；270°＝向上'}));
+    wrap.appendChild(numRow('濃度',Math.round((sh.opacity??SHADOW_DEF.opacity)*100),v=>set('opacity',Math.max(0,Math.min(1,v/100))),{min:0,max:100,step:5,unit:'%'}));
+  }
+  return wrap;
+}
+// 線型下拉（形狀外框／線條／文字框框線）：匯出寫 line.dashType → <a:prstDash>
+function dashRow(el){
+  const row=document.createElement('div'); row.className='row';
+  row.appendChild(Object.assign(document.createElement('label'),{textContent:'線型'}));
+  const sel=document.createElement('select'); sel.style.flex='1'; sel.style.minWidth='72px';
+  sel.title='匯出為 PPT 原生 prstDash；畫布用 stroke-dasharray 預覽（隨線寬縮放）';
+  sel.innerHTML=DASH_KINDS.map(d=>`<option value="${d.key}">${d.label}</option>`).join('');
+  sel.value=dashKind(el).key;
+  sel.onchange=()=>{ commitUndo();
+    if(sel.value==='solid') delete el.dash; else el.dash=sel.value;
+    renderStage(); renderProps(); };
+  row.appendChild(sel); return row;
+}
+/* 物件層級超連結（整個形狀／圖片／圖表可點）：PptxGenJS 的 options.hyperlink 在 sp 與 pic 兩個分支
+   都有 <a:hlinkClick> 實作，含 tooltip 與跳頁的 ppaction://hlinksldjump。
+   文字框請用「文字樣式 → 超連結」（run 級），兩者不重疊：這裡設的是整個物件。 */
+function linkRows(el,note){
+  const wrap=document.createDocumentFragment();
+  wrap.appendChild(subTitle('超連結（整個物件）'));
+  const r=document.createElement('div'); r.className='row';
+  r.appendChild(Object.assign(document.createElement('label'),{textContent:'連結'}));
+  const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='80px';
+  i.placeholder='https://… 或 #3';
+  i.value= el.link? (el.link.url||('#'+el.link.slide)) : '';
+  i.title='填網址；或填「#頁碼」跳到本簡報該頁。整個'+(note||'物件')+'變成可點擊。';
+  i.onchange=()=>{ commitUndo(); const v=i.value.trim();
+    if(!v) delete el.link;
+    else{ const tip=el.link&&el.link.tooltip;
+      el.link= v[0]==='#'? {slide:Math.max(1,Math.round(+v.slice(1))||1)} : {url:v};
+      if(tip) el.link.tooltip=tip; }
+    renderStage(); renderProps(); };
+  r.appendChild(i); wrap.appendChild(r);
+  if(el.link){
+    const tr=document.createElement('div'); tr.className='row';
+    tr.appendChild(Object.assign(document.createElement('label'),{textContent:'提示'}));
+    const ti=document.createElement('input'); ti.type='text'; ti.style.flex='1'; ti.style.minWidth='80px';
+    ti.placeholder='滑過時顯示（選填）'; ti.value=el.link.tooltip||'';
+    ti.title='PowerPoint 中滑鼠停在物件上顯示的提示文字（OOXML hlinkClick 的 tooltip）';
+    ti.onchange=()=>{ commitUndo(); const v=ti.value.trim();
+      if(v) el.link.tooltip=v; else delete el.link.tooltip; renderStage(); };
+    tr.appendChild(ti); wrap.appendChild(tr);
+  }
+  return wrap;
+}
+// 陰影的 CSS 預覽：PPT 角度 0°＝向右、順時針（與 CSS 座標同向，y 軸向下）
+function shadowCss(el){
+  const s=el&&el.shadow; if(!s) return '';
+  const a=((s.angle??SHADOW_DEF.angle))*Math.PI/180, d=pt2px(s.offset??SHADOW_DEF.offset);
+  const al=Math.round((s.opacity??SHADOW_DEF.opacity)*255).toString(16).padStart(2,'0');
+  return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
+}
 // 行內勾選框列：items=[[label,get,set,title],...]
 function checkRow(items){
   const row=document.createElement('div'); row.className='row';
@@ -1336,7 +1855,7 @@ function applyDim(el,isWidth,newPx){
   const cur= isWidth? elSize(el).w : elSize(el).h;
   if(!(cur>0)||!(newPx>0)) return;
   const f=newPx/cur;
-  if(el.type==='image'||APP.ratioLock){
+  if(imgLocked(el)||APP.ratioLock){
     groupScaleTo({anchor:{x:el.x,y:el.y},orig:[structuredClone(el)],scaleFont:!!APP.fontSync},f);
   }else if(el.type==='table'){
     if(isWidth) el.colW=el.colW.map(w=>Math.max(16,Math.round(w*f)));
@@ -1422,6 +1941,16 @@ function renderProps(){
     pp.innerHTML='<h4>頁面</h4>';
     pp.appendChild(secTitle('頁面樣式',true));
     pp.appendChild(colorRow('底色',curPage().bg,v=>{curPage().bg=v||'FFFFFF';},false));
+    // 頁面背景圖（滿版拉伸，匯出為原生 <p:bg> blipFill；蓋在底色之上、所有元素之下）
+    pp.appendChild(btnRow([
+      ['🖼 背景圖',()=>$('#bgInput').click(),'選一張圖當本頁滿版背景（匯出為原生頁面背景）'],
+      ...(curPage().bgImage? [['清除',()=>{ commitUndo(); delete curPage().bgImage; renderAll(); syncPageJson(); },'移除背景圖']]:[]),
+    ]));
+    if(curPage().bgImage){
+      const bn=document.createElement('div'); bn.className='row';
+      bn.innerHTML='<span class="unit">背景圖已設定（滿版拉伸，不隨元素選取）。想要精確裁切／局部露出，請改用一般圖片元素鋪滿整頁。</span>';
+      pp.appendChild(bn);
+    }
     // 轉場（進入此頁時播放；Morph 依元素 id 跨頁配對，複製頁改版面即可平滑補間）
     const trRow=document.createElement('div'); trRow.className='row'; trRow.innerHTML='<label>轉場</label>';
     const trSel=document.createElement('select');
@@ -1441,12 +1970,138 @@ function renderProps(){
       mn.innerHTML='<span class="unit">Morph 依元素 id 配對前一頁同名元素；「複製此頁」保留 id 即為此用。舊版 PPT 退回淡出。</span>';
       pp.appendChild(mn);
     }
+    // 隱藏投影片：仍在檔案裡、放映時跳過（匯出為 <p:sld show="0">）
+    pp.appendChild(checkRow([['不放映此頁',()=>!!curPage().skip,v=>{ commitUndo();
+      if(v) curPage().skip=true; else delete curPage().skip;
+      renderAll(); syncPageJson(); },'頁仍在檔案內，但放映與「從頭開始」會跳過（PPT 的「隱藏投影片」）']]));
     pp.appendChild(secTitle('備忘稿'));
     const nl=document.createElement('div'); nl.className='row'; nl.innerHTML='<label style="min-width:auto">講者備忘稿</label>';
     pp.appendChild(nl);
     const nt=document.createElement('textarea'); nt.rows=4; nt.placeholder='此頁備忘稿（匯出寫入 pptx 備忘稿）'; nt.value=curPage().notes||'';
     nt.onchange=()=>{ commitUndo(); curPage().notes=nt.value; };
     pp.appendChild(nt);
+    // ── 以下兩區為「整份簡報」層級（不只本頁），標題已標明，避免與頁面屬性混淆 ──
+    pp.appendChild(secTitle('頁碼（整份簡報）'));
+    const pn=APP.deck.pageNum;
+    pp.appendChild(checkRow([['顯示頁碼',()=>!!pn,v=>{ commitUndo();
+      if(v) APP.deck.pageNum={...PAGENUM_DEF}; else delete APP.deck.pageNum;
+      renderAll(); },'匯出為 PPT 原生頁碼欄位（放映／列印會自動更新）']]));
+    if(pn){
+      pp.appendChild(btnRow([
+        ['左下',()=>{ commitUndo(); pn.pos='bl'; renderAll(); },'',pn.pos==='bl'],
+        ['中下',()=>{ commitUndo(); pn.pos='bc'; renderAll(); },'',pn.pos==='bc'],
+        ['右下',()=>{ commitUndo(); pn.pos='br'; renderAll(); },'',(pn.pos||'br')==='br'],
+      ]));
+      pp.appendChild(numRow('字級',pn.sizePt||PAGENUM_DEF.sizePt,v=>{ pn.sizePt=Math.max(6,Math.min(36,v)); },{min:6,max:36,step:1,unit:'pt'}));
+      pp.appendChild(colorRow('文字',pn.color||PAGENUM_DEF.color,v=>{ pn.color=v; renderAll(); },false));
+      pp.appendChild(checkRow([['首頁不顯示',()=>!!pn.skipFirst,v=>{ commitUndo();
+        if(v) pn.skipFirst=true; else delete pn.skipFirst; renderAll(); },'封面通常不放頁碼']]));
+      const pnn=document.createElement('div'); pnn.className='row';
+      pnn.innerHTML='<span class="unit">畫布上的頁碼是<b>預覽</b>（灰底虛線框、不可選取）；匯出為原生頁碼欄位，位置落在底部頁尾預留區。</span>';
+      pp.appendChild(pnn);
+    }
+    pp.appendChild(secTitle('檔案資訊（整份簡報）'));
+    for(const [key,label,ph] of [['author','作者','填入 pptx 檔案屬性'],['company','公司',''],['subject','主旨','']]){
+      const r=document.createElement('div'); r.className='row';
+      r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
+      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      if(ph) i.placeholder=ph;
+      i.value=APP.deck[key]||''; i.title='寫入 docProps（Finder／PowerPoint「資訊」看得到）';
+      i.onchange=()=>{ const v=i.value.trim(); if(v) APP.deck[key]=v; else delete APP.deck[key]; };
+      r.appendChild(i); pp.appendChild(r);
+    }
+    const mn2=document.createElement('div'); mn2.className='row';
+    mn2.innerHTML='<span class="unit">標題取頂端「簡報標題」欄；三欄留空則該欄位不寫入。</span>';
+    pp.appendChild(mn2);
+    // ── 投影片尺寸（整份簡報）：預設值或自訂 px；改尺寸不會搬動既有元素，需自行重排 ──
+    pp.appendChild(secTitle('投影片尺寸（整份簡報）'));
+    const st=APP.deck.stage, pre=stagePresetOf(st.w,st.h);
+    pp.appendChild(btnRow(STAGE_PRESETS.map(p=>[p.key.replace('x',':'),
+      ()=>{ commitUndo(); APP.deck.stage={w:p.w,h:p.h}; renderAll(); },p.label,pre&&pre.key===p.key])));
+    pp.appendChild(numRow('寬',st.w,v=>{ APP.deck.stage={...APP.deck.stage,w:Math.round(v)}; renderAll(); },{min:160,max:4000,step:16,unit:'px'}));
+    pp.appendChild(numRow('高',st.h,v=>{ APP.deck.stage={...APP.deck.stage,h:Math.round(v)}; renderAll(); },{min:120,max:4000,step:16,unit:'px'}));
+    const stn=document.createElement('div'); stn.className='row';
+    stn.innerHTML=`<span class="unit">${(st.w/96*2.54).toFixed(2)} × ${(st.h/96*2.54).toFixed(2)} cm`
+      +`${pre?'（標準 '+pre.key.replace('x',':')+'）':'（自訂比例，匯出的 sldSz 不標準型別名）'}。`
+      +'改尺寸<b>不會自動搬動既有元素</b>，需自行重排。</span>';
+    pp.appendChild(stn);
+    // ── 字體（整份簡報）：三槽任意字體名；預覽用 CSS 變數即時反映，匯出寫同一個字體名 ──
+    pp.appendChild(secTitle('字體（整份簡報）'));
+    for(const [key,label,tip] of [['ea','中文','中日韓文字（匯出寫 <a:ea>）'],
+        ['latin','英數','拉丁字母與數字（匯出寫 <a:latin>／<a:cs>）'],
+        ['tableLatin','表格英數','表格內的英數字體，可與正文不同']]){
+      const r=document.createElement('div'); r.className='row';
+      r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
+      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      i.value=APP.deck.fonts[key]||''; i.title=tip+'。填本機已安裝的字體名，預覽才會一致；未安裝仍可匯出。';
+      i.onchange=()=>{ const v=i.value.trim(); if(!v){ i.value=APP.deck.fonts[key]; return; }
+        commitUndo(); APP.deck.fonts={...APP.deck.fonts,[key]:v}; renderAll(); checkFonts(); };
+      r.appendChild(i); pp.appendChild(r);
+    }
+    const lgr=document.createElement('div'); lgr.className='row';
+    lgr.appendChild(Object.assign(document.createElement('label'),{textContent:'語言'}));
+    const lgi=document.createElement('input'); lgi.type='text'; lgi.style.flex='1'; lgi.style.minWidth='70px';
+    lgi.value=APP.deck.lang||''; lgi.placeholder='zh-TW';
+    lgi.title='寫入每個文字 run 的 lang 屬性，決定 PowerPoint 用哪國拼字檢查／斷字規則';
+    lgi.onchange=()=>{ const v=lgi.value.trim();
+      if(!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(v)){ lgi.value=APP.deck.lang; alert('語言標記格式應如 zh-TW、en-US、ja-JP'); return; }
+      commitUndo(); APP.deck.lang=v; };
+    lgr.appendChild(lgi); pp.appendChild(lgr);
+    // ── 預留區（整份簡報）：母版上不該被壓到的區域（Logo／頁尾…），純畫布輔助，不寫入 pptx ──
+    pp.appendChild(secTitle('預留區（整份簡報）'));
+    const zs=APP.deck.zones||[];
+    zs.forEach((z,zi)=>{
+      const hr=document.createElement('div'); hr.className='row';
+      const zn=document.createElement('input'); zn.type='text'; zn.value=z.name; zn.style.flex='1'; zn.style.minWidth='60px';
+      zn.title='預留區名稱（侵入時的警告文字用）';
+      zn.onchange=()=>{ commitUndo(); z.name=zn.value.trim()||'預留區'; renderAll(); };
+      const zd=document.createElement('button'); zd.textContent='✕'; zd.title='刪除此預留區';
+      zd.onclick=()=>{ commitUndo(); APP.deck.zones.splice(zi,1); renderAll(); };
+      hr.appendChild(zn); hr.appendChild(zd); pp.appendChild(hr);
+      // 四個座標擠成兩列（面板只有 220px 寬）；改完走 renderAll，虛線框才會跟著移動
+      const zRow=(a,b)=>{
+        const r=document.createElement('div'); r.className='row'; r.style.gap='3px';
+        for(const [k,lab] of [a,b]){
+          const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; r.appendChild(lb);
+          const i=document.createElement('input'); i.type='number'; i.style.width='44px'; i.value=z[k];
+          i.min=(k==='w'||k==='h')?1:-2000; i.max=4000;
+          i.onchange=()=>{ let v=Math.round(parseFloat(i.value)||0);
+            if((k==='w'||k==='h')&&v<1) v=1;
+            commitUndo(); z[k]=Math.min(4000,v); renderAll(); };
+          r.appendChild(i);
+        }
+        return r;
+      };
+      pp.appendChild(zRow(['x','X'],['y','Y']));
+      pp.appendChild(zRow(['w','寬'],['h','高']));
+    });
+    pp.appendChild(btnRow([['＋ 預留區',()=>{ commitUndo();
+      APP.deck.zones=[...(APP.deck.zones||[]),{name:'預留區'+((APP.deck.zones||[]).length+1),
+        x:Math.round(STAGE_W*0.75),y:0,w:Math.round(STAGE_W*0.24),h:Math.round(STAGE_H*0.16)}];
+      renderAll(); },'新增一塊不該被內容壓到的區域（如 Logo 位、頁尾）']]));
+    const zn2=document.createElement('div'); zn2.className='row';
+    zn2.innerHTML='<span class="unit">預留區只是<b>畫布輔助線與吸附</b>（元素壓到會變紅警告，不阻擋），<b>不寫入 pptx</b>。'
+      +(zs.length?'':'目前沒有預留區——若你的母版右上有 Logo、底部有頁尾，在這裡加上對應方框即可。')+'</span>';
+    pp.appendChild(zn2);
+    // ── 環境設定檔（profile）：把上面這些客製化整包存下／載入，並可設為新簡報的預設 ──
+    pp.appendChild(secTitle('環境設定檔（profile）'));
+    pp.appendChild(btnRow([
+      ['⬇ 匯出',()=>saveProfileFile(),'把尺寸／預留區／字體／語言／頁碼／檔案屬性存成 .profile.json'],
+      ['⬆ 載入',()=>$('#profileInput').click(),'載入 .profile.json 套用到本簡報'],
+    ]));
+    pp.appendChild(btnRow([
+      ['★ 設為新簡報預設',()=>{ const p=profileFromDeck(APP.deck);
+        if(lsSet(PROFILE_KEY,JSON.stringify(p))) alert('已記住：之後「新簡報」會沿用目前的尺寸／預留區／字體／語言設定。');
+        else alert('這個瀏覽器環境不允許寫入 localStorage（例如以 file:// 開啟時），設定無法記住。請改用「匯出 profile」保存。'); },
+        '存進這台瀏覽器，之後新建簡報自動帶入'],
+    ]));
+    if(lsGet(PROFILE_KEY)) pp.appendChild(btnRow([['清除已記住的預設',()=>{
+      try{ localStorage.removeItem(PROFILE_KEY); }catch(e){}
+      renderProps(); },'恢復中性出廠值']]));
+    const pfn=document.createElement('div'); pfn.className='row';
+    pfn.innerHTML=`<span class="unit">目前設定檔：<b>${(APP.deck.profileName||'預設').replace(/</g,'&lt;')}</b>。`
+      +'設定跟著這份簡報的 JSON 走，所以貼給 AI 再貼回來不會掉。</span>';
+    pp.appendChild(pfn);
     pp.appendChild(secTitle('範本與匯出'));
     pp.appendChild(btnRow([['📋 套範本',()=>openTemplateModal(),'插入版型頁'],['⧉ 合併 .json',()=>$('#mergeInput').click(),'附加另一份簡報的頁']]));
     pp.appendChild(pageJsonBtn());
@@ -1456,7 +2111,7 @@ function renderProps(){
     updateCopyPalWin();
     return;
   }
-  const names={text:'文字框',table:'表格',image:'圖片',shape:'形狀',chart:'圖表'};
+  const names={text:'文字框',table:'表格',image:'圖片',shape:'形狀',chart:'圖表',video:'影片'};
   pp.innerHTML=`<h4>${names[el.type]||el.type} <span class="unit" style="font-weight:400">${el.id}</span></h4>`;
   const sz=elSize(el);
   pp.appendChild(secTitle('位置尺寸',true));
@@ -1536,19 +2191,27 @@ function renderProps(){
     : isLineEl(el) ? '線條樣式'
     : el.type==='shape' ? '形狀樣式'
     : el.type==='table' ? '表格'
-    : el.type==='chart' ? '圖表' : null;   // 圖片無內容樣式區塊，不印空標題
+    : el.type==='image' ? '圖片'
+    : el.type==='chart' ? '圖表'
+    : el.type==='video' ? '影片' : null;
   if(contentTitle) pp.appendChild(secTitle(contentTitle));
 
   if(el.type==='text'||(el.type==='shape'&&el.paras)){
-    const b=baseRun(el);
-    const ta=document.createElement('textarea'); ta.rows=3; ta.title='純文字編輯（run 級富文本請走 JSON）';
+    const b=panelRun(el);   // 編輯中有選取時＝選取起點那個 run 的樣式，否則＝元素第一個 run
+    const ta=document.createElement('textarea'); ta.rows=3;
+    ta.title='純文字覆寫整個文字框（會清掉格內混排格式）。要只改幾個字的格式，請在畫布上雙擊、反白後用下面的按鈕。';
     ta.value=plainText(el);
-    ta.onchange=()=>{ commitUndo(); el.paras=mkParas(ta.value,b); renderStage(); };
+    ta.onchange=()=>{
+      // 這條路一定會攤平（純文字沒有格式資訊），所以混排時先問過再做
+      const mixed=(el.paras||[]).some(p=>(p.runs||[]).some(r=>!sameStyle(r,el.paras[0].runs[0])));
+      if(mixed&&!confirm('純文字覆寫會清掉這個文字框的混排格式（粗體、顏色、連結…），確定要覆寫嗎？')){ ta.value=plainText(el); return; }
+      commitUndo(); el.paras=mkParas(ta.value,baseRun(el)); renderStage(); renderProps();
+    };
     pp.appendChild(ta);
     const row=document.createElement('div'); row.className='row';
     row.innerHTML='<label>字級</label>';
     const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=96; inp.value=b.sizePt;
-    inp.onchange=()=>{ commitUndo(); setAllRuns(el,r=>r.sizePt=+inp.value); renderStage(); };
+    inp.onchange=()=>{ commitUndo(); runApply(el,r=>r.sizePt=+inp.value); renderStage(); };
     row.appendChild(inp); row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
     pp.appendChild(row);
     const lsr=document.createElement('div'); lsr.className='row'; lsr.innerHTML='<label>行距</label>';
@@ -1557,18 +2220,85 @@ function renderProps(){
     lsr.appendChild(lsi); lsr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'×字級'}));
     pp.appendChild(lsr);
     pp.appendChild(btnRow([
-      ['B',()=>{ commitUndo(); const on=!b.bold; setAllRuns(el,r=>r.bold=on); renderStage(); renderProps(); },'粗體',b.bold],
-      ['I',()=>{ commitUndo(); const on=!b.italic; setAllRuns(el,r=>r.italic=on); renderStage(); renderProps(); },'斜體',b.italic],
+      ['B',()=>{ commitUndo(); const on=!b.bold; runApply(el,r=>r.bold=on); renderStage(); renderProps(); },'粗體（畫布上反白幾個字，就只套那幾個字）',b.bold],
+      ['I',()=>{ commitUndo(); const on=!b.italic; runApply(el,r=>r.italic=on); renderStage(); renderProps(); },'斜體（同上，可只套選取範圍）',b.italic],
+      ['U',()=>{ commitUndo(); const on=!b.underline; setRunOpt(el,'underline',on||undefined); renderStage(); renderProps(); },'底線',!!b.underline],
+      ['S',()=>{ commitUndo(); const on=!b.strike; setRunOpt(el,'strike',on||undefined); renderStage(); renderProps(); },'刪除線',!!b.strike],
     ]));
-    pp.appendChild(colorRow('文字',b.color,v=>setAllRuns(el,r=>r.color=v),false));
-    pp.appendChild(btnRow([['左',()=>{commitUndo();setAllRuns(el,(r,p)=>p.align='left');renderStage();renderProps();},'',b.align==='left'],
-      ['中',()=>{commitUndo();setAllRuns(el,(r,p)=>p.align='center');renderStage();renderProps();},'',b.align==='center'],
-      ['右',()=>{commitUndo();setAllRuns(el,(r,p)=>p.align='right');renderStage();renderProps();},'',b.align==='right']]));
+    pp.appendChild(colorRow('文字',b.color,v=>runApply(el,r=>r.color=v),false));
+    pp.appendChild(colorRow('高亮',b.highlight||null,v=>setRunOpt(el,'highlight',v||undefined),true));
+    pp.appendChild(btnRow([['左',()=>{commitUndo();runApply(el,(r,p)=>p.align='left');renderStage();renderProps();},'',b.align==='left'],
+      ['中',()=>{commitUndo();runApply(el,(r,p)=>p.align='center');renderStage();renderProps();},'',b.align==='center'],
+      ['右',()=>{commitUndo();runApply(el,(r,p)=>p.align='right');renderStage();renderProps();},'',b.align==='right']]));
     pp.appendChild(btnRow([['上',()=>{commitUndo();el.valign='top';renderStage();renderProps();},'',(el.valign||'top')==='top'],
       ['中',()=>{commitUndo();el.valign='middle';renderStage();renderProps();},'',el.valign==='middle'],
       ['下',()=>{commitUndo();el.valign='bottom';renderStage();renderProps();},'',el.valign==='bottom']]));
     pp.appendChild(colorRow('底色',el.fill,v=>el.fill=v,true));
     pp.appendChild(colorRow('框線',el.lineColor,v=>el.lineColor=v,true));
+    if(el.lineColor!=null) pp.appendChild(dashRow(el));
+    // 文字框內距與換行：目前預設 0 內距、自動換行（與舊版行為一致），有需要才調
+    pp.appendChild(numRow('內距',el.inset||0,v=>{ if(v>0) el.inset=v; else delete el.inset; },
+      {min:0,max:72,step:1,unit:'pt',title:'文字與框邊的距離（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）。有填色的卡片式文字框很有感'}));
+    pp.appendChild(checkRow([['不自動換行',()=>!!el.nowrap,v=>{ commitUndo();
+      if(v) el.nowrap=true; else delete el.nowrap; renderStage(); renderProps(); },
+      '文字超出框寬不折行（匯出 bodyPr wrap="none"）；適合單行標籤']]));
+    // ── 字元進階：字距／自訂字型／描邊／輝光（皆 run 級，套用到本元素全部 run）──
+    pp.appendChild(subTitle('字元進階'));
+    pp.appendChild(numRow('字距',b.charSpacing||0,v=>setRunOpt(el,'charSpacing',v||undefined),
+      {min:-5,max:30,step:0.5,unit:'pt',title:'字元間距（正值拉寬、負值收緊）'}));
+    const ffr=document.createElement('div'); ffr.className='row'; ffr.innerHTML='<label>字型</label>';
+    const ffi=document.createElement('input'); ffi.type='text'; ffi.style.flex='1'; ffi.style.minWidth='80px';
+    ffi.placeholder='沿用全域'; ffi.value=b.fontFace||'';
+    ffi.title='只覆寫此元素的字型（留空＝沿用頂端「字體」模式設定）。匯出時 latin/ea/cs 三槽都用此字型。';
+    ffi.onchange=()=>{ commitUndo(); setRunOpt(el,'fontFace',ffi.value.trim()||undefined); renderStage(); renderProps(); };
+    ffr.appendChild(ffi); pp.appendChild(ffr);
+    pp.appendChild(checkRow([
+      ['描邊',()=>!!b.outline,v=>{ commitUndo(); setRunOpt(el,'outline', v?{size:1,color:'FFFFFF'}:undefined); renderStage(); renderProps(); },'文字外框描邊（海報式大字）'],
+      ['輝光',()=>!!b.glow,v=>{ commitUndo(); setRunOpt(el,'glow', v?{size:8,color:'FFFF00',opacity:0.6}:undefined); renderStage(); renderProps(); },'文字外緣輝光'],
+    ]));
+    if(b.outline){
+      pp.appendChild(colorRow('描邊色',b.outline.color||'FFFFFF',v=>setRunOpt(el,'outline',{...b.outline,color:v}),false));
+      pp.appendChild(numRow('描邊寬',b.outline.size||1,v=>setRunOpt(el,'outline',{...b.outline,size:Math.max(0.25,v)}),{min:0.25,max:8,step:0.25,unit:'pt'}));
+    }
+    if(b.glow){
+      pp.appendChild(colorRow('輝光色',b.glow.color||'FFFF00',v=>setRunOpt(el,'glow',{...b.glow,color:v}),false));
+      pp.appendChild(numRow('輝光徑',b.glow.size||8,v=>setRunOpt(el,'glow',{...b.glow,size:Math.max(1,v)}),{min:1,max:50,step:1,unit:'pt'}));
+    }
+    // ── 段落：項目符號／編號、縮排層級、段前後間距 ──
+    pp.appendChild(subTitle('段落'));
+    const buType=(b.bullet&&b.bullet.type)||null;
+    const setBullet=v=>{ commitUndo(); runApply(el,(r,p)=>{ if(v) p.bullet=v; else delete p.bullet; }); renderStage(); renderProps(); };
+    pp.appendChild(btnRow([
+      ['無',()=>setBullet(null),'不使用清單',!buType],
+      ['• 符號',()=>setBullet({type:'bullet',level:(b.bullet&&b.bullet.level)||0}),'項目符號清單',buType==='bullet'],
+      ['1. 編號',()=>setBullet({type:'number',level:(b.bullet&&b.bullet.level)||0,startAt:1}),'編號清單',buType==='number'],
+    ]));
+    if(buType){
+      const lv=(b.bullet.level|0);
+      const lvRow=btnRow([
+        ['−',()=>setBullet({...b.bullet,level:Math.max(0,lv-1)}),'減少縮排層級'],
+        ['＋',()=>setBullet({...b.bullet,level:Math.min(8,lv+1)}),'增加縮排層級'],
+      ]);
+      lvRow.insertBefore(Object.assign(document.createElement('label'),{textContent:'縮排'}),lvRow.firstChild);
+      lvRow.appendChild(Object.assign(document.createElement('span'),{className:'unit',
+        textContent:`層級 ${lv+1}（每層 ${BULLET_INDENT}pt）`}));
+      pp.appendChild(lvRow);
+    }
+    pp.appendChild(numRow('段前',(b.spaceBefore)||0,v=>runApply(el,(r,p)=>{ if(v>0)p.spaceBefore=v; else delete p.spaceBefore; }),{min:0,max:72,step:1,unit:'pt',title:'段落上方額外間距'}));
+    pp.appendChild(numRow('段後',(b.spaceAfter)||0,v=>runApply(el,(r,p)=>{ if(v>0)p.spaceAfter=v; else delete p.spaceAfter; }),{min:0,max:72,step:1,unit:'pt',title:'段落下方額外間距'}));
+    // ── 超連結：外部網址或跳到本簡報某頁 ──
+    pp.appendChild(subTitle('超連結'));
+    const lkr=document.createElement('div'); lkr.className='row'; lkr.innerHTML='<label>連結</label>';
+    const lki=document.createElement('input'); lki.type='text'; lki.style.flex='1'; lki.style.minWidth='80px';
+    lki.placeholder='https://… 或 #3';
+    lki.value= b.link? (b.link.url||('#'+b.link.slide)) : '';
+    lki.title='填網址；或填「#頁碼」跳到本簡報該頁。PptxGenJS 會自動補底線（預覽同步顯示）。';
+    lki.onchange=()=>{ commitUndo(); const v=lki.value.trim();
+      setRunOpt(el,'link', !v? undefined : (v[0]==='#'? {slide:Math.max(1,Math.round(+v.slice(1))||1)} : {url:v}));
+      renderStage(); renderProps(); };
+    lkr.appendChild(lki); pp.appendChild(lkr);
+    if(el.type==='shape') pp.appendChild(linkRows(el,'形狀'));   // 有文字的形狀：整塊也可設連結
+    pp.appendChild(shadowRows(el));
   }
   if(isLineEl(el)){
     pp.appendChild(colorRow('線色',el.lineColor,v=>el.lineColor=v,false));
@@ -1577,14 +2307,78 @@ function renderProps(){
     inp.onchange=()=>{ commitUndo(); el.linePt=+inp.value; renderStage(); };
     row.appendChild(inp); row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
     pp.appendChild(row);
+    pp.appendChild(dashRow(el));
     const note=document.createElement('div'); note.className='row';
     note.innerHTML='<span class="unit">拖曳兩端圓點改方向；接近水平／垂直會貼齊。</span>';
     pp.appendChild(note);
+    pp.appendChild(linkRows(el,'線條'));
   }
   if(el.type==='shape'&&!isLineEl(el)&&!el.paras){
     pp.appendChild(colorRow('底色',el.fill,v=>el.fill=v,true));
     pp.appendChild(colorRow('框線',el.lineColor,v=>el.lineColor=v,true));
+    if(el.lineColor!=null) pp.appendChild(dashRow(el));
     pp.appendChild(btnRow([['加入文字',()=>{ commitUndo(); el.paras=mkParas('文字',{sizePt:14,color:'FFFFFF',align:'center'}); el.valign='middle'; renderStage(); renderProps(); }]]));
+    pp.appendChild(linkRows(el,'形狀'));
+    pp.appendChild(shadowRows(el));
+  }
+  if(el.type==='image'){
+    // 裁切模式：完整＝整張塞進框（強制等比、不變形）；填滿裁切＝框比例自由、只露出中央局部
+    pp.appendChild(btnRow([
+      ['完整',()=>{ commitUndo(); delete el.fit;
+        if(el.natW&&el.natH) el.h=Math.max(4,Math.round(el.w*el.natH/el.natW));   // 回到原始比例
+        renderStage(); renderProps(); },'整張塞進框，強制等比',el.fit!=='cover'],
+      ['填滿裁切',()=>{ commitUndo(); el.fit='cover'; renderStage(); renderProps(); },'框比例自由，圖片填滿並裁掉超出部分（解除等比鎖）',el.fit==='cover'],
+    ]));
+    pp.appendChild(checkRow([['圓形裁切',()=>!!el.round,v=>{ commitUndo();
+      if(v) el.round=true; else delete el.round; renderStage(); renderProps(); },'裁成圓／橢圓（匯出為 PPT prstGeom ellipse）']]));
+    const alr=document.createElement('div'); alr.className='row'; alr.innerHTML='<label>替代文字</label>';
+    const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+    ali.placeholder='無障礙說明'; ali.value=el.alt||''; ali.title='寫入 pptx 的圖片說明（descr），螢幕閱讀器與「替代文字」窗格會讀到';
+    ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
+    alr.appendChild(ali); pp.appendChild(alr);
+    if(el.fit==='cover'){
+      const cn=document.createElement('div'); cn.className='row';
+      cn.innerHTML='<span class="unit">填滿裁切下寬高可各自調整（不再等比）；露出的是<b>中央</b>區域，匯出為原生 <code>srcRect</code> 裁切，PPT 內可再調。</span>';
+      pp.appendChild(cn);
+    }
+    pp.appendChild(linkRows(el,'圖片'));
+    pp.appendChild(shadowRows(el));
+  }
+  if(el.type==='video'){
+    // 兩種模式共用一個元素；模式在插入時決定，這裡只做微調（換封面、改網址、補替代文字）
+    const isOn=el.mode==='online';
+    const mr=document.createElement('div'); mr.className='row';
+    mr.innerHTML=`<span class="unit">模式：<b>${isOn?'YouTube 連結影片':'本機影片（封面佔位）'}</b></span>`;
+    pp.appendChild(mr);
+    if(isOn){
+      const ur=document.createElement('div'); ur.className='row';
+      ur.appendChild(Object.assign(document.createElement('label'),{textContent:'網址'}));
+      const ui=document.createElement('input'); ui.type='text'; ui.style.flex='1'; ui.style.minWidth='80px';
+      ui.value=el.embed||''; ui.title='PowerPoint 需要 embed 形式；貼 watch／youtu.be 也會自動轉換';
+      ui.onchange=()=>{ const e2=ytEmbed(ui.value);
+        if(!e2){ ui.value=el.embed||''; alert('無法解析成 YouTube 影片網址。可貼 watch?v=、youtu.be/ 或 embed/ 形式。'); return; }
+        commitUndo(); el.embed=e2; renderStage(); renderProps(); };
+      ur.appendChild(ui); pp.appendChild(ur);
+      const un=document.createElement('div'); un.className='row';
+      un.innerHTML='<span class="unit">匯出為原生線上影片：pptx 內<b>只有封面圖</b>，影片走外部連結，<b>播放需要網路</b>。</span>';
+      pp.appendChild(un);
+    }else{
+      const sn=document.createElement('div'); sn.className='row';
+      sn.innerHTML=`<span class="unit">檔案：<b>${String((el.src&&el.src.name)||'—').replace(/</g,'&lt;')}</b>${durText(el)}`
+        +`${el.src&&el.src.natW?`，原始 ${el.src.natW}×${el.src.natH}`:''}。`
+        +'<b>影片本身不在這份簡報裡</b>——匯出後請在 PowerPoint 該頁把封面換成真影片（匯出時會列清單提醒）。</span>';
+      pp.appendChild(sn);
+    }
+    pp.appendChild(btnRow([
+      ['🖼 換封面圖',()=>{ COVER_TARGET=el.id; $('#coverInput').click(); },'選一張圖當封面（PNG／JPG）'],
+      ...(el.mode==='local'? [['↻ 重抓封面',()=>{ VID_RECOVER=el.id; $('#vidInput').click(); },'重新選同一個影片檔並抓一格畫面']]:[]),
+    ]));
+    const alr=document.createElement('div'); alr.className='row'; alr.innerHTML='<label>替代文字</label>';
+    const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+    ali.placeholder='無障礙說明'; ali.value=el.alt||'';
+    ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
+    alr.appendChild(ali); pp.appendChild(alr);
+    if(!isOn) pp.appendChild(shadowRows(el));
   }
   if(el.type==='table'){
     pp.appendChild(subTitle('結構'));
@@ -1650,8 +2444,9 @@ function renderProps(){
     const psw=document.createElement('button'); psw.className='swatchBtn'; psw.title='框線顏色'; psw.style.background='#'+pen.color;
     psw.onclick=()=>openPalette(psw,pen.color,hex=>{ pen.color=hex; psw.style.background='#'+hex; });
     penRow.appendChild(psw);
+    penRow.appendChild(checkRow([['虛線',()=>pen.dash,v=>{ pen.dash=v; },'虛線框線（匯出 prstDash sysDash）']]).firstChild);
     pp.appendChild(penRow);
-    const bBtn=(label,mode,title)=>[label,()=>applyBorder(el,brRange(),mode, mode==='none'?null:{pt:pen.pt,color:pen.color}),title];
+    const bBtn=(label,mode,title)=>[label,()=>applyBorder(el,brRange(),mode, mode==='none'?null:{pt:pen.pt,color:pen.color,dash:pen.dash}),title];
     pp.appendChild(btnRow([bBtn('全部','all','所有格線'),bBtn('外框','outer','範圍外周'),bBtn('內部','inner','範圍內部格線')]));
     pp.appendChild(btnRow([bBtn('上','top'),bBtn('下','bottom'),bBtn('左','left'),bBtn('右','right'),bBtn('無','none','清除框線')]));
     const brNote=document.createElement('div'); brNote.className='row';
@@ -1668,6 +2463,13 @@ function renderProps(){
   }
   if(el.type==='chart'){
     pp.appendChild(btnRow([['編輯 option',()=>openChartModal(el)]]));
+    const car=document.createElement('div'); car.className='row'; car.innerHTML='<label>替代文字</label>';
+    const cai=document.createElement('input'); cai.type='text'; cai.style.flex='1'; cai.style.minWidth='80px';
+    cai.placeholder='無障礙說明'; cai.value=el.alt||''; cai.title='圖表以 PNG 匯出，此文字寫入圖片說明（descr）';
+    cai.onchange=()=>{ commitUndo(); const v=cai.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
+    car.appendChild(cai); pp.appendChild(car);
+    pp.appendChild(linkRows(el,'圖表'));
+    pp.appendChild(shadowRows(el));
   }
   pp.appendChild(secTitle('排列'));
   const pg=curPage(); const idx=pg.elements.indexOf(el);
@@ -1708,20 +2510,21 @@ function tableMerge(el,r,c,cs,rs){
   el.cells[r][c].colspan=cs; el.cells[r][c].rowspan=rs; el.cells[r][c].covered=false;
 }
 /* ---- 逐格四邊框線 ----
-   cell.border={t,r,b,l}，每邊 {pt,color}｜null（明確無線）｜缺鍵＝沿用整表 el.border。
+   cell.border={t,r,b,l}，每邊 {pt,color,dash?}｜null（明確無線）｜缺鍵＝沿用整表 el.border。
    相鄰兩格共用邊 → 每次設一半必同步對面那一半（雙寫），讓 collapse 預覽與 PPT 逐格 <a:ln*> 一致。*/
 const BSIDE_TWIN={t:['b',-1,0],b:['t',1,0],l:['r',0,-1],r:['l',0,1]};
-function cellSide(el,cell,side){   // side∈'t','r','b','l'；回 {pt,color}｜null
-  if(cell.border&&(side in cell.border)){ const s=cell.border[side]; return s?{pt:s.pt,color:s.color}:null; }
-  return el.border? {pt:el.border.pt,color:el.border.color} : null;
+const bSide=v=>v? {pt:v.pt,color:v.color,...(v.dash?{dash:true}:{})} : null;   // 只在虛線時留鍵，JSON 保持精簡
+function cellSide(el,cell,side){   // side∈'t','r','b','l'；回 {pt,color,dash?}｜null
+  if(cell.border&&(side in cell.border)) return bSide(cell.border[side]);
+  return bSide(el.border);
 }
-function setCellSide(el,r,c,side,val){   // val={pt,color}｜null
+function setCellSide(el,r,c,side,val){   // val={pt,color,dash?}｜null
   const cell=el.cells[r]&&el.cells[r][c]; if(!cell||cell.covered) return;
   if(!cell.border) cell.border={};
-  cell.border[side]= val? {pt:val.pt,color:val.color} : null;
+  cell.border[side]=bSide(val);
   const [ts,dr,dc]=BSIDE_TWIN[side], tr=r+dr, tc=c+dc;   // 對面半邊同步
   const nb=el.cells[tr]&&el.cells[tr][tc];
-  if(nb&&!nb.covered){ if(!nb.border) nb.border={}; nb.border[ts]= val? {pt:val.pt,color:val.color} : null; }
+  if(nb&&!nb.covered){ if(!nb.border) nb.border={}; nb.border[ts]=bSide(val); }
 }
 // mode: all｜outer｜inner｜top｜bottom｜left｜right｜none(清除)。range 省略＝全表。
 function applyBorder(el,range,mode,val){
@@ -1741,7 +2544,7 @@ function applyBorder(el,range,mode,val){
   else if(mode==='left') left(); else if(mode==='right') right();
   // 全表操作時同步整表預設 el.border，讓日後新增欄／列沿用一致基準
   const whole=!range||(r0===0&&c0===0&&r1===el.rowH.length-1&&c1===el.colW.length-1);
-  if(whole&&mode==='all') el.border= val? {pt:val.pt,color:val.color} : el.border;
+  if(whole&&mode==='all') el.border= val? bSide(val) : el.border;
   if(whole&&mode==='none') el.border=null;
   renderStage(); renderProps(); updateSelBox();
 }
@@ -1862,10 +2665,17 @@ function deleteSelected(){
 function extractStyle(el){
   const s={};
   s.opacity=el.opacity;                       // 一律帶（含 undefined＝100%）
-  if(el.paras){ const b=baseRun(el); s.run={bold:b.bold,italic:b.italic,color:b.color,sizePt:b.sizePt}; s.align=b.align; s.valign=el.valign||'top'; }
+  s.shadow=el.shadow? structuredClone(el.shadow):null;   // 一律帶（null＝關閉，可用格式刷清掉陰影）
+  if(el.paras){ const b=baseRun(el);
+    s.run={bold:b.bold,italic:b.italic,color:b.color,sizePt:b.sizePt};
+    // 選配樣式一律帶（沒有＝null，讓格式刷也能「清掉」目標的底線／高亮…）；link 屬內容不屬樣式，不搬
+    for(const k of RUN_OPT_KEYS) if(k!=='link') s.run[k]= b[k]!=null? structuredClone(b[k]):null;
+    s.align=b.align; s.valign=el.valign||'top'; }
   if(!isLineEl(el)&&'fill' in el) s.fill=el.fill;
   if('lineColor' in el) s.lineColor=el.lineColor;
   if(el.linePt!=null) s.linePt=el.linePt;
+  s.dash=el.dash||null;                       // 線型一律帶（null＝實線，格式刷也能把虛線刷回實線）
+  if(el.paras){ s.inset=el.inset||null; s.nowrap=!!el.nowrap; }   // 文字框內距／不換行也算樣式
   if(el.type==='table'){
     s.border=el.border?{...el.border}:null;
     const c0=(el.cells[0]&&el.cells[0][0])||{};
@@ -1875,12 +2685,18 @@ function extractStyle(el){
 }
 function applyStyle(el,s){
   el.opacity=s.opacity;
-  if(el.paras&&s.run){ setAllRuns(el,r=>{ r.bold=s.run.bold; r.italic=s.run.italic; r.color=s.run.color; r.sizePt=s.run.sizePt; });
+  if('shadow' in s){ if(s.shadow) el.shadow=structuredClone(s.shadow); else delete el.shadow; }
+  if(el.paras&&s.run){ setAllRuns(el,r=>{ r.bold=s.run.bold; r.italic=s.run.italic; r.color=s.run.color; r.sizePt=s.run.sizePt;
+      for(const k of RUN_OPT_KEYS){ if(k==='link') continue;   // 超連結屬「內容」不屬樣式，格式刷不搬
+        if(s.run[k]) r[k]=structuredClone(s.run[k]); else delete r[k]; } });
     if(s.align) setAllRuns(el,(r,p)=>p.align=s.align); }
   if(s.valign!=null&&(el.type==='text'||el.type==='shape')) el.valign=s.valign;
   if('fill' in s&&!isLineEl(el)&&(el.type==='text'||el.type==='shape')) el.fill=s.fill;
   if('lineColor' in s&&(el.type==='text'||el.type==='shape')) el.lineColor=s.lineColor;
   if('linePt' in s&&(el.type==='text'||el.type==='shape')) el.linePt=s.linePt;
+  if('dash' in s&&(el.type==='text'||el.type==='shape')){ if(s.dash) el.dash=s.dash; else delete el.dash; }
+  if(el.paras&&'inset' in s){ if(s.inset) el.inset=s.inset; else delete el.inset;
+    if(s.nowrap) el.nowrap=true; else delete el.nowrap; }
   if(el.type==='table'&&s.cell){ el.cells.forEach(row=>row.forEach(c=>{ c.bold=s.cell.bold; c.italic=s.cell.italic; c.color=s.cell.color; c.sizePt=s.cell.sizePt; }));
     if('border' in s) el.border=s.border?{...s.border}:null; }
 }
@@ -1907,6 +2723,13 @@ $('#btnAddImage').onclick=()=>$('#imgInput').click();
 $('#imgInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   if(f) await insertImageFile(f);
+});
+// 頁面背景圖：存 dataUrl 在 pg.bgImage（與圖片元素同樣自足可攜；JSON 顯示層一併遮罩）
+$('#bgInput').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  const dataUrl=await new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
+  commitUndo(); curPage().bgImage=dataUrl; renderAll(); syncPageJson();
 });
 async function insertImageFile(f,x,y){
   const dataUrl=await new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
@@ -1982,6 +2805,114 @@ function insertShape(key){
 $('#btnAddShape').onclick=()=>{ buildShapeGrid(); $('#shapeModal').hidden=false; };
 $('#btnShapeClose').onclick=()=>{ $('#shapeModal').hidden=true; };
 $('#btnAddChart').onclick=()=>addEl({id:uid('e'),type:'chart',x:640,y:180,w:480,h:320,option:structuredClone(SAMPLE_CHART)});
+
+/* ================= 影片元素 =================
+   兩種模式，位元組都不進 JSON：
+   - mode:'online'：YouTube。匯出走 addMedia({type:'online',link})，pptx 只寫一條 TargetMode="External"
+     的關聯＋一張封面圖，不含任何影片位元組。播放時需要網路。
+   - mode:'local' ：本機影片。完全不呼叫 addMedia，只放封面圖（addImage）＋替代文字／備忘稿／匯出清單
+     三路提示，請使用者在 PowerPoint 換成真影片。原因：20MB 的 mp4 base64 後約 27MB，
+     會直接破壞「整份 JSON 可以貼給 AI」這個核心用法。 */
+let COVER_TARGET=null, VID_RECOVER=null;
+// YouTube 網址正規化：PowerPoint 的線上影片要 embed 形式，使用者手上多半是 watch?v= 或 youtu.be/
+function ytEmbed(u){
+  const s=String(u||'').trim(); if(!s) return null;
+  let id=null;
+  let m=s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);            if(m) id=m[1];
+  if(!id&&(m=s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/))) id=m[1];
+  if(!id&&(m=s.match(/\/embed\/([A-Za-z0-9_-]{6,})/)))   id=m[1];
+  if(!id&&(m=s.match(/\/shorts\/([A-Za-z0-9_-]{6,})/)))  id=m[1];
+  if(!id&&/^[A-Za-z0-9_-]{11}$/.test(s))                 id=s;   // 只貼影片 id 也接受
+  return id? 'https://www.youtube.com/embed/'+id : null;
+}
+// 自繪封面（抓不到畫面／連結影片沒給封面時）：深色底＋播放三角＋標題文字。不連網，不用外部縮圖
+function drawFallbackCover(w,h,label){
+  const cv=document.createElement('canvas'); cv.width=Math.max(160,Math.round(w)); cv.height=Math.max(90,Math.round(h));
+  const c=cv.getContext('2d');
+  c.fillStyle='#20242c'; c.fillRect(0,0,cv.width,cv.height);
+  const r=Math.min(cv.width,cv.height)*0.16, cx=cv.width/2, cy=cv.height/2-(label?8:0);
+  c.fillStyle='rgba(255,255,255,.82)'; c.beginPath();
+  c.moveTo(cx-r*0.5,cy-r); c.lineTo(cx+r*0.75,cy); c.lineTo(cx-r*0.5,cy+r); c.closePath(); c.fill();
+  if(label){ c.fillStyle='rgba(255,255,255,.7)'; c.font=`${Math.max(11,Math.round(cv.height*0.06))}px sans-serif`;
+    c.textAlign='center'; c.fillText(String(label).slice(0,40),cx,cy+r+Math.round(cv.height*0.12)); }
+  return cv.toDataURL('image/png');
+}
+/* 從影片檔抓一格當封面：URL.createObjectURL → <video> seek → canvas.drawImage。
+   只有這一格進 JSON，原始檔連讀進記憶體都不需要（<video> 走串流解碼）。
+   瀏覽器解不了的編碼（部分 .mov／HEVC）會 seek 失敗或畫出全黑 → 明確回傳 null，由呼叫端走 fallback。*/
+function grabVideoFrame(file){
+  return new Promise(res=>{
+    const url=URL.createObjectURL(file);
+    const v=document.createElement('video');
+    v.preload='metadata'; v.muted=true; v.playsInline=true; v.src=url;
+    let done=false;
+    const finish=out=>{ if(done) return; done=true; URL.revokeObjectURL(url); v.removeAttribute('src'); res(out); };
+    const timer=setTimeout(()=>finish(null),8000);   // 解不開就別讓使用者一直等
+    v.onerror=()=>{ clearTimeout(timer); finish(null); };
+    v.onloadedmetadata=()=>{
+      const meta={name:file.name,durationSec:isFinite(v.duration)?Math.round(v.duration):0,
+        natW:v.videoWidth||0,natH:v.videoHeight||0};
+      if(!meta.natW||!meta.natH){ clearTimeout(timer); finish({meta,cover:null}); return; }
+      v.onseeked=()=>{
+        clearTimeout(timer);
+        try{
+          const cv=document.createElement('canvas');
+          cv.width=Math.min(1280,meta.natW); cv.height=Math.round(cv.width*meta.natH/meta.natW);
+          const c=cv.getContext('2d'); c.drawImage(v,0,0,cv.width,cv.height);
+          // 全黑判定：取樣 200 點，全部近黑就當抓失敗（部分編碼會 seek 成功卻畫出空白）
+          const d=c.getImageData(0,0,cv.width,cv.height).data;
+          let lit=0; const step=Math.max(4,Math.floor(d.length/4/200)*4);
+          for(let i=0;i<d.length;i+=step) if(d[i]+d[i+1]+d[i+2]>36) lit++;
+          finish({meta,cover: lit>2? cv.toDataURL('image/jpeg',0.82) : null});
+        }catch(err){ finish({meta,cover:null}); }
+      };
+      v.currentTime=Math.min(Math.max(0.1,(meta.durationSec||1)*0.1),Math.max(0.1,(v.duration||1)-0.1));
+    };
+  });
+}
+function videoFrame(natW,natH){   // 插入時的預設框：置中、寬約半個畫布、依原始比例
+    const w=Math.round(STAGE_W*0.5);
+    const h=Math.round(w*((natW&&natH)? natH/natW : 9/16));
+    return {x:Math.round((STAGE_W-w)/2),y:Math.round((STAGE_H-h)/2),w,h};
+}
+$('#btnAddVideo').onclick=()=>{ $('#vidUrl').value=''; $('#videoModal').hidden=false; };
+$('#btnVideoClose').onclick=()=>{ $('#videoModal').hidden=true; };
+$('#btnVideoOnline').onclick=()=>{
+  const em=ytEmbed($('#vidUrl').value);
+  if(!em){ alert('無法解析成 YouTube 影片網址。\n可貼 https://www.youtube.com/watch?v=…、https://youtu.be/… 或 embed 形式。'); return; }
+  $('#videoModal').hidden=true;
+  const f=videoFrame(16,9);
+  addEl({id:uid('e'),type:'video',mode:'online',embed:em,cover:drawFallbackCover(f.w,f.h,'YouTube 影片'),...f});
+};
+$('#btnVideoLocal').onclick=()=>{ VID_RECOVER=null; $('#vidInput').click(); };
+$('#vidInput').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  const recover=VID_RECOVER; VID_RECOVER=null;
+  if(!f) return;
+  $('#videoModal').hidden=true;
+  const got=await grabVideoFrame(f);
+  if(!got){ alert('這個影片檔瀏覽器解不開（常見於部分 .mov／HEVC 編碼），無法自動抓封面。\n'
+    +'仍會插入影片佔位框，請用「換封面圖」自行指定一張圖。'); }
+  const meta=(got&&got.meta)||{name:f.name,durationSec:0,natW:0,natH:0};
+  if(recover){
+    const el=curPage().elements.find(x=>x.id===recover);
+    if(!el) return;
+    commitUndo(); el.src=meta;
+    el.cover=(got&&got.cover)||drawFallbackCover(el.w,el.h,meta.name);
+    renderAll(); renderProps(); return;
+  }
+  const fr=videoFrame(meta.natW,meta.natH);
+  addEl({id:uid('e'),type:'video',mode:'local',src:meta,
+    cover:(got&&got.cover)||drawFallbackCover(fr.w,fr.h,meta.name),...fr});
+});
+$('#coverInput').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  const id=COVER_TARGET; COVER_TARGET=null;
+  if(!f||!id) return;
+  const el=curPage().elements.find(x=>x.id===id); if(!el) return;
+  const dataUrl=await new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
+  commitUndo(); el.cover=dataUrl; renderAll(); renderProps();
+});
 
 /* 拖放與貼上圖片 */
 document.body.addEventListener('dragover',e=>e.preventDefault());
@@ -2155,8 +3086,12 @@ stage.addEventListener('pointermove',e=>{
   if(drag.type==='move'){
     let nx=drag.x+dx, ny=drag.y+dy;
     const {w,h}=elSize(el); const SNAP=6;
-    for(const g of [(STAGE_W-w)/2,0,STAGE_W-w,ZONE_MARK.x-w]) if(Math.abs(nx-g)<SNAP){ nx=g; break; }
-    for(const g of [(STAGE_H-h)/2,0,STAGE_H-h,ZONE_FOOTER.y-h,ZONE_MARK.h]) if(Math.abs(ny-g)<SNAP){ ny=g; break; }
+    // 吸附輔助線：投影片中線／邊界，加上每個預留區的四條邊（貼齊預留區外緣是最常見的需求）
+    const zs=APP.deck.zones||[];
+    const gx=[(STAGE_W-w)/2,0,STAGE_W-w,...zs.flatMap(z=>[z.x-w,z.x+z.w])];
+    const gy=[(STAGE_H-h)/2,0,STAGE_H-h,...zs.flatMap(z=>[z.y-h,z.y+z.h])];
+    for(const g of gx) if(Math.abs(nx-g)<SNAP){ nx=g; break; }
+    for(const g of gy) if(Math.abs(ny-g)<SNAP){ ny=g; break; }
     el.x=Math.round(nx); el.y=Math.round(ny);
     updateElStyle(el);
   }else if(drag.type==='adj'){
@@ -2266,7 +3201,7 @@ function resizeBy(el,d,dx,dy){
   if(dir.includes('s')){ h=d.h+ldy; signY=-1; }
   if(dir.includes('n')){ h=d.h-ldy; signY=+1; }
   // 等比鎖定：圖片一律鎖；其餘看 APP.ratioLock（線條除外）
-  const lockAR= el.type==='image' || (APP.ratioLock && !isLineEl(el));
+  const lockAR= imgLocked(el) || (APP.ratioLock && !isLineEl(el));
   if(lockAR && d.w>0 && d.h>0){ const ar=d.w/d.h; if(Math.abs(ldx)>=Math.abs(ldy)) h=w/ar; else w=h*ar; }
   const MINW=16,MINH= isLineEl(el)? 0:12;
   w=Math.max(MINW,w); h=Math.max(MINH,h);
@@ -2309,29 +3244,216 @@ function editableDiv(){
   if(ed.contentEditable!=='plaintext-only') ed.contentEditable='true';
   return ed;
 }
+/* ================= 文字框 run 級編輯 =================
+   直接把 renderEl 產生的 .txt（已逐 run 切成 <span>，並標好 data-p／data-r）轉成 contenteditable，
+   不另建一套編輯用 DOM。編輯期間 **以 DOM 為真相**，每次 input 同步回 el.paras；
+   只有分段（Enter）與套格式才重繪，重繪後由 renderStage 尾端的 editOpen 重開編輯器並還原選取。
+   這樣避開「每按一鍵就從資料重畫」會帶來的游標還原與輸入法組字中斷問題。 */
+function editEl(){ return APP.edit? curPage().elements.find(x=>x.id===APP.edit.id) : null; }
+// (node,offset) → {p:段索引, o:段內字元位置}；跳過項目符號等渲染產物
+function edPos(root,node,offset){
+  const base=node.nodeType===3? node.parentNode : node;
+  const pdiv=base&&base.closest? base.closest('[data-p]') : null;
+  if(!pdiv||!root.contains(pdiv)) return null;
+  let o=0,hit=false;
+  const walk=n=>{
+    if(hit) return;
+    if(n===node&&n.nodeType===1){ for(let i=0;i<offset&&i<n.childNodes.length;i++) walk(n.childNodes[i]); hit=true; return; }
+    if(n.nodeType===3){ if(n===node){ o+=offset; hit=true; } else o+=n.nodeValue.length; return; }
+    if(n.nodeType!==1||(n.dataset&&n.dataset.mk!=null)) return;
+    for(const c of n.childNodes){ walk(c); if(hit) return; }
+  };
+  walk(pdiv);
+  return {p:+pdiv.dataset.p,o};
+}
+// {p,o} → (node,offset)
+function edNode(root,p,o){
+  const pdiv=root.querySelector(`[data-p="${p}"]`);
+  if(!pdiv) return null;
+  let acc=0,res=null;
+  const w=document.createTreeWalker(pdiv,NodeFilter.SHOW_TEXT,{acceptNode:n=>
+    (n.parentNode&&n.parentNode.closest('[data-mk]'))? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  let t;
+  while((t=w.nextNode())){
+    if(o<=acc+t.nodeValue.length){ res={node:t,offset:o-acc}; break; }
+    acc+=t.nodeValue.length;
+  }
+  return res||{node:pdiv,offset:pdiv.childNodes.length};
+}
+function editReadSel(){
+  const e=APP.edit; if(!e||!e.root) return null;
+  const s=document.getSelection();
+  if(!s||!s.rangeCount) return null;
+  const r=s.getRangeAt(0);
+  if(!e.root.contains(r.startContainer)||!e.root.contains(r.endContainer)) return null;
+  // 全選（Cmd+A／selectAllChildren）時端點會落在 .txt 本身，先收斂到對應的段落 div，否則查不到 data-p
+  const fix=(node,off,isEnd)=>{
+    if(node!==e.root) return [node,off];
+    const kids=[...e.root.children];
+    if(!kids.length) return [node,off];
+    const d=kids[Math.min(Math.max(isEnd? off-1 : off,0),kids.length-1)];
+    return [d, isEnd? d.childNodes.length : 0];
+  };
+  const a=edPos(e.root,...fix(r.startContainer,r.startOffset,false)),
+        b=edPos(e.root,...fix(r.endContainer,r.endOffset,true));
+  return (a&&b)? {p0:a.p,o0:a.o,p1:b.p,o1:b.o} : null;
+}
+function editSetSel(sel){
+  const e=APP.edit; if(!e||!e.root||!sel) return;
+  const a=edNode(e.root,sel.p0,sel.o0), b=edNode(e.root,sel.p1,sel.o1);
+  if(!a||!b) return;
+  const r=document.createRange();
+  try{ r.setStart(a.node,a.offset); r.setEnd(b.node,b.offset); }catch(err){ return; }
+  const s=document.getSelection(); s.removeAllRanges(); s.addRange(r);
+  e.sel=sel;   // 同步寫回：selectionchange 是非同步的，不能等它
+}
+// DOM → el.paras。樣式來源是開啟編輯時拍下的 src（data-r 存「段:run」絕對鍵），
+// 所以就算瀏覽器把兩段合併、把 span 搬家，樣式依然對得回去。
+function editSync(){
+  const e=APP.edit, el=editEl();
+  if(!e||!e.root||!el) return;
+  const src=e.src||[];
+  const styleKey=k=>{ const [pi,ri]=String(k).split(':').map(Number);
+    const r=src[pi]&&(src[pi].runs||[])[ri]; return r? runStyle(r) : null; };
+  const paras=[]; let lastPi=0;
+  for(const node of [...e.root.childNodes]){
+    if(node.nodeType===3&&!node.nodeValue) continue;
+    if(node.nodeType!==1&&node.nodeType!==3) continue;
+    if(node.nodeType===1&&node.tagName==='BR') continue;   // 全部清空後 Chrome 會留一個裸 <br>
+    const isEl=node.nodeType===1;
+    const pi=(isEl&&node.dataset&&node.dataset.p!=null)? +node.dataset.p : lastPi;
+    lastPi=pi;
+    const s=src[pi]||src[0]||{};
+    // items：文字片段與硬斷行（貼上多行文字時瀏覽器會插 <br>，視為分段）
+    const items=[]; let last=null;
+    const walk=n=>{
+      if(n.nodeType===3){
+        if(!n.nodeValue) return;
+        let st=null,a=n.parentNode;
+        while(a&&a!==e.root){ if(a.dataset&&a.dataset.r!=null){ st=styleKey(a.dataset.r); break; } a=a.parentNode; }
+        st=st||last||runStyle((s.runs||[])[0]||{});
+        items.push({text:n.nodeValue,st}); last=st; return;
+      }
+      if(n.nodeType!==1||(n.dataset&&n.dataset.mk!=null)) return;   // data-mk：項目符號與空段落佔位 <br>
+      if(n.tagName==='BR'){ items.push({br:true}); return; }
+      for(const c of n.childNodes) walk(c);
+    };
+    if(isEl) for(const c of node.childNodes) walk(c); else walk(node);
+    let cur=[];
+    const flush=()=>{
+      // 空段落也要留一個帶樣式的空殼 run：樣式取「上一個片段」或原段落第一個 run，不能退回全域預設
+      const empty=[{...(last||runStyle((s.runs||[])[0]||{})),text:''}];
+      const p={align:s.align||'left',runs:cur.length? cur.map(it=>({...it.st,text:it.text})) : empty};
+      for(const k of PARA_OPT_KEYS) if(s[k]!=null) p[k]=structuredClone(s[k]);
+      mergeRuns(p); paras.push(p); cur=[];
+    };
+    for(const it of items){ if(it.br) flush(); else cur.push(it); }
+    flush();
+  }
+  if(!paras.length){
+    const s=src[0]||{};
+    paras.push({align:s.align||'left',runs:[{...runStyle((s.runs||[])[0]||{}),text:''}]});
+  }
+  // 全選刪光時 Chrome 常留下兩個空 div；整份都空就只留一段（有內容時的空行是刻意的，不動）
+  if(paras.length>1&&paras.every(p=>!paraLen(p))) paras.length=1;
+  el.paras=paras;
+}
+// 第一次改動才把「編輯前」推進 undo：只開編輯器沒動過，不留空步
+function editDirty(){ const e=APP.edit; if(e&&!e.pushed){ e.pushed=true; commitUndo(e.snap); } }
+function editCommit(){
+  const e=APP.edit; if(!e) return;
+  editSync();
+  APP.edit=null; APP.editing=null;
+  renderAll();
+}
+// 輸入法組字期間不同步：組字中的 DOM 是暫態，等 compositionend 一次寫回就好
+function onEditInput(){ if(APP.edit&&APP.edit.composing) return; editDirty(); editSync(); markOverflow(); }
+function onEditPaste(ev){   // 一律轉純文字：擋掉從網頁帶進來的整包 HTML
+  ev.preventDefault();
+  const t=(ev.clipboardData&&ev.clipboardData.getData('text/plain'))||'';
+  if(t) document.execCommand('insertText',false,t.replace(/\r\n?/g,'\n'));
+}
+function onEditKey(ev){
+  if(ev.isComposing) return;   // 輸入法組字中不攔截
+  if(ev.key==='Escape'){ ev.preventDefault(); editCommit(); return; }
+  if(ev.key!=='Enter') return;
+  // 分段自己接管：不讓瀏覽器決定要生 <div> 還是 <br>，段落結構才守得住
+  ev.preventDefault();
+  const sel0=document.getSelection();
+  if(sel0&&sel0.rangeCount&&!sel0.getRangeAt(0).collapsed) document.execCommand('delete');
+  const sel=editReadSel(); if(!sel) return;
+  editDirty(); editSync();
+  const el=editEl(); const p=el&&(el.paras||[])[sel.p0]; if(!p) return;
+  const i=splitAt(p,sel.o0);
+  const head=p.runs.slice(0,i), tail=p.runs.slice(i);
+  const np={align:p.align,runs:tail.length? tail : [{...runStyle(head[head.length-1]||{}),text:''}]};
+  for(const k of PARA_OPT_KEYS) if(p[k]!=null) np[k]=structuredClone(p[k]);
+  p.runs= head.length? head : [{...runStyle(tail[0]||{}),text:''}];
+  el.paras.splice(sel.p0+1,0,np);
+  APP.edit.sel={p0:sel.p0+1,o0:0,p1:sel.p0+1,o1:0};
+  renderStage();
+}
+// 把剛渲染好的 .txt 接管成編輯器（renderStage 尾端會呼叫，故重繪後編輯狀態不中斷）
+function editOpen(){
+  const e=APP.edit, el=editEl();
+  if(!e||!el){ APP.edit=null; APP.editing=null; return; }
+  const box=stage.querySelector(`.el[data-id="${e.id}"]`);
+  const ed=box&&box.querySelector('.txt');
+  if(!ed){ APP.edit=null; APP.editing=null; return; }
+  e.src=structuredClone(el.paras||[]);
+  e.root=ed;
+  ed.contentEditable='true';
+  ed.spellcheck=false;
+  for(const mk of ed.querySelectorAll('[data-mk]')) mk.contentEditable='false';
+  ed.addEventListener('input',onEditInput);
+  ed.addEventListener('keydown',onEditKey);
+  ed.addEventListener('paste',onEditPaste);
+  ed.addEventListener('compositionstart',()=>{ if(APP.edit) APP.edit.composing=true; });
+  ed.addEventListener('compositionend',()=>{ if(APP.edit){ APP.edit.composing=false; onEditInput(); } });
+  ed.addEventListener('focusout',()=>setTimeout(()=>{
+    const cur=APP.edit;
+    if(!cur||cur.root!==ed) return;                       // 已被重繪換掉的舊節點，忽略
+    const a=document.activeElement;
+    if(a&&(ed.contains(a)||a===ed||a.closest('#propPanel'))) return;   // 焦點移到屬性面板：保留選取繼續編輯
+    editCommit();
+  },0));
+  ed.focus();
+  if(e.sel) editSetSel(e.sel);
+  else{ document.getSelection().selectAllChildren(ed); e.sel=editReadSel(); }
+}
 function startTextEdit(el,box){
   if(el.type==='shape'&&!el.paras){ el.paras=mkParas('',{sizePt:14,color:'FFFFFF',align:'center'}); el.valign='middle'; }
   APP.editing=el.id;
-  const host=box;
-  const old=host.querySelector('.txt'); if(old) old.remove();
-  const base=baseRun(el);
-  const ed=editableDiv();
-  ed.className='txt';
-  ed.style.cssText=`justify-content:${{top:'flex-start',middle:'center',bottom:'flex-end'}[el.valign||'top']};font-size:${pt2px(base.sizePt)}px;color:#${base.color};text-align:${base.align};`
-    +(base.bold?'font-weight:700;':'')+(base.italic?'font-style:italic;':'')
-    +(el.type==='shape'?'position:absolute;inset:0;':'');
-  ed.innerText=plainText(el);
-  host.appendChild(ed);
-  // 立即聚焦＋下一幀補聚焦：pointerdown 已 preventDefault，後續預設焦點處理不會再搶走
-  const grab=()=>{ ed.focus(); document.getSelection().selectAllChildren(ed); };
-  grab(); requestAnimationFrame(grab);
-  ed.addEventListener('blur',()=>{
-    APP.editing=null;
-    const txt=ed.innerText.replace(/\n$/,'');
-    commitUndo();
-    el.paras=mkParas(txt,base);
-    renderAll();
-  },{once:true});
+  APP.edit={id:el.id,sel:null,root:null,src:null,pushed:false,snap:snapshot()};
+  renderStage();   // 重繪一次拿到乾淨的 .txt，尾端的 editOpen 會接管它
+  renderProps();
+}
+// 選取範圍隨時記著：點到屬性面板時 DOM 選取可能失效，套格式要靠這份
+document.addEventListener('selectionchange',()=>{
+  const e=APP.edit; if(!e||!e.root) return;
+  const s=editReadSel(); if(s) e.sel=s;
+});
+// 有選取就只套範圍，沒選取（或不在編輯中）就整塊套用
+function runApply(el,fn){
+  const e=APP.edit, s=(e&&e.id===el.id)? e.sel : null;
+  if(s&&!(s.p0===s.p1&&s.o0===s.o1)){ e.pushed=true; editSync(); applyRange(el,s,fn); }
+  else setAllRuns(el,fn);
+}
+// 面板顯示用：編輯中有選取時反映「選取起點那個 run」，否則沿用元素第一個 run
+function panelRun(el){
+  const e=APP.edit, s=(e&&e.id===el.id)? e.sel : null;
+  if(s&&!(s.p0===s.p1&&s.o0===s.o1)){
+    const p=(el.paras||[])[s.p0];
+    if(p&&(p.runs||[]).length){
+      let acc=0,r=p.runs[0];
+      for(const q of p.runs){ const L=String(q.text||'').length; if(s.o0<acc+L){ r=q; break; } acc+=L; }
+      const o={bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',sizePt:r.sizePt||18,align:p.align||'left'};
+      for(const k of RUN_OPT_KEYS) if(r[k]!=null) o[k]=r[k];
+      for(const k of PARA_OPT_KEYS) if(p[k]!=null) o[k]=p[k];
+      return o;
+    }
+  }
+  return baseRun(el);
 }
 // 每個 grid 位置由哪個錨點格佔用（含合併覆蓋範圍）→ 供 Enter 往下找「下方可見格」
 function cellOwnerGrid(el){
@@ -2436,7 +3558,7 @@ document.addEventListener('paste',e=>{
   if(o&&o.format==='deckjson-elements'&&Array.isArray(o.elements)) els=o.elements;
   else if(o&&Array.isArray(o.elements)&&!o.pages) els=o.elements;            // 整頁物件 → 取其元素
   else if(o&&o.type&&o.x!=null) els=[o];                                     // 單一元素物件
-  const OK={text:1,table:1,image:1,shape:1,chart:1};
+  const OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
   els=els&&els.filter(x=>x&&typeof x==='object'&&OK[x.type]);
   if(!els||!els.length) return;
   e.preventDefault();
@@ -2497,17 +3619,108 @@ $('#selFontMode').addEventListener('change',e=>{ APP.deck.fontMode=e.target.valu
 $('#btnUndo').onclick=undo; $('#btnRedo').onclick=redo;
 
 /* ================= JSON 交換 ================= */
+/* ---- 手貼／AI 產生的 JSON 一律過這裡：新選配欄位若型別或範圍不對就刪掉或夾回合法值，
+       避免壞值一路帶到匯出才炸（PptxGenJS 對不合法值多半是靜默產出壞 XML → PowerPoint 要求修復）---- */
+const hex6=v=>{ const s=String(v==null?'':v).replace('#','').toUpperCase();
+  return /^[0-9A-F]{6}$/.test(s)? s:null; };
+const clampN=(v,lo,hi,def)=>{ const n=+v; return isFinite(n)? Math.max(lo,Math.min(hi,n)) : def; };
+function normBorder(v){   // → {pt,color,dash?}｜null
+  if(!v||typeof v!=='object') return null;
+  const c=hex6(v.color); if(!c) return null;
+  return {pt:clampN(v.pt,0.25,12,0.75),color:c,...(v.dash?{dash:true}:{})};
+}
+function normShadow(o){   // 原生陰影：合法才留，其餘刪鍵
+  const s=o&&o.shadow;
+  if(!s||typeof s!=='object'||!hex6(s.color||SHADOW_DEF.color)){ if(o) delete o.shadow; return; }
+  o.shadow={blur:clampN(s.blur,0,100,SHADOW_DEF.blur),offset:clampN(s.offset,0,100,SHADOW_DEF.offset),
+    angle:Math.round(clampN(s.angle,0,359,SHADOW_DEF.angle)),color:hex6(s.color)||SHADOW_DEF.color,
+    opacity:clampN(s.opacity,0,1,SHADOW_DEF.opacity)};
+}
+function normRunOpts(r){
+  r.underline=!!r.underline||undefined; if(!r.underline) delete r.underline;
+  r.strike=!!r.strike||undefined; if(!r.strike) delete r.strike;
+  // 上下標：渲染與匯出都吃這兩個鍵，先前漏了驗證（型別寫錯會一路帶進匯出）；兩者互斥
+  for(const k of ['sup','sub']) if(k in r){ if(r[k]===true||r[k]==='true'||r[k]===1) r[k]=true; else delete r[k]; }
+  if(r.sup&&r.sub) delete r.sub;
+  if('highlight' in r){ const h=hex6(r.highlight); if(h) r.highlight=h; else delete r.highlight; }
+  if('charSpacing' in r){ const n=+r.charSpacing;
+    if(isFinite(n)&&n!==0) r.charSpacing=Math.max(-5,Math.min(30,n)); else delete r.charSpacing; }
+  if('fontFace' in r){ const f=String(r.fontFace||'').trim(); if(f) r.fontFace=f; else delete r.fontFace; }
+  if('outline' in r){ const c=hex6((r.outline||{}).color)||'FFFFFF';
+    if(r.outline&&typeof r.outline==='object') r.outline={size:clampN(r.outline.size,0.25,8,1),color:c}; else delete r.outline; }
+  if('glow' in r){ const c=hex6((r.glow||{}).color)||'FFFF00';
+    if(r.glow&&typeof r.glow==='object') r.glow={size:clampN(r.glow.size,1,50,8),color:c,opacity:clampN(r.glow.opacity,0,1,0.6)}; else delete r.glow; }
+  if('link' in r){ const l=r.link;
+    if(l&&typeof l==='object'&&typeof l.url==='string'&&l.url.trim()) r.link={url:l.url.trim()};
+    else if(l&&typeof l==='object'&&+l.slide>0) r.link={slide:Math.round(+l.slide)};
+    else delete r.link; }
+}
+function normElLink(el){   // 物件層級超連結（形狀／圖片／圖表／線條）：{url|slide,tooltip?}
+  const l=el.link;
+  if(!l||typeof l!=='object'){ delete el.link; return; }
+  const o= (typeof l.url==='string'&&l.url.trim())? {url:l.url.trim()}
+         : (+l.slide>0)? {slide:Math.round(+l.slide)} : null;
+  if(!o){ delete el.link; return; }
+  if(l.tooltip!=null&&String(l.tooltip).trim()) o.tooltip=String(l.tooltip).trim().slice(0,200);
+  el.link=o;
+}
+/* 影片元素驗證：**位元組永不入 JSON** 是硬規則，所以這裡明確擋掉 src.data／src.path
+   （AI 或手改 JSON 很可能好意塞進來），並限制 cover 必須是 data:image/。 */
+function normVideo(el){
+  el.mode= el.mode==='online'? 'online':'local';
+  if(el.mode==='online'){
+    const em=ytEmbed(el.embed);
+    if(!em) throw new Error(`影片 ${el.id} 的 embed 不是可解析的 YouTube 網址`);
+    el.embed=em; delete el.src;
+  }else{
+    const s=(el.src&&typeof el.src==='object')? el.src : {};
+    el.src={name:String(s.name||'影片').slice(0,120),
+      durationSec:Math.max(0,Math.round(+s.durationSec)||0),
+      natW:Math.max(0,Math.round(+s.natW)||0),natH:Math.max(0,Math.round(+s.natH)||0)};
+    delete el.embed;
+  }
+  if(typeof el.cover!=='string'||!el.cover.startsWith('data:image/')) delete el.cover;
+}
+function normParaOpts(p){
+  if('bullet' in p){ const b=p.bullet;
+    if(b&&typeof b==='object'){
+      const o={type: b.type==='number'?'number':'bullet', level:Math.max(0,Math.min(8,Math.round(+b.level)||0))};
+      if(o.type==='number') o.startAt=Math.max(1,Math.round(+b.startAt)||1);
+      else if(/^[0-9A-Fa-f]{4}$/.test(String(b.code||''))) o.code=String(b.code).toUpperCase();
+      p.bullet=o;
+    }else delete p.bullet; }
+  for(const k of ['spaceBefore','spaceAfter']){
+    if(!(k in p)) continue;
+    const n=+p[k]; if(isFinite(n)&&n>0) p[k]=Math.min(72,n); else delete p[k];
+  }
+}
 function normalizeDeck(d){
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error('不是有效的 DeckJSON（缺 pages）');
   d.format='deckjson'; d.version=d.version||1;
   d.title=d.title||'未命名簡報';
   d.fontMode= d.fontMode==='inherit'?'inherit':'locked';
-  d.fonts=Object.assign({...FONTS},d.fonts||{});
+  /* 環境設定（尺寸／預留區／字體／語言）：一律過 normProfile 夾值。
+     舊版 JSON 沒有這些鍵時補上中性預設，其中 stage 的預設正好＝舊版寫死的 1280×720，故完全相容。 */
+  {const p=normProfile({name:d.profileName||'預設',stage:d.stage,zones:d.zones,fonts:d.fonts,lang:d.lang});
+   d.profileName=p.name; d.stage=p.stage; d.zones=p.zones; d.fonts=p.fonts; d.lang=p.lang;}
+  for(const k of ['author','company','subject']){   // 檔案屬性：字串才留，空值一律刪鍵
+    if(d[k]==null||!String(d[k]).trim()) delete d[k]; else d[k]=String(d[k]).trim();
+  }
+  // 自動頁碼：物件才留，位置／字級／顏色一律 clamp 到合法範圍
+  if(d.pageNum&&typeof d.pageNum==='object'){
+    const p=d.pageNum;
+    p.pos=['bl','bc','br'].includes(p.pos)? p.pos:'br';
+    p.sizePt=Math.max(6,Math.min(36,Math.round(+p.sizePt)||PAGENUM_DEF.sizePt));
+    p.color=hex6(p.color)||PAGENUM_DEF.color;
+    if(p.skipFirst) p.skipFirst=true; else delete p.skipFirst;
+  }else delete d.pageNum;
   for(const pg of d.pages){
     pg.id=pg.id||uid('p'); pg.bg=pg.bg||'FFFFFF';
+    if(typeof pg.bgImage!=='string'||!pg.bgImage.startsWith('data:image/')) delete pg.bgImage;
     pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
     pg.notes= pg.notes==null? '' : String(pg.notes);
+    if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）
     pg.elements=Array.isArray(pg.elements)?pg.elements:[];
     const seenIds=new Set();   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
     for(const el of pg.elements){
@@ -2520,6 +3733,23 @@ function normalizeDeck(d){
       el.hidden=!!el.hidden||undefined; if(!el.hidden) delete el.hidden;
       el.locked=!!el.locked||undefined; if(!el.locked) delete el.locked;
       if(el.lineSpacing!=null){ const ls=+el.lineSpacing; el.lineSpacing=(isFinite(ls)&&ls>=0.5&&ls<=5)?ls:undefined; if(el.lineSpacing===undefined) delete el.lineSpacing; }
+      normShadow(el);
+      normElLink(el);
+      if(el.alt==null||!String(el.alt).trim()) delete el.alt; else el.alt=String(el.alt).trim();
+      // 線型：只認 DASH_KINDS 的 key，solid 等同不設（維持 JSON 精簡）
+      if(el.dash!=null){ const ok=DASH_KINDS.some(d=>d.key===el.dash&&d.key!=='solid');
+        if(!ok) delete el.dash; }
+      // 文字框內距／不換行（只對有文字的元素有意義）
+      if(el.type==='text'||(el.type==='shape'&&el.paras)){
+        if(el.inset!=null){ const n=+el.inset;
+          if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
+        if(el.nowrap) el.nowrap=true; else delete el.nowrap;
+      }else{ delete el.inset; delete el.nowrap; }
+      if(el.type==='video') normVideo(el);
+      if(el.type==='image'){
+        if(el.fit!=='cover') delete el.fit;
+        if(el.round) el.round=true; else delete el.round;
+      }else{ delete el.fit; delete el.round; }
       // adj/adj2 依該形狀參數表 clamp（圖說框可為負）；非 adj 形狀或非數值一律移除
       {const AP=(el.type==='shape'&&SHAPE_ADJ[el.shape])||null;
        [['adj',0],['adj2',1]].forEach(([k,i])=>{
@@ -2529,8 +3759,14 @@ function normalizeDeck(d){
        });}
       if(el.type==='table'){
         if(!Array.isArray(el.colW)||!Array.isArray(el.rowH)||!Array.isArray(el.cells)) throw new Error(`表格 ${el.id} 缺 colW/rowH/cells`);
-        el.cells=el.cells.map(row=>row.map(c=>Object.assign(defCell(),c)));
-        if(!('border' in el)) el.border={pt:0.75,color:'999999'};
+        el.cells=el.cells.map(row=>row.map(c=>{ const cc=Object.assign(defCell(),c);
+          if(cc.border&&typeof cc.border==='object'){   // 逐邊：合法值→{pt,color,dash?}；null／不合法→null（明確無線）；缺鍵＝沿用整表
+            for(const k of ['t','r','b','l']) if(k in cc.border) cc.border[k]=normBorder(cc.border[k]);
+            for(const k of Object.keys(cc.border)) if(!['t','r','b','l'].includes(k)) delete cc.border[k];
+            if(!Object.keys(cc.border).length) delete cc.border;
+          }else delete cc.border;
+          return cc; }));
+        el.border= ('border' in el)? (el.border? (normBorder(el.border)||null):null) : {pt:0.75,color:'999999'};
       }else{
         el.w=Math.max(1,Math.round(el.w??100)); el.h=Math.max(0,Math.round(el.h??40));
       }
@@ -2540,6 +3776,11 @@ function normalizeDeck(d){
       }
       if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
       if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});
+      if(Array.isArray(el.paras)) for(const p of el.paras){ normParaOpts(p);
+        // markdown 輸入糖：展開成 runs 後刪鍵，存檔只留一種形式
+        if(typeof p.md==='string') p.runs=mdToRuns(p.md,(p.runs||[])[0]||{});
+        delete p.md;
+        if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
       if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
       if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
     }
@@ -2550,38 +3791,53 @@ function deckJson(){ return JSON.stringify(APP.deck,null,1); }
 /* ---- JSON 顯示層圖片佔位：base64 太長會塞爆協作視窗 ----
    顯示時 dataUrl 換成 "@asset:<元素id> (大小)"；套用時從現有簡報按 id 還原位元組。
    存 .json 檔仍寫完整 base64（檔案自足可攜）。新圖一律由工具插入。 */
+const kb=s=>Math.round(s.length*3/4/1024)+'KB';
 function maskedJson(root){
   const o=structuredClone(root);
   const walk=els=>(els||[]).forEach(el=>{
     if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.length>80)
-      el.dataUrl='@asset:'+el.id+' ('+Math.round(el.dataUrl.length*3/4/1024)+'KB)';
+      el.dataUrl='@asset:'+el.id+' ('+kb(el.dataUrl)+')';
+    if(el&&el.type==='video'&&typeof el.cover==='string'&&el.cover.length>80)
+      el.cover='@asset:'+el.id+' ('+kb(el.cover)+')';   // 影片封面圖同樣遮罩（影片本體從來就不在 JSON 裡）
   });
-  if(o.pages) o.pages.forEach(p=>walk(p.elements)); else walk(o.elements||(Array.isArray(o)?o:[]));
+  // 頁面背景圖同樣遮罩（以頁 id 為鍵），否則單一頁面 JSON 就被 base64 塞爆
+  const maskPg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.length>80) p.bgImage='@asset:'+p.id+' ('+kb(p.bgImage)+')'; walk(p.elements); };
+  if(o.pages) o.pages.forEach(maskPg); else if(o.id||o.elements) maskPg(o); else walk(o.elements||(Array.isArray(o)?o:[]));
   return JSON.stringify(o,null,1);
 }
 function assetMap(){
   const m={};
-  for(const p of APP.deck.pages) for(const el of p.elements)
-    if(el.type==='image'&&typeof el.dataUrl==='string'&&!el.dataUrl.startsWith('@asset:')) m[el.id]=el.dataUrl;
+  for(const p of APP.deck.pages){
+    if(typeof p.bgImage==='string'&&!p.bgImage.startsWith('@asset:')) m[p.id]=p.bgImage;
+    for(const el of p.elements){
+      if(el.type==='image'&&typeof el.dataUrl==='string'&&!el.dataUrl.startsWith('@asset:')) m[el.id]=el.dataUrl;
+      if(el.type==='video'&&typeof el.cover==='string'&&!el.cover.startsWith('@asset:')) m[el.id]=el.cover;
+    }
+  }
   return m;
 }
 function resolveAssets(obj){
   const m=assetMap();
+  const back=(v,what)=>{ const id=v.slice(7).split(' ')[0].trim();
+    if(!m[id]) throw new Error(`${what}佔位 @asset:${id} 在目前簡報找不到來源位元組`);
+    return m[id]; };
   const walk=els=>(els||[]).forEach(el=>{
-    if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.startsWith('@asset:')){
-      const id=el.dataUrl.slice(7).split(' ')[0].trim();
-      if(!m[id]) throw new Error(`圖片佔位 @asset:${id} 在目前簡報找不到來源位元組`);
-      el.dataUrl=m[id];
-    }
+    if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.startsWith('@asset:'))
+      el.dataUrl=back(el.dataUrl,'圖片');
+    if(el&&el.type==='video'&&typeof el.cover==='string'&&el.cover.startsWith('@asset:'))
+      el.cover=back(el.cover,'影片封面');
   });
-  if(obj&&obj.pages) obj.pages.forEach(p=>walk(p.elements));
-  else if(obj) walk(obj.elements||(Array.isArray(obj)?obj:[]));
+  const pg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.startsWith('@asset:')) p.bgImage=back(p.bgImage,'背景圖'); walk(p.elements); };
+  if(obj&&obj.pages) obj.pages.forEach(pg);
+  else if(obj&&(obj.id||obj.elements)) pg(obj);
+  else if(obj) walk(Array.isArray(obj)?obj:[]);
   return obj;
 }
 function loadDeck(obj){
   const c=resolveAssets(structuredClone(obj));
   const d=normalizeDeck(c);
   commitUndo();
+  APP.edit=null; APP.editing=null;   // 換一份簡報：舊的編輯狀態指向已不存在的元素，必須先收掉
   APP.deck=d; APP.page=d.pages[0].id; setSel([]);
   renderAll(); syncPageJson();
 }
@@ -2593,10 +3849,14 @@ function applyPageJson(obj){
   const temp=structuredClone(APP.deck);
   const idx=temp.pages.findIndex(p=>p.id===APP.page);
   const cur=temp.pages[idx];
+  // 未出現在貼入 JSON 的鍵一律沿用原頁（notes／bgImage 若不列入，貼一次頁面 JSON 就會被清空）
   temp.pages[idx]={id:obj.id||cur.id, name:obj.name??cur.name, bg:obj.bg||cur.bg,
+    notes:('notes' in obj)?obj.notes:cur.notes,
+    bgImage:('bgImage' in obj)?obj.bgImage:cur.bgImage,
     transition:('transition' in obj)?obj.transition:cur.transition, elements:obj.elements};
   const d=normalizeDeck(temp);
   commitUndo();
+  APP.edit=null; APP.editing=null;   // 同 loadDeck：整頁換掉，編輯狀態一併收掉
   APP.deck=d; APP.page=d.pages[idx].id; setSel([]);
   renderAll();
 }
@@ -2683,8 +3943,8 @@ $('#btnPageJsonApply').onclick=()=>{
 })();
 // ================= 圖層面板 =================
 let LAYER_DRAG=null;
-const L_ICON={text:'T',table:'▦',image:'🖼',shape:'◇',chart:'📊'};
-const L_NAME={text:'文字',table:'表格',image:'圖片',shape:'形狀',chart:'圖表'};
+const L_ICON={text:'T',table:'▦',image:'🖼',shape:'◇',chart:'📊',video:'🎬'};
+const L_NAME={text:'文字',table:'表格',image:'圖片',shape:'形狀',chart:'圖表',video:'影片'};
 function layersOpen(){ return !$('#layerPanel').hidden; }
 function layerLabel(el){
   if(el.type==='text'||(el.type==='shape'&&el.paras)){ const t=plainText(el).replace(/\s+/g,' ').trim(); if(t) return t.slice(0,18); }
@@ -2750,6 +4010,28 @@ $('#jsonInput').addEventListener('change',async e=>{
   if(!f) return;
   try{ loadDeck(JSON.parse(await f.text())); $('#jsonModal').hidden=true; }
   catch(err){ alert('載入失敗：'+err.message); }
+});
+
+/* ================= profile 檔案匯入／匯出 ================= */
+function saveProfileFile(){
+  const p=profileFromDeck(APP.deck);
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(p,null,1));
+  a.download=(p.name||'deckjson')+'.profile.json';
+  a.click();
+}
+$('#profileInput').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    const raw=JSON.parse(await f.text());
+    if(raw&&raw.format&&raw.format!=='deckjson-profile') throw new Error('這不是 profile 檔（format 應為 deckjson-profile）');
+    commitUndo();
+    applyProfileToDeck(APP.deck,raw);
+    renderAll(); syncPageJson(); checkFonts();
+    const keep=confirm('已套用設定檔「'+(APP.deck.profileName||'')+'」。\n要同時設為「新簡報預設」嗎？');
+    if(keep&&!lsSet(PROFILE_KEY,JSON.stringify(profileFromDeck(APP.deck))))
+      alert('這個瀏覽器環境不允許寫入 localStorage，無法記住預設（本簡報仍已套用）。');
+  }catch(err){ alert('載入設定檔失敗：'+err.message); }
 });
 
 /* ================= Deck 合併（載入第二份 .json 附加為後續頁） ================= */
@@ -2862,7 +4144,14 @@ $('#btnChartApply').onclick=()=>{
 /* ================= 說明 ================= */
 $('#btnHelp').onclick=()=>{ $('#helpModal').hidden=false; };
 $('#btnHelpClose').onclick=()=>{ $('#helpModal').hidden=true; };
-for(const id of ['jsonModal','chartModal','helpModal','shapeModal','tplModal','snapModal'])
+$('#btnPendClose').onclick=()=>{ $('#pendModal').hidden=true; };
+$('#btnPendCopy').onclick=async()=>{
+  const t=$('#pendArea').value;
+  try{ await navigator.clipboard.writeText(t); $('#btnPendCopy').textContent='已複製 ✓'; }
+  catch(err){ $('#pendArea').select(); document.execCommand('copy'); $('#btnPendCopy').textContent='已複製 ✓'; }
+  setTimeout(()=>$('#btnPendCopy').textContent='複製清單',1200);
+};
+for(const id of ['jsonModal','chartModal','helpModal','shapeModal','tplModal','snapModal','videoModal','pendModal'])
   $('#'+id).addEventListener('click',e=>{ if(e.target.id===id) $('#'+id).hidden=true; });
 
 /* ================= 匯出 PPTX ================= */
@@ -2870,10 +4159,24 @@ function parasToPptx(el){
   const out=[];
   for(const p of el.paras||[]){
     const rr=(p.runs&&p.runs.length)?p.runs:[{text:''}];
+    // 段落級（bullet／段距）在 PptxGenJS 是掛在 run option 上，由該段第一個 run 帶頭寫進 <a:pPr>
+    const bu= p.bullet? (p.bullet.type==='number'
+        ? {type:'number',style:'arabicPeriod',startAt:Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
+        : {code:p.bullet.code||BULLET_CHAR,indent:BULLET_INDENT}) : undefined;
     rr.forEach((r,i)=>out.push({text:String(r.text??''),options:{
       bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',
       fontSize:r.sizePt||18,
       superscript:r.sup||undefined,subscript:r.sub||undefined,
+      underline:r.underline?{style:'sng'}:undefined,
+      strike:r.strike?'sngStrike':undefined,
+      highlight:r.highlight||undefined,
+      charSpacing:r.charSpacing||undefined,
+      fontFace:r.fontFace||undefined,
+      outline:r.outline?{size:r.outline.size||0.75,color:r.outline.color||'FFFFFF'}:undefined,
+      glow:r.glow?{size:r.glow.size||8,color:r.glow.color||'FFFF00',opacity:r.glow.opacity!=null?r.glow.opacity:0.6}:undefined,
+      hyperlink:r.link?(r.link.url?{url:r.link.url}:{slide:Math.max(1,Math.round(r.link.slide)||1)}):undefined,
+      ...(i===0? {bullet:bu,indentLevel:(p.bullet&&p.bullet.level)||undefined,
+        paraSpaceBefore:p.spaceBefore||undefined,paraSpaceAfter:p.spaceAfter||undefined} : {}),
       align:p.align||'left',
       breakLine:i===rr.length-1}}));
   }
@@ -2904,7 +4207,9 @@ function addTableToSlide(slide,el){
         margin:[0,0.03,0,0.03],   // 單位是「吋」！0.03in ≈ 2.2pt ≈ 預覽 3px（xlsx2pptx 踩坑 #10）
         lineSpacing:Math.round((cell.sizePt||12)*(cell.lineSpacing||1.2)*10)/10};
       // 逐格四邊：PptxGenJS border 陣列順序 [上,右,下,左]，各邊寫成原生 <a:lnT/lnR/lnB/lnL>
-      o.border= ['t','r','b','l'].map(k=>{ const s=cellSide(el,cell,k); return s? {type:'solid',pt:s.pt,color:s.color} : {type:'none'}; });
+      // type:'dash' → 該邊 <a:prstDash val="sysDash"/>（PptxGenJS 只認 dash／solid 兩種）
+      o.border= ['t','r','b','l'].map(k=>{ const s=cellSide(el,cell,k);
+        return s? {type:s.dash?'dash':'solid',pt:s.pt,color:s.color} : {type:'none'}; });
       if(cell.fill) o.fill={color:cell.fill,...(tr?{transparency:tr}:{})};
       if(cell.colspan>1) o.colspan=cell.colspan;
       if(cell.rowspan>1) o.rowspan=cell.rowspan;
@@ -2915,36 +4220,94 @@ function addTableToSlide(slide,el){
   slide.addTable(rows,{x:px2in(el.x),y:px2in(el.y),
     colW:el.colW.map(px2in),rowH:trH.map(px2in),autoPage:false,objectName:el.id});
 }
-async function addElToSlide(slide,el){
+// 原生陰影：只用 outer（PptxGenJS 3.12 對 inner 的收尾標籤寫死成 </a:outerShdw>，會產出不合法 XML）
+function shadowOpt(el){
+  const s=el&&el.shadow; if(!s) return undefined;
+  return {type:'outer',blur:s.blur??SHADOW_DEF.blur,offset:s.offset??SHADOW_DEF.offset,
+    angle:Math.round(s.angle??SHADOW_DEF.angle),color:s.color||SHADOW_DEF.color,
+    opacity:s.opacity??SHADOW_DEF.opacity};
+}
+/* 物件層級超連結 → PptxGenJS 的 options.hyperlink。
+   ⚠ 只有 addImage 與 addShape 兩條路可用；**addText 這條路壞的**：
+   PptxGenJS 3.12 註冊 hyperlink 關聯的迴圈只走「每個 run 的 options.hyperlink」（run 級連結），
+   沒有處理 addText **物件層級**的 options.hyperlink → _rId 從未指派，XML 寫出
+   `r:id="rIdundefined"`（懸空關聯，PowerPoint 判為毀損），而且該連結還會被下推到每個 run
+   並強制加上 u="sng"（整塊當按鈕用時不該有底線）。
+   因此文字框與非線條形狀改為「不交給 PptxGenJS」，於匯出後處理自行注入 cNvPr 的 hlinkClick ＋ 關聯，
+   見 exportPptx 的補丁 (8)。走 addText 的判定＝isTextPath()。 */
+function isTextPath(el){ return el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape]); }
+function linkOpt(el){
+  const l=el&&el.link; if(!l) return undefined;
+  const o= l.url? {url:l.url} : {slide:Math.max(1,Math.round(l.slide)||1)};
+  if(l.tooltip) o.tooltip=l.tooltip;
+  return o;
+}
+const reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');   // 元素 id 進 RegExp 前先轉義
+const xmlAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function addElToSlide(slide,el,pend){
   const common={x:px2in(el.x),y:px2in(el.y),w:px2in(el.w),h:px2in(el.h),objectName:el.id};
   const tr=(el.opacity!=null&&el.opacity<100)? 100-el.opacity : 0;   // pptx transparency：0=不透明
+  const sh=shadowOpt(el);
+  const lk=linkOpt(el);
   if(el.type==='table'){ addTableToSlide(slide,el); return; }
+  if(el.type==='video'){
+    // 封面圖：使用者沒給就自繪一張（不連網、不用 PptxGenJS 內建的佔位 PNG，那張很醜）
+    const cover=el.cover||drawFallbackCover(el.w,el.h, el.mode==='online'? 'YouTube 影片' : ((el.src&&el.src.name)||'影片'));
+    if(el.mode==='online'){
+      // type:'online' → 只寫 TargetMode="External" 的關聯（Target 即 embed 網址）＋封面圖，無影片位元組
+      slide.addMedia({...common,type:'online',link:el.embed,cover,
+        ...(el.alt?{altText:el.alt}:{})});
+      return;
+    }
+    // 本機影片：完全不呼叫 addMedia，只放封面圖佔位。三路提示之一＝替代文字（descr）
+    const tip=`待插入影片：${(el.src&&el.src.name)||'影片'}${durText(el)}`;
+    slide.addImage({...common,data:cover,altText:el.alt? (el.alt+'（'+tip+'）'):tip,
+      ...(tr?{transparency:tr}:{}),...(sh?{shadow:sh}:{}),...(lk?{hyperlink:lk}:{})});
+    if(pend) pend.push(tip);
+    return;
+  }
   if(el.type==='image'){
     const o={...common,data:el.dataUrl};
+    // 裁切填滿：w/h 先給「原圖比例」，再用 sizing 指定實際框——PptxGenJS 依兩者比值算 srcRect
+    if(el.fit==='cover'&&el.natW>0&&el.natH>0){
+      o.w=px2in(el.natW); o.h=px2in(el.natH);
+      o.sizing={type:'cover',w:px2in(el.w),h:px2in(el.h)};
+    }
+    if(el.round) o.rounding=true;
+    if(el.alt) o.altText=el.alt;
     if(el.rot) o.rotate=el.rot;
     if(el.flipH) o.flipH=true;
     if(el.flipV) o.flipV=true;
     if(tr) o.transparency=tr;
+    if(sh) o.shadow=sh;
+    if(lk) o.hyperlink=lk;
     slide.addImage(o); return;
   }
-  if(el.type==='chart'){ const o={...common,data:await chartPng(el)}; if(tr)o.transparency=tr; slide.addImage(o); return; }
+  if(el.type==='chart'){ const o={...common,data:await chartPng(el)};
+    if(tr)o.transparency=tr; if(el.alt)o.altText=el.alt; if(sh)o.shadow=sh; if(lk)o.hyperlink=lk;
+    slide.addImage(o); return; }
   if(el.type==='shape'&&LINE_KINDS[el.shape]){
     const k=LINE_KINDS[el.shape];
-    const o={...common,line:{color:el.lineColor||'333333',width:el.linePt||1.5}};
+    const o={...common,line:{color:el.lineColor||'333333',width:el.linePt||1.5,dashType:dashKind(el).key}};
     if(k.begin) o.line.beginArrowType='triangle';
     if(k.end) o.line.endArrowType='triangle';
     if(el.flipH) o.flipH=true;
     if(el.flipV) o.flipV=true;
     if(tr) o.line.transparency=tr;
+    if(sh) o.shadow=sh;
+    if(lk) o.hyperlink=lk;
     slide.addShape(k.pptx,o);   // line 或 bentConnector3（PPT 原生連接線）
     return;
   }
   // 文字框與含文字／純色形狀：一律走 addText（關 autofit、行距鎖定）
+  // margin 這裡的單位是「點」（PptxGenJS 對 addText 走 R()＝pt→EMU；表格儲存格的 margin 才是吋）
   const o={...common,valign:{top:'top',middle:'middle',bottom:'bottom'}[el.valign||'top'],
-    margin:0,fit:'none',wrap:true,
+    margin:el.inset||0,fit:'none',wrap:!el.nowrap,
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
   if(el.fill) o.fill={color:el.fill,...(tr?{transparency:tr}:{})};
-  if(el.lineColor!=null) o.line={color:el.lineColor,width:el.linePt||1,...(tr?{transparency:tr}:{})};
+  if(el.lineColor!=null) o.line={color:el.lineColor,width:el.linePt||1,dashType:dashKind(el).key,...(tr?{transparency:tr}:{})};
+  if(sh) o.shadow=sh;
+  // 物件連結刻意「不」在這裡設（見 linkOpt 上方說明）：addText 的 hyperlink 會產出懸空 rIdundefined
   if(el.rot) o.rotate=el.rot;
   if(el.type==='shape'){
     o.shape=SHAPES[el.shape]? el.shape : 'rect';   // key＝prstGeom 名稱，PptxGenJS 同名支援
@@ -2978,17 +4341,22 @@ function transitionXml(tr){
   const inner={fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'}[tr.type];
   return `<p:transition spd="med">${inner}</p:transition>`;
 }
-function patchFonts(xml,latinFont,mode,F){
+function patchFonts(xml,latinFont,mode,F,lang){
   const mk= mode==='inherit'
     ? '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>'
     : `<a:latin typeface="${latinFont}"/><a:ea typeface="${F.ea}"/><a:cs typeface="${latinFont}"/>`;
-  let s=xml.replace(/<a:(latin|ea|cs)\b[^>]*\/>/g,'');
-  const fixA=a=>' lang="zh-TW"'+a.replace(/\s+lang="[^"]*"/g,'');
+  // 全文件同一個 lang（不按語言切 run，見說明「字體模式」）；語言碼由 deck.lang 決定
+  const fixA=a=>` lang="${lang||'en-US'}"`+a.replace(/\s+lang="[^"]*"/g,'');
+  const strip=s=>s.replace(/<a:(latin|ea|cs)\b[^>]*\/>/g,'');
+  // run 級自訂字型（run.fontFace）例外：該 rPr 已被 PptxGenJS 寫入 latin/ea/cs，
+  // 不可被全域字體覆蓋，改為三槽都用該字型（同 PptxGenJS 對 fontFace 的處理）
+  const pick=inner=>{ const m=inner.match(/<a:latin typeface="([^"]+)"[^>]*\/>/);
+    return m? `<a:latin typeface="${m[1]}"/><a:ea typeface="${m[1]}"/><a:cs typeface="${m[1]}"/>` : mk; };
   // 順序重要：先處理「成對」再處理「自閉合」。
   // 若反過來，自閉合展開後產生的成對標籤會被第二段 regex 再塞一次字體
   // → <a:endParaRPr> 內重複 <a:latin> 子節點，違反 schema，PowerPoint 要求修復
-  s=s.replace(/<a:(rPr|endParaRPr|defRPr)((?:\s+[-\w:]+="[^"]*")*)\s*>([\s\S]*?)<\/a:\1>/g,
-    (m,t,at,inner)=>`<a:${t}${fixA(at)}>${inner}${mk}</a:${t}>`);
+  let s=xml.replace(/<a:(rPr|endParaRPr|defRPr)((?:\s+[-\w:]+="[^"]*")*)\s*>([\s\S]*?)<\/a:\1>/g,
+    (m,t,at,inner)=>`<a:${t}${fixA(at)}>${strip(inner)}${pick(inner)}</a:${t}>`);
   s=s.replace(/<a:(rPr|endParaRPr|defRPr)((?:\s+[-\w:]+="[^"]*")*)\s*\/>/g,
     (m,t,at)=>`<a:${t}${fixA(at)}>${mk}</a:${t}>`);
   return s;
@@ -2996,23 +4364,52 @@ function patchFonts(xml,latinFont,mode,F){
 async function exportPptx(download=true){
   const orig=APP.page, origSel=[...APP.selIds];
   const pptx=new PptxGenJS();
-  pptx.defineLayout({name:'YZ169',width:12192000/914400,height:6858000/914400});
-  pptx.layout='YZ169';
-  for(const pg of APP.deck.pages){
+  const SW=APP.deck.stage.w, SH=APP.deck.stage.h;
+  const LAY=`DeckJSON${SW}x${SH}`;
+  pptx.defineLayout({name:LAY,width:px2in(SW),height:px2in(SH)});
+  pptx.layout=LAY;
+  // 檔案屬性（docProps/core.xml、app.xml）：留空的欄位不寫，避免塞入無意義預設值
+  pptx.title=APP.deck.title||'未命名簡報';
+  if(APP.deck.author) pptx.author=APP.deck.author;
+  if(APP.deck.company) pptx.company=APP.deck.company;
+  if(APP.deck.subject) pptx.subject=APP.deck.subject;
+  const pnum=APP.deck.pageNum? pageNumBox():null;
+  const pendList=[];        // 全 deck 的待插入影片清單（匯出後彙總對話框用）
+  let wroteNotes=false;     // 是否真的有寫進備忘稿（含待辦提示）→ 決定要不要保留 notesMaster 基建
+  for(let pi=0;pi<APP.deck.pages.length;pi++){
+    const pg=APP.deck.pages[pi];
     APP.page=pg.id; APP.selIds=[];
     renderStage();               // 表格列高（wrap 長高）需以實際渲染 DOM 為準
     const slide=pptx.addSlide();
-    slide.background={color:pg.bg||'FFFFFF'};
-    for(const el of pg.elements) if(!el.hidden) await addElToSlide(slide,el);
-    if(pg.notes) slide.addNotes(String(pg.notes));   // 講者備忘稿
+    // 背景圖片走 blipFill（副檔名由 data URL 的 mime 決定，否則 PptxGenJS 一律當 png，jpg 會對不上型別）
+    if(pg.bgImage){
+      const m=/^data:image\/(\w+)/.exec(pg.bgImage);
+      slide.background={data:pg.bgImage,path:'bg.'+((m&&m[1].toLowerCase()==='jpeg')?'jpeg':'png')};
+    }else slide.background={color:pg.bg||'FFFFFF'};
+    const pend=[];   // 本頁的「待插入影片」清單（本機影片只放了封面圖佔位）
+    for(const el of pg.elements) if(!el.hidden) await addElToSlide(slide,el,pend);
+    if(pg.skip) slide.hidden=true;   // 不放映此頁 → <p:sld show="0">
+    /* 講者備忘稿。待插入影片的提示在這裡「只附加到輸出字串」，刻意不寫回 pg.notes——
+       否則每次匯出都會再累加一份，還得做去重，而且動到了使用者自己的資料。 */
+    const noteOut=[String(pg.notes||'').trim(),
+      ...(pend.length? ['—— DeckJSON 待辦 ——',...pend.map(t=>'• '+t)]:[])].filter(Boolean).join('\n');
+    if(noteOut){ slide.addNotes(noteOut); wroteNotes=true; }
+    if(pend.length) pendList.push(`第 ${pi+1} 頁${pg.name?'（'+pg.name+'）':''}：`+pend.join('、'));
+    // 原生頁碼欄位（<a:fld type="slidenum">）：放映／列印自動更新，不是寫死的文字
+    if(pnum&&!(APP.deck.pageNum.skipFirst&&pi===0))
+      slide.slideNumber={x:px2in(pnum.x),y:px2in(pnum.y),w:px2in(pnum.w),h:px2in(pnum.h),
+        align:pnum.align,valign:'middle',margin:0,fontSize:pnum.sizePt,color:pnum.color};
   }
   APP.page=orig; setSel(origSel); renderAll();
 
   const ab=await pptx.write('arraybuffer');
   const zip=await JSZip.loadAsync(ab);
-  // sldSz 精確（PptxGenJS 吋換算會差 ~30 EMU）
+  // sldSz 精確（PptxGenJS 吋換算會差 ~30 EMU）：1px=9525 EMU 直接算，
+  // type 只在尺寸命中標準比例時才寫（非標準比例硬掛 type 會與 cx/cy 矛盾）
   let pres=await zip.file('ppt/presentation.xml').async('string');
-  pres=pres.replace(/<p:sldSz[^>]*\/>/,'<p:sldSz cx="12192000" cy="6858000" type="screen16x9"/>');
+  {const pre=stagePresetOf(SW,SH);
+   pres=pres.replace(/<p:sldSz[^>]*\/>/,
+     `<p:sldSz cx="${px2emu(SW)}" cy="${px2emu(SH)}"${pre?` type="${pre.type}"`:''}/>`);}
 
   /* ---- 套件級修復：PptxGenJS 3.12 已知缺陷（上游停更，gitbrent/PptxGenJS#1449），
           多頁＋備忘稿時會觸發 PowerPoint「需要修復」並丟元素 ---- */
@@ -3021,7 +4418,9 @@ async function exportPptx(download=true){
    if(nm){ pres=pres.replace(nm[0],''); pres=pres.replace('</p:sldMasterIdLst>','</p:sldMasterIdLst>'+nm[0]); }}
   // (2) 備忘稿基建：全 deck 無備忘稿時整組拆除（PptxGenJS 的 notesMaster 含畸形佔位形狀，修復時被 PPT 移除）；
   //     有備忘稿時給 notesMaster 專屬 theme（誤共用 slideMaster 的 theme1 也是修復觸發點）
-  const hasNotes=APP.deck.pages.some(p=>p.notes&&String(p.notes).trim());
+  // 注意：不能只看 pg.notes——「待插入影片」的待辦提示也會寫進備忘稿，
+  // 漏算會把 notesMaster 基建整組拆掉，連帶弄壞那些頁的 notesSlide 關聯
+  const hasNotes=wroteNotes;
   if(!hasNotes){
     for(const n of Object.keys(zip.files)) if(/^ppt\/(notesMasters|notesSlides)\//.test(n)) zip.remove(n);
     zip.remove('ppt/notesMasters'); zip.remove('ppt/notesSlides');
@@ -3052,7 +4451,7 @@ async function exportPptx(download=true){
   ct=ct.replace(/<Default Extension="([^"]+)"[^>]*\/>/g,(m,e)=>(e==='rels'||usedExt.has(e.toLowerCase()))?m:'');
   zip.file('[Content_Types].xml',ct);
   zip.file('ppt/presentation.xml',pres);
-  const mode=APP.deck.fontMode, F=APP.deck.fonts;
+  const mode=APP.deck.fontMode, F=APP.deck.fonts, LANG=APP.deck.lang||defaultLang();
   for(const name of Object.keys(zip.files)){
     if(!/^ppt\/slides\/slide\d+\.xml$/.test(name)) continue;
     let s=await zip.file(name).async('string');
@@ -3072,11 +4471,69 @@ async function exportPptx(download=true){
       const gds=SHAPE_ADJ[el.shape].map((p,i)=>`<a:gd name="${p.gd}" fmla="val ${Math.round(vals[i]*100000)}"/>`).join('');
       // 肘形連接線的 prstGeom 名是 bentConnector3（≠ shape key）；一般形狀則 key＝prst
       const prst=LINE_KINDS[el.shape]? LINE_KINDS[el.shape].pptx : el.shape;
-      const reEmpty=new RegExp(`(name="${el.id}"[\\s\\S]*?<a:prstGeom prst="${prst}">)<a:avLst\\s*(?:/>|>\\s*</a:avLst>)`);
+      const reEmpty=new RegExp(`(name="${reEsc(el.id)}"[\\s\\S]*?<a:prstGeom prst="${prst}">)<a:avLst\\s*(?:/>|>\\s*</a:avLst>)`);
       if(reEmpty.test(s)) s=s.replace(reEmpty,`$1<a:avLst>${gds}</a:avLst>`);
       else{  // prstGeom 自閉合、無 avLst（連接線常見）→ 補上帶 gd 的 avLst
-        const reSelf=new RegExp(`(name="${el.id}"[\\s\\S]*?)<a:prstGeom prst="${prst}"\\s*/>`);
+        const reSelf=new RegExp(`(name="${reEsc(el.id)}"[\\s\\S]*?)<a:prstGeom prst="${prst}"\\s*/>`);
         s=s.replace(reSelf,`$1<a:prstGeom prst="${prst}"><a:avLst>${gds}</a:avLst></a:prstGeom>`);
+      }
+    }
+    /* (5) 一段多 run 時 <a:pPr> 被重複輸出 → 只留第一個
+       PptxGenJS 3.12 的 genXmlTextBody 對「同一段落內的每個 run」都呼叫一次 genXmlParagraphProperties，
+       只有全空的 pPr 會被丟掉；DeckJSON 每個 run 都帶 align，所以段內混排（粗體／變色／上下標／
+       底線…）必然產生 <a:p><a:pPr/><a:r/><a:pPr/><a:r/>…。CT_TextParagraph 規定 pPr maxOccurs=1
+       且必須是第一個子元素 → 違反 schema，是 PowerPoint「需要修復」的高風險寫法。
+       第一個 pPr 已帶齊本段屬性（對齊／項目符號／段距皆由該段第一個 run 帶頭），故保留第一個、刪其餘。*/
+    s=s.replace(/<a:p>[\s\S]*?<\/a:p>/g,blk=>{ let first=true;
+      return blk.replace(/<a:pPr\b[^>]*>[\s\S]*?<\/a:pPr>|<a:pPr\b[^>]*\/>/g,m=>{
+        if(first){ first=false; return m; } return ''; });
+    });
+    // (6) 圖片 descr：未填替代文字時 PptxGenJS 會塞內部佔位檔名（descr="preencoded.png"），清成空字串；
+    //     文字／形狀／表格的 cNvPr 本來就沒有 descr 屬性（套件只支援圖片），有 alt 的補寫上去
+    s=s.replace(/ descr="preencoded\.png"/g,' descr=""');
+    if(pgA) for(const el of pgA.elements){
+      // 圖片／圖表／本機影片走 addImage，descr 已由 altText 寫好；線上影片的 cNvPr 沒有 descr，需在此補
+      if(el.hidden||!el.alt||el.type==='image'||el.type==='chart'||(el.type==='video'&&el.mode==='local')) continue;
+      s=s.replace(new RegExp(`(<p:cNvPr id="\\d+" name="${reEsc(el.id)}")(?![^>]*descr=)`),
+        `$1 descr="${xmlAttr(el.alt)}"`);
+    }
+    // (7) cNvPr id 去重：頁碼佔位形狀的 id 被 PptxGenJS 寫死成 25，
+    //     單頁物件數 ≥24 時會與元素 id 撞號 → PowerPoint 判為毀損要求修復。重複者一律改號。
+    {const all=[...s.matchAll(/<p:cNvPr id="(\d+)"/g)].map(m=>+m[1]);
+     let mx=all.length? Math.max(...all):0;          // 先掃完全部再發新號，避免補的號碼撞到後面既有的
+     const used=new Set();
+     s=s.replace(/<p:cNvPr id="(\d+)"/g,(m,d)=>{ const n=+d;
+       if(!used.has(n)){ used.add(n); return m; }
+       const nn=++mx; used.add(nn); return `<p:cNvPr id="${nn}"`; });}
+    /* (8) 物件層級超連結：補 addText 這條路缺的 <a:hlinkClick> 與關聯（見 linkOpt 上方說明）。
+       走 addImage／addShape 的元素（圖片／圖表／影片／線條）PptxGenJS 自己會註冊，不在此處理。
+       hlinkClick 依 CT_NonVisualDrawingProps 必須是 cNvPr 的第一個子元素，故插在開頭標籤之後。*/
+    if(pgA){
+      const relName='ppt/slides/_rels/'+name.split('/').pop()+'.rels';
+      const relFile=zip.file(relName);
+      if(relFile){
+        const rels=await relFile.async('string');
+        let maxR=Math.max(0,...[...rels.matchAll(/Id="rId(\d+)"/g)].map(m=>+m[1]));
+        let add='';
+        for(const el of pgA.elements){
+          if(el.hidden||!el.link||!isTextPath(el)) continue;
+          const re=new RegExp(`(<p:cNvPr id="\\d+" name="${reEsc(el.id)}"[^>]*?)(\\/>|>)`);
+          if(!re.test(s)) continue;                       // 找不到形狀就跳過，不留孤兒關聯
+          const rid='rId'+(++maxR);
+          if(el.link.url){
+            add+=`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"`
+               +` Target="${xmlAttr(el.link.url)}" TargetMode="External"/>`;
+          }else{
+            const n=Math.max(1,Math.min(APP.deck.pages.length,Math.round(el.link.slide)||1));
+            add+=`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"`
+               +` Target="slide${n}.xml"/>`;
+          }
+          const hl=`<a:hlinkClick r:id="${rid}"`
+            +(el.link.url?'':' action="ppaction://hlinksldjump"')
+            +(el.link.tooltip?` tooltip="${xmlAttr(el.link.tooltip)}"`:'')+'/>';
+          s=s.replace(re,(m,head,close)=> close==='/>'? `${head}>${hl}</p:cNvPr>` : `${head}>${hl}`);
+        }
+        if(add) zip.file(relName,rels.replace('</Relationships>',add+'</Relationships>'));
       }
     }
     // 頁面轉場：schema 順序為 cSld, clrMapOvr, transition —— 插在 </p:sld> 前即合法
@@ -3084,11 +4541,11 @@ async function exportPptx(download=true){
       const tx=transitionXml(pgA.transition);
       if(tx) s=s.replace(/<\/p:sld>\s*$/,tx+'</p:sld>');
     }
-    // 字體：表格區塊 latin=Roboto，其餘 latin=Poppins；ea 一律 Noto Sans TC（繼承模式則全走主題槽）
+    // 字體：表格區塊 latin 用 fonts.tableLatin，其餘用 fonts.latin；ea 一律 fonts.ea（繼承模式則全走主題槽）
     const parts=s.split(/(<p:graphicFrame>[\s\S]*?<\/p:graphicFrame>)/g);
     s=parts.map(seg=>{
       const isTbl=seg.startsWith('<p:graphicFrame>')&&seg.includes('<a:tbl>');
-      return patchFonts(seg,isTbl?F.tableLatin:F.latin,mode,F);
+      return patchFonts(seg,isTbl?F.tableLatin:F.latin,mode,F,LANG);
     }).join('');
     zip.file(name,s);
   }
@@ -3099,7 +4556,13 @@ async function exportPptx(download=true){
     a.href='data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,'+b64;
     a.download=APP.deck.title+'.pptx';
     a.click();
+    // 待插入影片：匯出後彙總對話框（三路提示的主要管道；另兩路是替代文字與該頁備忘稿）
+    if(pendList.length){
+      $('#pendArea').value=pendList.join('\n');
+      $('#pendModal').hidden=false;
+    }
   }
+  window.__lastPending=pendList;
   return b64.length;
 }
 $('#btnExport').onclick=()=>exportPptx(true);
@@ -3111,20 +4574,24 @@ function fontAvailable(name){
   return w(`"${name}", monospace`)!==w('monospace')||w(`"${name}", serif`)!==w('serif');
 }
 async function checkFonts(){
-  try{
-    await document.fonts.ready;
-    // Google Fonts 按需載入：明確觸發三個字族下載後再檢查
-    await Promise.all([FONTS.ea,FONTS.latin,FONTS.tableLatin].map(n=>document.fonts.load(`14px "${n}"`)));
-  }catch(e){}
-  const missing=[FONTS.ea,FONTS.latin,FONTS.tableLatin].filter(n=>!fontAvailable(n));
-  $('#fontWarn').textContent= missing.length? `⚠ 預覽字體未載入：${missing.join('、')}`:'';
+  const F=APP.deck.fonts||FONTS;
+  const names=[...new Set([F.ea,F.latin,F.tableLatin])];
+  try{ await document.fonts.ready; }catch(e){}
+  const missing=names.filter(n=>!fontAvailable(n));
+  // 明講後果：未安裝只影響「畫布預覽用替代字體」，匯出仍寫原字體名（在裝有該字體的電腦上就正確）
+  $('#fontWarn').textContent= missing.length
+    ? `⚠ 本機未安裝 ${missing.join('、')}：畫布以替代字體預覽（折行位置可能不同），匯出仍寫原字體名`
+    : '';
+  $('#fontWarn').title= missing.length? '安裝該字體、或在右欄「頁面 → 字體（整份簡報）」改成本機已有的字體，預覽就會與輸出一致':'';
 }
 
 /* ================= 總渲染 ================= */
 function renderAll(){
   $('#deckTitle').value=APP.deck.title;
   $('#selFontMode').value=APP.deck.fontMode;
+  applyStage(); applyFontVars(); renderZones();   // 尺寸／字體／預留區都可能被 JSON 或面板改動
   renderPanel(); renderStage(); renderProps(); updateUndoBtns();
+  setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
 }
 
 /* ================= 測試掛鉤 ================= */
