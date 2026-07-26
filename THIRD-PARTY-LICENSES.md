@@ -24,6 +24,18 @@
 - 版權：Copyright (c) 2022 Niklas von Hertzen
 - 專案：https://github.com/niklasvh/html2canvas
 
+## OOXML Preset Shape Definitions
+
+- 檔案：`src/vendor/preset-geom.js`（由 `tools/build-preset-geom.py` 從下列來源轉換而成）
+- 來源：Apache POI 的 `presetShapeDefinitions.xml`
+  （`poi/src/main/resources/org/apache/poi/sl/draw/geom/presetShapeDefinitions.xml`）
+- 授權：Apache License, Version 2.0
+- 版權：Copyright (c) The Apache Software Foundation
+- 專案：https://github.com/apache/poi
+
+  內容為 ECMA-376（Office Open XML）所定義的內建形狀幾何（調整值、公式、控點、輪廓路徑）。
+  DeckJSON 只做格式轉換與精簡（去除連接點、壓縮鍵名），幾何資料本身未經修改。
+
 ## Apache ECharts
 
 - 授權：Apache License, Version 2.0
