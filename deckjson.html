@@ -164,6 +164,19 @@
   .mbox textarea{width:100%;height:320px;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 ui-monospace,Menlo,monospace;padding:8px;resize:vertical}
   .mbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .mnote{font-size:12px;color:var(--fg-dim);margin-top:6px}
+  /* 圖形編輯器（自訂幾何）：錨點、控制柄、線段命中區 */
+  #geomWrap{margin-top:8px;background:#17181c;border:1px solid var(--line);border-radius:8px;
+            padding:8px;display:flex;justify-content:center;overflow:auto}
+  #geomWrap svg{touch-action:none;cursor:crosshair;user-select:none}
+  #geomWrap svg.editMode{cursor:default}
+  .mbox button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .gAnchor{fill:#fff;stroke:#1f2126;stroke-width:1.5;cursor:move}
+  .gAnchor.on{fill:var(--accent);stroke:#fff}
+  .gAnchor.first{fill:#ffd23f}
+  .gHandle{fill:#7fd1ff;stroke:#1f2126;stroke-width:1;cursor:move}
+  .gHStem{stroke:#7fd1ff;stroke-width:1;stroke-dasharray:2 2;pointer-events:none}
+  .gSegHit{stroke:transparent;stroke-width:12;fill:none;cursor:copy}
+  .gSegHit:hover{stroke:rgba(93,169,233,.35)}
   #helpBody h4{margin:14px 0 4px;color:var(--accent)}
   #helpBody p,#helpBody li{font-size:13px;line-height:1.7;margin:2px 0}
   #helpBody ul{margin:2px 0;padding-left:20px}
@@ -269,7 +282,31 @@
     <div class="mhead"><b>插入形狀</b><button id="btnShapeClose">×</button></div>
     <div class="row"><input id="shapeSearch" type="search" placeholder="搜尋形狀名稱（例：箭號、圓角、星）" style="flex:1"><span class="unit" id="shapeCount"></span></div>
     <div id="shapeGrid"></div>
-    <div class="mnote">176 種形狀，等同 PowerPoint 內建清單，匯出為原生幾何（<code>prstGeom</code>），可在 PPT 內再調整。畫布輪廓由 OOXML preset 幾何定義即時求值，<b>不是近似圖形</b>。縮圖右上角有黃點者可調整：選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄滑桿微調。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊；肘形連接線另有<b>黃點</b>可調直角折點。最後一組「自訂幾何」給清單裡沒有的異形用，插入後改 JSON 的 <code>points</code>——<b>它在 PPT 內不會有黃點，能用內建形狀就別用它</b>。</div>
+    <div class="mnote">176 種形狀，等同 PowerPoint 內建清單，匯出為原生幾何（<code>prstGeom</code>），可在 PPT 內再調整。畫布輪廓由 OOXML preset 幾何定義即時求值，<b>不是近似圖形</b>。縮圖右上角有黃點者可調整：選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄滑桿微調。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊；肘形連接線另有<b>黃點</b>可調直角折點。最後一組「自訂幾何」給清單裡沒有的異形用，插入後<b>直接開圖形編輯器</b>（鋼筆畫、拖點改），也可在 JSON 面板改 <code>points</code>——<b>它在 PPT 內不會有黃點，能用內建形狀就別用它</b>。</div>
+  </div>
+</div>
+
+<div id="geomModal" class="modal" hidden>
+  <div class="mbox" style="width:min(900px,95vw)">
+    <div class="mhead"><b>圖形編輯器</b><button id="btnGeomClose">×</button></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center">
+      <button id="gtPen">✎ 鋼筆</button>
+      <button id="gtEdit">⊹ 編輯點</button>
+      <span class="unit">｜</span>
+      <button id="gUndo" title="復原（Cmd/Ctrl+Z）">↺</button>
+      <button id="gRedo" title="重做（Cmd/Ctrl+Shift+Z）">↻</button>
+      <button id="gFlip" title="反轉選取子路徑的繞行方向（挖洞用）">⇄ 反轉方向</button>
+      <button id="gClear" title="清空所有點">清空</button>
+      <span class="unit">｜</span>
+      <label style="min-width:auto"><input type="checkbox" id="gSnap" checked> 吸附格線</label>
+      <select id="gGrid" title="格線間距（路徑座標單位）">
+        <option value="5">5</option><option value="10" selected>10</option>
+        <option value="20">20</option><option value="25">25</option></select>
+      <span class="unit" id="gInfo" style="margin-left:auto"></span>
+    </div>
+    <div id="geomWrap"></div>
+    <div class="mbtns"><button id="gOK" class="primary">確定</button><button id="gCancel">取消</button></div>
+    <div class="mnote" id="gNote"></div>
   </div>
 </div>
 
@@ -360,7 +397,7 @@
         <li><b>多選</b>：Shift／Cmd 點擊加減選，或在空白處拖曳框選；多選後拖<b>四角＝整組比例縮放</b>（位置、尺寸、字級同步）、拖本體＝整組移動，右欄可輸入縮放 % 與對齊。</li>
         <li><b>雙擊</b>文字／形狀＝就地編輯文字，粗體、顏色、高亮都<b>看得見也改得動</b>：<b>反白幾個字，右欄的格式按鈕就只套那幾個字</b>（沒反白＝套用整個文字框）。編輯中點右欄按鈕不會中斷編輯，反白範圍會保留。雙擊表格儲存格＝編輯內容；雙擊圖表＝編輯 option。</li>
         <li>右欄的<b>純文字編輯框</b>是「整框覆寫」用的捷徑，會清掉框內的混排格式——若偵測到混排會先跳確認。要保留格式請在畫布上就地編輯。</li>
-        <li>「＋形狀」開啟圖庫：線條／基本／箭號／方程式／流程圖／星星綵帶／圖說，共 40+ 種。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布預覽為近似圖形，匯出為 PPT 原生幾何。</li>
+        <li>「＋形狀」開啟圖庫：線條／矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，共 176 種，另有自訂幾何。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布輪廓即 OOXML 原生幾何，匯出為 PPT 原生幾何。</li>
         <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
         <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色／框線<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。</li>
@@ -395,7 +432,9 @@
           <b>本機影片</b>＝<b>不嵌入位元組</b>，只自動抓一格畫面當封面並記下檔名長度，匯出後跳出「待插入影片」清單，請在 PowerPoint 對照該框插入真影片（同一份提示也寫進替代文字與該頁備忘稿）。封面可隨時換成自己的圖。</li>
         <li><b>形狀庫（176 種）</b>：矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，等同 PowerPoint 內建的整份形狀清單。上方可用中文名或英文 key 搜尋。畫布上看到的輪廓<b>就是 PowerPoint 的原生幾何本身</b>（由 OOXML 的 preset 幾何定義即時求值），不是近似圖形。</li>
         <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標／角度／肘形折點（同 PPT 手感，拖曳時顯示百分比）；右欄滑桿可精修，匯出為 PPT 原生 avLst。形狀選單縮圖右上角有黃點者即支援，<b>114 種</b>形狀有黃點。沒動過就不寫入，交給 PowerPoint 用它自己的預設值。</li>
-        <li><b>自訂幾何（custGeom）</b>：形狀庫最後一組。清單裡找不到的異形（不規則色塊、自訂折線、資訊圖區塊）可用座標陣列描述，插入後在 JSON 面板改 <code>points</code>，或直接請 AI 產生。指令有 <code>moveTo</code>／直線／二次貝茲／三次貝茲／圓弧／<code>close</code>，座標單位與其他欄位一樣是 px、相對形狀左上角。</li>
+        <li><b>自訂幾何（custGeom）</b>：形狀庫最後一組，給清單裡找不到的異形用（不規則色塊、自訂折線、資訊圖區塊）。插入後<b>直接開圖形編輯器</b>；已存在的自訂幾何選取後按右欄「✎ 開啟圖形編輯器」。也可在 JSON 面板改 <code>points</code>，或請 AI 產生——指令有 <code>moveTo</code>／直線／二次貝茲／三次貝茲／圓弧／<code>close</code>。</li>
+        <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>要讓內圈與外圈<b>反向繞行</b>（PowerPoint 用 nonzero 填充規則），畫完內圈按「⇄ 反轉方向」即可。</li>
+        <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
@@ -430,7 +469,7 @@
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
         <li>漸層填色、母版／版面配置（placeholder）尚未支援。</li>
-        <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈；子路徑挖洞（甜甜圈那種）<b>未實測</b>，不保證。</li>
+        <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標夾在路徑框內（控制柄不能伸出框外）。子路徑挖洞已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
         <li>立體感形狀（立方體／圓柱／斜角…）畫布上的<b>明暗只是近似</b>；匯出走原生幾何，實際明暗由 PowerPoint 自己算。</li>
         <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
         <li><b>線上影片播放需要網路</b>；且在 Keynote／Google Slides／LibreOffice 的支援程度<b>尚未實測</b>，可能只顯示封面圖。</li>
@@ -1250,24 +1289,31 @@ function applyAdjDot(el,ah,lx,ly,w,h){
 }
 // 自訂幾何：points 陣列 → SVG 路徑。指令集與 preset 的 pathLst 完全相同（moveTo／lnTo／
 // cubicBezTo／quadBezTo／arcTo／close），所以這裡跟 presetPaths 用的是同一個 arcSeg。
-// 座標為 px、相對形狀左上角，與 JSON 其他所有座標同單位。
-function custPath(points){
+// ⚠ 座標活在元素自己的路徑座標空間（pathW×pathH），渲染時線性縮放到 w×h——與 preset
+// 的 pathLst w/h 同一套規則（見 presetPaths 的 sx/sy）。這是 2026-07-28 改的：先前座標
+// 直接當 px 用，形狀拉大圖案不跟著大、拉小還會被 normPoints 夾掉座標（不可逆）。
+function custPath(points,sx,sy){
+  sx=sx||1; sy=sy||1;
   const d=[], cur=[0,0];
   (points||[]).forEach((pt,i)=>{
     if(pt.close){ d.push('Z'); return; }
-    const x=+pt.x||0, y=+pt.y||0, c=pt.curve;
-    if(c&&c.type==='cubic'){ d.push('C'+[c.x1,c.y1,c.x2,c.y2,x,y].map(v=>N3(+v||0)).join(',')); }
-    else if(c&&c.type==='quadratic'){ d.push('Q'+[c.x1,c.y1,x,y].map(v=>N3(+v||0)).join(',')); }
-    else if(c&&c.type==='arc'){ arcSeg(cur,+c.wR||0,+c.hR||0,+c.stAng||0,+c.swAng||0,d); return; }
+    const x=(+pt.x||0)*sx, y=(+pt.y||0)*sy, c=pt.curve;
+    if(c&&c.type==='cubic'){ d.push('C'+[c.x1*sx,c.y1*sy,c.x2*sx,c.y2*sy,x,y].map(v=>N3(+v||0)).join(',')); }
+    else if(c&&c.type==='quadratic'){ d.push('Q'+[c.x1*sx,c.y1*sy,x,y].map(v=>N3(+v||0)).join(',')); }
+    else if(c&&c.type==='arc'){ arcSeg(cur,(+c.wR||0)*sx,(+c.hR||0)*sy,+c.stAng||0,+c.swAng||0,d); return; }
     else if(i===0||pt.moveTo){ d.push(`M${N3(x)},${N3(y)}`); }
     else d.push(`L${N3(x)},${N3(y)}`);
     cur[0]=x; cur[1]=y;
   });
   return d.join('');
 }
+// 自訂幾何的路徑座標空間 → 元素尺寸的縮放比。pathW/pathH 由 normalizeDeck 保證存在
+// （舊檔缺鍵時補成當時的 w/h，比例即 1，畫面完全不變）
+const custScale=el=>[el.pathW>0? el.w/el.pathW : 1, el.pathH>0? el.h/el.pathH : 1];
 // 元素 → SVG 子路徑清單（渲染、縮圖、快照共用同一條路，所以三者不可能對不上）
 function shapePaths(el){
-  if(el.shape==='custGeom'){ const d=custPath(el.points); return d? [{d,fill:'',noStroke:false}] : []; }
+  if(el.shape==='custGeom'){ const s=custScale(el), d=custPath(el.points,s[0],s[1]);
+    return d? [{d,fill:'',noStroke:false}] : []; }
   const key=PRESET_GEOM[el.shape]? el.shape : 'rect';
   return presetPaths(key,el.w,el.h,adjVals(el));
 }
@@ -1275,8 +1321,12 @@ function shapePaths(el){
 // 不是逐路徑填了就描——chartPlus 的十字（fill="none"）就排在方框之前，逐路徑畫會被方框蓋掉。
 // cube／can 的立體感也依賴這個順序：本體填色墊底、亮面暗面疊上、外框最後統一描。
 function shapeNodes(paths,fill,lineColor,sw,da){
+  // ⚠ 填充規則是 nonzero（SVG 預設），不是 even-odd。證據在 preset 資料本身：donut／frame／
+  // noSmoking 的內圈都刻意用反向繞行（帶號面積一正一負），even-odd 下這個反轉毫無意義——
+  // 會反轉就代表 DrawingML 靠繞行方向決定內外。反過來說，同向的兩條子路徑（如
+  // actionButtonBackPrevious 的按鈕面＋三角）在 nonzero 下是實心，even-odd 會誤挖成洞。
   const out=[], mk=d=>{ const p=document.createElementNS(NS,'path');
-    p.setAttribute('d',d); p.setAttribute('fill-rule','evenodd'); return p; };   // 環圈內圈靠 even-odd 挖空
+    p.setAttribute('d',d); p.setAttribute('fill-rule','nonzero'); return p; };
   for(const sp of paths){
     if(sp.fill==='none'||!fill) continue;
     const p=mk(sp.d); p.setAttribute('fill',shadeFill(fill,sp.fill)); out.push(p);
@@ -2491,6 +2541,14 @@ function renderProps(){
       ['⇵',()=>{ commitUndo(); el.flipV=!el.flipV; renderStage(); renderProps(); },'垂直翻轉',!!el.flipV],
     ]));
   }
+  // 自訂幾何：進圖形編輯器（畫布上直接畫，不必手改 points）
+  if(el.type==='shape'&&el.shape==='custGeom'){
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML='<label>自訂幾何</label>';
+    const b=document.createElement('button'); b.textContent='✎ 開啟圖形編輯器';
+    b.style.flex='1'; b.onclick=()=>openGeomEditor(el);
+    r.appendChild(b); pp.appendChild(r);
+  }
   // 形狀 adj 控點（黃點微調）：圓角/斜度/箭深/桿寬/尾標等，每參數一條滑桿，即時預覽、匯出注入原生 avLst
   if(el.type==='shape'&&adjCount(el.shape)){
     const bd=adjBounds(el.shape,el.w,el.h||1);
@@ -3094,7 +3152,7 @@ function shapeThumb(key,VB,MAX){
   }else{
     // 縮圖與畫布走同一個 shapePaths()＋shapeNodes()，所以「挑的時候看到的」跟「插進去長的」不可能不一樣
     const paths= key==='custGeom'
-      ? shapePaths({shape:'custGeom',points:CUST_SAMPLE(dw,dh),w:dw,h:dh})
+      ? shapePaths({shape:'custGeom',points:CUST_SAMPLE(dw,dh),w:dw,h:dh,pathW:dw,pathH:dh})
       : presetPaths(key,dw,dh,null);
     for(const p of shapeNodes(paths,'d7dae0','8b9099',1,'')){
       p.setAttribute('transform',`translate(${ox},${oy})`);
@@ -3141,14 +3199,391 @@ function insertShape(key){
     const strokeOnly= key!=='custGeom'&&presetPaths(key,100,100,null).some(p=>p.fill==='none');
     const el={id:uid('e'),type:'shape',shape:key,x:220,y:240,w:sz[0],h:sz[1],
       fill:'4D9DE0',lineColor:strokeOnly?'2E6DA4':null,linePt:1,paras:null,valign:'middle'};
-    if(key==='custGeom') el.points=CUST_SAMPLE(sz[0],sz[1]);   // 插入範例骨架，之後靠貼 JSON／AI 改座標
+    if(key==='custGeom'){ el.pathW=sz[0]; el.pathH=sz[1]; el.points=CUST_SAMPLE(sz[0],sz[1]); }
     addEl(el);
+    // 插進來就直接進畫布（空白起手，取消則保留範例骨架），不必先去翻 JSON
+    if(key==='custGeom') openGeomEditor(el,true);
   }
 }
 $('#btnAddShape').onclick=()=>{ $('#shapeSearch').value=''; buildShapeGrid(); $('#shapeModal').hidden=false; };
 $('#shapeSearch').oninput=e=>buildShapeGrid(e.target.value);
 $('#btnShapeClose').onclick=()=>{ $('#shapeModal').hidden=true; };
 $('#btnAddChart').onclick=()=>addEl({id:uid('e'),type:'chart',x:640,y:180,w:480,h:320,option:structuredClone(SAMPLE_CHART)});
+
+/* ================= 圖形編輯器（自訂幾何） =================
+   custGeom 的 points 是「資料」，這一節是它的「畫法」。編輯器內部不直接改 points，
+   改用節點模型：一個錨點 {x,y,hIn,hOut}，兩支控制柄各自可為 null（該側是直線）。
+   原因是 points 把曲線資訊掛在「終點」上（x1,y1 其實是前一點的出柄），拖一個點要同時
+   改前後兩筆，容易寫錯；節點模型一個點就是一個物件，拖曳／增刪／直曲互換都只動一處。
+   ⚠ 轉入時 quadratic 折成 cubic（數學上完全等價），arc 折成每 90° 一段的 cubic
+   （標準 α=4/3·tan(Δ/4) 近似）。折了就回不去圓弧，所以開啟前會先問過使用者。 */
+const GEO={open:false,el:null,subs:[],cur:null,tool:'pen',sel:null,drag:null,
+           W:100,H:100,S:1,PAD:16,undo:[],redo:[],svg:null,rubber:null};
+const gR=v=>Math.round(v*100)/100;      // 座標存到小數兩位（路徑空間單位≈px）
+const gX=v=>GEO.PAD+v*GEO.S, gY=v=>GEO.PAD+v*GEO.S;   // 路徑座標 → 編輯器螢幕座標
+const gXY=n=>[n.x,n.y];
+// 二次貝茲 → 三次貝茲（等價轉換，非近似）
+const q2c=(p0,q,p1)=>[[p0[0]+2/3*(q[0]-p0[0]),p0[1]+2/3*(q[1]-p0[1])],
+                      [p1[0]+2/3*(q[0]-p1[0]),p1[1]+2/3*(q[1]-p1[1])]];
+// 圓弧 → 三次貝茲段。角度慣例與 arcSeg 完全相同（真實幾何角，非橢圓參數角），
+// 一段最多 90°；α 用參數角空間的差值算，90° 段的最大半徑誤差約萬分之三
+function arcToCubics(cur,wR,hR,st,sw,out){
+  const par=a=>Math.atan2(wR*Math.sin(a*D2R),hR*Math.cos(a*D2R));
+  let ph=par(st);
+  const cx=cur[0]-wR*Math.cos(ph), cy=cur[1]-hR*Math.sin(ph);
+  const P=p=>[cx+wR*Math.cos(p),cy+hR*Math.sin(p)];
+  const T=p=>[-wR*Math.sin(p),hR*Math.cos(p)];
+  let rest=sw, a=st, guard=0;
+  while(Math.abs(rest)>1e-6&&guard++<64){
+    const step=(rest>0?1:-1)*Math.min(Math.abs(rest),90*OOX_DEG);
+    a+=step; rest-=step;
+    let p2=par(a);
+    // atan2 的值域是 (−π,π]，跨象限會跳；沿掃掠方向展開回連續值
+    if(step>0){ while(p2<=ph) p2+=2*Math.PI; } else { while(p2>=ph) p2-=2*Math.PI; }
+    const al=4/3*Math.tan((p2-ph)/4), A=P(ph), B=P(p2), TA=T(ph), TB=T(p2);
+    out.push({x:B[0],y:B[1],h1:[A[0]+al*TA[0],A[1]+al*TA[1]],h2:[B[0]-al*TB[0],B[1]-al*TB[1]]});
+    cur[0]=B[0]; cur[1]=B[1]; ph=p2;
+  }
+}
+// points 陣列 → 節點模型。回傳 lossy＝有圓弧被折成貝茲（要提示使用者）
+function pointsToSubs(pts){
+  const subs=[]; let sub=null, cur=[0,0], lossy=false;
+  for(const pt of (pts||[])){
+    if(pt.close){ if(sub) sub.closed=true; sub=null; continue; }
+    const x=+pt.x||0, y=+pt.y||0, c=pt.curve;
+    if(!sub||pt.moveTo){ sub={nodes:[{x,y,hIn:null,hOut:null}],closed:false}; subs.push(sub); cur=[x,y]; continue; }
+    const prev=sub.nodes[sub.nodes.length-1];
+    if(c&&c.type==='cubic'){
+      prev.hOut=[+c.x1||0,+c.y1||0];
+      sub.nodes.push({x,y,hIn:[+c.x2||0,+c.y2||0],hOut:null}); cur=[x,y];
+    }else if(c&&c.type==='quadratic'){
+      const hh=q2c(cur,[+c.x1||0,+c.y1||0],[x,y]);
+      prev.hOut=hh[0]; sub.nodes.push({x,y,hIn:hh[1],hOut:null}); cur=[x,y];
+    }else if(c&&c.type==='arc'){
+      const segs=[]; arcToCubics(cur,+c.wR||0,+c.hR||0,+c.stAng||0,+c.swAng||0,segs);
+      if(segs.length) lossy=true;
+      let p=prev;
+      for(const s of segs){ p.hOut=s.h1; const n={x:s.x,y:s.y,hIn:s.h2,hOut:null}; sub.nodes.push(n); p=n; }
+      // cur 已由 arcToCubics 就地更新成弧的終點（pt.x/pt.y 對 arc 段無意義）
+    }else{ sub.nodes.push({x,y,hIn:null,hOut:null}); cur=[x,y]; }
+  }
+  // 閉合子路徑裡「繞回起點」的那個重合節點，吸收成起點的 hIn，讓閉合段也能是曲線
+  for(const s of subs){
+    if(!s.closed||s.nodes.length<3) continue;
+    const f=s.nodes[0], l=s.nodes[s.nodes.length-1];
+    if(Math.abs(l.x-f.x)<0.01&&Math.abs(l.y-f.y)<0.01&&!l.hOut){ f.hIn=l.hIn; s.nodes.pop(); }
+  }
+  return {subs,lossy};
+}
+// 節點模型 → points 陣列（只產出 moveTo／直線／cubic／close 四種）
+const gPt=(a,b)=>{ const p={x:gR(b.x),y:gR(b.y)};
+  if(a.hOut||b.hIn){ const o=a.hOut||gXY(a), i=b.hIn||gXY(b);
+    p.curve={type:'cubic',x1:gR(o[0]),y1:gR(o[1]),x2:gR(i[0]),y2:gR(i[1])}; }
+  return p; };
+function subsToPoints(subs){
+  const out=[];
+  for(const s of subs){
+    const n=s.nodes; if(n.length<2) continue;
+    out.push({x:gR(n[0].x),y:gR(n[0].y),moveTo:true});
+    for(let i=1;i<n.length;i++) out.push(gPt(n[i-1],n[i]));
+    if(s.closed){
+      const last=n[n.length-1];
+      if(last.hOut||n[0].hIn) out.push(gPt(last,n[0]));   // 閉合段是曲線才需明寫，直線交給 Z
+      out.push({close:true});
+    }
+  }
+  return out;
+}
+// 節點模型 → SVG d。X/Y 省略時輸出路徑座標，帶入 gX/gY 則是編輯器螢幕座標
+const gSegD=(a,b,X,Y)=>{ X=X||(v=>v); Y=Y||(v=>v);
+  if(a.hOut||b.hIn){ const o=a.hOut||gXY(a), i=b.hIn||gXY(b);
+    return 'C'+[X(o[0]),Y(o[1]),X(i[0]),Y(i[1]),X(b.x),Y(b.y)].map(N3).join(','); }
+  return `L${N3(X(b.x))},${N3(Y(b.y))}`; };
+function subsD(subs,X,Y){
+  X=X||(v=>v); Y=Y||(v=>v);
+  const d=[];
+  for(const s of subs){
+    const n=s.nodes; if(!n.length) continue;
+    d.push(`M${N3(X(n[0].x))},${N3(Y(n[0].y))}`);
+    for(let i=1;i<n.length;i++) d.push(gSegD(n[i-1],n[i],X,Y));
+    if(s.closed&&n.length>1){ d.push(gSegD(n[n.length-1],n[0],X,Y)); d.push('Z'); }
+  }
+  return d.join('');
+}
+/* ---- 編輯器 undo（與主程式的 UNDO 各自獨立：編輯器裡按 Cmd+Z 是回上一個點，
+       不是回上一個投影片操作；整段編輯在按下「確定」時才成為主程式的一步） ---- */
+const gClone=()=>GEO.subs.map(s=>({closed:s.closed,
+  nodes:s.nodes.map(n=>({x:n.x,y:n.y,hIn:n.hIn?n.hIn.slice():null,hOut:n.hOut?n.hOut.slice():null}))}));
+function gPush(){ GEO.undo.push(gClone()); if(GEO.undo.length>80) GEO.undo.shift(); GEO.redo.length=0; }
+function gStep(from,to){ const s=from.pop(); if(!s) return; to.push(gClone());
+  GEO.subs=s; GEO.cur=null; GEO.sel=null; gRender(); }
+const gUndoStep=()=>gStep(GEO.undo,GEO.redo), gRedoStep=()=>gStep(GEO.redo,GEO.undo);
+
+/* ---- 座標與拖曳 ---- */
+function gLocal(e){ const r=GEO.svg.getBoundingClientRect();
+  return [(e.clientX-r.left-GEO.PAD)/GEO.S,(e.clientY-r.top-GEO.PAD)/GEO.S]; }
+function gSnapPt(p){
+  if($('#gSnap').checked){ const g=Math.max(1,+$('#gGrid').value||10);
+    p=[Math.round(p[0]/g)*g,Math.round(p[1]/g)*g]; }
+  // 夾在路徑框內：normPoints 存檔時也會夾，這裡先夾住才不會「畫得到、存不進去」
+  return [Math.max(0,Math.min(GEO.W,p[0])),Math.max(0,Math.min(GEO.H,p[1]))];
+}
+function gStartDrag(o){ GEO.drag=o;
+  document.addEventListener('pointermove',gMove);
+  document.addEventListener('pointerup',gUp); }
+function gUp(){ document.removeEventListener('pointermove',gMove);
+  document.removeEventListener('pointerup',gUp); GEO.drag=null; gRender(); }
+function gMove(e){
+  const d=GEO.drag; if(!d) return;
+  const raw=gLocal(e), p=gSnapPt(raw), n=d.node;
+  if(d.mode==='pen'){
+    if(!d.moved&&Math.hypot((raw[0]-n.x)*GEO.S,(raw[1]-n.y)*GEO.S)<4) return;
+    d.moved=true; n.hOut=[p[0],p[1]]; n.hIn=[2*n.x-p[0],2*n.y-p[1]];
+  }else if(d.mode==='node'){
+    const dx=p[0]-n.x, dy=p[1]-n.y; n.x=p[0]; n.y=p[1];
+    if(n.hIn){ n.hIn[0]+=dx; n.hIn[1]+=dy; }
+    if(n.hOut){ n.hOut[0]+=dx; n.hOut[1]+=dy; }
+  }else if(d.mode==='handle'){
+    const other=d.side==='hIn'?'hOut':'hIn';
+    n[d.side]=[p[0],p[1]];
+    // 預設對稱（保留對側長度、只鏡射方向）；按住 Alt 拖＝拆開成折角
+    if(!e.altKey&&n[other]){
+      const len=Math.hypot(n[other][0]-n.x,n[other][1]-n.y);
+      const vx=n.x-p[0], vy=n.y-p[1], m=Math.hypot(vx,vy)||1;
+      n[other]=[n.x+vx/m*len,n.y+vy/m*len];
+    }
+  }
+  gRender();
+}
+/* ---- 結構操作 ---- */
+// 控制柄與錨點重合＝等同沒有控制柄（直線）
+const gDegen=(h,n)=>!h||(Math.abs(h[0]-n.x)<1e-9&&Math.abs(h[1]-n.y)<1e-9);
+function gSplit(si,ni){   // 在第 ni 段（nodes[ni] → 下一節點）正中插入一點，用 de Casteljau 對半切，形狀不變
+  gPush();
+  const n=GEO.subs[si].nodes, a=n[ni], b=n[(ni+1)%n.length];
+  if(!a.hOut&&!b.hIn){
+    n.splice(ni+1,0,{x:(a.x+b.x)/2,y:(a.y+b.y)/2,hIn:null,hOut:null});
+  }else{
+    const mid=(u,v)=>[(u[0]+v[0])/2,(u[1]+v[1])/2];
+    const p0=gXY(a), p1=a.hOut||gXY(a), p2=b.hIn||gXY(b), p3=gXY(b);
+    const q0=mid(p0,p1), q1=mid(p1,p2), q2=mid(p2,p3);
+    const r0=mid(q0,q1), r1=mid(q1,q2), m=mid(r0,r1);
+    // 原本沒有控制柄的那一側，切完算出來的柄會與錨點重合——留著它會讓直線被當成曲線
+    // （UI 上變平滑點、匯出多寫一條 cubicBezTo），一律收回 null
+    const nn={x:m[0],y:m[1],hIn:null,hOut:null};
+    a.hOut=gDegen(q0,a)? null : q0;
+    b.hIn =gDegen(q2,b)? null : q2;
+    nn.hIn=gDegen(r0,nn)? null : r0;
+    nn.hOut=gDegen(r1,nn)? null : r1;
+    n.splice(ni+1,0,nn);
+  }
+  GEO.sel=[si,ni+1]; gRender();
+}
+function gToggleNode(si,ni){   // 角點 ↔ 平滑點
+  gPush();
+  const s=GEO.subs[si], n=s.nodes, nd=n[ni];
+  if(nd.hIn||nd.hOut){ nd.hIn=null; nd.hOut=null; }
+  else{
+    const prev=n[ni-1]||(s.closed?n[n.length-1]:nd), next=n[ni+1]||(s.closed?n[0]:nd);
+    const dx=(next.x-prev.x)/4, dy=(next.y-prev.y)/4;
+    nd.hIn=[nd.x-dx,nd.y-dy]; nd.hOut=[nd.x+dx,nd.y+dy];
+  }
+  gRender();
+}
+// 反轉子路徑繞行方向。nonzero 規則下，內圈要與外圈反向才會挖成洞（donut／frame 就是這樣寫的）
+function gFlipSub(si){
+  const s=GEO.subs[si]; if(!s) return;
+  gPush();
+  s.nodes.reverse();
+  for(const n of s.nodes){ const t=n.hIn; n.hIn=n.hOut; n.hOut=t; }
+  // reverse 後起點換人，把「原起點」轉回第 0 位，閉合段的形狀才不會位移
+  if(s.closed&&s.nodes.length>1) s.nodes.unshift(s.nodes.pop());
+  if(GEO.sel&&GEO.sel[0]===si) GEO.sel=null;
+  gRender();
+}
+function gDelNode(){
+  if(!GEO.sel) return;
+  const [si,ni]=GEO.sel; gPush();
+  const s=GEO.subs[si]; s.nodes.splice(ni,1);
+  if(s.nodes.length<2) GEO.subs.splice(si,1);
+  GEO.sel=null; gRender();
+}
+/* ---- 繪製 ---- */
+function gRender(){
+  const svg=GEO.svg; if(!svg) return;
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const W=GEO.W,H=GEO.H,S=GEO.S;
+  const mk=(t,a)=>{ const el=document.createElementNS(NS,t); for(const k in a) el.setAttribute(k,a[k]); return el; };
+  svg.classList.toggle('editMode',GEO.tool==='edit');
+  // 格線與路徑框
+  const g=Math.max(1,+$('#gGrid').value||10), gl=[];
+  for(let x=0;x<=W+1e-6;x+=g) gl.push(`M${N3(gX(x))},${N3(gY(0))}V${N3(gY(H))}`);
+  for(let y=0;y<=H+1e-6;y+=g) gl.push(`M${N3(gX(0))},${N3(gY(y))}H${N3(gX(W))}`);
+  svg.appendChild(mk('path',{d:gl.join(''),stroke:'#2b2f36','stroke-width':1,fill:'none'}));
+  svg.appendChild(mk('rect',{x:gX(0),y:gY(0),width:W*S,height:H*S,fill:'none',
+    stroke:'#575d68','stroke-dasharray':'5 4'}));
+  // 圖形本身。fill-rule 跟畫布 shapeNodes 同樣用 nonzero（＝PowerPoint 的規則），
+  // 所以「編輯器裡看到有沒有挖洞」＝「PPT 裡有沒有挖洞」，不會兩套結果
+  const d=subsD(GEO.subs,gX,gY);
+  if(d) svg.appendChild(mk('path',{d,fill:'rgba(77,157,224,.32)',stroke:'#4D9DE0','stroke-width':2,
+    'fill-rule':'nonzero','stroke-linejoin':'round','pointer-events':'none'}));
+  // 編輯模式：每段一條透明粗線當命中區，點一下即在該段正中插點
+  if(GEO.tool==='edit') GEO.subs.forEach((s,si)=>{
+    const n=s.nodes, last=s.closed? n.length-1 : n.length-2;
+    for(let i=0;i<=last;i++){
+      const a=n[i], b=n[(i+1)%n.length]; if(!a||!b) continue;
+      const hit=mk('path',{class:'gSegHit',d:`M${N3(gX(a.x))},${N3(gY(a.y))}`+gSegD(a,b,gX,gY)});
+      hit.onpointerdown=ev=>{ ev.stopPropagation(); gSplit(si,i); };
+      hit.appendChild(mk('title',{})).textContent='點一下在此插入節點';
+      svg.appendChild(hit);
+    }
+  });
+  // 控制柄：只畫選取節點的（全部畫出來會糊成一團）
+  if(GEO.tool==='edit'&&GEO.sel){
+    const nd=(GEO.subs[GEO.sel[0]]||{nodes:[]}).nodes[GEO.sel[1]];
+    if(nd) for(const side of ['hIn','hOut']){
+      const h=nd[side]; if(!h) continue;
+      svg.appendChild(mk('line',{class:'gHStem',x1:gX(nd.x),y1:gY(nd.y),x2:gX(h[0]),y2:gY(h[1])}));
+      const dot=mk('circle',{class:'gHandle',cx:gX(h[0]),cy:gY(h[1]),r:4.5});
+      dot.onpointerdown=ev=>{ ev.stopPropagation(); gPush(); gStartDrag({mode:'handle',node:nd,side}); };
+      dot.appendChild(mk('title',{})).textContent='拖曳調整曲度（按住 Alt 拖＝兩側拆開）';
+      svg.appendChild(dot);
+    }
+  }
+  // 錨點：平滑點畫圓、角點畫方；鋼筆模式中未閉合子路徑的起點標黃（點它即閉合）
+  GEO.subs.forEach((s,si)=>s.nodes.forEach((nd,ni)=>{
+    const smooth=!!(nd.hIn||nd.hOut), on=GEO.sel&&GEO.sel[0]===si&&GEO.sel[1]===ni;
+    const isStart=GEO.tool==='pen'&&s===GEO.cur&&ni===0&&s.nodes.length>1;
+    const cls='gAnchor'+(on?' on':'')+(isStart?' first':'');
+    const a=smooth? mk('circle',{class:cls,cx:gX(nd.x),cy:gY(nd.y),r:4.5})
+                  : mk('rect',{class:cls,x:gX(nd.x)-4,y:gY(nd.y)-4,width:8,height:8});
+    a.onpointerdown=ev=>{
+      ev.stopPropagation();
+      if(GEO.tool==='pen'){
+        if(isStart){ gPush(); s.closed=true; GEO.cur=null; gRender(); }   // 點回起點＝閉合並收工
+        return;
+      }
+      GEO.sel=[si,ni]; gPush(); gStartDrag({mode:'node',node:nd}); gRender();
+    };
+    a.ondblclick=ev=>{ ev.stopPropagation(); if(GEO.tool==='edit'){ GEO.sel=[si,ni]; gToggleNode(si,ni); } };
+    a.appendChild(mk('title',{})).textContent=GEO.tool==='pen'
+      ? (isStart?'點一下閉合這條路徑':'') : '拖曳移動；雙擊切換直線／曲線；Delete 刪除';
+    svg.appendChild(a);
+  }));
+  // 鋼筆的橡皮筋預覽線
+  GEO.rubber=null;
+  if(GEO.tool==='pen'&&GEO.cur&&GEO.cur.nodes.length){
+    GEO.rubber=mk('path',{d:'',stroke:'#ffd23f','stroke-width':1.5,'stroke-dasharray':'4 3',
+      fill:'none','pointer-events':'none'});
+    svg.appendChild(GEO.rubber);
+  }
+  // 狀態列
+  const nPts=GEO.subs.reduce((a,s)=>a+s.nodes.length,0);
+  $('#gInfo').textContent=`${nPts} 點 · ${GEO.subs.length} 條子路徑 · 座標空間 ${W}×${H}`;
+  $('#gtPen').classList.toggle('on',GEO.tool==='pen');
+  $('#gtEdit').classList.toggle('on',GEO.tool==='edit');
+}
+/* ---- 開關與存檔 ---- */
+function openGeomEditor(el,fresh){
+  if(!el||el.shape!=='custGeom') return;
+  // 開啟時把路徑空間重新對齊元素當下尺寸：編輯器裡的框＝畫布上看到的框，不會有兩套座標
+  const s=custScale(el);
+  const pts=(el.points||[]).map(pt=>{
+    if(pt.close) return {close:true};
+    const q={x:pt.x*s[0],y:pt.y*s[1]}; if(pt.moveTo) q.moveTo=true;
+    if(pt.curve){ const c=pt.curve, k={type:c.type};
+      if(c.type==='arc'){ k.wR=c.wR*s[0]; k.hR=c.hR*s[1]; k.stAng=c.stAng; k.swAng=c.swAng; }
+      else{ k.x1=c.x1*s[0]; k.y1=c.y1*s[1]; if(c.type==='cubic'){ k.x2=c.x2*s[0]; k.y2=c.y2*s[1]; } }
+      q.curve=k; }
+    return q;
+  });
+  const r=fresh? {subs:[],lossy:false} : pointsToSubs(pts);
+  if(r.lossy&&!confirm('這個圖形含圓弧段。編輯器會把圓弧折成貝茲曲線（外觀幾乎相同，但按下「確定」後就換不回圓弧了）。要繼續嗎？')) return;
+  GEO.el=el; GEO.subs=r.subs; GEO.cur=null; GEO.sel=null; GEO.drag=null;
+  GEO.undo=[]; GEO.redo=[];
+  GEO.tool=r.subs.length? 'edit' : 'pen';
+  GEO.W=Math.max(1,Math.round(el.w)); GEO.H=Math.max(1,Math.round(el.h));
+  // 畫布縮放：塞得進視窗就塞（上限 4×，避免小形狀被放到糊），視窗太小才讓 #geomWrap 出捲軸
+  const availW=Math.max(280,Math.min(780,window.innerWidth-190));
+  const availH=Math.max(220,Math.min(440,window.innerHeight-320));
+  GEO.S=Math.max(0.5,Math.min(availW/GEO.W,availH/GEO.H,4));
+  GEO.open=true; $('#geomModal').hidden=false;
+  const wrap=$('#geomWrap'); wrap.innerHTML='';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('width',GEO.W*GEO.S+GEO.PAD*2);
+  svg.setAttribute('height',GEO.H*GEO.S+GEO.PAD*2);
+  svg.addEventListener('pointerdown',gCanvasDown);
+  svg.addEventListener('pointermove',gCanvasMove);
+  svg.addEventListener('dblclick',()=>{ if(GEO.tool==='pen'&&GEO.cur){ GEO.cur=null; gRender(); } });
+  wrap.appendChild(svg); GEO.svg=svg;
+  gRender();
+}
+function gCanvasDown(e){
+  if(GEO.tool!=='pen'){ GEO.sel=null; gRender(); return; }
+  const p=gSnapPt(gLocal(e));
+  gPush();
+  if(!GEO.cur){ GEO.cur={nodes:[],closed:false}; GEO.subs.push(GEO.cur); }   // 收工後再點＝開新子路徑（挖洞靠這個）
+  const node={x:p[0],y:p[1],hIn:null,hOut:null};
+  GEO.cur.nodes.push(node);
+  gStartDrag({mode:'pen',node});   // 按著拖＝這一點帶曲度，放開不拖＝角點
+  gRender();
+}
+function gCanvasMove(e){
+  if(GEO.drag||GEO.tool!=='pen'||!GEO.cur||!GEO.rubber) return;
+  const n=GEO.cur.nodes[GEO.cur.nodes.length-1]; if(!n) return;
+  const p=gSnapPt(gLocal(e));
+  GEO.rubber.setAttribute('d',`M${N3(gX(n.x))},${N3(gY(n.y))}`+gSegD(n,{x:p[0],y:p[1],hIn:null,hOut:null},gX,gY));
+}
+function gCloseEditor(){ GEO.open=false; GEO.el=null; GEO.drag=null; GEO.svg=null;
+  $('#geomWrap').innerHTML=''; $('#geomModal').hidden=true; }
+function gSave(){
+  const el=GEO.el; if(!el) return;
+  const pts=subsToPoints(GEO.subs.filter(s=>s.nodes.length>1));
+  if(pts.length>CUST_MAX_PTS&&!confirm(`共 ${pts.length} 個點，超過上限 ${CUST_MAX_PTS}，多的會被截掉。仍要套用嗎？`)) return;
+  commitUndo();
+  el.pathW=GEO.W; el.pathH=GEO.H;               // 路徑空間＝編輯當下的元素尺寸，之後縮放等比跟著走
+  el.points=normPoints(pts,GEO.W,GEO.H);
+  gCloseEditor(); renderAll();
+}
+$('#gtPen').onclick=()=>{ GEO.tool='pen'; GEO.sel=null; gRender(); };
+$('#gtEdit').onclick=()=>{ GEO.tool='edit'; GEO.cur=null; gRender(); };
+$('#gUndo').onclick=gUndoStep;
+$('#gRedo').onclick=gRedoStep;
+$('#gFlip').onclick=()=>{   // 沒選點時預設反轉最後一條（通常就是剛畫完的那條內圈）
+  const si=GEO.sel? GEO.sel[0] : (GEO.cur? GEO.subs.indexOf(GEO.cur) : GEO.subs.length-1);
+  if(si>=0) gFlipSub(si);
+};
+$('#gClear').onclick=()=>{ if(!GEO.subs.length) return; gPush(); GEO.subs=[]; GEO.cur=null; GEO.sel=null; gRender(); };
+$('#gGrid').onchange=gRender;
+$('#gSnap').onchange=gRender;
+$('#gOK').onclick=gSave;
+$('#gCancel').onclick=gCloseEditor;
+$('#btnGeomClose').onclick=gCloseEditor;
+$('#gNote').innerHTML='<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
+  'Esc／雙擊＝結束這條路徑，之後再點就是<b>新的子路徑</b>。<b>挖洞</b>：內圈要與外圈<b>反向繞行</b>才會空心'+
+  '（PowerPoint 用 nonzero 規則，同向會是實心）——畫完內圈按「<b>⇄ 反轉方向</b>」即可，編輯器裡看到的空心＝PPT 裡的空心。'+
+  '<b>編輯點</b>：拖錨點移動，拖<b>藍色控制柄</b>調曲度（按住 Alt 拖＝兩側拆開成折角），'+
+  '點<b>線段</b>在正中插入節點，雙擊錨點切換直線／曲線，Delete 刪除。Cmd/Ctrl+Z 在編輯器內獨立復原。'+
+  '座標活在下方虛線框（＝形狀當下尺寸）內，之後拉大拉小圖案會<b>等比跟著變</b>。'+
+  '圓弧段在開啟時會折成貝茲曲線。';
+// 編輯器開著時吃掉全域快捷鍵（capture 階段先攔，避免 Delete 刪到投影片上的元素）
+document.addEventListener('keydown',e=>{
+  if(!GEO.open) return;
+  if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)&&e.key!=='Escape') return;
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation();
+    if(GEO.cur){ GEO.cur=null; gRender(); } else gCloseEditor(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation();
+    if(GEO.cur){ GEO.cur=null; gRender(); } else gSave(); return; }
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.stopPropagation();
+    e.shiftKey? gRedoStep():gUndoStep(); return; }
+  if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); e.stopPropagation();
+    if(GEO.tool==='pen'&&GEO.cur&&GEO.cur.nodes.length){
+      gPush(); GEO.cur.nodes.pop();
+      if(!GEO.cur.nodes.length){ GEO.subs.splice(GEO.subs.indexOf(GEO.cur),1); GEO.cur=null; }
+      gRender();
+    }else gDelNode();
+  }
+},true);
 
 /* ================= 影片元素 =================
    兩種模式，位元組都不進 JSON：
@@ -3853,6 +4288,7 @@ function startCellEdit(el,td){
 
 /* ================= 鍵盤 ================= */
 document.addEventListener('keydown',e=>{
+  if(GEO.open) return;   // 圖形編輯器開著時，快捷鍵歸它管（它自己那組在 capture 階段先攔）
   const inField=APP.editing||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||document.activeElement.isContentEditable;
   if(e.key==='Escape'){
     if(APP.painter){ APP.painter=null; updatePainterHint(); return; }
@@ -3972,9 +4408,11 @@ const clampN=(v,lo,hi,def)=>{ const n=+v; return isFinite(n)? Math.max(lo,Math.m
 // 自訂幾何的髒值防線。AI 產座標很方便，但也很容易產出上千點、超界座標或亂寫的 curve type，
 // 這些到匯出才炸就太晚了——一律在載入時夾回或丟掉。
 const CUST_MAX_PTS=400;   // 點數上限：超過就截斷，免得 XML 爆掉（PowerPoint 開一份幾千點的形狀會很慘）
-function normPoints(pts,w,h){
+// pw/ph＝路徑座標空間（el.pathW/pathH），不是元素尺寸——座標夾在這個框內，
+// 元素縮放不再改動座標，所以拉小圖形不會被夾壞（見 custPath 的說明）
+function normPoints(pts,pw,ph){
   if(!Array.isArray(pts)) return [];
-  const cx=v=>Math.max(0,Math.min(w||1,+v||0)), cy=v=>Math.max(0,Math.min(h||1,+v||0));
+  const cx=v=>Math.max(0,Math.min(pw||1,+v||0)), cy=v=>Math.max(0,Math.min(ph||1,+v||0));
   const out=[];
   for(const raw of pts.slice(0,CUST_MAX_PTS)){
     if(!raw||typeof raw!=='object') continue;
@@ -4158,8 +4596,12 @@ function normalizeDeck(d){
       }
       if(el.type==='shape'){
         if(el.dir!==undefined){ el.flipV=el.dir==='up'; delete el.dir; }  // 舊格式相容
-        if(el.shape==='custGeom') el.points=normPoints(el.points,el.w,el.h);
-        else{ delete el.points;
+        if(el.shape==='custGeom'){
+          // 路徑座標空間。舊檔沒有這兩鍵＝座標當年就是 px，補成當時的 w/h 完全等價（比例 1）
+          el.pathW=Math.max(1,Math.round(+el.pathW>0? +el.pathW : el.w));
+          el.pathH=Math.max(1,Math.round(+el.pathH>0? +el.pathH : el.h));
+          el.points=normPoints(el.points,el.pathW,el.pathH);
+        }else{ delete el.points; delete el.pathW; delete el.pathH;
           if(!SHAPES[el.shape]&&!LINE_KINDS[el.shape]) el.shape='rect'; }
       }
       if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
@@ -4699,16 +5141,17 @@ async function addElToSlide(slide,el,pend){
   if(el.rot) o.rotate=el.rot;
   if(el.type==='shape'){
     if(el.shape==='custGeom'&&Array.isArray(el.points)&&el.points.length){
-      o.shape='custGeom';   // 座標由 px 換算成吋（PptxGenJS 的 points 單位），相對形狀左上角
+      o.shape='custGeom';   // 路徑座標先按 pathW/pathH→w/h 縮放成 px，再換算成吋（PptxGenJS 的 points 單位）
+      const [csx,csy]=custScale(el), ix=v=>px2in((+v||0)*csx), iy=v=>px2in((+v||0)*csy);
       o.points=el.points.map(pt=>{
         if(pt.close) return {close:true};
-        const q={x:px2in(pt.x),y:px2in(pt.y)};
+        const q={x:ix(pt.x),y:iy(pt.y)};
         if(pt.moveTo) q.moveTo=true;
         if(pt.curve){ const c=pt.curve, k={type:c.type};
-          k.x1=px2in(c.x1); k.y1=px2in(c.y1);
-          if(c.type==='cubic'){ k.x2=px2in(c.x2); k.y2=px2in(c.y2); }
+          k.x1=ix(c.x1); k.y1=iy(c.y1);
+          if(c.type==='cubic'){ k.x2=ix(c.x2); k.y2=iy(c.y2); }
           if(c.type==='arc'){ delete k.x1; delete k.y1;
-            k.wR=px2in(c.wR); k.hR=px2in(c.hR);
+            k.wR=ix(c.wR); k.hR=iy(c.hR);
             // ⚠ PptxGenJS 的 arcTo 角度收的是「度」，內部再乘 60000（bundle 的 O()）。
             // OOXML 與本專案內部一律用 1/60000 度，直接送會被乘兩次（實測 270° 變 971978400000）。
             // 另注意 O() 只做一次 t>360 的減法，故 stAng 必須先正規化進 [0,360)。
