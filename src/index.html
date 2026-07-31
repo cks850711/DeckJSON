@@ -443,6 +443,7 @@
         <li><b>檔案資訊</b>：頁面面板可填作者／公司／主旨，連同標題寫入 pptx 檔案屬性（Finder／PowerPoint「資訊」看得到）；留空則不寫入該欄位。</li>
         <li><b>線型</b>：形狀外框、線條、文字框框線可選實線／點線／虛線／長虛線／點虛線／長點虛，匯出為原生 <code>prstDash</code>（表格框線另有自己的實／虛線開關）。</li>
         <li><b>物件超連結</b>：形狀／圖片／圖表／線條可設「整個物件可點」的連結（外部網址或 <code>#3</code> 跳頁），另可填滑過時的提示文字。文字框內個別文字的連結請用「文字樣式 → 超連結」。</li>
+        <li><b>漸層填色</b>：文字框與形狀的「漸層填色」勾選後可選<b>線性</b>（可調角度，0°＝由左至右）或<b>放射狀</b>，2–6 個色標各自可調顏色與位置％。匯出為原生 <code>&lt;a:gradFill&gt;</code>，在 PowerPoint 內可再調。勾選後「底色」不生效——OOXML 的填色只能有一種。</li>
         <li><b>直書／文字方向</b>：文字框與形狀可選<b>直書（中日韓）</b>、<b>旋轉 90°／270°</b>、<b>蒙文直書</b>，匯出為原生 <code>&lt;a:bodyPr vert&gt;</code>——是文字在框內轉向，<b>框本身不轉</b>（要轉整個框請用「旋轉」）。直書時中文直立、英數躺下，與 PowerPoint 一致；就地編輯照常可用。</li>
         <li><b>文字框內距／不換行</b>：內距讓有填色的卡片式文字框不再貼邊（匯出為 <code>lIns/tIns/rIns/bIns</code>）；「不自動換行」適合單行標籤（匯出 <code>wrap="none"</code>）。</li>
         <li><b>不放映此頁</b>：頁面面板勾選後該頁仍在檔案裡、放映時跳過（匯出 <code>&lt;p:sld show="0"&gt;</code>），縮圖會壓暗並標示。</li>
@@ -488,7 +489,8 @@
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
-        <li>漸層填色、母版／版面配置（placeholder）尚未支援。</li>
+        <li>母版／版面配置（placeholder）尚未支援。</li>
+        <li>漸層填色只有<b>線性與放射狀</b>兩種、最多 6 個色標；PowerPoint 的路徑漸層（矩形／形狀路徑）與漸層外框不支援。<b>立體感形狀（立方體／圓柱…）套漸層時，各面的明暗會被漸層取代</b>——OOXML 的填色只能有一種。</li>
         <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標夾在路徑框內（控制柄不能伸出框外）。子路徑挖洞已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
         <li>立體感形狀（立方體／圓柱／斜角…）畫布上的<b>明暗只是近似</b>；匯出走原生幾何，實際明暗由 PowerPoint 自己算。</li>
         <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
@@ -1263,7 +1265,7 @@ function shapePaths(el){
 // 子路徑清單 → SVG 節點。⚠ DrawingML 的繪製順序是「先填完所有子路徑，再描所有外框」，
 // 不是逐路徑填了就描——chartPlus 的十字（fill="none"）就排在方框之前，逐路徑畫會被方框蓋掉。
 // cube／can 的立體感也依賴這個順序：本體填色墊底、亮面暗面疊上、外框最後統一描。
-function shapeNodes(paths,fill,lineColor,sw,da){
+function shapeNodes(paths,fill,lineColor,sw,da,paint){
   // ⚠ 填充規則是 nonzero（SVG 預設），不是 even-odd。證據在 preset 資料本身：donut／frame／
   // noSmoking 的內圈都刻意用反向繞行（帶號面積一正一負），even-odd 下這個反轉毫無意義——
   // 會反轉就代表 DrawingML 靠繞行方向決定內外。反過來說，同向的兩條子路徑（如
@@ -1272,7 +1274,8 @@ function shapeNodes(paths,fill,lineColor,sw,da){
     p.setAttribute('d',d); p.setAttribute('fill-rule','nonzero'); return p; };
   for(const sp of paths){
     if(sp.fill==='none'||!fill) continue;
-    const p=mk(sp.d); p.setAttribute('fill',shadeFill(fill,sp.fill)); out.push(p);
+    // 有漸層時全部子路徑用同一份漸層：立體感形狀的明暗（shadeFill）與漸層無法並存，漸層優先
+    const p=mk(sp.d); p.setAttribute('fill',paint||shadeFill(fill,sp.fill)); out.push(p);
   }
   if(lineColor!=null) for(const sp of paths){
     if(sp.noStroke) continue;
@@ -1484,7 +1487,40 @@ function renderTableInto(box,el){
   tbl.appendChild(tb);
   box.appendChild(tbl);
 }
+/* ================= 漸層填色 =================
+   PptxGenJS 3.12 沒有原生 API（ShapeFillProps.type 只有 'none'｜'solid'），
+   故匯出時先寫一個「第一個色標」的 solidFill 當錨點，再於後製把它換成 <a:gradFill>——
+   與 avLst、字體補丁同一套手法：PptxGenJS 表達不了的，一律先寫一個結構合法的錨點，再於匯出後製用字串替換補上。
+   角度沿用 OOXML 定義：0°＝由左至右，順時針遞增。 */
+const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
+const gradCssStops=g=>g.stops.map(s=>`#${s.color} ${s.pos}%`).join(',');
+const gradCss=g=>g.type==='radial'
+  ? `radial-gradient(circle at 50% 50%,${gradCssStops(g)})`
+  // CSS 的 0deg＝朝上、90deg＝朝右，OOXML 的 0°＝朝右 → 差 90°
+  : `linear-gradient(${(g.angle+90)%360}deg,${gradCssStops(g)})`;
 const NS='http://www.w3.org/2000/svg';
+// SVG 漸層定義：objectBoundingBox 座標，故不必知道形狀實際尺寸
+function gradPaint(svg,id,g){
+  const defs=document.createElementNS(NS,'defs');
+  let n;
+  if(g.type==='radial'){
+    n=document.createElementNS(NS,'radialGradient');
+    n.setAttribute('cx','50%'); n.setAttribute('cy','50%'); n.setAttribute('r','70.7%');   // 到角落的距離
+  }else{
+    n=document.createElementNS(NS,'linearGradient');
+    const a=g.angle*Math.PI/180, dx=Math.cos(a)/2, dy=Math.sin(a)/2;
+    n.setAttribute('x1',0.5-dx); n.setAttribute('y1',0.5-dy);
+    n.setAttribute('x2',0.5+dx); n.setAttribute('y2',0.5+dy);
+  }
+  n.setAttribute('id',id);
+  for(const s of g.stops){
+    const st=document.createElementNS(NS,'stop');
+    st.setAttribute('offset',s.pos+'%'); st.setAttribute('stop-color','#'+s.color);
+    n.appendChild(st);
+  }
+  defs.appendChild(n); svg.appendChild(defs);
+  return `url(#${id})`;
+}
 function mkMarker(svg,id,color,start){
   const mk=document.createElementNS(NS,'marker');
   mk.setAttribute('id',id); mk.setAttribute('markerWidth',9); mk.setAttribute('markerHeight',7);
@@ -1527,7 +1563,8 @@ function renderShapeInto(box,el){
   const fl=[]; if(el.flipH) fl.push('scaleX(-1)'); if(el.flipV) fl.push('scaleY(-1)');
   if(fl.length){ svg.style.transform=fl.join(' '); svg.style.transformOrigin='50% 50%'; }
   const sw=Math.max(1,pt2px(el.linePt||1)), da=dashArray(el,sw);
-  for(const p of shapeNodes(shapePaths(el),el.fill,el.lineColor,sw,da)) svg.appendChild(p);
+  const paint=el.grad? gradPaint(svg,'gr-'+el.id,el.grad) : null;
+  for(const p of shapeNodes(shapePaths(el),el.fill,el.lineColor,sw,da,paint)) svg.appendChild(p);
   box.appendChild(svg);
   if(el.paras){
     const t=txtBlock(el);
@@ -1567,7 +1604,8 @@ function renderEl(el){
   if(el.shadow) box.style.filter=shadowCss(el);
   if(el.locked) box.classList.add('locked');
   if(el.type==='text'){
-    if(el.fill) box.style.background='#'+el.fill;
+    if(el.grad) box.style.background=gradCss(el.grad);
+    else if(el.fill) box.style.background='#'+el.fill;
     if(el.lineColor!=null) box.style.border=`${Math.max(1,pt2px(el.linePt||1))}px ${dashKind(el).css} #${el.lineColor}`;
     box.appendChild(txtBlock(el));
   }
@@ -1805,7 +1843,18 @@ function drawThumb(cv,pg){
     if(el.hidden) continue;
     const {w,h}= el.type==='table'? {w:el.colW.reduce((a,b)=>a+b,0),h:el.rowH.reduce((a,b)=>a+b,0)} : el;
     const x=el.x*s,y=el.y*s,ww=Math.max(2,w*s),hh=Math.max(2,h*s);
-    if(el.type==='text'){ ctx.fillStyle='rgba(60,70,90,.55)'; ctx.fillRect(x,y+hh*.2,ww*.8,Math.max(1.5,hh*.18)); }
+    // 縮圖的漸層：只有線性有意義（放射狀在幾十像素內看不出差別，退回第一個色標）
+    const thumbFill=()=>{ const g=el.grad;
+      if(!g) return null;
+      if(g.type==='radial') return '#'+g.stops[0].color;
+      const a=g.angle*Math.PI/180, dx=Math.cos(a)*ww/2, dy=Math.sin(a)*hh/2;
+      const lg=ctx.createLinearGradient(x+ww/2-dx,y+hh/2-dy,x+ww/2+dx,y+hh/2+dy);
+      for(const st of g.stops) lg.addColorStop(Math.max(0,Math.min(1,st.pos/100)),'#'+st.color);
+      return lg; };
+    if(el.type==='text'){
+      const g=thumbFill();
+      if(g){ ctx.fillStyle=g; ctx.fillRect(x,y,ww,hh); }
+      ctx.fillStyle='rgba(60,70,90,.55)'; ctx.fillRect(x,y+hh*.2,ww*.8,Math.max(1.5,hh*.18)); }
     else if(el.type==='table'){
       ctx.strokeStyle='rgba(60,60,60,.5)'; ctx.lineWidth=.5; ctx.strokeRect(x,y,ww,hh);
       let ax=x; ctx.beginPath();
@@ -1820,7 +1869,7 @@ function drawThumb(cv,pg){
       const cx=x+ww/2,cy=y+hh/2,r=Math.min(ww,hh)*.22;
       ctx.moveTo(cx-r*.5,cy-r); ctx.lineTo(cx+r*.7,cy); ctx.lineTo(cx-r*.5,cy+r); ctx.fill(); }
     else if(el.type==='shape'){
-      ctx.fillStyle=el.fill?'#'+el.fill:'rgba(120,120,120,.3)';
+      ctx.fillStyle=thumbFill()||(el.fill?'#'+el.fill:'rgba(120,120,120,.3)');
       if(LINE_KINDS[el.shape]){ ctx.strokeStyle='#'+(el.lineColor||'333'); ctx.beginPath();
         const fx=el.flipH?1:0, fy=el.flipV?1:0;
         ctx.moveTo(x+fx*ww,y+fy*hh); ctx.lineTo(x+(1-fx)*ww,y+(1-fy)*hh); ctx.stroke(); }
@@ -2097,6 +2146,50 @@ function numRow(label,val,onSet,o){
    PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
    畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
 const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
+/* 漸層填色的屬性列。勾起來時「底色」自動退居為第一個色標的初值，
+   兩者不並存——OOXML 的 spPr 也只能有一種填色。 */
+function gradRows(el){
+  const f=document.createDocumentFragment();
+  f.appendChild(checkRow([['漸層填色',()=>!!el.grad,v=>{ commitUndo();
+    if(v) el.grad={type:'linear',angle:90,stops:[{pos:0,color:el.fill||'4D9DE0'},{pos:100,color:'FFFFFF'}]};
+    else delete el.grad;
+    renderStage(); renderProps(); syncPageJson(); },
+    '匯出為原生 <a:gradFill>（PPT 內可再調）。勾選後「底色」不生效']]));
+  const g=el.grad; if(!g) return f;
+  f.appendChild(btnRow([
+    ['線性',()=>{ commitUndo(); g.type='linear'; renderStage(); renderProps(); },'沿一個方向漸變',g.type==='linear'],
+    ['放射狀',()=>{ commitUndo(); g.type='radial'; renderStage(); renderProps(); },'由中心向外漸變',g.type==='radial'],
+  ]));
+  if(g.type==='linear')
+    // 標籤寫「漸層角度」：形狀本身的旋轉列也叫「角度」，同一面板兩個「角度」會分不清
+    f.appendChild(numRow('漸層角度',g.angle,v=>{ g.angle=((Math.round(v)%360)+360)%360; },
+      {min:0,max:359,step:15,unit:'°',title:'0°＝由左至右，順時針遞增（同 OOXML 定義）。這是漸變方向，不是形狀旋轉'}));
+  g.stops.forEach((st,i)=>{
+    const row=colorRow('色標 '+(i+1),st.color,v=>{ st.color=v||'FFFFFF'; },false);
+    const pos=document.createElement('input'); pos.type='number'; pos.min=0; pos.max=100; pos.step=5;
+    pos.value=st.pos; pos.style.width='58px'; pos.title='位置（%）';
+    pos.onchange=()=>{ commitUndo();
+      st.pos=Math.max(0,Math.min(100,Math.round(+pos.value)||0));
+      g.stops.sort((a,b)=>a.pos-b.pos);   // 立刻排序，面板順序與實際漸變順序永遠一致
+      renderStage(); renderProps(); syncPageJson(); };
+    row.appendChild(pos);
+    row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'%'}));
+    if(g.stops.length>2){
+      const del=document.createElement('button'); del.textContent='×'; del.title='刪除此色標';
+      del.onclick=()=>{ commitUndo(); g.stops.splice(i,1); renderStage(); renderProps(); syncPageJson(); };
+      row.appendChild(del);
+    }
+    f.appendChild(row);
+  });
+  if(g.stops.length<GRAD_MAX)
+    f.appendChild(btnRow([['＋ 加色標',()=>{ commitUndo();
+      // 插在「最寬的那個間隙」正中，新色標才不會疊在既有色標上（看起來像沒反應）
+      let bi=0, bw=-1;
+      for(let i=0;i<g.stops.length-1;i++){ const w=g.stops[i+1].pos-g.stops[i].pos; if(w>bw){ bw=w; bi=i; } }
+      g.stops.splice(bi+1,0,{pos:Math.round((g.stops[bi].pos+g.stops[bi+1].pos)/2),color:g.stops[bi+1].color});
+      renderStage(); renderProps(); syncPageJson(); },'最多 '+GRAD_MAX+' 個色標']]));
+  return f;
+}
 function shadowRows(el){
   const wrap=document.createDocumentFragment();
   wrap.appendChild(subTitle('陰影'));
@@ -2594,6 +2687,7 @@ function renderProps(){
       ['中',()=>{commitUndo();el.valign='middle';renderStage();renderProps();},'',el.valign==='middle'],
       ['下',()=>{commitUndo();el.valign='bottom';renderStage();renderProps();},'',el.valign==='bottom']]));
     pp.appendChild(colorRow('底色',el.fill,v=>el.fill=v,true));
+    pp.appendChild(gradRows(el));
     pp.appendChild(colorRow('框線',el.lineColor,v=>el.lineColor=v,true));
     if(el.lineColor!=null) pp.appendChild(dashRow(el));
     // 文字框內距與換行：目前預設 0 內距、自動換行（與舊版行為一致），有需要才調
@@ -2685,6 +2779,7 @@ function renderProps(){
   }
   if(el.type==='shape'&&!isLineEl(el)&&!el.paras){
     pp.appendChild(colorRow('底色',el.fill,v=>el.fill=v,true));
+    pp.appendChild(gradRows(el));
     pp.appendChild(colorRow('框線',el.lineColor,v=>el.lineColor=v,true));
     if(el.lineColor!=null) pp.appendChild(dashRow(el));
     pp.appendChild(btnRow([['加入文字',()=>{ commitUndo(); el.paras=mkParas('文字',{sizePt:14,color:'FFFFFF',align:'center'}); el.valign='middle'; renderStage(); renderProps(); }]]));
@@ -4431,6 +4526,17 @@ function normPoints(pts,pw,ph){
   if(first) first.moveTo=true;
   return out;
 }
+/* 漸層：至少兩個色標才成立，否則整個鍵丟掉（退回單色 fill）。
+   色標位置排序後存，畫布與匯出都不必再排一次。 */
+function normGrad(el){
+  const g=el&&el.grad;
+  if(!g||typeof g!=='object'||!Array.isArray(g.stops)){ delete el.grad; return; }
+  const stops=g.stops.map(s=>({pos:Math.max(0,Math.min(100,Math.round(+(s||{}).pos)||0)),color:hex6((s||{}).color)}))
+    .filter(s=>s.color).slice(0,GRAD_MAX).sort((a,b)=>a.pos-b.pos);
+  if(stops.length<2){ delete el.grad; return; }
+  el.grad={type:g.type==='radial'?'radial':'linear',
+    angle:((Math.round(+g.angle)||0)%360+360)%360, stops};
+}
 function normBorder(v){   // → {pt,color,dash?}｜null
   if(!v||typeof v!=='object') return null;
   const c=hex6(v.color); if(!c) return null;
@@ -4557,6 +4663,8 @@ function normalizeDeck(d){
         if(el.nowrap) el.nowrap=true; else delete el.nowrap;
         if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
       }else{ delete el.inset; delete el.nowrap; delete el.vert; }
+      // 漸層填色：只有走 addText 那條路（文字框／非線條形狀）才有 spPr 可注入
+      if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
       if(el.type==='video') normVideo(el);
       if(el.type==='image'){
         if(el.fit!=='cover') delete el.fit;
@@ -5152,6 +5260,14 @@ function linkOpt(el){
   return o;
 }
 const reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');   // 元素 id 進 RegExp 前先轉義
+// <a:gradFill>：色標位置單位是 1/1000 %（0～100000），角度是 1/60000 度（0°＝由左至右）
+function gradXml(g){
+  const gs=g.stops.map(s=>`<a:gs pos="${Math.round(s.pos*1000)}"><a:srgbClr val="${s.color}"/></a:gs>`).join('');
+  const dir= g.type==='radial'
+    ? '<a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>'
+    : `<a:lin ang="${Math.round(g.angle*OOX_DEG)}" scaled="0"/>`;
+  return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${dir}</a:gradFill>`;
+}
 const xmlAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 async function addElToSlide(slide,el,pend){
   const common={x:px2in(el.x),y:px2in(el.y),w:px2in(el.w),h:px2in(el.h),objectName:el.id};
@@ -5214,7 +5330,9 @@ async function addElToSlide(slide,el,pend){
     margin:el.inset||0,fit:'none',wrap:!el.nowrap,
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
   if(VERT_MODES[el.vert]) o.vert=el.vert;   // → <a:bodyPr vert="…">（PptxGenJS 原樣寫出，不驗值，故先過白名單）
-  if(el.fill) o.fill={color:el.fill,...(tr?{transparency:tr}:{})};
+  // 漸層：先寫第一個色標的 solidFill 當錨點，後製再整段換成 <a:gradFill>（PptxGenJS 無原生 API）
+  const fillCol= el.grad? el.grad.stops[0].color : el.fill;
+  if(fillCol) o.fill={color:fillCol,...(tr?{transparency:tr}:{})};
   if(el.lineColor!=null) o.line={color:el.lineColor,width:el.linePt||1,dashType:dashKind(el).key,...(tr?{transparency:tr}:{})};
   if(sh) o.shadow=sh;
   // 物件連結刻意「不」在這裡設（見 linkOpt 上方說明）：addText 的 hyperlink 會產出懸空 rIdundefined
@@ -5421,6 +5539,20 @@ async function exportPptx(download=true){
         const reSelf=new RegExp(`(name="${reEsc(el.id)}"[\\s\\S]*?)<a:prstGeom prst="${prst}"\\s*/>`);
         s=s.replace(reSelf,`$1<a:prstGeom prst="${prst}"><a:avLst>${gds}</a:avLst></a:prstGeom>`);
       }
+    }
+    /* 漸層填色：把錨點 solidFill 換成 <a:gradFill>。
+       只能動 spPr 內、<a:ln> 之前的那一個 solidFill——外框顏色也是 solidFill，但它包在 <a:ln> 裡。 */
+    if(pgA) for(const el of pgA.elements){
+      if(el.hidden||!el.grad) continue;
+      const re=new RegExp(`(name="${reEsc(el.id)}"[\\s\\S]*?<p:spPr[^>]*>)([\\s\\S]*?)(</p:spPr>)`);
+      s=s.replace(re,(m,head,body,tail)=>{
+        // ⚠ 邊界要寫成 <a:ln 後接空白或 '>'：custGeom 的路徑指令是 <a:lnTo>，
+        //    用 indexOf('<a:ln') 會切在幾何內部，導致 custGeom 的漸層永遠注入不進去
+        const i=(body.match(/<a:ln[\s>]/)||{index:-1}).index;
+        const pre=i<0?body:body.slice(0,i), post=i<0?'':body.slice(i);
+        if(!/<a:solidFill>/.test(pre)) return m;   // 沒有錨點就別亂插，維持原樣
+        return head+pre.replace(/<a:solidFill>[\s\S]*?<\/a:solidFill>/,gradXml(el.grad))+post+tail;
+      });
     }
     /* (5) 一段多 run 時 <a:pPr> 被重複輸出 → 只留第一個
        PptxGenJS 3.12 的 genXmlTextBody 對「同一段落內的每個 run」都呼叫一次 genXmlParagraphProperties，
