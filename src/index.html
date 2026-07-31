@@ -294,7 +294,7 @@
     <div class="mhead"><b>插入形狀</b><button id="btnShapeClose">×</button></div>
     <div class="row"><input id="shapeSearch" type="search" placeholder="搜尋形狀名稱（例：箭號、圓角、星）" style="flex:1"><span class="unit" id="shapeCount"></span></div>
     <div id="shapeGrid"></div>
-    <div class="mnote">176 種形狀，等同 PowerPoint 內建清單，匯出為原生幾何（<code>prstGeom</code>），可在 PPT 內再調整。畫布輪廓由 OOXML preset 幾何定義即時求值，<b>不是近似圖形</b>。縮圖右上角有黃點者可調整：選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄滑桿微調。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊；肘形連接線另有<b>黃點</b>可調直角折點。最後一組「自訂幾何」給清單裡沒有的異形用，插入後<b>直接開圖形編輯器</b>（鋼筆畫、拖點改），也可在 JSON 面板改 <code>points</code>——<b>它在 PPT 內不會有黃點，能用內建形狀就別用它</b>。</div>
+    <div class="mnote">176 種形狀，等同 PowerPoint 內建清單，匯出為原生幾何（<code>prstGeom</code>），可在 PPT 內再調整。畫布輪廓由 OOXML preset 幾何定義即時求值，<b>不是近似圖形</b>。縮圖右上角有黃點者可調整：選取後直接拖曳<b>畫布上的黃點</b>（同 PPT 手感），或用右欄滑桿微調。線條類（含肘形雙箭頭）選取後拖曳兩端圓點改方向，接近水平／垂直自動貼齊；肘形連接線另有<b>黃點</b>可調直角折點。最後一組「自訂幾何」給清單裡沒有的異形用，插入後<b>直接開圖形編輯器</b>（鋼筆畫、拖點改），也可在 JSON 面板改 <code>points</code>——<b>它在 PPT 內不會有黃點，能用內建形狀就別用它</b>。想改內建形狀的細節，選取後用右欄的「<b>✎ 轉成可編輯端點</b>」把它拆成端點再改（同 PPT 的「編輯端點」，單向不可逆）。</div>
   </div>
 </div>
 
@@ -454,6 +454,7 @@
         <li><b>形狀庫（176 種）</b>：矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，等同 PowerPoint 內建的整份形狀清單。上方可用中文名或英文 key 搜尋。畫布上看到的輪廓<b>就是 PowerPoint 的原生幾何本身</b>（由 OOXML 的 preset 幾何定義即時求值），不是近似圖形。</li>
         <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標／角度／肘形折點（同 PPT 手感，拖曳時顯示百分比）；右欄滑桿可精修，匯出為 PPT 原生 avLst。形狀選單縮圖右上角有黃點者即支援，<b>114 種</b>形狀有黃點。沒動過就不寫入，交給 PowerPoint 用它自己的預設值。</li>
         <li><b>自訂幾何（custGeom）</b>：形狀庫最後一組，給清單裡找不到的異形用（不規則色塊、自訂折線、資訊圖區塊）。插入後<b>直接開圖形編輯器</b>；已存在的自訂幾何選取後按右欄「✎ 開啟圖形編輯器」。也可在 JSON 面板改 <code>points</code>，或請 AI 產生——指令有 <code>moveTo</code>／直線／二次貝茲／三次貝茲／圓弧／<code>close</code>。</li>
+        <li><b>編輯端點（內建形狀 → 自訂幾何）</b>：只想改內建形狀的一兩個角，不必從零重畫——選取後按右欄「<b>✎ 轉成可編輯端點</b>」，形狀原地拆成端點並開啟編輯器，<b>外觀完全不變</b>（187 種全部驗過，最大偏差 0.04px）。同 PowerPoint 的「編輯端點」，<b>單向不可逆</b>：黃點會消失、換不回內建形狀。若該形狀的各部分原本填色／外框設定不同（動作按鈕、圖說外框類），轉換後只會剩一種填色，對話框會先告知。</li>
         <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>要讓內圈與外圈<b>反向繞行</b>（PowerPoint 用 nonzero 填充規則），畫完內圈按「⇄ 反轉方向」即可。</li>
         <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
@@ -491,7 +492,7 @@
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
         <li>母版／版面配置（placeholder）尚未支援。</li>
         <li>漸層填色只有<b>線性與放射狀</b>兩種、最多 6 個色標；PowerPoint 的路徑漸層（矩形／形狀路徑）與漸層外框不支援。<b>立體感形狀（立方體／圓柱…）套漸層時，各面的明暗會被漸層取代</b>——OOXML 的填色只能有一種。</li>
-        <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標夾在路徑框內（控制柄不能伸出框外）。子路徑挖洞已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
+        <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標可伸出路徑框但不超過框外一倍（圖說尾巴、括號都靠這個）。子路徑挖洞與伸出框的負座標已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
         <li>立體感形狀（立方體／圓柱／斜角…）畫布上的<b>明暗只是近似</b>；匯出走原生幾何，實際明暗由 PowerPoint 自己算。</li>
         <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
         <li><b>線上影片播放需要網路</b>；且在 Keynote／Google Slides／LibreOffice 的支援程度<b>尚未實測</b>，可能只顯示封面圖。</li>
@@ -1085,8 +1086,8 @@ for(const k in SHAPE_META){
   const m=SHAPE_META[k];
   SHAPES[k]={label:m[0],cat:m[1],size:[m[2],m[3]]};
 }
-// 自訂幾何：不是 preset，幾何來自元素自己的 points 陣列。定位為 JSON／AI 優先，
-// 形狀庫只給一個帶範例骨架的入口，不做拖曳點編輯器。
+// 自訂幾何：不是 preset，幾何來自元素自己的 points 陣列。
+// 三種來源：形狀庫插入後直接開圖形編輯器、內建形狀按「轉成可編輯端點」、或由 AI 直接寫 points。
 SHAPES.custGeom={label:'自訂幾何',cat:'cg',size:[180,140]};
 const CUST_SAMPLE=(w,h)=>[
   {x:0,y:h},{x:w*0.28,y:h*0.15,moveTo:false},
@@ -1256,6 +1257,45 @@ function custPath(points,sx,sy){
 // （舊檔缺鍵時補成當時的 w/h，比例即 1，畫面完全不變）
 const custScale=el=>[el.pathW>0? el.w/el.pathW : 1, el.pathH>0? el.h/el.pathH : 1];
 // 元素 → SVG 子路徑清單（渲染、縮圖、快照共用同一條路，所以三者不可能對不上）
+/* preset → custGeom（PowerPoint 的「編輯端點」）。
+   刻意「不」去反解 presetPaths() 產出的 SVG d 字串——preset 的指令陣列本身就與 points 一一對應，
+   直接照抄即可，連 A 弧段的還原問題都不存在（arc 原樣保留，不折成貝茲）。
+   座標一律換算到元素 px，因為 points 只有一個座標空間，而 preset 的各子路徑各有自己的 w/h。 */
+function arcEndPt(cur,wR,hR,st,sw){
+  const p0=Math.atan2(wR*Math.sin(st*D2R),hR*Math.cos(st*D2R));
+  return ellPt(cur[0]-wR*Math.cos(p0),cur[1]-hR*Math.sin(p0),wR,hR,st+sw);
+}
+function presetPoints(key,w,h,adjs){
+  const def=PRESET_GEOM[key]; if(!def) return null;
+  const V=geomEnv(key,w,h,adjs), pts=[];
+  let mixed=false, outside=false;
+  const R=v=>Math.round(v*100)/100;
+  const chk=(x,y)=>{ if(x<0||y<0||x>w||y>h) outside=true; return true; };
+  for(const p of def[3]||[]){
+    const sx=p[1]? w/p[1] : 1, sy=p[2]? h/p[2] : 1;
+    const X=v=>gv(v,V)*sx, Y=v=>gv(v,V)*sy;
+    if(p[3]==='none'||p[4]) mixed=true;   // 子路徑各有填色／描邊差異，custGeom 只有一種
+    let cur=[0,0];
+    for(const c of p[0]){
+      switch(c[0]){
+        case 'm': cur=[X(c[1]),Y(c[2])]; chk(...cur); pts.push({x:R(cur[0]),y:R(cur[1]),moveTo:true}); break;
+        case 'l': cur=[X(c[1]),Y(c[2])]; chk(...cur); pts.push({x:R(cur[0]),y:R(cur[1])}); break;
+        case 'c': cur=[X(c[5]),Y(c[6])]; chk(...cur); chk(X(c[1]),Y(c[2])); chk(X(c[3]),Y(c[4]));
+          pts.push({x:R(cur[0]),y:R(cur[1]),curve:{type:'cubic',x1:R(X(c[1])),y1:R(Y(c[2])),x2:R(X(c[3])),y2:R(Y(c[4]))}}); break;
+        case 'q': cur=[X(c[3]),Y(c[4])]; chk(...cur); chk(X(c[1]),Y(c[2]));
+          pts.push({x:R(cur[0]),y:R(cur[1]),curve:{type:'quadratic',x1:R(X(c[1])),y1:R(Y(c[2]))}}); break;
+        case 'a': {
+          const wR=gv(c[1],V)*sx, hR=gv(c[2],V)*sy, st=gv(c[3],V), sw=gv(c[4],V);
+          const e=arcEndPt(cur,wR,hR,st,sw); chk(...e);
+          pts.push({x:R(e[0]),y:R(e[1]),curve:{type:'arc',wR:R(Math.abs(wR)),hR:R(Math.abs(hR)),
+                    stAng:Math.round(st),swAng:Math.round(sw)}});
+          cur=e; break; }
+        case 'z': pts.push({close:true}); break;
+      }
+    }
+  }
+  return {points:pts,mixed,outside};
+}
 function shapePaths(el){
   if(el.shape==='custGeom'){ const s=custScale(el), d=custPath(el.points,s[0],s[1]);
     return d? [{d,fill:'',noStroke:false}] : []; }
@@ -2612,6 +2652,17 @@ function renderProps(){
       ['⇵',()=>{ commitUndo(); el.flipV=!el.flipV; renderStage(); renderProps(); },'垂直翻轉',!!el.flipV],
     ]));
   }
+  /* 內建形狀 → custGeom（等同 PowerPoint 的「編輯端點」）。
+     單向不可逆，且會失去黃點與子路徑各自的填色／描邊差異，故先問清楚才做。 */
+  if(el.type==='shape'&&el.shape!=='custGeom'&&!LINE_KINDS[el.shape]&&PRESET_GEOM[el.shape]){
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML='<label>編輯端點</label>';
+    const b=document.createElement('button'); b.textContent='✎ 轉成可編輯端點';
+    b.style.flex='1';
+    b.title='把這個內建形狀拆成端點後進圖形編輯器（同 PowerPoint 的「編輯端點」）。單向不可逆';
+    b.onclick=()=>toCustGeom(el);
+    r.appendChild(b); pp.appendChild(r);
+  }
   // 自訂幾何：進圖形編輯器（畫布上直接畫，不必手改 points）
   if(el.type==='shape'&&el.shape==='custGeom'){
     const r=document.createElement('div'); r.className='row';
@@ -3567,6 +3618,25 @@ function gRender(){
   $('#gtEdit').classList.toggle('on',GEO.tool==='edit');
 }
 /* ---- 開關與存檔 ---- */
+/* 內建形狀轉 custGeom。轉完直接開編輯器——這個動作的唯一目的就是要改端點。 */
+function toCustGeom(el){
+  const r=presetPoints(el.shape,el.w,el.h,adjVals(el));
+  if(!r||!r.points.length){ alert('這個形狀沒有可轉換的幾何定義。'); return; }
+  const warn=['把「'+((SHAPES[el.shape]||{}).label||el.shape)+'」轉成自訂幾何後：',
+    '• 黃色調整點會消失（自訂幾何在 PowerPoint 內沒有黃點）',
+    '• 換不回內建形狀（同 PowerPoint 的「編輯端點」，單向）'];
+  // 子路徑原本各有填色／描邊差異的形狀（動作按鈕、圖說外框…），轉換後只剩一種填色
+  if(r.mixed) warn.push('• 這個形狀的各部分原本填色／外框設定不同，轉換後會變成同一種填色（外觀會變）');
+  warn.push('','要繼續嗎？');
+  if(!confirm(warn.join('\n'))) return;
+  commitUndo();
+  el.shape='custGeom';
+  el.pathW=Math.max(1,Math.round(el.w)); el.pathH=Math.max(1,Math.round(el.h));
+  el.points=normPoints(r.points,el.pathW,el.pathH);
+  delete el.adjs; delete el.adj; delete el.adj2;   // 不再有 preset 可套用調整值
+  renderAll(); syncPageJson();
+  openGeomEditor(el);
+}
 function openGeomEditor(el,fresh){
   if(!el||el.shape!=='custGeom') return;
   // 開啟時把路徑空間重新對齊元素當下尺寸：編輯器裡的框＝畫布上看到的框，不會有兩套座標
@@ -4495,9 +4565,14 @@ const clampN=(v,lo,hi,def)=>{ const n=+v; return isFinite(n)? Math.max(lo,Math.m
 const CUST_MAX_PTS=400;   // 點數上限：超過就截斷，免得 XML 爆掉（PowerPoint 開一份幾千點的形狀會很慘）
 // pw/ph＝路徑座標空間（el.pathW/pathH），不是元素尺寸——座標夾在這個框內，
 // 元素縮放不再改動座標，所以拉小圖形不會被夾壞（見 custPath 的說明）
+/* 座標容許範圍是路徑框外擴一倍（[-pw, 2pw]），不是夾在框內。
+   OOXML 本來就允許 custGeom 的座標伸出路徑框——圖說框的尾巴、bracePair 的括號都靠這個，
+   畫布的 svg 也一直是 overflow:visible。原本夾在 [0,pw] 會讓 preset 轉 custGeom 時
+   毀掉 23 個形狀（heart 的控制點就伸出半個框寬）。留一倍餘裕仍擋得住手改 JSON 的亂值。 */
 function normPoints(pts,pw,ph){
   if(!Array.isArray(pts)) return [];
-  const cx=v=>Math.max(0,Math.min(pw||1,+v||0)), cy=v=>Math.max(0,Math.min(ph||1,+v||0));
+  const W=pw||1, H=ph||1;
+  const cx=v=>Math.max(-W,Math.min(2*W,+v||0)), cy=v=>Math.max(-H,Math.min(2*H,+v||0));
   const out=[];
   for(const raw of pts.slice(0,CUST_MAX_PTS)){
     if(!raw||typeof raw!=='object') continue;
