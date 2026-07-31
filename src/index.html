@@ -32,6 +32,9 @@
   #deckTitle{width:150px}
   #btnHelp{border-radius:50%;width:30px;height:30px;padding:0;font-weight:700;color:var(--fg-dim)}
   #warn{color:var(--danger);font-size:12px;font-weight:600}
+  /* 自動存檔狀態：平時灰字報時間，存檔失敗時轉紅字（容量超限必須看得見，不能靜默） */
+  #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
+  #saveHint.bad{color:var(--danger);font-weight:600}
   #fontWarn{color:#e0b34d;font-size:11px}
   main{flex:1;display:flex;overflow:hidden}
   #pagePanel{width:158px;flex-shrink:0;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:10px}
@@ -201,6 +204,11 @@
 <body>
 <header>
   <input type="text" id="deckTitle" title="簡報標題（匯出檔名）" value="未命名簡報">
+  <div class="grp">
+    <button id="btnNew" title="開新簡報（清空目前內容，需二次確認）">📄 開新</button>
+    <button id="btnOpen" title="開啟 .deck.json 檔">📂 開啟</button>
+    <button id="btnSaveAs" title="另存 .deck.json 檔（Cmd/Ctrl+S）">💾 另存</button>
+  </div>
   <div class="grp"><button id="btnUndo" title="復原（Cmd/Ctrl+Z）" disabled>↺</button><button id="btnRedo" title="重做（Cmd/Ctrl+Shift+Z）" disabled>↻</button></div>
   <div class="grp">
     <button id="btnAddText">＋文字</button>
@@ -216,7 +224,7 @@
     </select>
   </div>
   <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span></div>
-  <span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
+  <span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
   <div class="grp right">
     <button id="btnLayers" title="圖層面板：堆疊順序／顯示隱藏／鎖定">☰ 圖層</button>
     <button id="btnSnap" title="快照匯出 PNG／JPG">🖼 快照</button>
@@ -391,6 +399,12 @@
         <li>細緻的格式（單一文字框內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位（面板操作一律套用到該元素的全部 run／段落）。</li>
         <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。</li>
       </ul>
+      <h4>存檔</h4>
+      <ul>
+        <li><b>自動存檔</b>：每次改動後約 1 秒自動存進瀏覽器（IndexedDB），<b>重新整理／關掉分頁再打開會自動還原</b>，頂端會顯示存檔時間。存不進去時（容量滿、無痕模式）會轉<b>紅字明講原因</b>，不會靜默失敗。</li>
+        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 另存</b>：讀寫 <code>.deck.json</code> 檔（Cmd/Ctrl+S 直接另存）。</li>
+        <li>自動存檔只有一份、只在這台瀏覽器。<b>重要進度請另存成檔案</b>——那才是可備份、可轉移、可貼給 AI 的形式。</li>
+      </ul>
       <h4>畫布操作</h4>
       <ul>
         <li>點選→拖曳移動（有置中／邊界磁性吸附）；八個把手縮放；方向鍵微調（Shift=10px）；Delete 刪除；Cmd/Ctrl+D 複製元素。</li>
@@ -473,7 +487,7 @@
         <li>立體感形狀（立方體／圓柱／斜角…）畫布上的<b>明暗只是近似</b>；匯出走原生幾何，實際明暗由 PowerPoint 自己算。</li>
         <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
         <li><b>線上影片播放需要網路</b>；且在 Keynote／Google Slides／LibreOffice 的支援程度<b>尚未實測</b>，可能只顯示封面圖。</li>
-        <li>本工具不儲存任何東西：<b>關掉或重新整理就全空</b>，請用「JSON → 儲存 .json 檔」保存進度。</li>
+        <li>自動存檔存在<b>這台電腦的這個瀏覽器</b>裡（IndexedDB），換瀏覽器、換電腦、清除瀏覽資料都會不見，而且<b>只保留最新一份</b>（沒有版本歷史）。要留存或轉移請按「💾 另存」。無痕視窗通常擋存取，此時頂端會轉紅字明講。</li>
         <li><b>表格儲存格不支援格內混排</b>：一格只能整格同一種格式。若某格需要「只有幾個字變色放大」，請把該格<b>留空</b>，另拉一個文字框疊在上面。疊上去的文字框不會跟著表格移動（建議與表格<b>群組</b>），也不會被格線裁切，內距請對齊儲存格。匯出後在 PowerPoint 裡可以直接把文字打回格內、刪掉覆蓋層——PowerPoint 的儲存格本身是支援格內混排的。</li>
         <li>自訂字型（fontFace）是整個元素統一覆寫；同一文字框內逐 run 混用不同字型請走 JSON。</li>
         <li>就地編輯只在 <b>Chrome</b> 實測過；Safari／Firefox <b>尚未測試</b>，行為可能不同。</li>
@@ -1264,7 +1278,8 @@ const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,pai
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
   tblPen:{pt:0.75,color:'999999',dash:false},   // 框線筆：線寬＋顏色＋實／虛線，供框線按鈕套用
   dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
-  ratioLock:false,fontSync:false,scaleFont:true};   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
+  ratioLock:false,fontSync:false,scaleFont:true,   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
+  ready:false};   // 自動存檔閘門：還原完才置 true，否則開機時的空白 deck 會蓋掉硬碟上的內容
 APP.page=APP.deck.pages[0].id;
 const CHARTS=new Map();   // 圖表元素 id → echarts 實例
 const round1=v=>Math.round(v*10)/10;
@@ -1288,7 +1303,8 @@ function groupBBox(els){
 const UNDO=[],REDO=[];
 function snapshot(){ return {deck:structuredClone(APP.deck),page:APP.page,selIds:[...APP.selIds]}; }
 function updateUndoBtns(){ $('#btnUndo').disabled=!UNDO.length; $('#btnRedo').disabled=!REDO.length; }
-function commitUndo(s){ UNDO.push(s||snapshot()); if(UNDO.length>60)UNDO.shift(); REDO.length=0; updateUndoBtns(); }
+function commitUndo(s){ UNDO.push(s||snapshot()); if(UNDO.length>60)UNDO.shift(); REDO.length=0; updateUndoBtns();
+  scheduleAutosave(); }   // 補網：拖曳／就地編輯等只走 renderStage 的路徑，靠這裡也能觸發存檔
 function applySnap(s,into){ into.push(snapshot()); APP.edit=null; APP.editing=null; APP.deck=s.deck; APP.page=s.page;
   if(!APP.deck.pages.find(p=>p.id===APP.page)) APP.page=APP.deck.pages[0].id;
   setSel(s.selIds||[]);
@@ -4207,6 +4223,8 @@ document.addEventListener('keydown',e=>{
     if(inField) return;
     e.preventDefault(); if(e.shiftKey) redo(); else undo(); return;
   }
+  // Cmd/Ctrl+S 另存 .deck.json：這裡不擋 inField，改標題／編輯文字中按存檔是常見動作
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveDeckFile(); return; }
   if(inField) return;
   if(!APP.selIds.length) return;
   if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); deleteSelected(); return; }
@@ -4302,7 +4320,7 @@ $('#btnFitH').onclick=fitHeight;
 window.addEventListener('resize',()=>setZoom(Math.round(APP.zoom*100)));   // 視窗改尺寸：重算置中邊距
 
 /* ================= 標題／字體模式／undo 按鈕 ================= */
-$('#deckTitle').addEventListener('change',e=>{ APP.deck.title=e.target.value||'未命名簡報'; });
+$('#deckTitle').addEventListener('change',e=>{ APP.deck.title=e.target.value||'未命名簡報'; scheduleAutosave(); });
 $('#selFontMode').addEventListener('change',e=>{ APP.deck.fontMode=e.target.value; });
 $('#btnUndo').onclick=undo; $('#btnRedo').onclick=redo;
 
@@ -4735,12 +4753,7 @@ $('#btnLayerClose').onclick=()=>$('#layerPanel').hidden=true;
   head.addEventListener('pointerup',()=>d=null);
 })();
 
-$('#btnJsonSave').onclick=()=>{
-  const a=document.createElement('a');
-  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
-  a.download=APP.deck.title+'.deck.json';
-  a.click();
-};
+$('#btnJsonSave').onclick=()=>saveDeckFile();
 $('#btnJsonLoad').onclick=()=>$('#jsonInput').click();
 $('#jsonInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
@@ -4748,6 +4761,93 @@ $('#jsonInput').addEventListener('change',async e=>{
   try{ loadDeck(JSON.parse(await f.text())); $('#jsonModal').hidden=true; }
   catch(err){ alert('載入失敗：'+err.message); }
 });
+
+/* ================= 自動存檔（IndexedDB） =================
+   單檔工具沒有存檔最違反直覺：重新整理／當機／誤關分頁 = 全沒了。
+   為什麼是 IndexedDB 而不是 localStorage：一張 base64 圖片動輒數百 KB，
+   localStorage 上限約 5MB 且只收字串，塞兩三張圖就爆；IndexedDB 可存結構化物件且額度大得多。
+   失敗一律浮上檯面（頂端轉紅字），絕不靜默——「以為存了其實沒存」比沒有存檔更糟。 */
+const AS_DB='deckjson', AS_STORE='autosave', AS_KEY='current', AS_DELAY=1200;
+let asTimer=null, asDBP=null, asOff=false;   // asOff＝這個環境不支援／已失敗，停止再試
+function asDB(){
+  if(asDBP) return asDBP;
+  asDBP=new Promise((res,rej)=>{
+    if(!window.indexedDB) return rej(new Error('此瀏覽器不支援 IndexedDB'));
+    const rq=indexedDB.open(AS_DB,1);
+    rq.onupgradeneeded=()=>{ const db=rq.result; if(!db.objectStoreNames.contains(AS_STORE)) db.createObjectStore(AS_STORE); };
+    rq.onsuccess=()=>res(rq.result);
+    rq.onerror=()=>rej(rq.error||new Error('IndexedDB 開啟失敗'));
+  });
+  return asDBP;
+}
+function asTx(mode,fn){
+  return asDB().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(AS_STORE,mode), st=tx.objectStore(AS_STORE);
+    let rq; try{ rq=fn(st); }catch(e){ return rej(e); }
+    // 用 instanceof 判斷，不能用「result 有沒有值」——查無此鍵時 result 正是 undefined，
+    // 那樣會把 IDBRequest 物件本身當成結果傳出去（truthy 的空殼，讀 rec.deck 才發現不對）
+    tx.oncomplete=()=>res(rq instanceof IDBRequest? rq.result : rq);
+    tx.onerror=()=>rej(tx.error||new Error('IndexedDB 交易失敗'));
+    tx.onabort=()=>rej(tx.error||new Error('IndexedDB 交易中止'));
+  }));
+}
+function asHint(txt,bad){ const s=$('#saveHint'); if(!s) return; s.textContent=txt||''; s.classList.toggle('bad',!!bad); }
+const as2=n=>String(n).padStart(2,'0');
+function asStamp(t){ const d=new Date(t); return as2(d.getHours())+':'+as2(d.getMinutes())+':'+as2(d.getSeconds()); }
+function asSaveNow(){
+  if(asOff) return Promise.resolve(false);
+  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now()};
+  return asTx('readwrite',st=>st.put(rec,AS_KEY))
+    .then(()=>{ asHint('已自動存檔 '+asStamp(rec.at)); return true; })
+    .catch(err=>{
+      asOff=true;   // 容量超限／私密模式擋存取：停止重試，但把原因寫在畫面上
+      const q=/quota|exceed/i.test(String(err&&err.name)+String(err&&err.message));
+      asHint(q? '⚠ 自動存檔失敗：瀏覽器容量已滿，請「💾 另存」成檔案' : '⚠ 自動存檔停用：'+(err&&err.message||err),true);
+      return false;
+    });
+}
+function scheduleAutosave(){
+  if(asOff||!APP.ready) return;
+  clearTimeout(asTimer);
+  asHint('存檔中…');
+  asTimer=setTimeout(asSaveNow,AS_DELAY);
+}
+function asClear(){ return asTx('readwrite',st=>st.delete(AS_KEY)).catch(()=>{}); }
+async function asRestore(){
+  let rec=null;
+  try{ rec=await asTx('readonly',st=>st.get(AS_KEY)); }
+  catch(err){ asOff=true; asHint('⚠ 自動存檔停用：'+(err&&err.message||err),true); return; }
+  if(rec&&rec.deck){
+    try{
+      APP.deck=normalizeDeck(rec.deck);
+      APP.page=(APP.deck.pages.find(p=>p.id===rec.page)||APP.deck.pages[0]).id;
+      UNDO.length=0; REDO.length=0;   // 還原＝重新開始，不繼承上一場的復原堆疊
+      setSel([]); renderAll(); syncPageJson();
+      asHint('已還原上次內容（'+asStamp(rec.at)+'）');
+    }catch(err){ asHint('⚠ 上次的自動存檔讀不回來：'+err.message,true); }
+  }
+  APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
+}
+/* ---- 開新／開啟／另存 ---- */
+function saveDeckFile(){
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
+  a.download=(APP.deck.title||'deckjson')+'.deck.json';
+  a.click();
+}
+$('#btnSaveAs').onclick=saveDeckFile;
+$('#btnOpen').onclick=()=>$('#jsonInput').click();
+$('#btnNew').onclick=()=>{
+  const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
+  // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
+  if(!confirm(`開新簡報會清空目前的 ${APP.deck.pages.length} 頁／${n} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？`)) return;
+  if(!confirm('再確認一次：真的要放棄目前內容？')) return;
+  asClear();
+  commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
+  APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
+  APP.edit=null; APP.editing=null; setSel([]);
+  renderAll(); syncPageJson(); asHint('');
+};
 
 /* ================= profile 檔案匯入／匯出 ================= */
 function saveProfileFile(){
@@ -5351,6 +5451,7 @@ function renderAll(){
   applyStage(); applyFontVars(); renderZones();   // 尺寸／字體／預留區都可能被 JSON 或面板改動
   renderPanel(); renderStage(); renderProps(); updateUndoBtns();
   setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
+  scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
 }
 
 /* ================= 測試掛鉤 ================= */
@@ -5362,6 +5463,7 @@ window.__export=()=>exportPptx(false);
 window.__b64chunk=(i,n)=>window.__lastPptxB64.slice(i,i+n);
 
 renderAll();
+asRestore();   // 非同步：讀不到就維持空白簡報，讀得到就整份換掉（完成後才開啟自動存檔閘門）
 // 開啟預設適寬（白色投影片填滿檢視區）；等佈局算好 clientWidth 再套（量不到就維持 65%）
 setZoom(65);
 requestAnimationFrame(()=>requestAnimationFrame(fitWidth));
