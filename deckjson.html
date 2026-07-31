@@ -443,6 +443,7 @@
         <li><b>檔案資訊</b>：頁面面板可填作者／公司／主旨，連同標題寫入 pptx 檔案屬性（Finder／PowerPoint「資訊」看得到）；留空則不寫入該欄位。</li>
         <li><b>線型</b>：形狀外框、線條、文字框框線可選實線／點線／虛線／長虛線／點虛線／長點虛，匯出為原生 <code>prstDash</code>（表格框線另有自己的實／虛線開關）。</li>
         <li><b>物件超連結</b>：形狀／圖片／圖表／線條可設「整個物件可點」的連結（外部網址或 <code>#3</code> 跳頁），另可填滑過時的提示文字。文字框內個別文字的連結請用「文字樣式 → 超連結」。</li>
+        <li><b>直書／文字方向</b>：文字框與形狀可選<b>直書（中日韓）</b>、<b>旋轉 90°／270°</b>、<b>蒙文直書</b>，匯出為原生 <code>&lt;a:bodyPr vert&gt;</code>——是文字在框內轉向，<b>框本身不轉</b>（要轉整個框請用「旋轉」）。直書時中文直立、英數躺下，與 PowerPoint 一致；就地編輯照常可用。</li>
         <li><b>文字框內距／不換行</b>：內距讓有填色的卡片式文字框不再貼邊（匯出為 <code>lIns/tIns/rIns/bIns</code>）；「不自動換行」適合單行標籤（匯出 <code>wrap="none"</code>）。</li>
         <li><b>不放映此頁</b>：頁面面板勾選後該頁仍在檔案裡、放映時跳過（匯出 <code>&lt;p:sld show="0"&gt;</code>），縮圖會壓暗並標示。</li>
         <li><b>章節</b>：右欄「頁面 → 章節」勾「從本頁開始新章節」，本頁到下一個章節起點之間的頁面同屬一章，頁面清單會出現分隔列。匯出為 PowerPoint 原生章節（縮圖窗格可<b>整段摺疊／搬動／隱藏／從該段開始放映</b>）。<b>只影響編輯時的導覽，投影片內容與放映完全不變</b>。章節名必須唯一，撞名自動補「(2)」——PowerPoint 是靠名稱認章節的。若從第 N 頁才開始分章，前面幾頁會自動歸入一個以簡報標題命名的章節。</li>
@@ -723,6 +724,17 @@ function newDeck(){
 }
 // run 級選配樣式（底線／刪除線／高亮／字距／字型／描邊／輝光／超連結）與段落級選配樣式（項目符號／段距）：
 // 有值才寫進 JSON，維持既有簡報的 JSON 不變胖；純文字編輯（textarea）時由 baseRun→mkParas 原樣帶過去
+/* 直書／縱向文字：el.vert → <a:bodyPr vert="…">。
+   PptxGenJS 對這個值不做任何檢查（原樣寫進屬性），塞錯字串就是一份 PowerPoint 打不開的檔，
+   所以白名單由這裡把關。畫布用 CSS writing-mode 對上預覽：
+   vert270 沒有跨瀏覽器可用的 writing-mode（sideways-lr 僅 Firefox），改用「vertical-rl ＋ 整塊轉 180°」等效模擬。 */
+const VERT_MODES={
+  // mixed＝東亞字直立、拉丁字旋轉躺下，正是 PowerPoint eaVert 的行為（upright 會把 ABC 也一個個立起來，不對）
+  eaVert:       {label:'直書（中日韓）',   css:{writingMode:'vertical-rl',textOrientation:'mixed'}},
+  vert:         {label:'旋轉 90°（順時針）',css:{writingMode:'vertical-rl',textOrientation:'sideways'}},
+  vert270:      {label:'旋轉 270°（逆時針）',css:{writingMode:'vertical-rl',textOrientation:'sideways',transform:'rotate(180deg)'}},
+  mongolianVert:{label:'蒙文直書',        css:{writingMode:'vertical-lr',textOrientation:'mixed'}},
+};
 const RUN_OPT_KEYS=['underline','strike','highlight','charSpacing','fontFace','link','glow','outline','sup','sub'];
 const PARA_OPT_KEYS=['bullet','spaceBefore','spaceAfter'];
 function mkParas(str,style){ // 純文字 → 段落結構
@@ -1511,6 +1523,8 @@ function txtBlock(el){
   t.style.lineHeight=el.lineSpacing||1.2;
   if(el.inset>0) t.style.padding=pt2px(el.inset)+'px';   // 文字框內距（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）
   if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
+  // 直書：writing-mode 一改，.txt 的 flex-direction:column 自然沿著新的區塊軸堆疊段落，不必另外調
+  if(VERT_MODES[el.vert]) Object.assign(t.style,VERT_MODES[el.vert].css);
   let seq=0;   // 編號清單流水號：連續 number 段落累加，遇非 number 段落歸零（同 PPT）
   const ps=el.paras||[];
   for(let pi=0;pi<ps.length;pi++){
@@ -1724,7 +1738,9 @@ function markOverflow(){
     if(el.type!=='text') continue;
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     const t=box&&box.querySelector('.txt');
-    if(t) box.classList.toggle('overflow', t.scrollHeight>el.h+2);
+    // 直書時文字往水平方向長，只看 scrollHeight 會漏判
+    if(t) box.classList.toggle('overflow',
+      VERT_MODES[el.vert]? t.scrollWidth>el.w+2 : t.scrollHeight>el.h+2);
   }
 }
 function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM）
@@ -2679,6 +2695,16 @@ function renderProps(){
     pp.appendChild(checkRow([['不自動換行',()=>!!el.nowrap,v=>{ commitUndo();
       if(v) el.nowrap=true; else delete el.nowrap; renderStage(); renderProps(); },
       '文字超出框寬不折行（匯出 bodyPr wrap="none"）；適合單行標籤']]));
+    // 文字方向（直書／旋轉）：匯出為原生 bodyPr vert，不是把文字框整個轉角度
+    {const vr=document.createElement('div'); vr.className='row'; vr.innerHTML='<label>文字方向</label>';
+     const vs=document.createElement('select'); vs.style.flex='1';
+     vs.innerHTML='<option value="">橫書</option>'+Object.entries(VERT_MODES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+     vs.value=el.vert||'';
+     vs.title='匯出為原生 <a:bodyPr vert>：文字在框內轉向，框本身不轉（要轉整個框請用「旋轉」）';
+     vs.onchange=()=>{ commitUndo();
+       if(VERT_MODES[vs.value]) el.vert=vs.value; else delete el.vert;
+       renderStage(); renderProps(); syncPageJson(); };
+     vr.appendChild(vs); pp.appendChild(vr);}
     // ── 字元進階：字距／自訂字型／描邊／輝光（皆 run 級，套用到本元素全部 run）──
     pp.appendChild(subTitle('字元進階'));
     pp.appendChild(numRow('字距',b.charSpacing||0,v=>setRunOpt(el,'charSpacing',v||undefined),
@@ -4622,7 +4648,8 @@ function normalizeDeck(d){
         if(el.inset!=null){ const n=+el.inset;
           if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
         if(el.nowrap) el.nowrap=true; else delete el.nowrap;
-      }else{ delete el.inset; delete el.nowrap; }
+        if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
+      }else{ delete el.inset; delete el.nowrap; delete el.vert; }
       if(el.type==='video') normVideo(el);
       if(el.type==='image'){
         if(el.fit!=='cover') delete el.fit;
@@ -5279,6 +5306,7 @@ async function addElToSlide(slide,el,pend){
   const o={...common,valign:{top:'top',middle:'middle',bottom:'bottom'}[el.valign||'top'],
     margin:el.inset||0,fit:'none',wrap:!el.nowrap,
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
+  if(VERT_MODES[el.vert]) o.vert=el.vert;   // → <a:bodyPr vert="…">（PptxGenJS 原樣寫出，不驗值，故先過白名單）
   if(el.fill) o.fill={color:el.fill,...(tr?{transparency:tr}:{})};
   if(el.lineColor!=null) o.line={color:el.lineColor,width:el.linePt||1,dashType:dashKind(el).key,...(tr?{transparency:tr}:{})};
   if(sh) o.shadow=sh;
