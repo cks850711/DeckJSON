@@ -454,6 +454,7 @@
         <li><b>形狀庫（176 種）</b>：矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，等同 PowerPoint 內建的整份形狀清單。上方可用中文名或英文 key 搜尋。畫布上看到的輪廓<b>就是 PowerPoint 的原生幾何本身</b>（由 OOXML 的 preset 幾何定義即時求值），不是近似圖形。</li>
         <li><b>形狀 adj 黃點</b>：可調形狀選取後，畫布上會出現黃點，直接拖曳調整圓角／斜度／箭深／桿寬／尾標／角度／肘形折點（同 PPT 手感，拖曳時顯示百分比）；右欄滑桿可精修，匯出為 PPT 原生 avLst。形狀選單縮圖右上角有黃點者即支援，<b>114 種</b>形狀有黃點。沒動過就不寫入，交給 PowerPoint 用它自己的預設值。</li>
         <li><b>自訂幾何（custGeom）</b>：形狀庫最後一組，給清單裡找不到的異形用（不規則色塊、自訂折線、資訊圖區塊）。插入後<b>直接開圖形編輯器</b>；已存在的自訂幾何選取後按右欄「✎ 開啟圖形編輯器」。也可在 JSON 面板改 <code>points</code>，或請 AI 產生——指令有 <code>moveTo</code>／直線／二次貝茲／三次貝茲／圓弧／<code>close</code>。</li>
+        <li><b>形狀內的文字區</b>：形狀裡的文字不是擺在整個外框，而是照 OOXML preset 各自定義的文字區（187 種裡有 <b>137 種</b>不是整框）——星形的字在星芯、箭號的字在箭桿、梯形的字在上下底之間，且會隨黃點連動。<b>這是畫布預覽的修正</b>：匯出的 pptx 一直是照 preset 擺，之前是畫布在騙人，所以既有簡報的匯出結果不會有任何改變。文字太長時會照 PowerPoint 的行為溢出文字區，不會被裁掉。</li>
         <li><b>編輯端點（內建形狀 → 自訂幾何）</b>：只想改內建形狀的一兩個角，不必從零重畫——選取後按右欄「<b>✎ 轉成可編輯端點</b>」，形狀原地拆成端點並開啟編輯器，<b>外觀完全不變</b>（187 種全部驗過，最大偏差 0.04px）。同 PowerPoint 的「編輯端點」，<b>單向不可逆</b>：黃點會消失、換不回內建形狀。若該形狀的各部分原本填色／外框設定不同（動作按鈕、圖說外框類），轉換後只會剩一種填色，對話框會先告知。</li>
         <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>要讓內圈與外圈<b>反向繞行</b>（PowerPoint 用 nonzero 填充規則），畫完內圈按「⇄ 反轉方向」即可。</li>
         <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
@@ -1572,6 +1573,19 @@ function mkMarker(svg,id,color,start){
   if(!defs){ defs=document.createElementNS(NS,'defs'); svg.appendChild(defs); }
   defs.appendChild(mk);
 }
+/* preset 定義的文字區（<a:rect>）：187 份裡有 137 份不是整個外框。
+   ⚠ 這純粹是畫布預覽的修正——匯出的 XML 從來沒有自寫 <a:rect>，
+   PowerPoint 一直是照 preset 定義擺文字。也就是說在此之前畫布是錯的，pptx 一直是對的。 */
+function textRect(el){
+  if(!el||el.type!=='shape') return null;
+  const def=PRESET_GEOM[el.shape], r=def&&def[4];
+  if(!r) return null;
+  const V=geomEnv(el.shape,el.w,el.h,adjVals(el));
+  const L=gv(r[0],V), T=gv(r[1],V), R=gv(r[2],V), B=gv(r[3],V);
+  // 退化矩形（pie 的預設起訖角就會產出反向的）→ 退回整個外框，不要畫出零寬或負寬的文字區
+  if(!(R>L)||!(B>T)) return null;
+  return {x:L,y:T,w:R-L,h:B-T};
+}
 function renderShapeInto(box,el){
   box.innerHTML='';
   const kind=LINE_KINDS[el.shape];
@@ -1608,7 +1622,11 @@ function renderShapeInto(box,el){
   box.appendChild(svg);
   if(el.paras){
     const t=txtBlock(el);
-    t.style.position='absolute'; t.style.inset='0';
+    t.style.position='absolute';
+    const tr=textRect(el);
+    if(tr){ t.style.left=tr.x+'px'; t.style.top=tr.y+'px';
+            t.style.width=tr.w+'px'; t.style.height=tr.h+'px'; }
+    else t.style.inset='0';
     box.appendChild(t);
   }
 }
