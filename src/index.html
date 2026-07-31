@@ -44,6 +44,10 @@
   .pageItem canvas{width:100%;background:#fff;border-radius:3px;display:block}
   .pageMeta{display:flex;align-items:baseline;gap:4px;margin-top:4px}
   .pageName{flex:1;font-size:11px;color:var(--fg-dim);text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 章節分隔列：不可選、不可拖，純標示「從下一張縮圖起是新的一章」 */
+  .secBar{flex:0 0 auto;margin:8px 2px 2px;padding:3px 6px;font-size:11px;font-weight:600;color:var(--fg);
+    background:var(--line);border-left:3px solid var(--accent);border-radius:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:none}
   .pageNum{font-size:10px;color:var(--fg-dim)}
   .pageItem.active .pageName,.pageItem.active .pageNum{color:var(--fg)}
   /* 不放映的頁（匯出為 <p:sld show="0">）：縮圖壓暗並加角標，避免忘了自己藏了一頁 */
@@ -441,6 +445,7 @@
         <li><b>物件超連結</b>：形狀／圖片／圖表／線條可設「整個物件可點」的連結（外部網址或 <code>#3</code> 跳頁），另可填滑過時的提示文字。文字框內個別文字的連結請用「文字樣式 → 超連結」。</li>
         <li><b>文字框內距／不換行</b>：內距讓有填色的卡片式文字框不再貼邊（匯出為 <code>lIns/tIns/rIns/bIns</code>）；「不自動換行」適合單行標籤（匯出 <code>wrap="none"</code>）。</li>
         <li><b>不放映此頁</b>：頁面面板勾選後該頁仍在檔案裡、放映時跳過（匯出 <code>&lt;p:sld show="0"&gt;</code>），縮圖會壓暗並標示。</li>
+        <li><b>章節</b>：右欄「頁面 → 章節」勾「從本頁開始新章節」，本頁到下一個章節起點之間的頁面同屬一章，頁面清單會出現分隔列。匯出為 PowerPoint 原生章節（縮圖窗格可<b>整段摺疊／搬動／隱藏／從該段開始放映</b>）。<b>只影響編輯時的導覽，投影片內容與放映完全不變</b>。章節名必須唯一，撞名自動補「(2)」——PowerPoint 是靠名稱認章節的。若從第 N 頁才開始分章，前面幾頁會自動歸入一個以簡報標題命名的章節。</li>
         <li><b>影片</b>（頂端「＋影片」）：
           <b>YouTube 連結</b>＝匯出為 PPT 原生線上影片，pptx 內只有封面圖、影片走外部連結（<b>播放需要網路</b>）；
           <b>本機影片</b>＝<b>不嵌入位元組</b>，只自動抓一格畫面當封面並記下檔名長度，匯出後跳出「待插入影片」清單，請在 PowerPoint 對照該框插入真影片（同一份提示也寫進替代文字與該頁備忘稿）。封面可隨時換成自己的圖。</li>
@@ -609,6 +614,11 @@ function applyProfileToDeck(d,p){
 
 /* ================= 簡報模型 ================= */
 function newPage(){ return {id:uid('p'),name:'',bg:'FFFFFF',transition:null,elements:[]}; }
+/* 章節標題去重：PptxGenJS 用標題字串比對 section，同名的第二個章節收不到任何投影片
+   （全部併進第一個）。所以「同名」在這裡不是美觀問題，是會實際錯位的。 */
+function uniqTitle(t,seen){ let o=t, n=2; while(seen.has(o)) o=t+' ('+(n++)+')'; seen.add(o); return o; }
+// 有人從第 N 頁才開始分章時，前面幾頁要有個歸屬，否則 PptxGenJS 會自動塞進英文的 "Default-1"
+function secLead(d){ return uniqTitle((d.title||'').trim()||'開頭', new Set(d.pages.map(p=>p.section).filter(Boolean))); }
 function newDeck(){
   const p=startupProfile();
   return {format:'deckjson',version:1,title:'未命名簡報',fontMode:'locked',
@@ -1806,6 +1816,13 @@ function drawThumb(cv,pg){
 function renderPanel(){
   const panel=$('#pagePanel'); panel.innerHTML='';
   APP.deck.pages.forEach((pg,idx)=>{
+    // 章節起點：在該頁縮圖上方插一條標題列（比照 PowerPoint 縮圖窗格的章節分隔）
+    if(pg.section){
+      const sb=document.createElement('div'); sb.className='secBar';
+      sb.textContent='▸ '+pg.section;
+      sb.title='章節「'+pg.section+'」從第 '+(idx+1)+' 頁開始（匯出為 PowerPoint 章節）';
+      panel.appendChild(sb);
+    }
     const item=document.createElement('div'); item.className='pageItem'; item.dataset.pid=pg.id;
     if(pg.id===APP.page) item.classList.add('active');
     if(pg.skip) item.classList.add('skip');
@@ -2262,6 +2279,28 @@ function renderProps(){
       const mn=document.createElement('div'); mn.className='row';
       mn.innerHTML='<span class="unit">Morph 依元素 id 配對前一頁同名元素；「複製此頁」保留 id 即為此用。舊版 PPT 退回淡出。</span>';
       pp.appendChild(mn);
+    }
+    /* 章節：PowerPoint 縮圖窗格的可摺疊分組，只影響編輯時的導覽，放映與版面完全不變。
+       語意掛在「頁」上但作用是「從這頁起的一段」，故標籤寫成「從本頁開始」。 */
+    pp.appendChild(secTitle('章節'));
+    const hasSec=curPage().section!=null;
+    pp.appendChild(checkRow([['從本頁開始新章節',()=>hasSec,v=>{ commitUndo();
+      if(v){ const idx=APP.deck.pages.indexOf(curPage());
+             curPage().section=curPage().name||('章節 '+(idx+1)); }
+      else delete curPage().section;
+      normalizeDeck(APP.deck); renderAll(); syncPageJson(); },
+      'PowerPoint 縮圖窗格的可摺疊分組：可整段收合／搬動／隱藏。不影響投影片內容，放映時看不到']]));
+    if(hasSec){
+      const sr=document.createElement('div'); sr.className='row'; sr.innerHTML='<label>章節名</label>';
+      const si=document.createElement('input'); si.type='text'; si.value=curPage().section; si.maxLength=60;
+      si.onchange=()=>{ commitUndo();
+        curPage().section=si.value.trim()||curPage().name||'章節';
+        normalizeDeck(APP.deck);        // 撞名時會自動補 (2)，馬上回寫欄位讓使用者看得到
+        renderAll(); syncPageJson(); };
+      sr.appendChild(si); pp.appendChild(sr);
+      const sn=document.createElement('div'); sn.className='row';
+      sn.innerHTML='<span class="unit">本頁到下一個章節起點之間的頁面同屬此章。章節名<b>必須唯一</b>，撞名會自動補「(2)」——PowerPoint 是靠名稱認章節的。</span>';
+      pp.appendChild(sn);
     }
     // 隱藏投影片：仍在檔案裡、放映時跳過（匯出為 <p:sld show="0">）
     pp.appendChild(checkRow([['不放映此頁',()=>!!curPage().skip,v=>{ commitUndo();
@@ -4456,8 +4495,12 @@ function normalizeDeck(d){
     p.color=hex6(p.color)||PAGENUM_DEF.color;
     if(p.skipFirst) p.skipFirst=true; else delete p.skipFirst;
   }else delete d.pageNum;
+  const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）
   for(const pg of d.pages){
     pg.id=pg.id||uid('p'); pg.bg=pg.bg||'FFFFFF';
+    // 章節：有非空字串＝從本頁起一個新章節；空字串／缺鍵＝延續上一章
+    if(typeof pg.section==='string'&&pg.section.trim()) pg.section=uniqTitle(pg.section.trim().slice(0,60),secSeen);
+    else delete pg.section;
     if(typeof pg.bgImage!=='string'||!pg.bgImage.startsWith('data:image/')) delete pg.bgImage;
     pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
@@ -4608,6 +4651,8 @@ function applyPageJson(obj){
   temp.pages[idx]={id:obj.id||cur.id, name:obj.name??cur.name, bg:obj.bg||cur.bg,
     notes:('notes' in obj)?obj.notes:cur.notes,
     bgImage:('bgImage' in obj)?obj.bgImage:cur.bgImage,
+    section:('section' in obj)?obj.section:cur.section,
+    skip:('skip' in obj)?obj.skip:cur.skip,
     transition:('transition' in obj)?obj.transition:cur.transition, elements:obj.elements};
   const d=normalizeDeck(temp);
   commitUndo();
@@ -5233,11 +5278,23 @@ async function exportPptx(download=true){
   const pnum=APP.deck.pageNum? pageNumBox():null;
   const pendList=[];        // 全 deck 的待插入影片清單（匯出後彙總對話框用）
   let wroteNotes=false;     // 是否真的有寫進備忘稿（含待辦提示）→ 決定要不要保留 notesMaster 基建
+  /* 章節（PowerPoint 縮圖窗格的可摺疊分組）。
+     PptxGenJS 只認「標題字串」：addSlide({sectionTitle}) 是拿字串去 sections 陣列比對，
+     所以標題必須全域唯一（normalizeDeck 已負責去重）。另一個坑：一旦存在任何 section，
+     沒指定 sectionTitle 的投影片會被自動塞進 "Default-1" 這種英文名分組——
+     故若有人從第 N 頁才開始分章，這裡先替前面幾頁補一個明確命名的章節。 */
+  const useSec=APP.deck.pages.some(p=>p.section);
+  let curSec=null;
+  if(useSec&&!APP.deck.pages[0].section){
+    curSec=secLead(APP.deck);
+    pptx.addSection({title:curSec});
+  }
   for(let pi=0;pi<APP.deck.pages.length;pi++){
     const pg=APP.deck.pages[pi];
     APP.page=pg.id; APP.selIds=[];
     renderStage();               // 表格列高（wrap 長高）需以實際渲染 DOM 為準
-    const slide=pptx.addSlide();
+    if(pg.section){ curSec=pg.section; pptx.addSection({title:curSec}); }
+    const slide=pptx.addSlide(curSec?{sectionTitle:curSec}:undefined);
     // 背景圖片走 blipFill（副檔名由 data URL 的 mime 決定，否則 PptxGenJS 一律當 png，jpg 會對不上型別）
     if(pg.bgImage){
       const m=/^data:image\/(\w+)/.exec(pg.bgImage);
