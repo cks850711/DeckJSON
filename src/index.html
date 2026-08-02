@@ -177,6 +177,13 @@
   /* 圖表視覺編輯面板：資料格子編輯器 ＋ 設定列。改動一律定點寫回 option，
      不重生整份 option，否則使用者手寫的 markLine／grid／tooltip 會被沖掉。 */
   #chartVisPane{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+  #cvControls{display:flex;flex-direction:column;gap:10px}
+  /* 預覽：即時反映面板改動。位置固定在最上方且不隨控制項重建而重新 init，避免閃爍 */
+  #cvPreviewWrap{position:relative;background:#fff;border:1px solid var(--line);border-radius:6px;
+        align-self:center;overflow:hidden}
+  #cvPreviewTag{position:absolute;left:0;top:0;padding:1px 6px;font-size:10px;color:#fff;
+        background:rgba(77,157,224,.85);border-radius:0 0 3px 0;pointer-events:none}
+  .cvPng{font-size:10px;color:#e8b339;border:1px solid currentColor;border-radius:3px;padding:0 3px;margin-left:2px}
   .cvSec{font-size:11px;color:var(--fg-dim);letter-spacing:.5px;margin-top:2px}
   .cvRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .cvRow>label{min-width:auto;color:var(--fg-dim);font-size:12px}
@@ -383,7 +390,10 @@
       <span style="display:flex;gap:6px;margin-left:auto;margin-right:8px">
         <button id="tabChartVis" class="on">視覺編輯</button><button id="tabChartJson">option JSON</button>
       </span><button id="btnChartClose">×</button></div>
-    <div id="chartVisPane"></div>
+    <div id="chartVisPane">
+      <div id="cvPreviewWrap"><div id="cvPreview"></div><div id="cvPreviewTag" hidden></div></div>
+      <div id="cvControls"></div>
+    </div>
     <div id="chartJsonPane" hidden>
       <textarea id="chartArea" spellcheck="false"></textarea>
       <div class="mbtns"><button id="btnChartApply" class="primary">套用</button></div>
@@ -429,7 +439,8 @@
         <li>右欄「<b>本頁 JSON ▤</b>」＝可拖曳的浮動面板，只顯示目前頁；面板開著時<b>點畫布任一元素／圖片，會自動捲動並選取它的 JSON 區塊</b>，適合針對性微調。</li>
         <li>JSON 內圖片以 <code>@asset:元素id</code> 佔位顯示（base64 不塞爆視窗）；「套用」時自動還原位元組。新圖請由工具插入；存 .json 檔仍含完整圖片。</li>
         <li>細緻的格式（單一文字框內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位（面板操作一律套用到該元素的全部 run／段落）。</li>
-        <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。<b>資料交給 JSON（自己寫或請 AI 產），外觀用「視覺編輯」分頁調</b>：圖種、標題、格線、座標軸、圖例、資料標籤、系列顏色與線條、繪圖區留白。面板只寫它自己那幾格，手寫的進階設定不會被覆蓋。</li>
+        <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。<b>資料交給 JSON（自己寫或請 AI 產），外觀用「視覺編輯」分頁調</b>，面板頂端有即時預覽：圖種、圖表與座標軸標題（字級／顏色）、軸線與刻度（顏色／粗細）、軸標籤（字級／顏色／傾斜）、數值軸範圍與刻度間隔／反轉、主格線（顏色／線寬／虛線）、圖例、資料標籤（位置／字級／顏色）、系列顏色與邊框／柱寬／線寬／端點、圓餅內圈與起始角、繪圖區留白、圖表底色。面板只寫它自己那幾格，手寫的進階設定不會被覆蓋。</li>
+        <li>沒有 PowerPoint 原生對應的設定（長條圓角、副格線、隱藏數值軸標籤）標示「<b>僅 PNG</b>」；勾了「匯出為原生圖表」時會直接停用，不讓你設一個匯出時會消失的值。</li>
         <li>圖表可選擇匯出為 <b>PowerPoint 原生圖表</b>（PPT 內能編輯資料、跟隨目標母版），或維持 PNG（外觀與畫布一致）。</li>
       </ul>
       <h4>存檔</h4>
@@ -5310,8 +5321,8 @@ function chartTarget(){
 function openChartModal(el){
   chartTargetRef={page:curPage().id,el:el.id};
   $('#chartArea').value=JSON.stringify(el.option,null,1);
+  $('#chartModal').hidden=false;   // 要先顯示，echarts.init 才量得到尺寸
   chartTab('vis');
-  $('#chartModal').hidden=false;
 }
 function chartTab(which){
   const v=which==='vis';
@@ -5324,7 +5335,11 @@ function chartTab(which){
 }
 $('#tabChartVis').onclick=()=>chartTab('vis');
 $('#tabChartJson').onclick=()=>chartTab('json');
-$('#btnChartClose').onclick=()=>{ $('#chartModal').hidden=true; chartTargetRef=null; };
+function closeChartModal(){
+  $('#chartModal').hidden=true; chartTargetRef=null;
+  if(cvPrevInst&&!cvPrevInst.isDisposed()){ cvPrevInst.dispose(); cvPrevInst=null; }
+}
+$('#btnChartClose').onclick=closeChartModal;
 $('#btnChartApply').onclick=()=>{
   const el=chartTarget(); if(!el) return;
   try{
@@ -5372,11 +5387,34 @@ function cvKindOf(op,sh){
   if(sh.ss[0].type==='bar') return sh.catKey==='yAxis'?'barH':'bar';
   return sh.ss.some(s=>s.areaStyle)?'area':'line';
 }
-/* 換圖種只做**不動資料**的切換：直↔橫是兩軸對調、柱↔線↔區域改 series.type／areaStyle、
-   圓↔環改 radius。跨家族（類別軸 ↔ 圓餅）要重排整個 data 陣列，屬資料操作，
-   面板刻意不提供（選項會 disabled），請走 option JSON。 */
+/* 換圖種。同家族內（直↔橫、柱↔線↔區域、圓↔環）完全不動 data。
+   跨家族（類別軸 ↔ 圓餅）要換 data 的**形狀**——類別軸把標籤放 xAxis.data、數值放
+   series.data；圓餅則兩者合併成 [{name,value}]。換的是容器不是內容，標籤與數值
+   逐項對應、可逆無損，所以仍提供；只有多系列轉圓餅會截掉第二個系列以後（圓餅畫不了），
+   那一種才擋下來。 */
 function cvSetKind(op,sh,kind){
-  if(sh.kind==='pie'){
+  const toPie=(kind==='pie'||kind==='doughnut'), wasPie=sh.kind==='pie';
+  if(toPie&&!wasPie){
+    const labels=op[sh.catKey].data.map(v=>String((v&&v.value!=null)?v.value:v));
+    const s0=sh.ss[0];
+    s0.type='pie';
+    s0.data=labels.map((l,i)=>({name:l,value:cvNum((s0.data||[])[i])}));
+    delete s0.stack; delete s0.areaStyle; delete s0.smooth; delete s0.barWidth;
+    delete s0.lineStyle; delete s0.symbol;
+    if(s0.itemStyle) delete s0.itemStyle.borderRadius;
+    op.series=[s0];
+    delete op.xAxis; delete op.yAxis;     // 留著會畫出多餘的座標軸
+    sh={kind:'pie',ss:op.series};
+  }else if(!toPie&&wasPie){
+    const s0=sh.ss[0];
+    const d=(s0.data||[]).map((v,i)=>({name:(v&&v.name)||('項目 '+(i+1)),value:cvNum(v)}));
+    delete s0.radius; delete s0.roseType; delete s0.center; delete s0.startAngle;
+    s0.data=d.map(x=>x.value);
+    op.xAxis={type:'category',data:d.map(x=>x.name)}; op.yAxis={type:'value'};
+    op.series=[s0];
+    sh={kind:'cat',ss:op.series,catKey:'xAxis',valKey:'yAxis'};
+  }
+  if(toPie){
     const s0=op.series[0];
     if(kind==='doughnut'){ if(!Array.isArray(s0.radius)||!(parseFloat(s0.radius[0])>0)) s0.radius=['45%','70%']; }
     else delete s0.radius;
@@ -5397,210 +5435,340 @@ function cvSetKind(op,sh,kind){
 }
 function cvNum(v){ const n=(v&&typeof v==='object')?(Array.isArray(v)?v[1]:v.value):v;
   return isFinite(parseFloat(n))?parseFloat(n):0; }
+/* 預覽：跟畫布共用同一份 option，所以看到的就是實際結果。
+   刻意不重新 init（只 setOption），否則每改一格都閃一下。 */
+let cvPrevInst=null;
+function cvPreviewRender(){
+  const el=chartTarget(); if(!el) return;
+  const wrap=$('#cvPreviewWrap'), box=$('#cvPreview');
+  // 高度設上限，免得預覽把控制項擠出視窗；超過就縮寬度維持比例
+  const MAXH=220;
+  let W=Math.min(520,Math.max(240,el.w)), H=Math.round(W*(el.h/el.w));
+  if(H>MAXH){ W=Math.round(W*MAXH/H); H=MAXH; }
+  wrap.style.width=W+'px'; wrap.style.height=H+'px';
+  box.style.cssText=`width:${W}px;height:${H}px`;
+  if(!cvPrevInst||cvPrevInst.getDom()!==box||cvPrevInst.isDisposed()){
+    if(cvPrevInst&&!cvPrevInst.isDisposed()) cvPrevInst.dispose();
+    cvPrevInst=echarts.init(box,null,{renderer:'canvas'});
+  }else cvPrevInst.resize({width:W,height:H});
+  try{ cvPrevInst.setOption(structuredClone(el.option),true); }
+  catch(e){ box.textContent='option 錯誤：'+e.message; }
+  const tag=$('#cvPreviewTag');
+  if(el.native&&nativeMap(el.option).ok){
+    tag.hidden=false;
+    tag.textContent='原生圖表：此為 ECharts 預覽，PPT 內排版由 PowerPoint 決定';
+  }else tag.hidden=true;
+}
 function buildChartVis(){
   const el=chartTarget();
-  if(!el){ $('#chartModal').hidden=true; chartTargetRef=null; return; }
-  const pane=$('#chartVisPane'); pane.innerHTML='';
+  if(!el){ closeChartModal(); return; }
+  const pane=$('#cvControls'); pane.innerHTML='';
   const op=el.option||{};
   const sh=cvShape(op);
   const kind=cvKindOf(op,sh);
   const isPie=sh.kind==='pie', isCat=sh.kind==='cat';
+  // 已勾原生匯出時，原生表達不了的設定一律停用——不讓使用者設一個匯出時會靜靜消失的值
+  const nat=!!el.native&&nativeMap(op).ok;
+  const PNG_ONLY='原生圖表無此設定。要使用請先取消側欄的「匯出為原生圖表」';
   const apply=(fn,rebuild)=>{ commitUndo(); fn(); renderAll(); syncPageJson();
+    cvPreviewRender();
     if(rebuild!==false) buildChartVis(); };
+  const pngTag=p=>p.appendChild(Object.assign(document.createElement('span'),
+    {className:'cvPng',textContent:'僅 PNG',title:'此設定沒有 PowerPoint 原生圖表的對應，只有 PNG 匯出會呈現'}));
 
   const sec=t=>{ const d=document.createElement('div'); d.className='cvSec'; d.textContent=t; pane.appendChild(d); };
   const row=()=>{ const d=document.createElement('div'); d.className='cvRow'; pane.appendChild(d); return d; };
   const lab=(p,t)=>p.appendChild(Object.assign(document.createElement('label'),{textContent:t}));
   const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; d.innerHTML=t; pane.appendChild(d); };
-  // 勾選框：讀 get()、寫 set()，一律定點寫入
   const chk=(p,text,get,set,o)=>{
     o=o||{};
     const l=document.createElement('label'); l.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer';
     const c=document.createElement('input'); c.type='checkbox'; c.style.width='auto'; c.checked=!!get();
     if(o.lock){ c.disabled=true; l.style.opacity='.5'; l.title=o.lock; }
-    if(o.title) l.title=o.title;
+    else if(o.title) l.title=o.title;
     c.onchange=()=>apply(()=>set(c.checked),o.rebuild);
     l.appendChild(c); l.appendChild(document.createTextNode(text)); p.appendChild(l); return c;
   };
   const sel=(p,val,items,set,o)=>{
     o=o||{};
     const e=document.createElement('select');
-    for(const [k,t,dis] of items){ const op2=document.createElement('option');
-      op2.value=k; op2.textContent=t; if(dis){ op2.disabled=true; op2.textContent=t+'（需重組資料）'; }
-      e.appendChild(op2); }
-    e.value=val; if(o.disabled){ e.disabled=true; if(o.title) e.title=o.title; }
+    for(const [k,t] of items) e.appendChild(Object.assign(document.createElement('option'),{value:k,textContent:t}));
+    e.value=val; if(o.disabled||o.lock){ e.disabled=true; e.title=o.lock||o.title||''; }
     e.onchange=()=>apply(()=>set(e.value),o.rebuild);
     p.appendChild(e); return e;
   };
   const num=(p,text,val,set,o)=>{
-    o=o||{}; lab(p,text);
-    const i=document.createElement('input'); i.type='number'; i.style.width='72px';
+    o=o||{}; if(text) lab(p,text);
+    const i=document.createElement('input'); i.type='number'; i.style.width=(o.w||64)+'px';
     if(o.min!=null)i.min=o.min; if(o.max!=null)i.max=o.max; if(o.step!=null)i.step=o.step;
     i.value=val==null?'':val; if(o.placeholder)i.placeholder=o.placeholder;
+    if(o.lock){ i.disabled=true; i.title=o.lock; }
     i.onchange=()=>apply(()=>set(i.value===''?undefined:parseFloat(i.value)),false);
     p.appendChild(i); if(o.unit) p.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:o.unit}));
     return i;
   };
   const txt=(p,text,val,set,w)=>{
     lab(p,text);
-    const i=document.createElement('input'); i.type='text'; i.style.width=(w||130)+'px'; i.value=val||'';
+    const i=document.createElement('input'); i.type='text'; i.style.width=(w||120)+'px'; i.value=val||'';
     i.onchange=()=>apply(()=>set(i.value.trim()),false);
     p.appendChild(i); return i;
   };
+  // 用本專案的色票系統（設計師精選／Open Color／全色域），不用瀏覽器原生色盤
   const color=(p,val,set,title)=>{
-    const c=document.createElement('input'); c.type='color'; c.className='cvSwatch';
-    c.value='#'+val; if(title)c.title=title;
-    c.onchange=()=>apply(()=>set(c.value.toUpperCase()),false);
-    p.appendChild(c); return c;
+    const b=document.createElement('button'); b.className='swatchBtn';
+    b.style.cssText='width:24px;height:20px'; b.style.background='#'+val;
+    if(title)b.title=title;
+    b.onclick=()=>openPalette(b,val,hex=>{ b.style.background='#'+hex;
+      commitUndo(); set(hex); renderAll(); syncPageJson(); cvPreviewRender(); buildChartVis(); });
+    p.appendChild(b); return b;
   };
+  const hexOf=(v,d)=>nvHex(v)||d;
 
-  /* ---- 圖種：只提供不動資料的切換 ----
-     直↔橫只是兩軸對調、柱↔線↔區域只改 series.type／areaStyle、圓↔環只改 radius，
-     資料陣列全程不動。跨家族（類別軸 ↔ 圓餅）要重排整個 data，屬資料操作，交給 JSON。 */
+  /* ---- 圖種 ---- */
   sec('圖種');
   const r1=row();
-  const fam=isPie? ['pie','doughnut'] : isCat? ['bar','barH','line','area'] : [];
-  if(fam.length){
-    sel(r1,kind,CV_KINDS.map(([k,t])=>[k,t,!fam.includes(k)]),v=>cvSetKind(op,sh,v));
-    lab(r1,isPie?'（改成長條類需重組資料，請走 option JSON）':'（改成圓餅類需重組資料，請走 option JSON）');
+  if(kind){
+    const multi=isCat&&op.series.length>1;
+    sel(r1,kind,CV_KINDS,v=>{
+      if((v==='pie'||v==='doughnut')&&multi&&
+         !confirm('圓餅圖只能畫一個系列。轉換後只保留第一個系列「'
+           +(op.series[0].name||'數列 1')+'」，其餘 '+(op.series.length-1)+' 個會被移除。要繼續嗎？'))
+        return;
+      cvSetKind(op,sh,v);
+    });
+    lab(r1,isPie?'（圓餅與長條類互換會重排 data 的形狀，標籤與數值逐項保留）':'');
   }else{
-    const t=(op.series||[]).map(s=>s&&s.type).filter(Boolean).join('／')||'（未知）';
+    const t=(op.series||[]).map(x=>x&&x.type).filter(Boolean).join('／')||'（未知）';
+    sel(r1,'',[['','—']],()=>{},{disabled:true});
     lab(r1,`目前是 ${t}，面板不涵蓋此圖種`);
   }
   if(isCat&&(kind==='line'||kind==='area'))
-    chk(r1,'平滑曲線',()=>sh.ss.some(s=>s.smooth),
-      v=>{ for(const s of op.series){ if(v)s.smooth=true; else delete s.smooth; } });
+    chk(r1,'平滑曲線',()=>sh.ss.some(x=>x.smooth),
+      v=>{ for(const x of op.series){ if(v)x.smooth=true; else delete x.smooth; } });
 
   /* ---- 標題 ---- */
   sec('標題');
+  const ti=(op.title&&!Array.isArray(op.title))? op.title : null;
   const r2=row();
-  const ti=op.title&&!Array.isArray(op.title)? op.title : null;
   txt(r2,'圖表標題',ti&&typeof ti.text==='string'?ti.text:'',v=>{
     if(v){ cvSet(op,'title.text',v); if(!op.title.left) op.title.left='center'; }
-    else if(op.title) delete op.title.text; },200);
+    else if(op.title) delete op.title.text; },180);
+  const hasTi=!!(ti&&ti.text);
   sel(r2,(ti&&ti.left)||'center',[['left','靠左'],['center','置中'],['right','靠右']],
-    v=>cvSet(op,'title.left',v),{disabled:!(ti&&ti.text)});
+    v=>cvSet(op,'title.left',v),{disabled:!hasTi});
   num(r2,'字級',ti&&ti.textStyle&&ti.textStyle.fontSize,
     v=>cvSet(op,'title.textStyle.fontSize',v),{min:8,max:72,placeholder:'18',unit:'px'});
+  if(hasTi) color(r2,hexOf(ti.textStyle&&ti.textStyle.color,'333333'),
+    h=>cvSet(op,'title.textStyle.color','#'+h),'標題顏色');
   if(isCat){
     const r3=row();
-    txt(r3,'類別軸標題',op[sh.catKey]&&op[sh.catKey].name,
-      v=>{ if(v) cvSet(op,sh.catKey+'.name',v); else if(op[sh.catKey]) delete op[sh.catKey].name; });
-    txt(r3,'數值軸標題',op[sh.valKey]&&op[sh.valKey].name,
-      v=>{ if(v) cvSet(op,sh.valKey+'.name',v); else if(op[sh.valKey]) delete op[sh.valKey].name; });
+    const axTitle=(key,text)=>{
+      txt(r3,text,op[key]&&op[key].name,
+        v=>{ if(v) cvSet(op,key+'.name',v); else if(op[key]) delete op[key].name; },100);
+      if(op[key]&&op[key].name){
+        num(r3,'',op[key].nameTextStyle&&op[key].nameTextStyle.fontSize,
+          v=>cvSet(op,key+'.nameTextStyle.fontSize',v),{min:6,max:48,placeholder:'12',w:56,unit:'px'});
+        color(r3,hexOf(op[key].nameTextStyle&&op[key].nameTextStyle.color,'666666'),
+          h=>cvSet(op,key+'.nameTextStyle.color','#'+h),'軸標題顏色');
+      }
+    };
+    axTitle(sh.catKey,'類別軸標題'); axTitle(sh.valKey,'數值軸標題');
   }
 
-  /* ---- 格線與座標軸 ---- */
+  /* ---- 座標軸 ---- */
   if(isCat){
-    sec('格線與座標軸');
+    sec('座標軸');
+    const on=(k,sub)=>{ const a=op[k]; return !(a&&a[sub]&&a[sub].show===false); };
     const r4=row();
-    // ECharts 的 splitLine 掛在「被切分的那根軸」上：橫格線由數值軸畫（直條圖時是 yAxis）
-    const hAx=sh.catKey==='xAxis'?sh.valKey:sh.catKey;   // 畫水平格線的軸
-    const vAx=sh.catKey==='xAxis'?sh.catKey:sh.valKey;   // 畫垂直格線的軸
-    const spl=k=>{ const a=op[k]; return !(a&&a.splitLine&&a.splitLine.show===false); };
-    chk(r4,'橫向格線',()=>spl(hAx),v=>cvSet(op,hAx+'.splitLine.show',v?undefined:false),
-      {title:'數值軸的分隔線'});
-    chk(r4,'縱向格線',()=>{ const a=op[vAx]; return !!(a&&a.splitLine&&a.splitLine.show===true); },
-      v=>cvSet(op,vAx+'.splitLine.show',v?true:undefined),{title:'類別軸的分隔線（ECharts 預設關閉）'});
-    const r5=row();
-    const axOn=(k,sub)=>{ const a=op[k]; return !(a&&a[sub]&&a[sub].show===false); };
-    chk(r5,'軸線',()=>axOn(sh.catKey,'axisLine')&&axOn(sh.valKey,'axisLine'),
+    chk(r4,'軸線',()=>on(sh.catKey,'axisLine')&&on(sh.valKey,'axisLine'),
       v=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLine.show',v?undefined:false); });
-    chk(r5,'刻度',()=>axOn(sh.catKey,'axisTick')&&axOn(sh.valKey,'axisTick'),
+    color(r4,hexOf(op[sh.catKey].axisLine&&op[sh.catKey].axisLine.lineStyle&&op[sh.catKey].axisLine.lineStyle.color,'888888'),
+      h=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLine.lineStyle.color','#'+h); },'軸線顏色');
+    num(r4,'粗細',(op[sh.catKey].axisLine&&op[sh.catKey].axisLine.lineStyle&&op[sh.catKey].axisLine.lineStyle.width),
+      v=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLine.lineStyle.width',v); },
+      {min:0.5,max:8,step:0.5,placeholder:'1',unit:'px'});
+    chk(r4,'刻度',()=>on(sh.catKey,'axisTick')&&on(sh.valKey,'axisTick'),
       v=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisTick.show',v?undefined:false); });
-    chk(r5,'軸標籤',()=>axOn(sh.catKey,'axisLabel')&&axOn(sh.valKey,'axisLabel'),
-      v=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLabel.show',v?undefined:false); });
+
+    const r5=row();
+    chk(r5,'類別軸標籤',()=>on(sh.catKey,'axisLabel'),
+      v=>cvSet(op,sh.catKey+'.axisLabel.show',v?undefined:false));
+    // 數值軸標籤：PptxGenJS 只能整根軸刪掉（catAxisHidden 是 <c:delete>），無法只隱藏標籤
+    const cbVal=chk(r5,'數值軸標籤',()=>on(sh.valKey,'axisLabel'),
+      v=>cvSet(op,sh.valKey+'.axisLabel.show',v?undefined:false),{lock:nat?PNG_ONLY:''});
+    pngTag(cbVal.parentElement);
+    num(r5,'字級',op[sh.catKey].axisLabel&&op[sh.catKey].axisLabel.fontSize,
+      v=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLabel.fontSize',v); },
+      {min:6,max:36,placeholder:'12',unit:'px'});
+    color(r5,hexOf(op[sh.catKey].axisLabel&&op[sh.catKey].axisLabel.color,'666666'),
+      h=>{ for(const k of [sh.catKey,sh.valKey]) cvSet(op,k+'.axisLabel.color','#'+h); },'軸標籤顏色');
+    num(r5,'類別傾斜',op[sh.catKey].axisLabel&&op[sh.catKey].axisLabel.rotate,
+      v=>cvSet(op,sh.catKey+'.axisLabel.rotate',v),{min:-90,max:90,placeholder:'0',unit:'°'});
+
     const r6=row();
-    // 軸範圍留空＝交給 ECharts 自動；不預填數字，否則使用者以為是現值
-    num(r6,'數值軸最小',op[sh.valKey]&&op[sh.valKey].min,
-      v=>cvSet(op,sh.valKey+'.min',v),{placeholder:'自動'});
-    num(r6,'最大',op[sh.valKey]&&op[sh.valKey].max,
-      v=>cvSet(op,sh.valKey+'.max',v),{placeholder:'自動'});
+    // 留空＝交給 ECharts 自動；不預填實際計算值，否則會被誤認為已設定
+    num(r6,'數值軸最小',op[sh.valKey].min,v=>cvSet(op,sh.valKey+'.min',v),{placeholder:'自動',w:72});
+    num(r6,'最大',op[sh.valKey].max,v=>cvSet(op,sh.valKey+'.max',v),{placeholder:'自動',w:72});
+    num(r6,'刻度間隔',op[sh.valKey].interval,v=>cvSet(op,sh.valKey+'.interval',v),{placeholder:'自動',w:72});
+    chk(r6,'數值軸反轉',()=>!!op[sh.valKey].inverse,v=>cvSet(op,sh.valKey+'.inverse',v||undefined));
   }
 
-  /* ---- 圖例與資料標籤 ---- */
-  sec('圖例與標籤');
-  const r7=row();
+  /* ---- 格線 ---- */
+  if(isCat){
+    sec('格線');
+    // ECharts 的 splitLine 掛在「被切分的那根軸」上：橫格線由數值軸畫
+    const hAx=sh.catKey==='xAxis'?sh.valKey:sh.catKey;
+    const vAx=sh.catKey==='xAxis'?sh.catKey:sh.valKey;
+    const r7=row();
+    const hOn=!(op[hAx]&&op[hAx].splitLine&&op[hAx].splitLine.show===false);
+    chk(r7,'橫向格線',()=>hOn,v=>cvSet(op,hAx+'.splitLine.show',v?undefined:false),
+      {title:'數值軸的分隔線'});
+    chk(r7,'縱向格線',()=>{ const a=op[vAx]; return !!(a&&a.splitLine&&a.splitLine.show===true); },
+      v=>cvSet(op,vAx+'.splitLine.show',v?true:undefined),{title:'類別軸的分隔線（ECharts 預設關閉）'});
+    const ls=(op[hAx]&&op[hAx].splitLine&&op[hAx].splitLine.lineStyle)||{};
+    color(r7,hexOf(ls.color,'E0E0E0'),h=>cvSet(op,hAx+'.splitLine.lineStyle.color','#'+h),'格線顏色');
+    num(r7,'線寬',ls.width,v=>cvSet(op,hAx+'.splitLine.lineStyle.width',v),
+      {min:0.5,max:6,step:0.5,placeholder:'1',unit:'px'});
+    sel(r7,ls.type||'solid',[['solid','實線'],['dashed','虛線'],['dotted','點線']],
+      v=>cvSet(op,hAx+'.splitLine.lineStyle.type',v==='solid'?undefined:v));
+    // 副格線：OOXML 有 <c:minorGridlines>，但 PptxGenJS 沒開放（只給 minorTickMark）
+    const r8=row();
+    const mi=chk(r8,'副格線',()=>!!(op[hAx]&&op[hAx].minorSplitLine&&op[hAx].minorSplitLine.show),
+      v=>cvSet(op,hAx+'.minorSplitLine.show',v||undefined),{lock:nat?PNG_ONLY:''});
+    pngTag(mi.parentElement);
+    if(!(op[hAx]&&op[hAx].minorTick)) lab(r8,'（需同時開啟數值軸的次刻度才看得到）');
+  }
+
+  /* ---- 圖例 ---- */
+  sec('圖例');
+  const r9=row();
   const lgOn=!!(op.legend&&op.legend.show!==false);
-  chk(r7,'圖例',()=>lgOn,v=>{
+  chk(r9,'顯示',()=>lgOn,v=>{
     if(v){ op.legend=op.legend||{}; delete op.legend.show;
       if(!['top','bottom','left','right'].some(k=>op.legend[k]!=null)) op.legend.bottom=5; }
     else cvSet(op,'legend.show',false); });
-  sel(r7,['top','bottom','left','right'].find(k=>op.legend&&op.legend[k]!=null)||'bottom',
+  sel(r9,['top','bottom','left','right'].find(k=>op.legend&&op.legend[k]!=null)||'bottom',
     [['top','上'],['bottom','下'],['left','左'],['right','右']],
     v=>{ op.legend=op.legend||{};
       for(const k of ['top','bottom','left','right']) delete op.legend[k];
       op.legend[v]=5; },{disabled:!lgOn});
-  // formatter 是樣板字串，面板只能表達開／關，動了會把樣板洗掉 → 鎖住
-  const fmtHit=(op.series||[]).some(s=>s&&s.label&&s.label.formatter!=null);
-  chk(r7,'資料標籤',()=>(op.series||[]).some(s=>s&&s.label&&s.label.show),
-    v=>{ (op.series||[]).forEach((s,i)=>{
-      if(v) cvSet(op,'series.'+i+'.label.show',true); else if(s.label) delete s.label.show; }); },
+  if(lgOn){
+    num(r9,'字級',op.legend.textStyle&&op.legend.textStyle.fontSize,
+      v=>cvSet(op,'legend.textStyle.fontSize',v),{min:6,max:36,placeholder:'12',unit:'px'});
+    color(r9,hexOf(op.legend.textStyle&&op.legend.textStyle.color,'333333'),
+      h=>cvSet(op,'legend.textStyle.color','#'+h),'圖例文字顏色');
+  }
+
+  /* ---- 資料標籤 ---- */
+  sec('資料標籤');
+  const r10=row();
+  const fmtHit=(op.series||[]).some(x=>x&&x.label&&x.label.formatter!=null);
+  const dlOn=(op.series||[]).some(x=>x&&x.label&&x.label.show);
+  chk(r10,'顯示',()=>dlOn,
+    v=>{ (op.series||[]).forEach((x,i)=>{
+      if(v) cvSet(op,'series.'+i+'.label.show',true); else if(x.label) delete x.label.show; }); },
     {lock:fmtHit?'有自訂 formatter 樣板，請用 option JSON 分頁編輯':''});
+  if(dlOn&&!fmtHit){
+    const l0=(op.series[0].label)||{};
+    sel(r10,l0.position||(isPie?'outside':'top'),
+      isPie? [['outside','外側'],['inside','內側'],['center','中央']]
+           : [['top','上方'],['inside','內部'],['insideTop','內部上'],['insideBottom','內部下']],
+      v=>{ (op.series||[]).forEach((x,i)=>cvSet(op,'series.'+i+'.label.position',v)); });
+    num(r10,'字級',l0.fontSize,
+      v=>{ (op.series||[]).forEach((x,i)=>cvSet(op,'series.'+i+'.label.fontSize',v)); },
+      {min:6,max:36,placeholder:'12',unit:'px'});
+    color(r10,hexOf(l0.color,'333333'),
+      h=>{ (op.series||[]).forEach((x,i)=>cvSet(op,'series.'+i+'.label.color','#'+h)); },'標籤顏色');
+  }
   if(fmtHit) note('🔒 資料標籤設了自訂 <code>formatter</code> 樣板。面板只能表達開／關，'
     +'存下去會把樣板洗掉，因此鎖住——請切「option JSON」分頁編輯。','cvLock');
 
-  /* ---- 系列外觀（顏色與線條，不動數值） ---- */
+  /* ---- 系列外觀 ---- */
   sec(isPie?'各項顏色':'系列外觀');
   if(isPie){
-    const r8=row();
+    const r11=row();
     (op.series[0].data||[]).forEach((v,i)=>{
       const box=document.createElement('span'); box.style.cssText='display:flex;align-items:center;gap:3px';
       box.appendChild(Object.assign(document.createElement('span'),
         {textContent:(v&&v.name)||('項目 '+(i+1)),style:'font-size:12px;color:var(--fg-dim)'}));
-      color(box,nvHex(v&&v.itemStyle&&v.itemStyle.color)||CHART_PAL[i%CHART_PAL.length],
-        hex=>{ const d=op.series[0].data[i];
+      color(box,hexOf(v&&v.itemStyle&&v.itemStyle.color,CHART_PAL[i%CHART_PAL.length]),
+        h=>{ const d=op.series[0].data[i];
           // 保住 value／name，只加掛 itemStyle
           const o=(d&&typeof d==='object')? d : {value:cvNum(d)};
-          o.itemStyle={...(o.itemStyle||{}),color:hex}; op.series[0].data[i]=o; });
-      r8.appendChild(box);
+          o.itemStyle={...(o.itemStyle||{}),color:'#'+h}; op.series[0].data[i]=o; });
+      r11.appendChild(box);
     });
-    const r9=row();
-    num(r9,'內圈大小',Array.isArray(op.series[0].radius)?parseFloat(op.series[0].radius[0]):0,
+    const r12=row();
+    num(r12,'內圈大小',Array.isArray(op.series[0].radius)?parseFloat(op.series[0].radius[0]):0,
       v=>{ const inner=Math.max(0,Math.min(90,v||0));
         if(inner>0) op.series[0].radius=[inner+'%','70%']; else delete op.series[0].radius; },
       {min:0,max:90,unit:'%',title:'0＝實心圓餅'});
+    num(r12,'起始角度',op.series[0].startAngle,v=>cvSet(op,'series.0.startAngle',v),
+      {min:0,max:360,placeholder:'90',unit:'°'});
+    const bw=(op.series[0].itemStyle&&op.series[0].itemStyle.borderWidth)||0;
+    num(r12,'扇形邊框',bw,v=>cvSet(op,'series.0.itemStyle.borderWidth',v||undefined),
+      {min:0,max:10,unit:'px'});
+    if(bw>0) color(r12,hexOf(op.series[0].itemStyle.borderColor,'FFFFFF'),
+      h=>cvSet(op,'series.0.itemStyle.borderColor','#'+h),'邊框顏色');
   }else if(isCat){
-    (op.series||[]).forEach((s,i)=>{
+    (op.series||[]).forEach((x,i)=>{
       const r=row();
       r.appendChild(Object.assign(document.createElement('span'),
-        {textContent:s.name||('數列 '+(i+1)),style:'font-size:12px;min-width:70px;color:var(--fg-dim)'}));
-      color(r,nvHex(s.itemStyle&&s.itemStyle.color)||CHART_PAL[i%CHART_PAL.length],
-        hex=>cvSet(op,'series.'+i+'.itemStyle.color',hex),'系列顏色');
+        {textContent:x.name||('數列 '+(i+1)),style:'font-size:12px;min-width:64px;color:var(--fg-dim)'}));
+      color(r,hexOf(x.itemStyle&&x.itemStyle.color,CHART_PAL[i%CHART_PAL.length]),
+        h=>cvSet(op,'series.'+i+'.itemStyle.color','#'+h),'系列顏色');
       if(kind==='bar'||kind==='barH'){
-        num(r,'圓角',(s.itemStyle&&s.itemStyle.borderRadius)||0,
-          v=>cvSet(op,'series.'+i+'.itemStyle.borderRadius',v||undefined),{min:0,max:40,unit:'px'});
-        num(r,'柱寬',s.barWidth==null?null:parseFloat(s.barWidth),
+        const bw=(x.itemStyle&&x.itemStyle.borderWidth)||0;
+        num(r,'邊框',bw,v=>cvSet(op,'series.'+i+'.itemStyle.borderWidth',v||undefined),{min:0,max:10,unit:'px'});
+        if(bw>0) color(r,hexOf(x.itemStyle.borderColor,'FFFFFF'),
+          h=>cvSet(op,'series.'+i+'.itemStyle.borderColor','#'+h),'邊框顏色');
+        // OOXML 的長條沒有圓角概念，PptxGenJS 也無對應選項 → 只有 PNG 會呈現
+        num(r,'圓角',(x.itemStyle&&x.itemStyle.borderRadius)||0,
+          v=>cvSet(op,'series.'+i+'.itemStyle.borderRadius',v||undefined),
+          {min:0,max:40,unit:'px',lock:nat?PNG_ONLY:''});
+        pngTag(r);
+        num(r,'柱寬',x.barWidth==null?null:parseFloat(x.barWidth),
           v=>cvSet(op,'series.'+i+'.barWidth',v==null?undefined:v+'%'),
           {min:5,max:100,unit:'%',placeholder:'自動'});
       }else{
-        num(r,'線寬',(s.lineStyle&&s.lineStyle.width)!=null?s.lineStyle.width:2,
+        num(r,'線寬',(x.lineStyle&&x.lineStyle.width)!=null?x.lineStyle.width:2,
           v=>cvSet(op,'series.'+i+'.lineStyle.width',v),{min:0.5,max:12,step:0.5,unit:'px'});
-        chk(r,'端點',()=>s.symbol!=='none',v=>cvSet(op,'series.'+i+'.symbol',v?undefined:'none'));
+        chk(r,'端點',()=>x.symbol!=='none',v=>cvSet(op,'series.'+i+'.symbol',v?undefined:'none'));
+        if(x.symbol!=='none')
+          num(r,'端點大小',x.symbolSize,v=>cvSet(op,'series.'+i+'.symbolSize',v),
+            {min:2,max:30,placeholder:'4',unit:'px'});
       }
     });
-    // 堆疊會改變視覺呈現但不動 data，屬外觀
     if((op.series||[]).length>1){
       const rs=row();
-      chk(rs,'堆疊',()=>sh.ss.some(s=>s.stack),
-        v=>{ for(const s of op.series){ if(v) s.stack='總計'; else delete s.stack; } });
+      chk(rs,'堆疊',()=>sh.ss.some(x=>x.stack),
+        v=>{ for(const x of op.series){ if(v) x.stack='總計'; else delete x.stack; } });
     }
   }else{
-    note('🔒 '+esc(sh.reason)+'。','cvLock');
+    note('🔒 '+esc(sh.reason)+'。標題、圖例等其餘設定仍可調整。','cvLock');
   }
 
-  /* ---- 繪圖區留白 ---- */
+  /* ---- 版面 ---- */
+  sec('版面');
+  const r13=row();
   if(isCat){
-    sec('繪圖區留白');
-    const r10=row();
+    lab(r13,'繪圖區留白');
     for(const [k,t] of [['left','左'],['right','右'],['top','上'],['bottom','下']])
-      num(r10,t,op.grid&&typeof op.grid[k]==='number'?op.grid[k]:null,
-        v=>cvSet(op,'grid.'+k,v),{min:0,max:300,placeholder:'自動',unit:'px'});
+      num(r13,t,op.grid&&typeof op.grid[k]==='number'?op.grid[k]:null,
+        v=>cvSet(op,'grid.'+k,v),{min:0,max:300,placeholder:'自動',unit:'px',w:60});
   }
+  const r14=row();
+  const bgOn=typeof op.backgroundColor==='string';
+  chk(r14,'圖表底色',()=>bgOn,v=>{ if(v) op.backgroundColor='#FFFFFF'; else delete op.backgroundColor; });
+  if(bgOn) color(r14,hexOf(op.backgroundColor,'FFFFFF'),h=>{ op.backgroundColor='#'+h; },'圖表底色');
+  else lab(r14,'（透明，沿用投影片背景）');
 
-  note('改動即時套用，可用 Cmd/Ctrl+Z 復原。<b>資料（類別、數值、系列名）不在這裡改</b>——'
+  note('改動即時套用，可用 Cmd/Ctrl+Z 復原。<b>資料（類別名、數值、系列名）不在這裡改</b>——'
     +'請切「option JSON」分頁，或把整份 JSON 交給 AI 產。<br>'
-    +'面板只寫它自己那幾格，手寫的 <code>markLine</code>、<code>tooltip</code>、<code>visualMap</code> 等設定不會被動到。');
+    +'面板只寫它自己那幾格，手寫的 <code>markLine</code>、<code>tooltip</code>、<code>visualMap</code> 等設定不會被動到。'
+    +(nat? '<br><b>已勾「匯出為原生圖表」</b>：標<span class="cvPng">僅 PNG</span>的設定原生無對應，已停用。'
+         : '<br>標<span class="cvPng">僅 PNG</span>的設定沒有原生圖表對應，勾了原生匯出就不會呈現。'));
+  cvPreviewRender();
 }
 
 /* ================= 說明 ================= */
@@ -5653,6 +5821,15 @@ const NCHART_UNSUP={sankey:'桑基圖',treemap:'矩形樹圖',sunburst:'旭日�
   graph:'關係圖',heatmap:'熱力圖',candlestick:'K 線圖',boxplot:'盒鬚圖',funnel:'漏斗圖',
   parallel:'平行座標',themeRiver:'主題河流',tree:'樹狀圖',map:'地圖',pictorialBar:'象形柱狀圖',
   custom:'自訂 series',effectScatter:'漣漪散布圖'};
+// ECharts splitLine.lineStyle → PptxGenJS 的格線描述
+function gridLine(ax){
+  const ls=((ax||{}).splitLine||{}).lineStyle||{};
+  const o={};
+  if(nvHex(ls.color)) o.color=nvHex(ls.color);
+  if(typeof ls.width==='number') o.size=ls.width;
+  if(ls.type==='dashed') o.style='dash'; else if(ls.type==='dotted') o.style='dot';
+  return Object.keys(o).length? o : undefined;
+}
 function nvNum(v){ return typeof v==='object'&&v? (Array.isArray(v)? v[1] : v.value) : v; }
 // ECharts 允許 #f00 縮寫，OOXML 的 srgbClr 只認 6 位，要展開
 function nvHex(c){
@@ -5679,14 +5856,23 @@ function nativeMap(op){
     // 逐點顏色只有圓餅類保得住（chartColors 在圓餅是逐項而非逐系列），其餘圖種必丟
     chk(s.type!=='pie'&&Array.isArray(s.data)&&s.data.some(v=>v&&typeof v==='object'&&v.itemStyle),
       '逐點自訂顏色');
+    chk(s.itemStyle&&s.itemStyle.borderRadius,'長條圓角（OOXML 無此概念）');
   }
   chk(op.visualMap,'視覺映射（visualMap）');
+  for(const ax of [op.xAxis,op.yAxis])
+    chk(ax&&ax.type==='value'&&ax.axisLabel&&ax.axisLabel.show===false,
+      '隱藏數值軸標籤（PptxGenJS 只能整根軸刪掉）');
+  for(const ax of [op.xAxis,op.yAxis])
+    chk(ax&&ax.minorSplitLine&&ax.minorSplitLine.show,'副格線（PptxGenJS 未開放 minorGridlines）');
   chk(op.graphic,'自由圖層（graphic）');
   chk(op.dataZoom,'縮放軸（dataZoom）');
   chk(op.tooltip,'滑鼠提示（tooltip，PPT 無此概念）');
 
   const legend=op.legend&&op.legend.show!==false;
   const ti=(op.title&&!Array.isArray(op.title))?op.title:null;
+  const lb0=(ss[0].label)||{};
+  // itemStyle.borderWidth/Color → OOXML 的資料點外框 <c:spPr><a:ln>
+  const bw=(ss[0].itemStyle||{}).borderWidth;
   const common={
     showLegend:!!legend,
     legendPos:legend? ({top:'t',bottom:'b',left:'l',right:'r'}[
@@ -5695,8 +5881,19 @@ function nativeMap(op){
     chartColors:ss.map((s,i)=>nvHex(s.itemStyle&&s.itemStyle.color)||CHART_PAL[i%CHART_PAL.length]),
     dataLabelFontFace:'Noto Sans TC',catAxisLabelFontFace:'Noto Sans TC',
     showValue:ss.some(s=>s.label&&s.label.show),
+    dataLabelFontSize:lb0.fontSize,
+    dataLabelColor:nvHex(lb0.color)||undefined,
+    dataLabelPosition:({top:'t',inside:'ctr',insideTop:'inEnd',insideBottom:'inBase',
+      outside:'outEnd',center:'ctr'})[lb0.position]||undefined,
+    legendFontSize:(op.legend&&op.legend.textStyle||{}).fontSize,
+    legendColor:nvHex((op.legend&&op.legend.textStyle||{}).color)||undefined,
+    ...(bw>0? {dataBorder:{pct:bw,color:nvHex((ss[0].itemStyle||{}).borderColor)||'FFFFFF'}} : {}),
+    ...(typeof op.backgroundColor==='string'&&nvHex(op.backgroundColor)?
+      {chartArea:{fill:{color:nvHex(op.backgroundColor)}}} : {}),
     // 視覺編輯面板改的外觀要能一路帶到原生圖表，否則面板只對 PNG 有效
     ...(ti&&ti.text? {showTitle:true,title:String(ti.text),
+      titleAlign:({left:'left',center:'center',right:'right'}[ti.left])||'center',
+      ...(nvHex(ti.textStyle&&ti.textStyle.color)? {titleColor:nvHex(ti.textStyle.color)}:{}),
       ...(ti.textStyle&&ti.textStyle.fontSize? {titleFontSize:ti.textStyle.fontSize}:{})} : {showTitle:false}),
   };
 
@@ -5709,6 +5906,7 @@ function nativeMap(op){
     return {ok:true,drop,type:inner>0?'doughnut':'pie',
       data:[{name:ss[0].name||'數列 1',labels:d.map(x=>x.name),values:d.map(x=>x.value)}],
       opts:{...common,
+        ...(typeof ss[0].startAngle==='number'? {firstSliceAng:(360-ss[0].startAngle+90)%360} : {}),
         // 圓餅的色盤是「逐項」而非「逐系列」，要重算
         chartColors:d.map((x,i)=>nvHex(raw[i]&&raw[i].itemStyle&&raw[i].itemStyle.color)||CHART_PAL[i%CHART_PAL.length]),
         ...(inner>0?{holeSize:Math.max(10,Math.min(90,Math.round(inner)))}:{})}};
@@ -5734,6 +5932,7 @@ function nativeMap(op){
     : null;
   if(!type) return {ok:false,reason:`ECharts 的 ${t0} 圖沒有 PowerPoint 原生對應`};
   const valAx=(xCat?op.yAxis:op.xAxis)||{};
+  const catAx=(xCat?op.xAxis:op.yAxis)||{};
   const stacked=ss.some(s=>s.stack);
   return {ok:true,drop,type,
     data:ss.map((s,i)=>({name:s.name||('數列 '+(i+1)),labels,
@@ -5743,13 +5942,37 @@ function nativeMap(op){
       barGrouping: type==='bar'? (stacked?'stacked':'clustered') : undefined,
       lineSmooth: type!=='bar'&&ss.some(s=>s.smooth),
       // 格線：ECharts 的 splitLine 掛在被切分的那根軸上，valGridLine／catGridLine 依此對應
-      valGridLine: (valAx.splitLine&&valAx.splitLine.show===false)? {style:'none'} : undefined,
-      catGridLine: ((xCat?op.xAxis:op.yAxis).splitLine||{}).show===true? {} : {style:'none'},
+      valGridLine: (valAx.splitLine&&valAx.splitLine.show===false)? {style:'none'} : gridLine(valAx),
+      catGridLine: ((xCat?op.xAxis:op.yAxis).splitLine||{}).show===true? gridLine(catAx) : {style:'none'},
       // 柱寬：ECharts barWidth 是「柱佔類別寬的百分比」，OOXML barGapWidthPct 是「柱與柱的間隙百分比」
       barGapWidthPct: (type==='bar'&&ss[0].barWidth)?
         Math.max(0,Math.min(500,Math.round(100/(parseFloat(ss[0].barWidth)/100)-100))) : undefined,
       catAxisTitle:(xCat?op.xAxis:op.yAxis).name||undefined,
       showCatAxisTitle:!!(xCat?op.xAxis:op.yAxis).name,
+      // 軸線／刻度／類別軸標籤：面板改的要能帶進原生，否則勾了原生等於白調
+      catAxisLineShow:!(catAx.axisLine&&catAx.axisLine.show===false),
+      valAxisLineShow:!(valAx.axisLine&&valAx.axisLine.show===false),
+      catAxisMajorTickMark:(catAx.axisTick&&catAx.axisTick.show===false)?'none':'out',
+      valAxisMajorTickMark:(valAx.axisTick&&valAx.axisTick.show===false)?'none':'out',
+      catAxisLabelPos:(catAx.axisLabel&&catAx.axisLabel.show===false)?'none':undefined,
+      catAxisLabelFontSize:(catAx.axisLabel||{}).fontSize,
+      valAxisLabelFontSize:(valAx.axisLabel||{}).fontSize,
+      catAxisLabelColor:nvHex((catAx.axisLabel||{}).color)||undefined,
+      valAxisLabelColor:nvHex((valAx.axisLabel||{}).color)||undefined,
+      catAxisLabelRotate:(catAx.axisLabel||{}).rotate,
+      catAxisLineColor:nvHex(((catAx.axisLine||{}).lineStyle||{}).color)||undefined,
+      valAxisLineColor:nvHex(((valAx.axisLine||{}).lineStyle||{}).color)||undefined,
+      catAxisLineSize:((catAx.axisLine||{}).lineStyle||{}).width,
+      valAxisLineSize:((valAx.axisLine||{}).lineStyle||{}).width,
+      catAxisTitleFontSize:(catAx.nameTextStyle||{}).fontSize,
+      valAxisTitleFontSize:(valAx.nameTextStyle||{}).fontSize,
+      catAxisTitleColor:nvHex((catAx.nameTextStyle||{}).color)||undefined,
+      valAxisTitleColor:nvHex((valAx.nameTextStyle||{}).color)||undefined,
+      valAxisMajorUnit:typeof valAx.interval==='number'?valAx.interval:undefined,
+      valAxisOrientation:valAx.inverse?'maxMin':undefined,
+      ...(type!=='bar'? {
+        lineSize:(ss[0].lineStyle&&ss[0].lineStyle.width)!=null?ss[0].lineStyle.width:2,
+        lineDataSymbol:ss[0].symbol==='none'?'none':'circle'} : {}),
       valAxisTitle:valAx.name||undefined, showValAxisTitle:!!valAx.name,
       // 軸範圍：ECharts 沒寫就不鎖，交給 PowerPoint 自動（鎖死會讓改資料後爆表）
       valAxisMinVal:typeof valAx.min==='number'?valAx.min:undefined,
@@ -5876,7 +6099,12 @@ async function addElToSlide(slide,el,pend){
       const o={...common,...m.opts};
       if(el.alt)o.altText=el.alt;
       // 繪圖區鎖定：不鎖的話 PowerPoint 會依圖例／軸標籤長度自行伸縮，跟畫布落差最大的就是這裡
-      if(!o.layout) o.layout={x:0.06,y:0.08,w:0.88,h:o.showLegend?0.76:0.84};
+      // 繪圖區：優先用面板設定的 grid 換算成比例，沒設才用預設
+      const g=el.option&&el.option.grid;
+      const fr=(v,tot,d)=>typeof v==='number'? Math.max(0,Math.min(0.4,v/tot)) : d;
+      const L=fr(g&&g.left,el.w,0.06), R=fr(g&&g.right,el.w,0.04);
+      const T=fr(g&&g.top,el.h,0.08), B=fr(g&&g.bottom,el.h,o.showLegend?0.16:0.08);
+      if(!o.layout) o.layout={x:L,y:T,w:Math.max(0.2,1-L-R),h:Math.max(0.2,1-T-B)};
       slide.addChart(m.type,m.data,o); return;
     }
     const o={...common,data:await chartPng(el)};
