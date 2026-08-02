@@ -71,6 +71,16 @@
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
+  /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
+  .mel{position:absolute;pointer-events:none;z-index:0}
+  /* 編輯母版時整個畫布加一圈提示邊，避免改了一堆才發現改錯地方 */
+  #stage.masterEdit{outline:3px solid #b07d2b;outline-offset:0}
+  /* 放畫布底部而非頂部：頂部是工具列，蓋上去會擋住按鈕 */
+  #masterBar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;display:none;
+    align-items:center;gap:10px;background:#b07d2b;color:#fff;padding:6px 14px;border-radius:6px;
+    font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+  #masterBar button{background:#fff;color:#8a6120;border:0;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:13px}
+  body.masterEdit #masterBar{display:flex}
   /* 自動頁碼預覽：不是元素（不可選取、不可拖曳），快照與匯出都會有；垂直置中對齊匯出的 anchor="ctr" */
   .pgnum{position:absolute;pointer-events:none;display:grid;align-content:center;
          line-height:1.2;font-family:var(--font-latin),var(--font-ea),sans-serif;z-index:5}
@@ -274,6 +284,7 @@
   <input type="file" id="coverInput" accept="image/png,image/jpeg" hidden>
   <datalist id="scaleTicks"><option value="0.5"></option><option value="0.8"></option><option value="1.0"></option><option value="1.2"></option><option value="1.5"></option></datalist>
 </header>
+<div id="masterBar"><span>正在編輯母版　·　這裡的元素會出現在每一頁</span><button type="button" id="btnMasterDone">完成，回到頁面</button></div>
 <main>
   <aside id="pagePanel"></aside>
   <div id="stageScroll">
@@ -510,6 +521,7 @@
         <li><b>投影片尺寸</b>：16:9／4:3／16:10 或自訂 px。改尺寸不會自動搬動既有元素，需自行重排。</li>
         <li><b>字體</b>：中文／英數／表格英數三槽，填<b>你電腦上已安裝</b>的字體名，畫布即時反映、匯出寫同一個名字。未安裝時頂端會提示「預覽用替代字體，匯出仍寫原字體名」。</li>
         <li><b>語言</b>：寫入每個文字 run 的 <code>lang</code>，決定 PowerPoint 用哪國拼字檢查（預設跟隨瀏覽器語言）。</li>
+        <li><b>母版（信紙）</b>：右欄「頁面 → 母版」勾「啟用母版」後按「編輯母版內容」，畫布切成母版編輯（整圈橘色框、底部橘色提示列），放進去的元素會出現在<b>每一頁</b>，改一次全部跟著變。一般工具全部照用（文字／形狀／圖片／圖表／漸層／陰影／超連結／自訂幾何都行）。單頁可勾「本頁不套母版」（封面常用）。<b>匯出方式</b>二選一：「放在母版上」＝寫進 PowerPoint 的版面配置，檔案最小，但單張投影片複製到別的簡報時母版內容不跟著走；「畫進每一頁」＝匯出時把母版內容實際畫成每頁的圖形，整張搬得走，代價是圖片位元組每頁各存一份。切換只改一個旗標，不動母版內容，可隨時來回比較。母版元素的 id 不得與頁面元素撞名，撞到會自動改頁面那一邊。</li>
         <li><b>預留區</b>：母版上不該被壓到的區域（Logo 位、頁尾…），可加可刪。只是畫布輔助線與吸附，元素壓到會變紅警告但不阻擋，<b>不寫入 pptx</b>。預設沒有任何預留區。</li>
         <li><b>環境設定檔（profile）</b>：把上面這些（含頁碼樣式與檔案屬性）整包匯出成 <code>.profile.json</code>，或載入套用；也可「設為新簡報預設」記在這台瀏覽器。設定同時存在簡報 JSON 裡，所以貼給 AI 再貼回來不會掉。</li>
       </ul>
@@ -532,7 +544,8 @@
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
         <li>原生圖表只涵蓋有 OOXML 對應的圖種（柱狀／橫條／折線／區域／圓餅／環圈／散布）；桑基、儀表板、熱力圖等一律走 PNG。原生模式下框內排版由 PowerPoint 決定，與畫布不會完全一致，且不支援陰影與超連結。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
-        <li>母版／版面配置（placeholder）尚未支援。</li>
+        <li>母版只做「共用元素」一層（Logo／頁尾／裝飾），<b>不做 placeholder</b>（PowerPoint 那些「按一下以新增標題」的洞）。placeholder 的位置字級繼承自版面配置，投影片貼到別的簡報時會跳位，與本工具「所見即所得、貼到哪都一樣」的前提相衝。</li>
+        <li>「放在母版上」匯出時，母版內容<b>不會跟著單張投影片被複製到別的簡報</b>（母版物件不屬於任何一張投影片）。需要帶著走請改選「畫進每一頁」。兩種模式都尚未用真實 PowerPoint 開過。</li>
         <li>漸層填色只有<b>線性與放射狀</b>兩種、最多 6 個色標；PowerPoint 的路徑漸層（矩形／形狀路徑）與漸層外框不支援。<b>立體感形狀（立方體／圓柱…）套漸層時，各面的明暗會被漸層取代</b>——OOXML 的填色只能有一種。</li>
         <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標可伸出路徑框但不超過框外一倍（圖說尾巴、括號都靠這個）。子路徑挖洞與伸出框的負座標已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
         <li>立體感形狀（立方體／圓柱／斜角…）畫布上的<b>明暗只是近似</b>；匯出走原生幾何，實際明暗由 PowerPoint 自己算。</li>
@@ -1479,17 +1492,32 @@ const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,pai
   tblPen:{pt:0.75,color:'999999',dash:false},   // 框線筆：線寬＋顏色＋實／虛線，供框線按鈕套用
   dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
   ratioLock:false,fontSync:false,scaleFont:true,   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
+  masterEdit:false,   // 編輯母版模式：畫布只顯示母版元素，所有工具改作用在它們身上
   ready:false};   // 自動存檔閘門：還原完才置 true，否則開機時的空白 deck 會蓋掉硬碟上的內容
 APP.page=APP.deck.pages[0].id;
 const CHARTS=new Map();   // 圖表元素 id → echarts 實例
 const round1=v=>Math.round(v*10)/10;
 function curPage(){ return APP.deck.pages.find(p=>p.id===APP.page)||APP.deck.pages[0]; }
-function selEls(){ return APP.selIds.map(id=>curPage().elements.find(e=>e.id===id)).filter(Boolean); }
+/* ---- 母版（「信紙」）----
+   deck.master.elements 是一份共用元素，畫在每一頁底下。編輯母版時 curEls() 整個換指向它，
+   於是拖曳、屬性面板、圖層、複製貼上、undo 全部沿用同一套工具，不必為母版另寫一份編輯器。 */
+function masterOn(){ return !!(APP.deck.master&&APP.deck.master.on); }
+function masterEls(){
+  if(!APP.deck.master) APP.deck.master={on:false,flatten:false,elements:[]};
+  if(!Array.isArray(APP.deck.master.elements)) APP.deck.master.elements=[];
+  return APP.deck.master.elements;
+}
+// 這一頁實際會墊上的母版元素（沒啟用／本頁關閉／正在編輯母版時都不墊）
+function pageMasterEls(pg){
+  return (masterOn()&&!APP.masterEdit&&!(pg||curPage()).noMaster)? masterEls() : [];
+}
+function curEls(){ return APP.masterEdit? masterEls() : curPage().elements; }
+function selEls(){ return APP.selIds.map(id=>curEls().find(e=>e.id===id)).filter(Boolean); }
 // 軟群組：同 groupId 的所有成員（無 groupId 則回自身）
-function groupMembers(el){ return el&&el.groupId? curPage().elements.filter(e=>e.groupId===el.groupId) : (el?[el]:[]); }
-function selEl(){ return APP.selIds.length===1? (curPage().elements.find(e=>e.id===APP.selIds[0])||null) : null; }
+function groupMembers(el){ return el&&el.groupId? curEls().filter(e=>e.groupId===el.groupId) : (el?[el]:[]); }
+function selEl(){ return APP.selIds.length===1? (curEls().find(e=>e.id===APP.selIds[0])||null) : null; }
 function setSel(ids){
-  const live=[...new Set(ids)].filter(id=>curPage().elements.some(e=>e.id===id));
+  const live=[...new Set(ids)].filter(id=>curEls().some(e=>e.id===id));
   APP.selIds=live; APP.sel=live.length? live[live.length-1]:null;
   if(APP.cellSel&&APP.sel!==APP.cellSel.id) APP.cellSel=null;   // 選取換到別的元素→清掉儲存格反白
 }
@@ -1506,6 +1534,7 @@ function updateUndoBtns(){ $('#btnUndo').disabled=!UNDO.length; $('#btnRedo').di
 function commitUndo(s){ UNDO.push(s||snapshot()); if(UNDO.length>60)UNDO.shift(); REDO.length=0; updateUndoBtns();
   scheduleAutosave(); }   // 補網：拖曳／就地編輯等只走 renderStage 的路徑，靠這裡也能觸發存檔
 function applySnap(s,into){ into.push(snapshot()); APP.edit=null; APP.editing=null; APP.deck=s.deck; APP.page=s.page;
+  if(APP.masterEdit&&!(APP.deck.master&&APP.deck.master.on)) setMasterEdit(false);   // 撤銷把母版關掉了就退出編輯
   if(!APP.deck.pages.find(p=>p.id===APP.page)) APP.page=APP.deck.pages[0].id;
   setSel(s.selIds||[]);
   renderAll();
@@ -1852,14 +1881,22 @@ function durText(el){ const s=el&&el.src&&+el.src.durationSec;
   return `（${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}）`; }
 function renderStage(){
   // 清掉舊元素與選取框
-  stage.querySelectorAll('.el,#selBox,.pgnum').forEach(e=>e.remove());
+  stage.querySelectorAll('.el,.mel,#selBox,.pgnum').forEach(e=>e.remove());
   const pg=curPage();
   stage.style.background='#'+(pg.bg||'FFFFFF');
   // 頁面背景圖：滿版拉伸（同匯出的 <p:bg> blipFill stretch），壓在所有元素之下
   stage.style.backgroundImage= pg.bgImage? `url("${pg.bgImage}")` : '';
   stage.style.backgroundSize='100% 100%'; stage.style.backgroundRepeat='no-repeat';
+  stage.classList.toggle('masterEdit',!!APP.masterEdit);
   const liveIds=new Set();
-  for(const el of pg.elements){ if(el.hidden) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
+  /* 母版元素墊在最底下，且刻意不給 .el（不可選、不可拖、不進圖層、不算超界）——
+     它們不屬於這一頁，要改請按「編輯母版」，否則在某頁改動會無聲影響全部頁面。 */
+  for(const el of pageMasterEls(pg)){
+    if(el.hidden) continue;
+    liveIds.add(el.id);
+    const b=renderEl(el); b.classList.remove('el'); b.classList.add('mel'); stage.appendChild(b);
+  }
+  for(const el of curEls()){ if(el.hidden) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
   for(const [id,inst] of CHARTS) if(!liveIds.has(id)){ inst.dispose(); CHARTS.delete(id); }
   renderPageNum(pg);
   markOverflow();
@@ -1880,7 +1917,7 @@ function renderPageNum(pg){
   stage.appendChild(d);
 }
 function markOverflow(){
-  for(const el of curPage().elements){
+  for(const el of curEls()){
     if(el.type!=='text') continue;
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     const t=box&&box.querySelector('.txt');
@@ -2016,7 +2053,7 @@ function checkZones(){
   const zones=APP.deck.zones||[];
   const hit=zones.map(()=>false);
   let out=false;
-  for(const el of curPage().elements){
+  for(const el of curEls()){
     if(el.hidden) continue;
     const {w,h}=elSize(el); const b={x:el.x,y:el.y,w,h};
     zones.forEach((z,i)=>{ if(rectHit(b,z)) hit[i]=true; });
@@ -2040,7 +2077,8 @@ function drawThumb(cv,pg){
       im.onload=()=>{ if(cv.isConnected) drawThumb(cv,pg); }; }
     if(im.complete&&im.naturalWidth) ctx.drawImage(im,0,0,cv.width,cv.height);
   }
-  for(const el of pg.elements){
+  // 縮圖也要墊母版，否則縮圖與畫布長得不一樣
+  for(const el of [...((masterOn()&&!pg.noMaster)? masterEls():[]), ...pg.elements]){
     if(el.hidden) continue;
     const {w,h}= el.type==='table'? {w:el.colW.reduce((a,b)=>a+b,0),h:el.rowH.reduce((a,b)=>a+b,0)} : el;
     const x=el.x*s,y=el.y*s,ww=Math.max(2,w*s),hh=Math.max(2,h*s);
@@ -2137,6 +2175,14 @@ function renderPanel(){
   panel.appendChild(add);
 }
 function setPage(pid){ APP.page=pid; setSel([]); APP.editing=null; APP.edit=null; renderAll(); syncPageJson(); }
+// 進出「編輯母版」。清乾淨編輯狀態再切，否則文字編輯游標會殘留在已經不在畫布上的元素
+function setMasterEdit(on){
+  APP.masterEdit=!!on;
+  if(APP.masterEdit) masterEls();   // 首次進入時把 deck.master 建起來
+  APP.edit=null; APP.editing=null; APP.cellSel=null; setSel([]);
+  document.body.classList.toggle('masterEdit',APP.masterEdit);
+  renderAll(); syncPageJson();
+}
 
 /* ================= 屬性面板 ================= */
 // 座標尺寸單位換算（內部一律 px）：to＝px→顯示值、from＝顯示值→px、dp＝小數位、step＝輸入步進
@@ -2592,6 +2638,40 @@ function renderProps(){
       mn.innerHTML='<span class="unit">Morph 依元素 id 配對前一頁同名元素；「複製此頁」保留 id 即為此用。舊版 PPT 退回淡出。</span>';
       pp.appendChild(mn);
     }
+    /* 母版（「信紙」）：一份共用元素墊在每一頁底下，改一處全部頁面跟著變。
+       整份簡報層級的設定，但放在頁面屬性裡，因為「本頁不套母版」是逐頁的。 */
+    pp.appendChild(secTitle('母版（整份簡報）'));
+    if(APP.masterEdit){
+      const mh=document.createElement('div'); mh.className='row';
+      mh.innerHTML='<span class="unit">正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，'
+        +'一般工具全部照用。改完按上方的「完成，回到頁面」。</span>';
+      pp.appendChild(mh);
+      pp.appendChild(btnRow([['完成，回到頁面',()=>setMasterEdit(false),'離開母版編輯']]));
+    }else{
+    pp.appendChild(checkRow([['啟用母版',()=>masterOn(),v=>{ commitUndo();
+      masterEls(); APP.deck.master.on=!!v; renderAll(); syncPageJson(); },
+      '把 Logo／頁尾等每頁都要的東西放在一份「信紙」上，改一次全部頁面跟著變']]));
+    if(masterOn()){
+      pp.appendChild(btnRow([['✎ 編輯母版內容',()=>setMasterEdit(true),
+        '進入母版編輯：畫布只顯示母版元素，一般工具（文字／形狀／圖片…）全部照用']]));
+      const mr=document.createElement('div'); mr.className='row'; mr.innerHTML='<label>匯出方式</label>';
+      const ms=document.createElement('select');
+      ms.innerHTML='<option value="master">放在母版上（檔案小）</option>'
+                 +'<option value="flat">畫進每一頁（可整張搬走）</option>';
+      ms.value=APP.deck.master.flatten? 'flat':'master';
+      ms.onchange=()=>{ commitUndo(); APP.deck.master.flatten=(ms.value==='flat'); syncPageJson(); renderProps(); };
+      mr.appendChild(ms); pp.appendChild(mr);
+      const mn2=document.createElement('div'); mn2.className='row';
+      mn2.innerHTML='<span class="unit">'+(APP.deck.master.flatten
+        ? '匯出時把母版內容<b>實際畫進每一頁</b>：整份或單張投影片複製到別的簡報都帶得走，代價是圖片位元組每頁各存一份。'
+        : '匯出時放在 PowerPoint 的<b>版面配置</b>上：檔案最小，但<b>單張投影片複製到別的簡報時不會跟著走</b>（整份寄出則正常）。')
+        +'　切換不會動到母版內容，可隨時來回比較。</span>';
+      pp.appendChild(mn2);
+      pp.appendChild(checkRow([['本頁不套母版',()=>!!curPage().noMaster,v=>{ commitUndo();
+        if(v) curPage().noMaster=true; else delete curPage().noMaster;
+        renderAll(); syncPageJson(); },'封面／全出血圖片頁常用']]));
+    }
+    }
     /* 章節：PowerPoint 縮圖窗格的可摺疊分組，只影響編輯時的導覽，放映與版面完全不變。
        語意掛在「頁」上但作用是「從這頁起的一段」，故標籤寫成「從本頁開始」。 */
     pp.appendChild(secTitle('章節'));
@@ -2784,7 +2864,7 @@ function renderProps(){
   };
   sl.onchange=()=>{ const v=parseFloat(sl.value);
     if(scOrig&&Math.abs(v-1)>1e-6){   // 還原→commit→重套，確保 undo 一步回原尺寸
-      const cur=curPage().elements.find(e=>e.id===el.id);
+      const cur=curEls().find(e=>e.id===el.id);
       if(cur){ Object.keys(cur).forEach(k=>delete cur[k]); Object.assign(cur,structuredClone(scOrig)); }
       commitUndo();
       groupScaleTo({anchor:{x:scOrig.x,y:scOrig.y},orig:[structuredClone(scOrig)],scaleFont:APP.scaleFont},v);
@@ -3336,25 +3416,25 @@ function tableDeleteRow(el,j){
 function duplicateEl(el){
   commitUndo();
   const cp=structuredClone(el); cp.id=uid('e'); cp.x+=16; cp.y+=16;
-  curPage().elements.push(cp); setSel([cp.id]); renderAll();
+  curEls().push(cp); setSel([cp.id]); renderAll();
 }
 function deleteEl(el){
   commitUndo();
-  const arr=curPage().elements; arr.splice(arr.indexOf(el),1);
+  const arr=curEls(); arr.splice(arr.indexOf(el),1);
   setSel([]); renderAll();
 }
 function duplicateSelected(){
   const els=selEls(); if(!els.length) return;
   if(els.length===1) return duplicateEl(els[0]);
   commitUndo();
-  const copies=els.map(el=>{ const cp=structuredClone(el); cp.id=uid('e'); cp.x+=16; cp.y+=16; curPage().elements.push(cp); return cp.id; });
+  const copies=els.map(el=>{ const cp=structuredClone(el); cp.id=uid('e'); cp.x+=16; cp.y+=16; curEls().push(cp); return cp.id; });
   setSel(copies); renderAll();
 }
 function deleteSelected(){
   if(!APP.selIds.length) return;
   const ids=new Set(APP.selIds);
   commitUndo();
-  curPage().elements=curPage().elements.filter(el=>!ids.has(el.id));
+  {const arr=curEls(); for(let i=arr.length-1;i>=0;i--) if(ids.has(arr[i].id)) arr.splice(i,1);}
   setSel([]); renderAll();
 }
 
@@ -3407,7 +3487,7 @@ function updatePainterHint(){
 function applyPainterTo(el){ if(!APP.painter||!el) return; commitUndo(); applyStyle(el,APP.painter); renderStage(); if(APP.sel===el.id) renderProps(); }
 
 /* ================= 新增元素 ================= */
-function addEl(el){ commitUndo(); curPage().elements.push(el); setSel([el.id]); renderAll(); }
+function addEl(el){ commitUndo(); curEls().push(el); setSel([el.id]); renderAll(); }
 $('#btnAddText').onclick=()=>addEl({id:uid('e'),type:'text',x:120,y:120,w:420,h:60,valign:'top',fill:null,lineColor:null,
   paras:mkParas('雙擊編輯文字',{sizePt:18})});
 $('#btnAddTable').onclick=()=>{
@@ -4009,7 +4089,7 @@ $('#vidInput').addEventListener('change',async e=>{
     +'仍會插入影片佔位框，請用「換封面圖」自行指定一張圖。'); }
   const meta=(got&&got.meta)||{name:f.name,durationSec:0,natW:0,natH:0};
   if(recover){
-    const el=curPage().elements.find(x=>x.id===recover);
+    const el=curEls().find(x=>x.id===recover);
     if(!el) return;
     commitUndo(); el.src=meta;
     el.cover=(got&&got.cover)||drawFallbackCover(el.w,el.h,meta.name);
@@ -4023,7 +4103,7 @@ $('#coverInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   const id=COVER_TARGET; COVER_TARGET=null;
   if(!f||!id) return;
-  const el=curPage().elements.find(x=>x.id===id); if(!el) return;
+  const el=curEls().find(x=>x.id===id); if(!el) return;
   const dataUrl=await new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
   commitUndo(); el.cover=dataUrl; renderAll(); renderProps();
 });
@@ -4063,7 +4143,7 @@ stage.addEventListener('pointerdown',e=>{
   // 格式刷武裝中：點元素套用樣式（可連續），點空白處取消
   if(APP.painter){
     const b=e.target.closest('.el');
-    const t=b&&curPage().elements.find(x=>x.id===b.dataset.id);
+    const t=b&&curEls().find(x=>x.id===b.dataset.id);
     if(t){ e.preventDefault(); applyPainterTo(t); }
     else { APP.painter=null; updatePainterHint(); }
     return;
@@ -4100,9 +4180,9 @@ stage.addEventListener('pointerdown',e=>{
   else if(trh&&el){ drag={type:'trow',el,i:+trh.dataset.i,sy:e.clientY,h:el.rowH[+trh.dataset.i]}; }
   else{
     let box=e.target.closest('.el');
-    if(box){ const t0=curPage().elements.find(x=>x.id===box.dataset.id); if(t0&&t0.locked) box=null; }  // 鎖定：畫布不可選拖，當作點空白
+    if(box){ const t0=curEls().find(x=>x.id===box.dataset.id); if(t0&&t0.locked) box=null; }  // 鎖定：畫布不可選拖，當作點空白
     if(box){
-      const tel=curPage().elements.find(x=>x.id===box.dataset.id);
+      const tel=curEls().find(x=>x.id===box.dataset.id);
       // Shift/Cmd 點擊：加入／移出多選（群組成員一起加減）
       if(e.shiftKey||e.metaKey||e.ctrlKey){
         const s=new Set(APP.selIds);
@@ -4235,7 +4315,7 @@ stage.addEventListener('pointermove',e=>{
     el.flipH=p1.x>p2.x; el.flipV=p1.y>p2.y;
     updateElStyle(el);
   }else if(drag.type==='gmove'){
-    for(const o of drag.orig){ const t=curPage().elements.find(x=>x.id===o.id); if(!t)continue; t.x=Math.round(o.x+dx); t.y=Math.round(o.y+dy); updateElStyle(t); }
+    for(const o of drag.orig){ const t=curEls().find(x=>x.id===o.id); if(!t)continue; t.x=Math.round(o.x+dx); t.y=Math.round(o.y+dy); updateElStyle(t); }
     updateSelBox(); checkZones();
   }else if(drag.type==='gresize'){
     const nx=drag.ox+dx, ny=drag.oy+dy;
@@ -4276,7 +4356,7 @@ stage.addEventListener('pointerup',()=>{
   if(drag.type==='marquee'){
     const m=$('#marquee'); if(m) m.remove();
     if(drag.rect&&(drag.rect.w>3||drag.rect.h>3)){
-      const hit=curPage().elements.filter(el=>{ const {w,h}=elSize(el); return rectHit({x:el.x,y:el.y,w,h},drag.rect); }).map(el=>el.id);
+      const hit=curEls().filter(el=>{ const {w,h}=elSize(el); return rectHit({x:el.x,y:el.y,w,h},drag.rect); }).map(el=>el.id);
       setSel(drag.add? [...drag.base,...hit] : hit);
       updateSelBox(); renderProps(); syncPageJson();
     }
@@ -4289,7 +4369,7 @@ function groupScaleTo(d,s){
   const a=d.anchor, sf=d.scaleFont!==false;
   const fpt=v=>v?Math.max(4,round1(v*s)):v;   // 字級縮放（sf 才用）
   for(const o of d.orig){
-    const el=curPage().elements.find(e=>e.id===o.id); if(!el) continue;
+    const el=curEls().find(e=>e.id===o.id); if(!el) continue;
     el.x=Math.round(a.x+(o.x-a.x)*s);
     el.y=Math.round(a.y+(o.y-a.y)*s);
     if(o.type==='table'){
@@ -4348,7 +4428,7 @@ function resizeBy(el,d,dx,dy){
 stage.addEventListener('dblclick',e=>{
   const box=e.target.closest('.el');
   if(!box||APP.editing||APP.painter) return;
-  const el=curPage().elements.find(x=>x.id===box.dataset.id);
+  const el=curEls().find(x=>x.id===box.dataset.id);
   if(!el||el.locked) return;
   setSel([el.id]);
   openEditor(el,e.target);
@@ -4364,7 +4444,7 @@ function editableDiv(){
    不另建一套編輯用 DOM。編輯期間 **以 DOM 為真相**，每次 input 同步回 el.paras；
    只有分段（Enter）與套格式才重繪，重繪後由 renderStage 尾端的 editOpen 重開編輯器並還原選取。
    這樣避開「每按一鍵就從資料重畫」會帶來的游標還原與輸入法組字中斷問題。 */
-function editEl(){ return APP.edit? curPage().elements.find(x=>x.id===APP.edit.id) : null; }
+function editEl(){ return APP.edit? curEls().find(x=>x.id===APP.edit.id) : null; }
 // (node,offset) → {p:段索引, o:段內字元位置}；跳過項目符號等渲染產物
 function edPos(root,node,offset){
   const base=node.nodeType===3? node.parentNode : node;
@@ -4683,14 +4763,14 @@ document.addEventListener('paste',e=>{
   // @asset 佔位 → 還原 base64（同檔內複製時；跨檔貼遮罩 JSON 找不到位元組則擋下）
   try{ resolveAssets({elements:els}); }catch(err){ alert('貼上失敗：'+err.message); return; }
   commitUndo();
-  const clash=els.some(src=>curPage().elements.some(t2=>t2.x===src.x&&t2.y===src.y&&t2.type===src.type));
+  const clash=els.some(src=>curEls().some(t2=>t2.x===src.x&&t2.y===src.y&&t2.type===src.type));
   const off=clash?16:0;
   const gidMap=new Map(), ids=[];
   for(const src of els){
     const cp=structuredClone(src); cp.id=uid('e');
     if(cp.groupId){ if(!gidMap.has(cp.groupId)) gidMap.set(cp.groupId,uid('g')); cp.groupId=gidMap.get(cp.groupId); }
     cp.x=(cp.x||0)+off; cp.y=(cp.y||0)+off;
-    curPage().elements.push(cp); ids.push(cp.id);
+    curEls().push(cp); ids.push(cp.id);
   }
   try{ normalizeDeck(APP.deck); }catch(err){ undo(); alert('貼上的元素格式不完整：'+err.message); return; }
   setSel(ids); renderAll(); syncPageJson();
@@ -4735,6 +4815,7 @@ window.addEventListener('resize',()=>setZoom(Math.round(APP.zoom*100)));   // �
 $('#deckTitle').addEventListener('change',e=>{ APP.deck.title=e.target.value||'未命名簡報'; scheduleAutosave(); });
 $('#selFontMode').addEventListener('change',e=>{ APP.deck.fontMode=e.target.value; });
 $('#btnUndo').onclick=undo; $('#btnRedo').onclick=redo;
+$('#btnMasterDone').onclick=()=>setMasterEdit(false);
 
 /* ================= JSON 交換 ================= */
 /* ---- 手貼／AI 產生的 JSON 一律過這裡：新選配欄位若型別或範圍不對就刪掉或夾回合法值，
@@ -4884,6 +4965,8 @@ function normalizeDeck(d){
     p.color=hex6(p.color)||PAGENUM_DEF.color;
     if(p.skipFirst) p.skipFirst=true; else delete p.skipFirst;
   }else delete d.pageNum;
+  {const m=normMaster(d.master); if(m) d.master=m; else delete d.master;}
+  const mstIds=new Set(((d.master||{}).elements||[]).map(e=>e.id));
   const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）
   for(const pg of d.pages){
     pg.id=pg.id||uid('p'); pg.bg=pg.bg||'FFFFFF';
@@ -4895,89 +4978,104 @@ function normalizeDeck(d){
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
     pg.notes= pg.notes==null? '' : String(pg.notes);
     if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）
-    pg.elements=Array.isArray(pg.elements)?pg.elements:[];
-    const seenIds=new Set();   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
-    for(const el of pg.elements){
-      el.id=el.id||uid('e');
-      if(seenIds.has(el.id)) el.id=uid('e');
-      seenIds.add(el.id);
-      el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
-      if(el.opacity!=null){ const o=Math.round(+el.opacity); el.opacity=(isFinite(o)&&o>=0&&o<100)?o:undefined; if(el.opacity===undefined) delete el.opacity; }
-      if(el.groupId!=null) el.groupId=String(el.groupId); else delete el.groupId;
-      el.hidden=!!el.hidden||undefined; if(!el.hidden) delete el.hidden;
-      el.locked=!!el.locked||undefined; if(!el.locked) delete el.locked;
-      if(el.lineSpacing!=null){ const ls=+el.lineSpacing; el.lineSpacing=(isFinite(ls)&&ls>=0.5&&ls<=5)?ls:undefined; if(el.lineSpacing===undefined) delete el.lineSpacing; }
-      normShadow(el);
-      normElLink(el);
-      if(el.alt==null||!String(el.alt).trim()) delete el.alt; else el.alt=String(el.alt).trim();
-      // 線型：只認 DASH_KINDS 的 key，solid 等同不設（維持 JSON 精簡）
-      if(el.dash!=null){ const ok=DASH_KINDS.some(d=>d.key===el.dash&&d.key!=='solid');
-        if(!ok) delete el.dash; }
-      // 文字框內距／不換行（只對有文字的元素有意義）
-      if(el.type==='text'||(el.type==='shape'&&el.paras)){
-        if(el.inset!=null){ const n=+el.inset;
-          if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
-        if(el.nowrap) el.nowrap=true; else delete el.nowrap;
-        if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
-      }else{ delete el.inset; delete el.nowrap; delete el.vert; }
-      // 漸層填色：只有走 addText 那條路（文字框／非線條形狀）才有 spPr 可注入
-      if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
-      if(el.type==='video') normVideo(el);
-      if(el.type==='image'){
-        if(el.fit!=='cover') delete el.fit;
-        if(el.round) el.round=true; else delete el.round;
-      }else{ delete el.fit; delete el.round; }
-      // adj：舊格式 adj/adj2 是 0–1 比例，新格式 el.adjs 是 OOXML 千分比陣列（100000＝100%）
-      if(el.type==='shape'&&(typeof el.adj==='number'||typeof el.adj2==='number')&&!Array.isArray(el.adjs)){
-        const mig=[el.adj,el.adj2].map(v=>typeof v==='number'&&isFinite(v)? Math.round(v*OOX_PCT) : null);
-        while(mig.length&&mig[mig.length-1]==null) mig.pop();
-        if(mig.length) el.adjs=mig;
-      }
-      delete el.adj; delete el.adj2;
-      if(el.type==='shape'&&Array.isArray(el.adjs)){
-        const n=adjCount(el.shape);
-        el.adjs=el.adjs.slice(0,n).map(v=>(v==null||!isFinite(v))? null
-          : Math.round(Math.max(-ADJ_LIMIT,Math.min(ADJ_LIMIT,+v))));
-        while(el.adjs.length&&el.adjs[el.adjs.length-1]==null) el.adjs.pop();
-        if(!el.adjs.length) delete el.adjs;
-      }else delete el.adjs;
-      if(el.type==='table'){
-        if(!Array.isArray(el.colW)||!Array.isArray(el.rowH)||!Array.isArray(el.cells)) throw new Error(`表格 ${el.id} 缺 colW/rowH/cells`);
-        el.cells=el.cells.map(row=>row.map(c=>{ const cc=Object.assign(defCell(),c);
-          if(cc.border&&typeof cc.border==='object'){   // 逐邊：合法值→{pt,color,dash?}；null／不合法→null（明確無線）；缺鍵＝沿用整表
-            for(const k of ['t','r','b','l']) if(k in cc.border) cc.border[k]=normBorder(cc.border[k]);
-            for(const k of Object.keys(cc.border)) if(!['t','r','b','l'].includes(k)) delete cc.border[k];
-            if(!Object.keys(cc.border).length) delete cc.border;
-          }else delete cc.border;
-          return cc; }));
-        el.border= ('border' in el)? (el.border? (normBorder(el.border)||null):null) : {pt:0.75,color:'999999'};
-      }else{
-        el.w=Math.max(1,Math.round(el.w??100)); el.h=Math.max(0,Math.round(el.h??40));
-      }
-      if(el.type==='shape'){
-        if(el.dir!==undefined){ el.flipV=el.dir==='up'; delete el.dir; }  // 舊格式相容
-        if(el.shape==='custGeom'){
-          // 路徑座標空間。舊檔沒有這兩鍵＝座標當年就是 px，補成當時的 w/h 完全等價（比例 1）
-          el.pathW=Math.max(1,Math.round(+el.pathW>0? +el.pathW : el.w));
-          el.pathH=Math.max(1,Math.round(+el.pathH>0? +el.pathH : el.h));
-          el.points=normPoints(el.points,el.pathW,el.pathH);
-        }else{ delete el.points; delete el.pathW; delete el.pathH;
-          if(!SHAPES[el.shape]&&!LINE_KINDS[el.shape]) el.shape='rect'; }
-      }
-      if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
-      if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});
-      if(Array.isArray(el.paras)) for(const p of el.paras){ normParaOpts(p);
-        // markdown 輸入糖：展開成 runs 後刪鍵，存檔只留一種形式
-        if(typeof p.md==='string') p.runs=mdToRuns(p.md,(p.runs||[])[0]||{});
-        delete p.md;
-        if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
-      if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
-      // native 只是旗標，映射不過就當沒勾——不能讓 JSON 帶進一個匯出時才發現無效的狀態
-      if(el.type==='chart'){ if(el.native&&nativeMap(el.option).ok) el.native=true; else delete el.native; }
-      if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
-    }
+    if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
+    pg.elements=normEls(pg.elements,mstIds);
   }
   return d;
+}
+/* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
+   撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
+   母版是共用的，所以改名一律改頁面這一邊。 */
+function normEls(list,reserved){
+  const arr=Array.isArray(list)?list:[];
+  const seenIds=new Set(reserved||[]);   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
+  for(const el of arr){
+    el.id=el.id||uid('e');
+    if(seenIds.has(el.id)) el.id=uid('e');
+    seenIds.add(el.id);
+    el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
+    if(el.opacity!=null){ const o=Math.round(+el.opacity); el.opacity=(isFinite(o)&&o>=0&&o<100)?o:undefined; if(el.opacity===undefined) delete el.opacity; }
+    if(el.groupId!=null) el.groupId=String(el.groupId); else delete el.groupId;
+    el.hidden=!!el.hidden||undefined; if(!el.hidden) delete el.hidden;
+    el.locked=!!el.locked||undefined; if(!el.locked) delete el.locked;
+    if(el.lineSpacing!=null){ const ls=+el.lineSpacing; el.lineSpacing=(isFinite(ls)&&ls>=0.5&&ls<=5)?ls:undefined; if(el.lineSpacing===undefined) delete el.lineSpacing; }
+    normShadow(el);
+    normElLink(el);
+    if(el.alt==null||!String(el.alt).trim()) delete el.alt; else el.alt=String(el.alt).trim();
+    // 線型：只認 DASH_KINDS 的 key，solid 等同不設（維持 JSON 精簡）
+    if(el.dash!=null){ const ok=DASH_KINDS.some(d=>d.key===el.dash&&d.key!=='solid');
+      if(!ok) delete el.dash; }
+    // 文字框內距／不換行（只對有文字的元素有意義）
+    if(el.type==='text'||(el.type==='shape'&&el.paras)){
+      if(el.inset!=null){ const n=+el.inset;
+        if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
+      if(el.nowrap) el.nowrap=true; else delete el.nowrap;
+      if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
+    }else{ delete el.inset; delete el.nowrap; delete el.vert; }
+    // 漸層填色：只有走 addText 那條路（文字框／非線條形狀）才有 spPr 可注入
+    if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
+    if(el.type==='video') normVideo(el);
+    if(el.type==='image'){
+      if(el.fit!=='cover') delete el.fit;
+      if(el.round) el.round=true; else delete el.round;
+    }else{ delete el.fit; delete el.round; }
+    // adj：舊格式 adj/adj2 是 0–1 比例，新格式 el.adjs 是 OOXML 千分比陣列（100000＝100%）
+    if(el.type==='shape'&&(typeof el.adj==='number'||typeof el.adj2==='number')&&!Array.isArray(el.adjs)){
+      const mig=[el.adj,el.adj2].map(v=>typeof v==='number'&&isFinite(v)? Math.round(v*OOX_PCT) : null);
+      while(mig.length&&mig[mig.length-1]==null) mig.pop();
+      if(mig.length) el.adjs=mig;
+    }
+    delete el.adj; delete el.adj2;
+    if(el.type==='shape'&&Array.isArray(el.adjs)){
+      const n=adjCount(el.shape);
+      el.adjs=el.adjs.slice(0,n).map(v=>(v==null||!isFinite(v))? null
+        : Math.round(Math.max(-ADJ_LIMIT,Math.min(ADJ_LIMIT,+v))));
+      while(el.adjs.length&&el.adjs[el.adjs.length-1]==null) el.adjs.pop();
+      if(!el.adjs.length) delete el.adjs;
+    }else delete el.adjs;
+    if(el.type==='table'){
+      if(!Array.isArray(el.colW)||!Array.isArray(el.rowH)||!Array.isArray(el.cells)) throw new Error(`表格 ${el.id} 缺 colW/rowH/cells`);
+      el.cells=el.cells.map(row=>row.map(c=>{ const cc=Object.assign(defCell(),c);
+        if(cc.border&&typeof cc.border==='object'){   // 逐邊：合法值→{pt,color,dash?}；null／不合法→null（明確無線）；缺鍵＝沿用整表
+          for(const k of ['t','r','b','l']) if(k in cc.border) cc.border[k]=normBorder(cc.border[k]);
+          for(const k of Object.keys(cc.border)) if(!['t','r','b','l'].includes(k)) delete cc.border[k];
+          if(!Object.keys(cc.border).length) delete cc.border;
+        }else delete cc.border;
+        return cc; }));
+      el.border= ('border' in el)? (el.border? (normBorder(el.border)||null):null) : {pt:0.75,color:'999999'};
+    }else{
+      el.w=Math.max(1,Math.round(el.w??100)); el.h=Math.max(0,Math.round(el.h??40));
+    }
+    if(el.type==='shape'){
+      if(el.dir!==undefined){ el.flipV=el.dir==='up'; delete el.dir; }  // 舊格式相容
+      if(el.shape==='custGeom'){
+        // 路徑座標空間。舊檔沒有這兩鍵＝座標當年就是 px，補成當時的 w/h 完全等價（比例 1）
+        el.pathW=Math.max(1,Math.round(+el.pathW>0? +el.pathW : el.w));
+        el.pathH=Math.max(1,Math.round(+el.pathH>0? +el.pathH : el.h));
+        el.points=normPoints(el.points,el.pathW,el.pathH);
+      }else{ delete el.points; delete el.pathW; delete el.pathH;
+        if(!SHAPES[el.shape]&&!LINE_KINDS[el.shape]) el.shape='rect'; }
+    }
+    if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
+    if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});
+    if(Array.isArray(el.paras)) for(const p of el.paras){ normParaOpts(p);
+      // markdown 輸入糖：展開成 runs 後刪鍵，存檔只留一種形式
+      if(typeof p.md==='string') p.runs=mdToRuns(p.md,(p.runs||[])[0]||{});
+      delete p.md;
+      if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
+    if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
+    // native 只是旗標，映射不過就當沒勾——不能讓 JSON 帶進一個匯出時才發現無效的狀態
+    if(el.type==='chart'){ if(el.native&&nativeMap(el.option).ok) el.native=true; else delete el.native; }
+    if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
+  }
+  return arr;
+}
+/* 母版（「信紙」）：一份共用元素，套用到所有沒關閉的頁。
+   on＝啟用；flatten＝匯出時畫進每一頁（而非放在母版上——畫進每頁的單張投影片複製到別的簡報也帶得走，代價是圖片位元組每頁各存一份）。 */
+function normMaster(m){
+  if(!m||typeof m!=='object') return null;
+  const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements)};
+  return (o.on||o.elements.length)? o : null;
 }
 function deckJson(){ return JSON.stringify(APP.deck,null,1); }
 /* ---- JSON 顯示層圖片佔位：base64 太長會塞爆協作視窗 ----
@@ -4994,11 +5092,16 @@ function maskedJson(root){
   });
   // 頁面背景圖同樣遮罩（以頁 id 為鍵），否則單一頁面 JSON 就被 base64 塞爆
   const maskPg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.length>80) p.bgImage='@asset:'+p.id+' ('+kb(p.bgImage)+')'; walk(p.elements); };
-  if(o.pages) o.pages.forEach(maskPg); else if(o.id||o.elements) maskPg(o); else walk(o.elements||(Array.isArray(o)?o:[]));
+  if(o.pages){ o.pages.forEach(maskPg); if(o.master) walk(o.master.elements); }
+  else if(o.id||o.elements) maskPg(o); else walk(o.elements||(Array.isArray(o)?o:[]));
   return JSON.stringify(o,null,1);
 }
 function assetMap(){
   const m={};
+  for(const el of (APP.deck.master&&APP.deck.master.elements)||[]){
+    if(el.type==='image'&&typeof el.dataUrl==='string'&&!el.dataUrl.startsWith('@asset:')) m[el.id]=el.dataUrl;
+    if(el.type==='video'&&typeof el.cover==='string'&&!el.cover.startsWith('@asset:')) m[el.id]=el.cover;
+  }
   for(const p of APP.deck.pages){
     if(typeof p.bgImage==='string'&&!p.bgImage.startsWith('@asset:')) m[p.id]=p.bgImage;
     for(const el of p.elements){
@@ -5020,7 +5123,7 @@ function resolveAssets(obj){
       el.cover=back(el.cover,'影片封面');
   });
   const pg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.startsWith('@asset:')) p.bgImage=back(p.bgImage,'背景圖'); walk(p.elements); };
-  if(obj&&obj.pages) obj.pages.forEach(pg);
+  if(obj&&obj.pages){ obj.pages.forEach(pg); if(obj.master) walk(obj.master.elements); }
   else if(obj&&(obj.id||obj.elements)) pg(obj);
   else if(obj) walk(Array.isArray(obj)?obj:[]);
   return obj;
@@ -5030,6 +5133,7 @@ function loadDeck(obj){
   const d=normalizeDeck(c);
   commitUndo();
   APP.edit=null; APP.editing=null;   // 換一份簡報：舊的編輯狀態指向已不存在的元素，必須先收掉
+  APP.masterEdit=false; document.body.classList.remove('masterEdit');   // 新簡報的母版是別份，不能停在編輯狀態
   APP.deck=d; APP.page=d.pages[0].id; setSel([]);
   renderAll(); syncPageJson();
 }
@@ -5038,6 +5142,12 @@ function applyPageJson(obj){
   if(Array.isArray(obj)) obj={elements:obj};          // 也接受純 elements 陣列
   if(!Array.isArray(obj.elements)) throw new Error('頁面 JSON 缺 elements');
   resolveAssets(obj);   // @asset 佔位 → 還原 base64
+  if(APP.masterEdit){   // 編輯母版時，本面板換成母版的 JSON，套用只動 master.elements
+    const t=structuredClone(APP.deck);
+    t.master=Object.assign({on:true,flatten:false},t.master,{elements:obj.elements});
+    const dm=normalizeDeck(t);
+    commitUndo(); APP.edit=null; APP.editing=null; APP.deck=dm; setSel([]); renderAll(); return;
+  }
   const temp=structuredClone(APP.deck);
   const idx=temp.pages.findIndex(p=>p.id===APP.page);
   const cur=temp.pages[idx];
@@ -5072,8 +5182,11 @@ $('#btnJsonApply').onclick=()=>{
 // 右欄：本頁 JSON 浮動面板（點畫布元素聚焦其 JSON）
 let pageJsonDirty=false;
 function pageJsonOpen(){ return !$('#pageJsonPanel').hidden; }
-function refreshPageJson(){ $('#pageJsonArea').value=maskedJson(curPage()); pageJsonDirty=false;
-  $('#pageJsonName').textContent=' — '+(curPage().name||('頁 '+(APP.deck.pages.indexOf(curPage())+1))); }
+function refreshPageJson(){
+  const src=APP.masterEdit? {elements:masterEls()} : curPage();
+  $('#pageJsonArea').value=maskedJson(src); pageJsonDirty=false;
+  $('#pageJsonName').textContent=' — '+(APP.masterEdit? '母版'
+    : (curPage().name||('頁 '+(APP.deck.pages.indexOf(curPage())+1)))); }
 function focusElementJson(id){
   const ta=$('#pageJsonArea'), txt=ta.value;
   const idx=txt.indexOf('"id": "'+id+'"'); if(idx<0) return;
@@ -5148,7 +5261,7 @@ function layerLabel(el){
 function renderLayers(){
   if(typeof $!=='function'||!layersOpen()) return;
   const list=$('#layerList'); list.innerHTML='';
-  const els=curPage().elements;
+  const els=curEls();
   for(let i=els.length-1;i>=0;i--){        // 頂層（陣列末端）顯示在最上面
     const el=els[i];
     const row=document.createElement('div'); row.className='layerRow'; row.dataset.id=el.id;
@@ -5172,7 +5285,7 @@ function renderLayers(){
 }
 function layerReorder(dragId,targetId,ev){
   if(!dragId||dragId===targetId) return;
-  const els=curPage().elements;
+  const els=curEls();
   const from=els.findIndex(e=>e.id===dragId); if(from<0) return;
   commitUndo();
   const [moved]=els.splice(from,1);
@@ -6303,6 +6416,9 @@ function patchFonts(xml,latinFont,mode,F,lang){
 }
 async function exportPptx(download=true){
   const orig=APP.page, origSel=[...APP.selIds];
+  // 匯出途中會 renderStage() 量表格列高；若停在「編輯母版」，curEls() 會指向母版元素
+  // 而不是該頁內容，量到的列高全錯。先切回一般模式，收尾再還原。
+  const origME=APP.masterEdit; APP.masterEdit=false;
   const pptx=new PptxGenJS();
   const SW=APP.deck.stage.w, SH=APP.deck.stage.h;
   const LAY=`DeckJSON${SW}x${SH}`;
@@ -6322,6 +6438,21 @@ async function exportPptx(download=true){
      所以標題必須全域唯一（normalizeDeck 已負責去重）。另一個坑：一旦存在任何 section，
      沒指定 sectionTitle 的投影片會被自動塞進 "Default-1" 這種英文名分組——
      故若有人從第 N 頁才開始分章，這裡先替前面幾頁補一個明確命名的章節。 */
+  /* ---- 母版（「信紙」）----
+     兩種輸出，同一份 deck.master.elements，切換不動資料：
+       flatten=false → PowerPoint 的版面配置（slideLayout），每頁只掛一個參照 → 檔案最小
+       flatten=true  → 母版元素併進每一頁的元素清單，變成該頁真正的 shape → 整張搬得走
+     ⚠ PptxGenJS 的 defineSlideMaster({objects}) 只認 text/image/line/rect/chart/table 六種簡表，
+     custGeom、preset 幾何、漸層、陰影、超連結全都表達不了。故此處不用 objects，
+     改用「借一張暫時投影片跑既有的 addElToSlide，再把成果移植到 layout 上」——
+     母版因此自動享有一般元素的全部能力，也不必維護第二套寫入器。 */
+  const MST=APP.deck.master;
+  const mstEls=(MST&&MST.on)? MST.elements.filter(e=>!e.hidden) : [];
+  const useMasterLayout=mstEls.length&&!MST.flatten;
+  // 展開模式下這一頁要併進來的母版元素（匯出與匯出後製都要用同一份，否則後製會漏掉母版形狀）
+  const mstForPage=pg=>(mstEls.length&&MST.flatten&&!pg.noMaster)? mstEls : [];
+  const MST_NAME='DeckJSON 母版';
+  if(useMasterLayout) pptx.defineSlideMaster({title:MST_NAME});
   const useSec=APP.deck.pages.some(p=>p.section);
   let curSec=null;
   if(useSec&&!APP.deck.pages[0].section){
@@ -6333,14 +6464,15 @@ async function exportPptx(download=true){
     APP.page=pg.id; APP.selIds=[];
     renderStage();               // 表格列高（wrap 長高）需以實際渲染 DOM 為準
     if(pg.section){ curSec=pg.section; pptx.addSection({title:curSec}); }
-    const slide=pptx.addSlide(curSec?{sectionTitle:curSec}:undefined);
+    const useM=useMasterLayout&&!pg.noMaster;
+    const slide=pptx.addSlide(Object.assign({},curSec?{sectionTitle:curSec}:null,useM?{masterName:MST_NAME}:null));
     // 背景圖片走 blipFill（副檔名由 data URL 的 mime 決定，否則 PptxGenJS 一律當 png，jpg 會對不上型別）
     if(pg.bgImage){
       const m=/^data:image\/(\w+)/.exec(pg.bgImage);
       slide.background={data:pg.bgImage,path:'bg.'+((m&&m[1].toLowerCase()==='jpeg')?'jpeg':'png')};
     }else slide.background={color:pg.bg||'FFFFFF'};
     const pend=[];   // 本頁的「待插入影片」清單（本機影片只放了封面圖佔位）
-    for(const el of pg.elements) if(!el.hidden) await addElToSlide(slide,el,pend);
+    for(const el of [...mstForPage(pg),...pg.elements]) if(!el.hidden) await addElToSlide(slide,el,pend);
     if(pg.skip) slide.hidden=true;   // 不放映此頁 → <p:sld show="0">
     /* 講者備忘稿。待插入影片的提示在這裡「只附加到輸出字串」，刻意不寫回 pg.notes——
        否則每次匯出都會再累加一份，還得做去重，而且動到了使用者自己的資料。 */
@@ -6353,7 +6485,28 @@ async function exportPptx(download=true){
       slide.slideNumber={x:px2in(pnum.x),y:px2in(pnum.y),w:px2in(pnum.w),h:px2in(pnum.h),
         align:pnum.align,valign:'middle',margin:0,fontSize:pnum.sizePt,color:pnum.color};
   }
-  APP.page=orig; setSel(origSel); renderAll();
+  /* 母版內容移植：借最後一張暫時投影片跑完既有寫入器，再把 _slideObjects 與三份 rels
+     整組搬到 layout 上，然後把那張暫時投影片從輸出移除。
+     時機刻意放在所有頁之後——addSlide 的 _slideNum 是「目前張數+1」，媒體檔名是
+     media-<_slideNum>-<n>.ext，先建暫時頁會跟第 1 頁撞名。
+     rels 的 Target 是 ../media/…，從 ppt/slideLayouts/ 與 ppt/slides/ 解出來的路徑相同，故可直接搬。 */
+  if(useMasterLayout){
+    /* addSlide 會順手把新頁掛進章節；一旦已有任何章節，沒指定 sectionTitle 的頁還會生一個
+       "Default-1" 分組。暫時頁事後雖然移除，那個章節條目卻留著 → 匯出多一個空章節。
+       故先記下章節狀態，移除暫時頁時一併還原。 */
+    const secSnap=pptx.sections.map(x=>x._slides.length);
+    const tmp=pptx.addSlide();
+    for(const el of mstEls) await addElToSlide(tmp,el,[]);
+    pptx.slides.pop();
+    pptx.sections.length=secSnap.length;
+    pptx.sections.forEach((x,i)=>{ x._slides.length=secSnap[i]; });
+    const lay=pptx.slideLayouts.find(l=>l._name===MST_NAME);
+    lay._slideObjects=tmp._slideObjects;
+    lay._rels=tmp._rels; lay._relsChart=tmp._relsChart; lay._relsMedia=tmp._relsMedia;
+  }
+  APP.page=orig; setSel(origSel); APP.masterEdit=origME;
+  document.body.classList.toggle('masterEdit',origME);
+  renderAll();
 
   const ab=await pptx.write('arraybuffer');
   const zip=await JSZip.loadAsync(ab);
@@ -6405,8 +6558,16 @@ async function exportPptx(download=true){
   zip.file('[Content_Types].xml',ct);
   zip.file('ppt/presentation.xml',pres);
   const mode=APP.deck.fontMode, F=APP.deck.fonts, LANG=APP.deck.lang||defaultLang();
+  /* 母版 layout 也要走同一輪後製：adj 黃點、漸層、替代文字、超連結、字體全是在這裡注入的，
+     漏掉的話母版上的圓角形狀會變直角、漸層會退回單色——畫布與匯出對不上。 */
+  let MST_LAYOUT=null;
+  if(useMasterLayout) for(const n of Object.keys(zip.files)){
+    if(!/^ppt\/slideLayouts\/slideLayout\d+\.xml$/.test(n)) continue;
+    if((await zip.file(n).async('string')).includes(`name="${MST_NAME}"`)){ MST_LAYOUT=n; break; }
+  }
   for(const name of Object.keys(zip.files)){
-    if(!/^ppt\/slides\/slide\d+\.xml$/.test(name)) continue;
+    const isMstPart=(name===MST_LAYOUT);
+    if(!isMstPart&&!/^ppt\/slides\/slide\d+\.xml$/.test(name)) continue;
     let s=await zip.file(name).async('string');
     // 表格 graphicFrame 假外框 → 改寫為 gridCol/tr 實際總和（xlsx2pptx 踩坑 #9）
     s=s.replace(/<p:graphicFrame>[\s\S]*?<\/p:graphicFrame>/g,blk=>{
@@ -6417,7 +6578,10 @@ async function exportPptx(download=true){
       return blk.replace(/<a:ext cx="\d+" cy="\d+"\/>/,`<a:ext cx="${cx}" cy="${cy}"/>`);
     });
     // 形狀 adj 控點：注入原生 avLst gd（PptxGenJS 寫的是成對空標籤 <a:avLst></a:avLst>，需同時吃自閉合寫法）
-    const sIdx=+name.match(/slide(\d+)\.xml/)[1]-1, pgA=APP.deck.pages[sIdx];
+    let pgA;
+    if(isMstPart) pgA={elements:mstEls};
+    else{ const sIdx=+name.match(/slide(\d+)\.xml/)[1]-1, p0=APP.deck.pages[sIdx];
+          pgA=p0&&{...p0,elements:[...mstForPage(p0),...p0.elements]}; }
     if(pgA) for(const el of pgA.elements){
       // 沒動過 adj 就不注入——讓 PowerPoint 用 preset 自己的預設值，畫布也用同一組，兩邊自然一致
       if(el.hidden||el.type!=='shape'||!adjCustom(el)) continue;
@@ -6478,7 +6642,7 @@ async function exportPptx(download=true){
        走 addImage／addShape 的元素（圖片／圖表／影片／線條）PptxGenJS 自己會註冊，不在此處理。
        hlinkClick 依 CT_NonVisualDrawingProps 必須是 cNvPr 的第一個子元素，故插在開頭標籤之後。*/
     if(pgA){
-      const relName='ppt/slides/_rels/'+name.split('/').pop()+'.rels';
+      const relName=(isMstPart?'ppt/slideLayouts/_rels/':'ppt/slides/_rels/')+name.split('/').pop()+'.rels';
       const relFile=zip.file(relName);
       if(relFile){
         const rels=await relFile.async('string');
@@ -6573,7 +6737,7 @@ function renderAll(){
 
 /* ================= 測試掛鉤 ================= */
 window.__state=()=>({title:APP.deck.title,fontMode:APP.deck.fontMode,pages:APP.deck.pages.length,
-  page:APP.page,sel:APP.sel,selIds:APP.selIds,els:curPage().elements.map(e=>({id:e.id,type:e.type,x:e.x,y:e.y,w:elSize(e).w,h:elSize(e).h}))});
+  page:APP.page,sel:APP.sel,selIds:APP.selIds,els:curEls().map(e=>({id:e.id,type:e.type,x:e.x,y:e.y,w:elSize(e).w,h:elSize(e).h}))});
 window.__deckJson=()=>deckJson();
 window.__loadDeck=j=>{ loadDeck(typeof j==='string'?JSON.parse(j):j); return 'loaded'; };
 window.__export=()=>exportPptx(false);
