@@ -83,7 +83,10 @@
         display:grid;place-content:center;font-size:17px;padding-left:3px}
   .el .vtag{position:absolute;left:0;bottom:0;max-width:100%;padding:1px 5px;background:rgba(0,0,0,.55);
         color:#fff;font-size:10px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #stage.capturing .vbadge,#stage.capturing .vtag{display:none!important}
+  /* 角標放左上：圖例預設多在上方或右側，放右上會蓋住它，妨礙預覽判讀 */
+  .el .ctag{position:absolute;left:0;top:0;padding:1px 5px;background:rgba(77,157,224,.85);
+        color:#fff;font-size:10px;pointer-events:none;z-index:3;border-radius:0 0 3px 0}
+  #stage.capturing .vbadge,#stage.capturing .vtag,#stage.capturing .ctag{display:none!important}
   /* 非表格元素給淡虛線框，方便看出框的尺寸（尤其文字框）；.overflow 紅框在下方規則，優先權相同、後者勝 */
   .el[data-type=text],.el[data-type=image],.el[data-type=shape],.el[data-type=chart]{outline:1px dashed rgba(150,152,160,.4)}
   .el .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
@@ -360,7 +363,7 @@
     <div class="mhead"><b>ECharts option（JSON）</b><button id="btnChartClose">×</button></div>
     <textarea id="chartArea" spellcheck="false"></textarea>
     <div class="mbtns"><button id="btnChartApply" class="primary">套用</button></div>
-    <div class="mnote">貼上 ECharts option 的 JSON（不支援函式）。匯出 pptx 時以 3 倍解析度 PNG 嵌入。</div>
+    <div class="mnote">貼上 ECharts option 的 JSON（不支援函式）。預設以 3 倍解析度 PNG 匯出；側欄勾「匯出為原生圖表」可改為 PowerPoint 原生圖表（PPT 內能改資料，限有原生對應的圖種）。</div>
   </div>
 </div>
 
@@ -401,7 +404,7 @@
         <li>右欄「<b>本頁 JSON ▤</b>」＝可拖曳的浮動面板，只顯示目前頁；面板開著時<b>點畫布任一元素／圖片，會自動捲動並選取它的 JSON 區塊</b>，適合針對性微調。</li>
         <li>JSON 內圖片以 <code>@asset:元素id</code> 佔位顯示（base64 不塞爆視窗）；「套用」時自動還原位元組。新圖請由工具插入；存 .json 檔仍含完整圖片。</li>
         <li>細緻的格式（單一文字框內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位（面板操作一律套用到該元素的全部 run／段落）。</li>
-        <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。</li>
+        <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。可選擇匯出為 <b>PowerPoint 原生圖表</b>（PPT 內能編輯資料、跟隨目標母版），或維持 PNG（外觀與畫布一致）。</li>
       </ul>
       <h4>存檔</h4>
       <ul>
@@ -490,6 +493,7 @@
       <ul class="dim">
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
+        <li>原生圖表只涵蓋有 OOXML 對應的圖種（柱狀／橫條／折線／區域／圓餅／環圈／散布）；桑基、儀表板、熱力圖等一律走 PNG。原生模式下框內排版由 PowerPoint 決定，與畫布不會完全一致，且不支援陰影與超連結。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
         <li>母版／版面配置（placeholder）尚未支援。</li>
         <li>漸層填色只有<b>線性與放射狀</b>兩種、最多 6 個色標；PowerPoint 的路徑漸層（矩形／形狀路徑）與漸層外框不支援。<b>立體感形狀（立方體／圓柱…）套漸層時，各面的明暗會被漸層取代</b>——OOXML 的填色只能有一種。</li>
@@ -1636,6 +1640,13 @@ function renderChartInto(box,el){
   cd.style.cssText=`width:${el.w}px;height:${el.h}px;`;
   box.appendChild(cd);
   const cover=document.createElement('div'); cover.className='chartCover'; box.appendChild(cover);
+  // 原生模式的角標：畫布仍是 ECharts 畫的，但 PPT 內的外觀由 PowerPoint 決定，要講明白。
+  // 比照 .vtag／.pgnum，只存在畫布，快照與匯出都不含。
+  if(el.native&&nativeMap(el.option).ok){
+    const tg=document.createElement('div'); tg.className='ctag';
+    tg.textContent='原生圖表'; tg.title='匯出為 PowerPoint 原生圖表，PPT 內可改資料；實際外觀由 PowerPoint 排版';
+    box.appendChild(tg);
+  }
   let inst=CHARTS.get(el.id);
   if(inst){ inst.dispose(); }
   inst=echarts.init(cd,null,{renderer:'canvas'});
@@ -2317,6 +2328,8 @@ function shadowCss(el){
   return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
 }
 // 行內勾選框列：items=[[label,get,set,title],...]
+// 面板提示語用：訊息裡可能夾帶使用者 option 內的字串（如 series.type）
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function checkRow(items){
   const row=document.createElement('div'); row.className='row';
   for(const [label,get,set,title] of items){
@@ -2997,9 +3010,28 @@ function renderProps(){
   }
   if(el.type==='chart'){
     pp.appendChild(btnRow([['編輯 option',()=>openChartModal(el)]]));
+    // 原生圖表：同一個 chart 元素上的旗標，不是第二種元素。option 不動，切換零損失。
+    const nm=nativeMap(el.option);
+    const nrow=checkRow([['匯出為原生圖表',()=>!!el.native,v=>{ commitUndo();
+      if(v) el.native=true; else delete el.native;
+      renderStage(); renderProps(); syncPageJson(); },
+      '在 PPT 內可「編輯資料」、跟隨目標母版；外觀由 PowerPoint 排版，與畫布不會完全一致']]);
+    const ncb=nrow.querySelector('input');
+    if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').style.opacity='.5'; }
+    pp.appendChild(nrow);
+    const nn=document.createElement('div'); nn.className='row';
+    nn.innerHTML='<span class="unit">'+(!nm.ok
+      ? '此圖走 PNG：<b>'+esc(nm.reason)+'</b>。'
+      : el.native
+        ? '匯出為 <b>'+nm.type+'</b> 原生圖表，PPT 內可改資料。顏色／字體／繪圖區已鎖定；'
+          +'<b>圖例換行與過長軸標籤的截字由 PowerPoint 決定</b>，無法鎖。陰影與超連結原生圖表不支援。'
+          +(nm.drop.length? '<br>將不保留：'+esc(nm.drop.join('、')) : '')
+        : '目前以 3 倍解析度 PNG 匯出（外觀與畫布一致，PPT 內不可改資料）。可勾選改為原生 <b>'+nm.type+'</b>。')
+      +'</span>';
+    pp.appendChild(nn);
     const car=document.createElement('div'); car.className='row'; car.innerHTML='<label>替代文字</label>';
     const cai=document.createElement('input'); cai.type='text'; cai.style.flex='1'; cai.style.minWidth='80px';
-    cai.placeholder='無障礙說明'; cai.value=el.alt||''; cai.title='圖表以 PNG 匯出，此文字寫入圖片說明（descr）';
+    cai.placeholder='無障礙說明'; cai.value=el.alt||''; cai.title='寫入無障礙說明：PNG 走圖片 descr，原生圖表走 graphicFrame 的 descr';
     cai.onchange=()=>{ commitUndo(); const v=cai.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
     car.appendChild(cai); pp.appendChild(car);
     pp.appendChild(linkRows(el,'圖表'));
@@ -4808,6 +4840,8 @@ function normalizeDeck(d){
         delete p.md;
         if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
       if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
+      // native 只是旗標，映射不過就當沒勾——不能讓 JSON 帶進一個匯出時才發現無效的狀態
+      if(el.type==='chart'){ if(el.native&&nativeMap(el.option).ok) el.native=true; else delete el.native; }
       if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
     }
   }
@@ -5292,6 +5326,110 @@ function parasToPptx(el){
   }
   return out.length?out:[{text:'',options:{fontSize:18}}];
 }
+/* ---- ECharts option → PowerPoint 原生圖表（addChart）----
+   單向、匯出當下才跑：option 永遠是唯一真相來源，這裡只「讀它、生一份臨時資料」，
+   從不寫回。所以「切回 PNG」不是還原，是不呼叫這個函式而已。
+   同一個函式兼任檢查器（面板勾選框看 ok）與轉換器（匯出看 data/opts），
+   避免出現「勾得下去卻匯不出來」的不一致。 */
+const NCHART_UNSUP={sankey:'桑基圖',treemap:'矩形樹圖',sunburst:'旭日圖',gauge:'儀表板',
+  graph:'關係圖',heatmap:'熱力圖',candlestick:'K 線圖',boxplot:'盒鬚圖',funnel:'漏斗圖',
+  parallel:'平行座標',themeRiver:'主題河流',tree:'樹狀圖',map:'地圖',pictorialBar:'象形柱狀圖',
+  custom:'自訂 series',effectScatter:'漣漪散布圖'};
+function nvNum(v){ return typeof v==='object'&&v? (Array.isArray(v)? v[1] : v.value) : v; }
+// ECharts 允許 #f00 縮寫，OOXML 的 srgbClr 只認 6 位，要展開
+function nvHex(c){
+  if(typeof c!=='string') return null;
+  const h=c.replace('#','').trim().toUpperCase();
+  if(/^[0-9A-F]{3}$/.test(h)) return h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return /^[0-9A-F]{6}$/.test(h)? h : null;
+}
+// 面板勾選框與匯出共用。回 {ok:false,reason} 或 {ok:true,type,data,opts,drop[]}
+function nativeMap(op){
+  if(!op||typeof op!=='object') return {ok:false,reason:'option 不是物件'};
+  const ss=(op.series||[]).filter(s=>s&&typeof s==='object');
+  if(!ss.length) return {ok:false,reason:'option 內沒有 series'};
+  const t0=ss[0].type;
+  const bad=ss.find(s=>NCHART_UNSUP[s.type]);
+  if(bad) return {ok:false,reason:`${NCHART_UNSUP[bad.type]}沒有 PowerPoint 原生對應`};
+  if(ss.some(s=>s.type!==t0)) return {ok:false,reason:'同一張圖混用多種 series 型別，原生圖表無法表示'};
+  const drop=[];                       // 映射時被丟掉的設定，回報給使用者
+  const chk=(cond,what)=>{ if(cond&&!drop.includes(what)) drop.push(what); };
+  for(const s of ss){
+    chk(s.markLine||s.markArea||s.markPoint,'標記線／標記區（markLine／markArea）');
+    chk(s.label&&typeof s.label.formatter==='string','資料標籤的 formatter 樣板');
+    chk(s.emphasis,'滑鼠移入強調（emphasis）');
+    // 逐點顏色只有圓餅類保得住（chartColors 在圓餅是逐項而非逐系列），其餘圖種必丟
+    chk(s.type!=='pie'&&Array.isArray(s.data)&&s.data.some(v=>v&&typeof v==='object'&&v.itemStyle),
+      '逐點自訂顏色');
+  }
+  chk(op.visualMap,'視覺映射（visualMap）');
+  chk(op.graphic,'自由圖層（graphic）');
+  chk(op.dataZoom,'縮放軸（dataZoom）');
+  chk(op.tooltip,'滑鼠提示（tooltip，PPT 無此概念）');
+
+  const legend=op.legend&&op.legend.show!==false;
+  const common={
+    showLegend:!!legend,
+    legendPos:legend? ({top:'t',bottom:'b',left:'l',right:'r'}[
+      ['top','bottom','left','right'].find(k=>op.legend[k]!=null&&op.legend[k]!=='auto')]||'b') : 'b',
+    // 能鎖的全鎖上：字體與色盤不交給目標母版主題決定，盡量貼近畫布
+    chartColors:ss.map((s,i)=>nvHex(s.itemStyle&&s.itemStyle.color)||CHART_PAL[i%CHART_PAL.length]),
+    dataLabelFontFace:'Noto Sans TC',catAxisLabelFontFace:'Noto Sans TC',
+    showValue:ss.some(s=>s.label&&s.label.show),
+  };
+
+  // 圓餅／環圈：標籤與數值都綁在 series.data 內，不看類別軸
+  if(t0==='pie'){
+    const raw=ss[0].data||[];
+    if(!raw.length) return {ok:false,reason:'series.data 是空的'};
+    const d=raw.map((v,i)=>({name:(v&&v.name)||('項目 '+(i+1)),value:nvNum(v)}));
+    const r=ss[0].radius, inner=Array.isArray(r)? parseFloat(r[0]) : 0;
+    return {ok:true,drop,type:inner>0?'doughnut':'pie',
+      data:[{name:ss[0].name||'數列 1',labels:d.map(x=>x.name),values:d.map(x=>x.value)}],
+      opts:{...common,
+        // 圓餅的色盤是「逐項」而非「逐系列」，要重算
+        chartColors:d.map((x,i)=>nvHex(raw[i]&&raw[i].itemStyle&&raw[i].itemStyle.color)||CHART_PAL[i%CHART_PAL.length]),
+        ...(inner>0?{holeSize:Math.max(10,Math.min(90,Math.round(inner)))}:{})}};
+  }
+
+  // 其餘圖種：標籤在類別軸上。ECharts 橫條圖是把類別軸擺 yAxis
+  const xCat=op.xAxis&&op.xAxis.type==='category'&&Array.isArray(op.xAxis.data);
+  const yCat=op.yAxis&&op.yAxis.type==='category'&&Array.isArray(op.yAxis.data);
+  if(t0==='scatter'){
+    // 散布圖沒有類別軸，資料是 [x,y] 對
+    const pts=(ss[0].data||[]).filter(Array.isArray);
+    if(!pts.length) return {ok:false,reason:'散布圖的 series.data 需為 [x,y] 座標對陣列'};
+    return {ok:true,drop,type:'scatter',
+      data:[{name:'X',values:pts.map(p=>p[0])},
+        ...ss.map((s,i)=>({name:s.name||('數列 '+(i+1)),
+          values:(s.data||[]).filter(Array.isArray).map(p=>p[1])}))],
+      opts:common};
+  }
+  if(!xCat&&!yCat) return {ok:false,reason:'找不到類別軸標籤（xAxis.data 或 yAxis.data）'};
+  const labels=(xCat?op.xAxis:op.yAxis).data.map(v=>String((v&&v.value!=null)?v.value:v));
+  const type= t0==='bar' ? 'bar'
+    : t0==='line' ? (ss.some(s=>s.areaStyle)?'area':'line')
+    : null;
+  if(!type) return {ok:false,reason:`ECharts 的 ${t0} 圖沒有 PowerPoint 原生對應`};
+  const valAx=(xCat?op.yAxis:op.xAxis)||{};
+  const stacked=ss.some(s=>s.stack);
+  return {ok:true,drop,type,
+    data:ss.map((s,i)=>({name:s.name||('數列 '+(i+1)),labels,
+      values:(s.data||[]).map(nvNum).map(v=>isFinite(v)?v:0)})),
+    opts:{...common,
+      barDir: type==='bar'? (yCat?'bar':'col') : undefined,
+      barGrouping: type==='bar'? (stacked?'stacked':'clustered') : undefined,
+      lineSmooth: type!=='bar'&&ss.some(s=>s.smooth),
+      catAxisTitle:(xCat?op.xAxis:op.yAxis).name||undefined,
+      showCatAxisTitle:!!(xCat?op.xAxis:op.yAxis).name,
+      valAxisTitle:valAx.name||undefined, showValAxisTitle:!!valAx.name,
+      // 軸範圍：ECharts 沒寫就不鎖，交給 PowerPoint 自動（鎖死會讓改資料後爆表）
+      valAxisMinVal:typeof valAx.min==='number'?valAx.min:undefined,
+      valAxisMaxVal:typeof valAx.max==='number'?valAx.max:undefined}};
+}
+// ECharts 預設色盤前幾色，series 沒指定 itemStyle 時比照
+const CHART_PAL=['5470C6','91CC75','FAC858','EE6666','73C0DE','3BA272','FC8452','9A60B4'];
+const nvDowngrade=[];     // 匯出時填：勾了原生卻映射不過的圖表，匯出後明講，不靜默降級
 async function chartPng(el){
   const div=document.createElement('div');
   div.style.cssText=`position:fixed;left:-10000px;top:0;width:${el.w}px;height:${el.h}px;`;
@@ -5401,7 +5539,19 @@ async function addElToSlide(slide,el,pend){
     if(lk) o.hyperlink=lk;
     slide.addImage(o); return;
   }
-  if(el.type==='chart'){ const o={...common,data:await chartPng(el)};
+  if(el.type==='chart'){
+    // 旗標只是「意圖」，匯出前一律重跑一次 nativeMap——使用者可能勾完之後又改了 option。
+    // 檢查沒過就退回 PNG，但退回這件事會在匯出報告明說，不靜默降級。
+    const m=el.native? nativeMap(el.option) : null;
+    if(m&&!m.ok) nvDowngrade.push({id:el.id,reason:m.reason});
+    if(m&&m.ok){
+      const o={...common,...m.opts};
+      if(el.alt)o.altText=el.alt;
+      // 繪圖區鎖定：不鎖的話 PowerPoint 會依圖例／軸標籤長度自行伸縮，跟畫布落差最大的就是這裡
+      if(!o.layout) o.layout={x:0.06,y:0.08,w:0.88,h:o.showLegend?0.76:0.84};
+      slide.addChart(m.type,m.data,o); return;
+    }
+    const o={...common,data:await chartPng(el)};
     if(tr)o.transparency=tr; if(el.alt)o.altText=el.alt; if(sh)o.shadow=sh; if(lk)o.hyperlink=lk;
     slide.addImage(o); return; }
   if(el.type==='shape'&&LINE_KINDS[el.shape]){
@@ -5516,6 +5666,7 @@ async function exportPptx(download=true){
   if(APP.deck.subject) pptx.subject=APP.deck.subject;
   const pnum=APP.deck.pageNum? pageNumBox():null;
   const pendList=[];        // 全 deck 的待插入影片清單（匯出後彙總對話框用）
+  nvDowngrade.length=0;     // 勾了原生但匯出前複檢沒過的圖表（見下方降級提示）
   let wroteNotes=false;     // 是否真的有寫進備忘稿（含待辦提示）→ 決定要不要保留 notesMaster 基建
   /* 章節（PowerPoint 縮圖窗格的可摺疊分組）。
      PptxGenJS 只認「標題字串」：addSlide({sectionTitle}) 是拿字串去 sections 陣列比對，
@@ -5729,6 +5880,13 @@ async function exportPptx(download=true){
     if(pendList.length){
       $('#pendArea').value=pendList.join('\n');
       $('#pendModal').hidden=false;
+    }
+    // 原生圖表降級：勾選當下能過、之後改了 option 才會發生。必須明講，
+    // 否則使用者拿到的是一張圖片卻以為是可編輯圖表。
+    if(nvDowngrade.length){
+      const pgOf=id=>APP.deck.pages.findIndex(p=>p.elements.some(e=>e.id===id))+1;
+      alert('以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n'
+        +nvDowngrade.map(d=>`• 第 ${pgOf(d.id)} 頁 ${d.id}：${d.reason}`).join('\n'));
     }
   }
   window.__lastPending=pendList;
