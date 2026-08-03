@@ -1362,7 +1362,7 @@ function presetPoints(key,w,h,adjs){
 }
 function shapePaths(el){
   if(el.shape==='custGeom'){ const s=custScale(el), d=custPath(el.points,s[0],s[1]);
-    return d? [{d,fill:'',noStroke:false}] : []; }
+    return d? [{d,fill:'',noStroke:false,rule:'evenodd'}] : []; }   // 規則差異見 shapeNodes
   const key=PRESET_GEOM[el.shape]? el.shape : 'rect';
   return presetPaths(key,el.w,el.h,adjVals(el));
 }
@@ -1370,23 +1370,27 @@ function shapePaths(el){
 // 不是逐路徑填了就描——chartPlus 的十字（fill="none"）就排在方框之前，逐路徑畫會被方框蓋掉。
 // cube／can 的立體感也依賴這個順序：本體填色墊底、亮面暗面疊上、外框最後統一描。
 function shapeNodes(paths,fill,lineColor,sw,da,paint){
-  /* ⚠ 填充規則是 even-odd，不是 nonzero（SVG 預設）。這一條是 2026-08-03 在真實 PowerPoint
-     實測出來的：同向繞行的兩個正方形（外框＋內框）在 PowerPoint 上中間被挖空。
-     原本從 preset 資料反推成 nonzero——donut／frame／noSmoking 的內圈都刻意反向繞行，
-     看起來像是「靠繞行方向決定內外」。推論錯在：even-odd 下反向繞行同樣挖得出洞，
-     那個反轉只是無作用的冗餘，不構成 nonzero 的證據。別再照這條線反推回去。
-     影響範圍只有 custGeom：preset 形狀的每條子路徑各自是一個 <path> 元素（見下方迴圈），
-     規則不跨路徑作用；custGeom 才是把所有子路徑串成同一個 d。 */
-  const out=[], mk=d=>{ const p=document.createElementNS(NS,'path');
-    p.setAttribute('d',d); p.setAttribute('fill-rule','evenodd'); return p; };
+  /* ⚠ 填充規則按來源分兩種，別統一。
+     custGeom → **even-odd**：2026-08-03 在真實 PowerPoint 實測出來的——同向繞行的兩個正方形
+       在 PowerPoint 上中間被挖空。原本從 preset 資料反推成 nonzero（donut／frame／noSmoking
+       的內圈都刻意反向繞行，「若是 even-odd 這個反轉毫無意義」），推論錯在最後那句：
+       even-odd 下反向繞行同樣挖得出洞，那個反轉只是冗餘，不構成證據。別再照這條線反推回去。
+     preset → **nonzero**：PowerPoint 畫 preset 用的是 prstGeom、它自己的內建幾何，
+       根本不看我們這份路徑資料。這裡的任務是「重現 PowerPoint 的外觀」，而 187 個 preset 中
+       有 9 條路徑（7 個 actionButton ＋ horizontal／verticalScroll）在兩種規則下結果不同，
+       even-odd 會把按鈕上的箭頭誤挖成洞。這 9 條未經 PowerPoint 實測，故維持原本的 nonzero。
+     ⚠ 兩者的交會點：preset 轉 custGeom（「編輯端點」）之後就改用 custGeom 的規則了，
+       那 9 個形狀轉完會真的變成挖洞——畫布會照實顯示，因為 PowerPoint 那時也會這樣畫。 */
+  const out=[], mk=(d,rule)=>{ const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',d); p.setAttribute('fill-rule',rule||'nonzero'); return p; };
   for(const sp of paths){
     if(sp.fill==='none'||!fill) continue;
     // 有漸層時全部子路徑用同一份漸層：立體感形狀的明暗（shadeFill）與漸層無法並存，漸層優先
-    const p=mk(sp.d); p.setAttribute('fill',paint||shadeFill(fill,sp.fill)); out.push(p);
+    const p=mk(sp.d,sp.rule); p.setAttribute('fill',paint||shadeFill(fill,sp.fill)); out.push(p);
   }
   if(lineColor!=null) for(const sp of paths){
     if(sp.noStroke) continue;
-    const p=mk(sp.d);
+    const p=mk(sp.d,sp.rule);
     p.setAttribute('fill','none');
     p.setAttribute('stroke','#'+lineColor);
     p.setAttribute('stroke-width',sw);
@@ -1395,6 +1399,34 @@ function shapeNodes(paths,fill,lineColor,sw,da,paint){
     out.push(p);
   }
   return out;
+}
+/* 這個形狀改用 even-odd 之後外觀會不會變？（＝轉成 custGeom 值不值得先警告一句）
+   不寫死清單、當場量：借一個離螢幕 SVG，同一條 d 掛兩種 fill-rule，用 isPointInFill 抽樣比對。
+   抽樣是近似的，但要偵測的是「整塊鏤空」這種尺度的差異，網格夠密就綽綽有餘。
+   實測 187 個 preset 中有 9 條路徑會變（7 個 actionButton ＋ horizontal／verticalScroll）。 */
+function ruleChangesLook(el){
+  let paths; try{ paths=shapePaths(el); }catch(e){ return false; }
+  const withFill=paths.filter(sp=>sp.d&&sp.fill!=='none'&&(sp.d.match(/M/g)||[]).length>1);
+  if(!withFill.length) return false;
+  const svg=document.createElementNS(NS,'svg');
+  svg.style.cssText='position:absolute;left:-9999px;top:0;width:1px;height:1px';
+  const a=document.createElementNS(NS,'path'), b=document.createElementNS(NS,'path');
+  a.setAttribute('fill-rule','nonzero'); b.setAttribute('fill-rule','evenodd');
+  svg.appendChild(a); svg.appendChild(b); document.body.appendChild(svg);
+  const pt=svg.createSVGPoint(), W=Math.max(1,el.w), H=Math.max(1,el.h), N=48;
+  let differ=false;
+  try{
+    for(const sp of withFill){
+      a.setAttribute('d',sp.d); b.setAttribute('d',sp.d);
+      for(let i=1;i<N&&!differ;i++) for(let j=1;j<N;j++){
+        pt.x=W*i/N; pt.y=H*j/N;
+        if(a.isPointInFill(pt)!==b.isPointInFill(pt)){ differ=true; break; }
+      }
+      if(differ) break;
+    }
+  }catch(e){ differ=false; }
+  svg.remove();
+  return differ;
 }
 function isLineEl(el){ return el&&el.type==='shape'&&!!LINE_KINDS[el.shape]; }
 // 圖片預設強制等比（整張塞進框、不變形）；切到「裁切填滿」後框比例自由，超出部分裁掉，故解除鎖定
@@ -3835,6 +3867,11 @@ function toCustGeom(el){
     '• 換不回內建形狀（同 PowerPoint 的「編輯端點」，單向）'];
   // 子路徑原本各有填色／描邊差異的形狀（動作按鈕、圖說外框…），轉換後只剩一種填色
   if(r.mixed) warn.push('• 這個形狀的各部分原本填色／外框設定不同，轉換後會變成同一種填色（外觀會變）');
+  /* 填充規則會換一套：preset 由 PowerPoint 用內建幾何畫（本工具照 nonzero 重現），
+     custGeom 則由我們給的路徑畫，PowerPoint 對它用的是 even-odd（2026-08-03 實測）。
+     187 個 preset 裡有 9 條路徑在兩種規則下結果不同，轉完會多出洞——先講，不要讓人事後才發現。 */
+  if(ruleChangesLook(el)) warn.push('• 這個形狀轉換後中間會多出鏤空'
+    +'（內建形狀與自訂幾何的填充規則不同，PowerPoint 上也會是鏤空的）');
   warn.push('','要繼續嗎？');
   if(!confirm(warn.join('\n'))) return;
   commitUndo();
