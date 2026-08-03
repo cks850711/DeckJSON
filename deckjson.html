@@ -72,6 +72,9 @@
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
   /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
+  /* ⚠ .mel 只是「不可互動」的標記，排版一律沿用 .el 的規則——
+     下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
+     圖片改用原始像素大小、SVG 被裁掉溢出、文字塊失去 flex 版面（valign 失效）。*/
   .mel{position:absolute;pointer-events:none;z-index:0}
   /* 編輯母版時整個畫布加一圈提示邊，避免改了一堆才發現改錯地方 */
   #stage.masterEdit{outline:3px solid #b07d2b;outline-offset:0}
@@ -86,27 +89,27 @@
          line-height:1.2;font-family:var(--font-latin),var(--font-ea),sans-serif;z-index:5}
   /* 影片元素：封面圖＋播放徽章／角標。徽章與角標只存在畫布（.vbadge/.vtag），
      快照與匯出都不含（比照 .pgnum 的預覽層做法），否則使用者在 PPT 換上真影片後還要手動清掉 */
-  .el .vcover{width:100%;height:100%;object-fit:cover;display:block}
-  .el .vph{width:100%;height:100%;display:grid;place-content:center;background:#20242c;color:#8d94a0;font-size:12px;gap:4px;text-align:center}
-  .el .vbadge{position:absolute;inset:0;display:grid;place-content:center;pointer-events:none}
-  .el .vbadge span{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;
+  :is(.el,.mel) .vcover{width:100%;height:100%;object-fit:cover;display:block}
+  :is(.el,.mel) .vph{width:100%;height:100%;display:grid;place-content:center;background:#20242c;color:#8d94a0;font-size:12px;gap:4px;text-align:center}
+  :is(.el,.mel) .vbadge{position:absolute;inset:0;display:grid;place-content:center;pointer-events:none}
+  :is(.el,.mel) .vbadge span{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;
         display:grid;place-content:center;font-size:17px;padding-left:3px}
-  .el .vtag{position:absolute;left:0;bottom:0;max-width:100%;padding:1px 5px;background:rgba(0,0,0,.55);
+  :is(.el,.mel) .vtag{position:absolute;left:0;bottom:0;max-width:100%;padding:1px 5px;background:rgba(0,0,0,.55);
         color:#fff;font-size:10px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* 角標放左上：圖例預設多在上方或右側，放右上會蓋住它，妨礙預覽判讀 */
-  .el .ctag{position:absolute;left:0;top:0;padding:1px 5px;background:rgba(77,157,224,.85);
+  :is(.el,.mel) .ctag{position:absolute;left:0;top:0;padding:1px 5px;background:rgba(77,157,224,.85);
         color:#fff;font-size:10px;pointer-events:none;z-index:3;border-radius:0 0 3px 0}
   #stage.capturing .vbadge,#stage.capturing .vtag,#stage.capturing .ctag{display:none!important}
   /* 非表格元素給淡虛線框，方便看出框的尺寸（尤其文字框）；.overflow 紅框在下方規則，優先權相同、後者勝 */
   .el[data-type=text],.el[data-type=image],.el[data-type=shape],.el[data-type=chart]{outline:1px dashed rgba(150,152,160,.4)}
-  .el .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
-  .el .txt>div{white-space:pre-wrap}
+  :is(.el,.mel) .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
+  :is(.el,.mel) .txt>div{white-space:pre-wrap}
   .el.overflow{outline:1px dashed var(--danger)}
-  .el table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
-  .el td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}
-  .el svg{display:block;overflow:visible}
-  .el img{width:100%;height:100%;display:block;-webkit-user-drag:none}
-  .el .chartCover{position:absolute;inset:0;z-index:2}
+  :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
+  :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+  :is(.el,.mel) svg{display:block;overflow:visible}
+  :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+  :is(.el,.mel) .chartCover{position:absolute;inset:0;z-index:2}
   .el [contenteditable]{outline:1.5px solid var(--accent);cursor:text;min-height:1em}
   #selBox{position:absolute;pointer-events:none;outline:1.5px solid var(--accent);z-index:30}
   .rh{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;pointer-events:auto;z-index:31}
@@ -1589,7 +1592,7 @@ function renderZones(){
 function paraDiv(p,el,seq){
   const div=document.createElement('div');
   div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
-  // 不換行要下在段落 div 上：CSS 的 `.el .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
+  // 不換行要下在段落 div 上：CSS 的 `:is(.el,.mel) .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
   if(el&&el.nowrap) div.style.whiteSpace='pre';
   if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
   if(p.spaceAfter>0) div.style.marginBottom=pt2px(p.spaceAfter)+'px';
@@ -5479,12 +5482,32 @@ async function snapshotDataUrl(pg,fmt,scale){
   // 把遮罩/輔助線暫時移出 DOM（html2canvas 1.4.1 對 display:none 半透明層仍會畫），擷取後放回原位
   const hideEls=[...stage.querySelectorAll('.outmask,.safezone,#selBox,#marquee')];
   const anchors=hideEls.map(el=>{ const a=document.createComment(''); el.parentNode.replaceChild(a,el); return a; });
+  /* html2canvas 1.4.1 不認得 object-fit（border-radius 它倒是認得），fit:'cover' 的圖會被
+     整張壓扁畫出來 → 快照與畫布不一致。擷取前把該 <img> 換成一個「已依框比例裁好」的
+     <canvas>，擷取後換回：與上面暫時移出輔助線同一套 try/finally 手法，不動資料模型。
+     ⚠ 換 <canvas> 而非改 img.src：改 src 要等新圖解碼，而 decode() 在這個時機不保證會 settle
+       （實測會永遠 pending）；canvas 是現成點陣，html2canvas 直接複製，全程同步。
+     用 computed style 判斷而非查 pg.elements，母版圖片（.mel）才一併涵蓋到。*/
+  const covers=[];
+  for(const im of stage.querySelectorAll('img')){
+    if(getComputedStyle(im).objectFit!=='cover') continue;
+    if(!(im.naturalWidth>0&&im.naturalHeight>0&&im.offsetWidth>0&&im.offsetHeight>0)) continue;
+    const s=Math.max(im.offsetWidth/im.naturalWidth, im.offsetHeight/im.naturalHeight);
+    const sw=Math.max(1,Math.round(im.offsetWidth/s)), sh=Math.max(1,Math.round(im.offsetHeight/s));
+    const cv=document.createElement('canvas'); cv.width=sw; cv.height=sh;
+    cv.getContext('2d').drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)/2,sw,sh,0,0,sw,sh);
+    cv.style.cssText='width:100%;height:100%;display:block';
+    cv.style.borderRadius=getComputedStyle(im).borderRadius;   // 圓形裁切要跟著搬
+    im.parentNode.replaceChild(cv,im);
+    covers.push([im,cv]);
+  }
   let url;
   try{
     const canvas=await html2canvas(stage,{width:STAGE_W,height:STAGE_H,scale,
       backgroundColor: fmt==='jpeg'? ('#'+(pg.bg||'FFFFFF')) : null});
     url=canvas.toDataURL(fmt==='jpeg'?'image/jpeg':'image/png',0.92);
   }finally{
+    covers.forEach(([im,cv])=>{ if(cv.parentNode) cv.parentNode.replaceChild(im,cv); });
     anchors.forEach((a,i)=>a.parentNode.replaceChild(hideEls[i],a));
     stage.classList.remove('capturing'); stage.style.transform=prevT; stage.style.margin=prevM;
     APP.page=wasPage; APP.selIds=wasSel; renderStage();
@@ -6140,12 +6163,19 @@ function nativeMap(op){
   const valAx=(xCat?op.yAxis:op.xAxis)||{};
   const catAx=(xCat?op.xAxis:op.yAxis)||{};
   const stacked=ss.some(s=>s.stack);
+  // PptxGenJS 的 lineChart 分支從頭到尾不寫 <c:grouping>，折線圖的堆疊表達不出來。
+  // 不能靜靜吞掉——畫布是堆疊、匯出變成各自獨立的線，是最難察覺的那種落差。
+  chk(type==='line'&&stacked,'折線圖的堆疊（PptxGenJS 的 lineChart 不輸出 c:grouping）');
   return {ok:true,drop,type,
     data:ss.map((s,i)=>({name:s.name||('數列 '+(i+1)),labels,
       values:(s.data||[]).map(nvNum).map(v=>isFinite(v)?v:0)})),
     opts:{...common,
       barDir: type==='bar'? (yCat?'bar':'col') : undefined,
-      barGrouping: type==='bar'? (stacked?'stacked':'clustered') : undefined,
+      /* area 也必須給值：PptxGenJS 只有在 barGrouping==='stacked' 時才替 areaChart 寫 <c:grouping>，
+         留空的話畫布上的堆疊區域圖匯出後會變成互相覆蓋的重疊區域，而且沒有任何提示。
+         非堆疊時明寫 'standard'，順便讓 XML 帶齊 CT_AreaChart 要求的 grouping。*/
+      barGrouping: type==='bar'? (stacked?'stacked':'clustered')
+                 : type==='area'? (stacked?'stacked':'standard') : undefined,
       lineSmooth: type!=='bar'&&ss.some(s=>s.smooth),
       // 格線：ECharts 的 splitLine 掛在被切分的那根軸上，valGridLine／catGridLine 依此對應
       valGridLine: (valAx.splitLine&&valAx.splitLine.show===false)? {style:'none'} : gridLine(valAx),
