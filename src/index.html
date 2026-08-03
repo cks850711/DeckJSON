@@ -2511,7 +2511,31 @@ function renderMultiProps(pp){
   note.innerHTML='<span class="unit">拖四角＝比例縮放；拖本體＝整組移動。個別屬性請單選。</span>';
   pp.appendChild(note);
 }
+/* ---- 面板跟著游標／選取走 ----
+   游標移動或反白範圍改變時，原本只更新 APP.edit.sel／APP.cellSel，面板不重繪，
+   於是面板一直停在上一次的狀態——非得隨便按一個設定（那個 handler 順手呼叫了 renderProps）
+   才會突然更新，看起來就是「每項調整都慢半拍」。
+   但也不能無條件重繪：拖曳反白時 selectionchange 每一像素都會觸發，而 renderProps 是整個
+   重建 #propPanel，會把使用者正在操作的控制項抽掉。故設三道閘。*/
+function propsSig(){
+  const el=selEl();
+  if(!el) return 'none';
+  return el.id+'|'+JSON.stringify(APP.cellSel||null)
+    +'|'+(el.paras? JSON.stringify(panelRun(el)) : '');
+}
+let _propsSig='', _propsRaf=0;
+function syncProps(){
+  if(_propsRaf) return;                                   // 閘三：同一幀只做一次
+  _propsRaf=requestAnimationFrame(()=>{
+    _propsRaf=0;
+    if($('#propPanel').contains(document.activeElement)) return;   // 閘一：正在操作面板
+    if(!$('#palettePop').hidden) return;                           // 色票開著時重建會失去對象
+    if(propsSig()===_propsSig) return;                             // 閘二：顯示內容沒變
+    renderProps();
+  });
+}
 function renderProps(){
+  _propsSig=propsSig();
   const pp=$('#propPanel'); pp.innerHTML='';
   if(APP.selIds.length>1){ renderMultiProps(pp); updateCopyPalWin(); return; }
   const el=selEl();
@@ -4117,7 +4141,7 @@ stage.addEventListener('pointerdown',e=>{
         if(rc){
           drag={type:'cellsel',el:tel,r0:rc.r,c0:rc.c};
           APP.cellSel=normalizeCellSel(tel,rc.r,rc.c,rc.r,rc.c);
-          updateSelBox();
+          updateSelBox(); syncProps();   // 逐格設定（底色／字級／對齊）要跟著選到的格子走
           e.preventDefault();
           try{ stage.setPointerCapture(e.pointerId); }catch(err){}
           return;
@@ -4257,7 +4281,7 @@ stage.addEventListener('pointermove',e=>{
     showDragTip(e,`列 ${drag.i+1} 高`,el.rowH[drag.i]);
   }else if(drag.type==='cellsel'){
     const rc=cellRC(el,e.clientX,e.clientY);
-    if(rc){ APP.cellSel=normalizeCellSel(el,drag.r0,drag.c0,rc.r,rc.c); paintCellSel(el); }
+    if(rc){ APP.cellSel=normalizeCellSel(el,drag.r0,drag.c0,rc.r,rc.c); paintCellSel(el); syncProps(); }
   }
 });
 stage.addEventListener('pointerup',()=>{
@@ -4537,6 +4561,7 @@ function startTextEdit(el,box){
 document.addEventListener('selectionchange',()=>{
   const e=APP.edit; if(!e||!e.root) return;
   const s=editReadSel(); if(s) e.sel=s;
+  syncProps();   // 游標一動，面板就要反映游標所在那個 run 的樣式
 });
 // 有選取就只套範圍，沒選取（或不在編輯中）就整塊套用
 function runApply(el,fn){
@@ -4544,14 +4569,21 @@ function runApply(el,fn){
   if(s&&!(s.p0===s.p1&&s.o0===s.o1)){ e.pushed=true; editSync(); applyRange(el,s,fn); }
   else setAllRuns(el,fn);
 }
-// 面板顯示用：編輯中有選取時反映「選取起點那個 run」，否則沿用元素第一個 run
+/* 面板顯示用：編輯中反映「游標所在的那個 run」，不在編輯中才沿用元素第一個 run。
+   ⚠ 這裡刻意**不**要求「有反白」——游標插在高亮文字中間（collapsed）時也要反映該處的樣式，
+   否則面板會說「沒有高亮」，與眼睛看到的不符。與 Word／PowerPoint 一致：
+   collapsed 時看的是「游標左邊那個字」，所以 probe 取 o0-1。
+   注意 runApply 的判斷維持原樣（有反白只套範圍、沒反白套整塊），兩者是不同的問題。*/
 function panelRun(el){
   const e=APP.edit, s=(e&&e.id===el.id)? e.sel : null;
-  if(s&&!(s.p0===s.p1&&s.o0===s.o1)){
+  if(s){
     const p=(el.paras||[])[s.p0];
     if(p&&(p.runs||[]).length){
-      let acc=0,r=p.runs[0];
-      for(const q of p.runs){ const L=String(q.text||'').length; if(s.o0<acc+L){ r=q; break; } acc+=L; }
+      const collapsed=(s.p0===s.p1&&s.o0===s.o1);
+      const probe=collapsed? Math.max(0,s.o0-1) : s.o0;
+      // 預設取最後一個 run：游標停在段落末尾時 probe 會超出總長度，落回第一個 run 是錯的
+      let acc=0,r=p.runs[p.runs.length-1];
+      for(const q of p.runs){ const L=String(q.text||'').length; if(probe<acc+L){ r=q; break; } acc+=L; }
       const o={bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',sizePt:r.sizePt||18,align:p.align||'left'};
       for(const k of RUN_OPT_KEYS) if(r[k]!=null) o[k]=r[k];
       for(const k of PARA_OPT_KEYS) if(p[k]!=null) o[k]=p[k];
