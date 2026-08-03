@@ -533,7 +533,8 @@
       <ul>
         <li><b>鎖定樣式</b>（預設）：字體寫死你設定的三個字體名；頁碼／日期寫死座標與字級。預覽＝輸出，折行位置最可靠。</li>
         <li><b>母版繼承</b>：字體寫 <code>+mn-lt</code>／<code>+mn-ea</code> 主題槽引用；頁碼／日期寫成<b>不帶座標的空殼佔位符</b>。貼到任何母版時，字體、頁尾位置與字級都由該母版接手（折行位置隨目的端字體浮動）。</li>
-        <li>繼承模式下這個檔<b>自己打開時仍然正確</b>——完整座標同時寫進了自家的母版與版面配置，投影片沒寫的部分往上一層找。</li>
+        <li>繼承模式下這個檔<b>自己打開時仍然正確</b>——完整座標寫在自家母版，投影片與版面配置沒寫的部分會往上一層找。</li>
+        <li><b>⚠ 不適用於「放在母版上」</b>：該模式的版面配置承載你的 Logo／頁尾條，必須維持自訂才不會在貼上時被目的端的版面配置取代，代價是頁碼／日期也跟著繼承不到。要兩者兼得請改用「畫進每一頁」。</li>
         <li>兩種模式都不按語言切 run、全文件同一個 lang——xlsx2pptx 的中英交界異常換行病灶已拔除。</li>
       </ul>
       <h4>匯出行為</h4>
@@ -546,6 +547,7 @@
       <h4>已知限制</h4>
       <ul class="dim">
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
+        <li>母版繼承的頁碼／日期<b>在「放在母版上」模式下不生效</b>（原因見上方〈樣式模式〉）；另外目的端若沒在「插入 → 頁首及頁尾」勾選日期，貼過去的日期會被目的端隱藏，那不是缺陷。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
         <li>原生圖表只涵蓋有 OOXML 對應的圖種（柱狀／橫條／折線／區域／圓餅／環圈／散布）；桑基、儀表板、熱力圖等一律走 PNG。原生模式下框內排版由 PowerPoint 決定，與畫布不會完全一致，且不支援陰影與超連結。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
@@ -6820,21 +6822,38 @@ async function exportPptx(download=true){
     }).join('');
     zip.file(name,s);
   }
-  /* 頁碼／日期：母版與每一個版面配置都要有一份「帶座標的完整版」。
-     繼承鏈是 slide → layout → master，只要有一層寫了座標，這個檔案自己打開時就是對的；
-     繼承模式的投影片是空殼，正是靠這一層撐住。反過來，這一層不會影響「貼到別人簡報」的結果
-     ——那時整條鏈換成對方的 layout／master。
-     先清掉既有的同型佔位符再插：同一個 spTree 內 type 重複會被 PowerPoint 判為毀損。 */
-  if(APP.deck.pageNum||APP.deck.date) for(const name of Object.keys(zip.files)){
+  /* ---- 母版與版面配置的後製 ----
+     兩件事，都是 2026-08-04 使用者實測「貼進別人的簡報，頁碼還是卡在右下角」之後才查清楚的。 */
+  for(const name of Object.keys(zip.files)){
     if(!/^ppt\/(slideMasters\/slideMaster|slideLayouts\/slideLayout)\d+\.xml$/.test(name)) continue;
+    const isMst=/slideMasters\/slideMaster/.test(name);
     let s=await zip.file(name).async('string');
-    // <p:sp> 不會巢狀，故用「中間不得再出現 <p:sp>」把匹配起點鎖在最近的那一個開標籤
-    s=s.replace(/<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:ph type="(?:sldNum|dt)"[\s\S]*?<\/p:sp>/g,'');
-    s=injectHf(s,{inherit:false,lang:LANG});
-    /* <p:hf> 是母版層的「這些頁尾佔位符要不要出現」開關，PptxGenJS 寫死成全部 0。
-       屬性省略時預設為 true，故這裡只留 hdr／ftr 兩個明確關掉（本工具不做這兩種），
-       其餘交給預設——與 PowerPoint 自製範本寫的形狀一致。 */
-    if(/slideMaster/.test(name)) s=s.replace(/<p:hf\b[^>]*\/>/,'<p:hf hdr="0" ftr="0"/>');
+    /* (a) 版面配置要標成「空白」版面。
+       PptxGenJS 寫的是 `<p:sldLayout preserve="1">`——**沒有 type 屬性**，而該屬性省略時等於
+       `type="cust"`（自訂）。PowerPoint 在「使用目的地佈景主題」貼上時是**按 type 去配對**目的端的
+       版面配置；配不到就把來源的版面配置連同母版整個匯進目的端——實測結果就是目的端多出一個
+       名為 DEFAULT 的母版，投影片仍掛在我們自己的版面配置上，於是頁尾一步也不會動。
+       改標 `type="blank"`（＝PowerPoint 的「空白」版面，每個佈景主題都有）即可配對成功。
+       ⚠ 母版模式的那個版面配置維持自訂：它承載 Logo／頁尾條等真實內容，被配走就整組不見了。
+       代價是該模式下頁尾也跟著配不走；要兩者兼得請改用「畫進每一頁」。 */
+    if(!isMst&&name!==MST_LAYOUT){
+      s=s.replace(/<p:sldLayout\b(?![^>]*\stype=)/,'<p:sldLayout type="blank"');
+      s=s.replace(/(<p:cSld[^>]*\bname=")[^"]*(")/,'$1Blank$2');
+    }
+    /* (b) 頁尾佔位符：**座標只寫在母版，版面配置一律空殼**。
+       這是照 PowerPoint 自製範本實測出來的形狀——拆開範本看，11 個版面配置的 dt／ftr／sldNum
+       全都沒有 <a:xfrm> 也沒有 <a:lstStyle>，只有母版那一份帶座標。原本三層都寫滿座標是自己
+       想當然耳，副作用是「版面配置壓過母版」：使用者在 PowerPoint 裡改母版的頁尾位置會沒有反應。
+       先清掉既有的同型佔位符再插：同一個 spTree 內 type 重複會被 PowerPoint 判為毀損。
+       （<p:sp> 不會巢狀，故用「中間不得再出現 <p:sp>」把匹配起點鎖在最近的那一個開標籤。） */
+    if(APP.deck.pageNum||APP.deck.date){
+      s=s.replace(/<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:ph type="(?:sldNum|dt)"[\s\S]*?<\/p:sp>/g,'');
+      s=injectHf(s,{inherit:!isMst,lang:LANG});
+      /* <p:hf> 是母版層的「這些頁尾佔位符要不要出現」開關，PptxGenJS 寫死成全部 0。
+         屬性省略時預設為 true，故這裡只留 hdr／ftr 兩個明確關掉（本工具不做這兩種），
+         其餘交給預設——與 PowerPoint 自製範本寫的形狀一致。 */
+      if(isMst) s=s.replace(/<p:hf\b[^>]*\/>/,'<p:hf hdr="0" ftr="0"/>');
+    }
     zip.file(name,s);
   }
   const b64=await zip.generateAsync({type:'base64'});
