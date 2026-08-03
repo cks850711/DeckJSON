@@ -264,9 +264,9 @@
     <button id="btnAddChart">＋圖表</button>
     <button id="btnAddVideo" title="插入影片：YouTube 連結（匯出為 PPT 原生線上影片）或本機影片（只取一張封面，匯出後在 PPT 換成真影片）">＋影片</button>
   </div>
-  <div class="grp"><label>字體</label>
-    <select id="selFontMode" title="鎖定字體：匯出寫死你設定的三個字體名。母版繼承：改寫主題槽引用，貼到別的母版時由該母版字體接手。字體名在右欄「頁面 → 字體」設定。">
-      <option value="locked">鎖定字體</option><option value="inherit">母版繼承</option>
+  <div class="grp"><label>母版</label>
+    <select id="selFontMode" title="鎖定樣式：匯出寫死你設定的三個字體名，頁碼／日期也寫死座標，貼到哪裡都長一樣。母版繼承：字體改寫成主題槽引用、頁碼／日期改成不帶座標的空殼佔位符，貼到別的母版時由該母版接手。字體名在右欄「頁面 → 字體」設定。">
+      <option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>
     </select>
   </div>
   <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span></div>
@@ -312,7 +312,7 @@
       <button id="btnJsonSave">儲存 .json 檔</button>
       <button id="btnJsonLoad">載入 .json 檔</button>
     </div>
-    <div class="mnote">整份簡報＋全域變數（標題／字體模式／字型／語言／投影片尺寸／預留區／頁碼／檔案屬性）。「複製」→ 貼給 AI 討論修改 → 貼回「套用」。單頁微調請用右欄「本頁 JSON」。座標單位 px（1px = 1/96 吋，1cm ≈ 37.8px；投影片尺寸見 <code>stage</code>）。</div>
+    <div class="mnote">整份簡報＋全域變數（標題／樣式模式／字型／語言／投影片尺寸／預留區／頁碼／日期／檔案屬性）。「複製」→ 貼給 AI 討論修改 → 貼回「套用」。單頁微調請用右欄「本頁 JSON」。座標單位 px（1px = 1/96 吋，1cm ≈ 37.8px；投影片尺寸見 <code>stage</code>）。</div>
   </div>
 </div>
 
@@ -493,7 +493,7 @@
         <li><b>圖片裁切</b>：預設「完整」＝整張塞進框、強制等比不變形；切「<b>填滿裁切</b>」後寬高可各自調整，圖片填滿框、裁掉超出部分（匯出為原生 <code>srcRect</code>）。另有「<b>圓形裁切</b>」與「<b>替代文字</b>」（無障礙 <code>descr</code>）。</li>
         <li><b>表格虛線框線</b>：框線筆旁勾「虛線」再套（全部／外框／內部／各邊），匯出為 <code>prstDash sysDash</code>；實線虛線可逐格逐邊混用。</li>
         <li><b>頁面背景圖</b>：頁面面板「🖼 背景圖」選圖，滿版拉伸、壓在所有元素之下，匯出為原生 <code>&lt;p:bg&gt;</code>。要局部裁切請改用一般圖片元素鋪滿整頁。</li>
-        <li><b>自動頁碼</b>：頁面面板「頁碼（整份簡報）」勾選後可選左下／中下／右下、字級、顏色、首頁不顯示；匯出為原生頁碼<b>欄位</b>（<code>&lt;a:fld type="slidenum"&gt;</code>，插入／刪除頁會自動更新），位置落在底部頁尾預留區。畫布上的頁碼是預覽，不可選取。</li>
+        <li><b>自動頁碼／日期</b>：頁面面板「頁碼（整份簡報）」「日期（整份簡報）」勾選後可各選左下／中下／右下、字級、顏色、首頁不顯示；日期另可選<b>自動更新</b>（<code>&lt;a:fld type="datetime1"&gt;</code>，開檔時重算）或<b>固定文字</b>。匯出為 PowerPoint 原生的頁尾佔位符（<code>&lt;p:ph type="sldNum"&gt;</code>／<code>type="dt"</code>），頁碼是可更新<b>欄位</b>，插入／刪除頁會自動跟著變。畫布上兩者都是預覽，不可選取。<b>「母版繼承」模式下位置與字級改由目的端母版的頁尾決定</b>（見下方〈樣式模式〉）。</li>
         <li><b>檔案資訊</b>：頁面面板可填作者／公司／主旨，連同標題寫入 pptx 檔案屬性（Finder／PowerPoint「資訊」看得到）；留空則不寫入該欄位。</li>
         <li><b>線型</b>：形狀外框、線條、文字框框線可選實線／點線／虛線／長虛線／點虛線／長點虛，匯出為原生 <code>prstDash</code>（表格框線另有自己的實／虛線開關）。</li>
         <li><b>物件超連結</b>：形狀／圖片／圖表／線條可設「整個物件可點」的連結（外部網址或 <code>#3</code> 跳頁），另可填滑過時的提示文字。文字框內個別文字的連結請用「文字樣式 → 超連結」。</li>
@@ -510,7 +510,7 @@
         <li><b>自訂幾何（custGeom）</b>：形狀庫最後一組，給清單裡找不到的異形用（不規則色塊、自訂折線、資訊圖區塊）。插入後<b>直接開圖形編輯器</b>；已存在的自訂幾何選取後按右欄「✎ 開啟圖形編輯器」。也可在 JSON 面板改 <code>points</code>，或請 AI 產生——指令有 <code>moveTo</code>／直線／二次貝茲／三次貝茲／圓弧／<code>close</code>。</li>
         <li><b>形狀內的文字區</b>：形狀裡的文字不是擺在整個外框，而是照 OOXML preset 各自定義的文字區（187 種裡有 <b>137 種</b>不是整框）——星形的字在星芯、箭號的字在箭桿、梯形的字在上下底之間，且會隨黃點連動。<b>這是畫布預覽的修正</b>：匯出的 pptx 一直是照 preset 擺，之前是畫布在騙人，所以既有簡報的匯出結果不會有任何改變。文字太長時會照 PowerPoint 的行為溢出文字區，不會被裁掉。</li>
         <li><b>編輯端點（內建形狀 → 自訂幾何）</b>：只想改內建形狀的一兩個角，不必從零重畫——選取後按右欄「<b>✎ 轉成可編輯端點</b>」，形狀原地拆成端點並開啟編輯器，<b>外觀完全不變</b>（187 種全部驗過，最大偏差 0.04px）。同 PowerPoint 的「編輯端點」，<b>單向不可逆</b>：黃點會消失、換不回內建形狀。若該形狀的各部分原本填色／外框設定不同（動作按鈕、圖說外框類），轉換後只會剩一種填色，對話框會先告知。</li>
-        <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>要讓內圈與外圈<b>反向繞行</b>（PowerPoint 用 nonzero 填充規則），畫完內圈按「⇄ 反轉方向」即可。</li>
+        <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>只要在外圈裡面再畫一條子路徑就會空心，<b>繞行方向不影響</b>（PowerPoint 用 even-odd 填充規則）。</li>
         <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
@@ -526,28 +526,32 @@
         <li><b>語言</b>：寫入每個文字 run 的 <code>lang</code>，決定 PowerPoint 用哪國拼字檢查（預設跟隨瀏覽器語言）。</li>
         <li><b>母版（信紙）</b>：右欄「頁面 → 母版」勾「啟用母版」後按「編輯母版內容」，畫布切成母版編輯（整圈橘色框、底部橘色提示列），放進去的元素會出現在<b>每一頁</b>，改一次全部跟著變。一般工具全部照用（文字／形狀／圖片／圖表／漸層／陰影／超連結／自訂幾何都行）。單頁可勾「本頁不套母版」（封面常用）。<b>匯出方式</b>二選一：「放在母版上」＝寫進 PowerPoint 的版面配置，檔案最小，但單張投影片複製到別的簡報時母版內容不跟著走；「畫進每一頁」＝匯出時把母版內容實際畫成每頁的圖形，整張搬得走，代價是圖片位元組每頁各存一份。切換只改一個旗標，不動母版內容，可隨時來回比較。母版元素的 id 不得與頁面元素撞名，撞到會自動改頁面那一邊。</li>
         <li><b>預留區</b>：母版上不該被壓到的區域（Logo 位、頁尾…），可加可刪。只是畫布輔助線與吸附，元素壓到會變紅警告但不阻擋，<b>不寫入 pptx</b>。預設沒有任何預留區。</li>
-        <li><b>環境設定檔（profile）</b>：把上面這些（含頁碼樣式與檔案屬性）整包匯出成 <code>.profile.json</code>，或載入套用；也可「設為新簡報預設」記在這台瀏覽器。設定同時存在簡報 JSON 裡，所以貼給 AI 再貼回來不會掉。</li>
+        <li><b>環境設定檔（profile）</b>：把上面這些（含頁碼／日期樣式與檔案屬性）整包匯出成 <code>.profile.json</code>，或載入套用；也可「設為新簡報預設」記在這台瀏覽器。設定同時存在簡報 JSON 裡，所以貼給 AI 再貼回來不會掉。</li>
       </ul>
-      <h4>字體模式</h4>
+      <h4>樣式模式（工具列「母版」）</h4>
+      <p class="dim">同一個開關管兩件事——<b>字體</b>與<b>頁尾佔位符（頁碼／日期）</b>。兩者的取捨相同：要嘛「貼到哪都長一樣」，要嘛「入境隨俗」。</p>
       <ul>
-        <li><b>鎖定字體</b>（預設）：匯出寫死你設定的三個字體名。預覽＝輸出，折行位置最可靠。</li>
-        <li><b>母版繼承</b>：匯出寫 <code>+mn-lt</code>／<code>+mn-ea</code> 主題槽引用，貼到任何母版時由該母版字體接手（折行位置隨目的端字體浮動）。</li>
+        <li><b>鎖定樣式</b>（預設）：字體寫死你設定的三個字體名；頁碼／日期寫死座標與字級。預覽＝輸出，折行位置最可靠。</li>
+        <li><b>母版繼承</b>：字體寫 <code>+mn-lt</code>／<code>+mn-ea</code> 主題槽引用；頁碼／日期寫成<b>不帶座標的空殼佔位符</b>。貼到任何母版時，字體、頁尾位置與字級都由該母版接手（折行位置隨目的端字體浮動）。</li>
+        <li>繼承模式下這個檔<b>自己打開時仍然正確</b>——完整座標寫在自家母版，投影片與版面配置沒寫的部分會往上一層找。</li>
+        <li><b>⚠ 不適用於「放在母版上」</b>：該模式的版面配置承載你的 Logo／頁尾條，必須維持自訂才不會在貼上時被目的端的版面配置取代，代價是頁碼／日期也跟著繼承不到。要兩者兼得請改用「畫進每一頁」。</li>
         <li>兩種模式都不按語言切 run、全文件同一個 lang——xlsx2pptx 的中英交界異常換行病灶已拔除。</li>
       </ul>
       <h4>匯出行為</h4>
       <ul>
         <li>每頁一張投影片；文字框關閉 autofit、行距鎖定 1.2 倍字級精確值；表格為原生 PPTX 表格；圖片嵌原始位元組；圖表以 3× PNG 嵌入。</li>
-        <li>匯出後會修掉 PptxGenJS 3.12 的幾個結構性缺陷（段內混排時重複輸出 <code>&lt;a:pPr&gt;</code>、頁碼佔位形狀 id 寫死撞號、物件超連結沒註冊關聯而寫出懸空 <code>rIdundefined</code>、備忘稿基建畸形等），以免 PowerPoint 判為毀損要求修復。</li>
+        <li>匯出後會修掉 PptxGenJS 3.12 的幾個結構性缺陷（段內混排時重複輸出 <code>&lt;a:pPr&gt;</code>、形狀 id 撞號、物件超連結沒註冊關聯而寫出懸空 <code>rIdundefined</code>、備忘稿基建畸形等），以免 PowerPoint 判為毀損要求修復。頁尾佔位符（頁碼／日期）另行自寫，不走 PptxGenJS——它只會寫死座標的版本，無法繼承目的端母版。</li>
         <li>每個元素的 pptx 形狀名稱＝其 JSON id（日後 Morph 轉場跨頁配對用）。</li>
         <li>使用方式：開啟匯出的 .pptx，整頁複製到目標簡報（目標簡報的尺寸需與此處設定相同，否則會被縮放）。</li>
       </ul>
       <h4>已知限制</h4>
       <ul class="dim">
         <li>母版繼承模式下折行位置由目的端字體決定，文字框寬度請留餘裕。</li>
+        <li>母版繼承的頁碼／日期<b>在「放在母版上」模式下不生效</b>（原因見上方〈樣式模式〉）；另外目的端若沒在「插入 → 頁首及頁尾」勾選日期，貼過去的日期會被目的端隱藏，那不是缺陷。</li>
         <li>ECharts option 僅支援純 JSON（不含函式）。</li>
         <li>原生圖表只涵蓋有 OOXML 對應的圖種（柱狀／橫條／折線／區域／圓餅／環圈／散布）；桑基、儀表板、熱力圖等一律走 PNG。原生模式下框內排版由 PowerPoint 決定，與畫布不會完全一致，且不支援陰影與超連結。</li>
         <li>陰影在<b>快照 PNG</b> 不呈現（html2canvas 不支援 CSS filter）；匯出 pptx 不受影響。</li>
-        <li>母版只做「共用元素」一層（Logo／頁尾／裝飾），<b>不做 placeholder</b>（PowerPoint 那些「按一下以新增標題」的洞）。placeholder 的位置字級繼承自版面配置，投影片貼到別的簡報時會跳位，與本工具「所見即所得、貼到哪都一樣」的前提相衝。</li>
+        <li>母版只做「共用元素」一層（Logo／頁尾／裝飾），<b>不做內容 placeholder</b>（PowerPoint 那些「按一下以新增標題」的洞）。內容 placeholder 的位置字級繼承自版面配置，投影片貼到別的簡報時會跳位，與本工具「所見即所得」的前提相衝。<b>例外是頁碼與日期</b>：那兩個本來就該跟著目的端頁尾走，故做成真正的佔位符，並用「樣式模式」讓你選要不要繼承。頁尾文字（<code>ftr</code>）尚未實作。</li>
         <li>「放在母版上」匯出時，母版內容<b>不會跟著單張投影片被複製到別的簡報</b>（母版物件不屬於任何一張投影片）。需要帶著走請改選「畫進每一頁」。兩種模式都尚未用真實 PowerPoint 開過。</li>
         <li>漸層填色只有<b>線性與放射狀</b>兩種、最多 6 個色標；PowerPoint 的路徑漸層（矩形／形狀路徑）與漸層外框不支援。<b>立體感形狀（立方體／圓柱…）套漸層時，各面的明暗會被漸層取代</b>——OOXML 的填色只能有一種。</li>
         <li><b>自訂幾何在 PowerPoint 內沒有黃點</b>，而且回不去內建形狀——這是 OOXML 格式本身的性質（在 PowerPoint 裡對內建形狀按「編輯端點」也會發生同樣的事）。<b>清單裡挑得到的形狀就別用自訂幾何</b>。另：一個自訂幾何只有一條路徑（做不到單一形狀內分區上色）、上限 400 個點、圓弧掃掠不超過一圈、座標可伸出路徑框但不超過框外一倍（圖說尾巴、括號都靠這個）。子路徑挖洞與伸出框的負座標已在畫布與匯出 XML 兩層驗過，但<b>尚未用真實 PowerPoint 開過</b>。圖形編輯器開啟時會把<b>圓弧折成貝茲曲線</b>（誤差 &lt;0.01px，但按確定後換不回圓弧），不想被折就別用編輯器開它、改走 JSON。</li>
@@ -676,15 +680,28 @@ const STAGE_PRESETS=[
   {key:'16x10',label:'16:10',          w:1152,h:720, type:'screen16x10'},
 ];
 function stagePresetOf(w,h){ return STAGE_PRESETS.find(p=>p.w===w&&p.h===h)||null; }
-// 自動頁碼：預設樣式與三種位置（貼齊投影片底緣，隨投影片尺寸浮動）
+/* 頁尾佔位符（頁碼 sldNum／日期 dt）：預設樣式與三種位置（貼齊投影片底緣，隨投影片尺寸浮動）。
+   兩者共用同一套幾何——PowerPoint 的日期／頁尾／頁碼本來就是底部同一排的三個佔位符。
+   預設把日期放左下、頁碼放右下，免得開箱就疊在一起（真疊了畫布預覽會直接看得出來）。 */
 const PAGENUM_DEF={pos:'br',sizePt:10,color:'888888'};
+const DATE_DEF={pos:'bl',sizePt:10,color:'888888',fmt:'auto'};
 const PAGENUM_SIZE={w:160,h:24,m:24,gap:18};   // gap＝距底緣留白
-function pageNumBox(){
-  const p=APP.deck.pageNum||PAGENUM_DEF, {w,h,m,gap}=PAGENUM_SIZE;
-  const pos=p.pos||'br', y=STAGE_H-h-gap;
+function hfBox(p,def){
+  const {w,h,m,gap}=PAGENUM_SIZE;
+  const pos=p.pos||def.pos, y=STAGE_H-h-gap;
   const x= pos==='bl'? m : pos==='bc'? Math.round((STAGE_W-w)/2) : STAGE_W-m-w;
   return {x,y,w,h,align:{bl:'left',bc:'center',br:'right'}[pos]||'right',
-    sizePt:p.sizePt||PAGENUM_DEF.sizePt,color:p.color||PAGENUM_DEF.color};
+    sizePt:p.sizePt||def.sizePt,color:p.color||def.color};
+}
+function pageNumBox(){ return hfBox(APP.deck.pageNum||PAGENUM_DEF,PAGENUM_DEF); }
+function dateBox(){ return hfBox(APP.deck.date||DATE_DEF,DATE_DEF); }
+/* 日期文字。自動更新模式在 PowerPoint 端是 <a:fld type="datetime1">，實際字樣由**開檔那台電腦**
+   的地區設定決定；這裡只是畫布預覽與 pptx 內的快取值，故跟著 deck.lang 走，能對到八九成。 */
+function dateText(){
+  const d=APP.deck.date||DATE_DEF;
+  if(d.fmt==='fixed') return String(d.text||'').trim();
+  try{ return new Date().toLocaleDateString(APP.deck.lang||defaultLang()); }
+  catch(e){ return new Date().toLocaleDateString(); }
 }
 /* ---- 出廠預設 profile（中性）----
    通用版不帶任何個人／公司母版設定：無預留區、系統可用字體、語言跟隨瀏覽器。
@@ -713,14 +730,14 @@ const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
 /* ================= profile（環境設定檔） =================
-   把「投影片尺寸／預留區／三字體／語言／頁碼樣式／檔案屬性」這些原本寫死在程式裡的客製化，
+   把「投影片尺寸／預留區／三字體／語言／頁碼與日期樣式／檔案屬性」這些原本寫死在程式裡的客製化，
    全部降為資料。三層來源，優先序由高到低：
-     1. deck 本身的欄位（stage／zones／fonts／lang／pageNum…）——跟著簡報走，貼 JSON 給 AI 不會掉設定
+     1. deck 本身的欄位（stage／zones／fonts／lang／pageNum／date…）——跟著簡報走，貼 JSON 給 AI 不會掉設定
      2. localStorage 的「我的預設」——新建空白簡報時帶入，載入一次就長期記住
      3. BUILD_PROFILE（build.sh --profile 內嵌）→ defaultProfile()（中性出廠值）
    同一份原始碼即可產出「個人版」與「中性通用版」，不需要維護兩套程式。 */
 const PROFILE_KEY='deckjson.profile';
-const PROFILE_FIELDS=['stage','zones','fonts','lang','pageNum'];
+const PROFILE_FIELDS=['stage','zones','fonts','lang','pageNum','date'];
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }   // file:// 下可能被擋
 function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
 function normProfile(p){   // 手改／外來 profile 一律過這裡，壞值夾回或丟棄
@@ -734,6 +751,7 @@ function normProfile(p){   // 手改／外來 profile 一律過這裡，壞值�
     const v=String(((p.fonts||{})[k])||'').trim(); o.fonts[k]= v||d.fonts[k]; }
   o.lang= /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(String(p.lang||''))? String(p.lang) : d.lang;
   if(p.pageNum&&typeof p.pageNum==='object') o.pageNum=structuredClone(p.pageNum);
+  if(p.date&&typeof p.date==='object') o.date=structuredClone(p.date);
   if(p.docProps&&typeof p.docProps==='object') o.docProps=structuredClone(p.docProps);
   return o;
 }
@@ -754,6 +772,7 @@ function profileFromDeck(d,name){
   const p={format:'deckjson-profile',version:1,name:name||d.profileName||'我的設定',
     stage:{...d.stage},zones:structuredClone(d.zones||[]),fonts:{...d.fonts},lang:d.lang};
   if(d.pageNum) p.pageNum=structuredClone(d.pageNum);
+  if(d.date) p.date=structuredClone(d.date);
   const dp={}; for(const k of ['author','company','subject']) if(d[k]) dp[k]=d[k];
   if(Object.keys(dp).length) p.docProps=dp;
   return p;
@@ -763,6 +782,7 @@ function applyProfileToDeck(d,p){
   d.profileName=p.name;
   d.stage={...p.stage}; d.zones=structuredClone(p.zones); d.fonts={...p.fonts}; d.lang=p.lang;
   if(p.pageNum) d.pageNum=structuredClone(p.pageNum);
+  if(p.date) d.date=structuredClone(p.date);
   if(p.docProps) for(const k of ['author','company','subject']) if(p.docProps[k]) d[k]=p.docProps[k];
   return d;
 }
@@ -780,6 +800,7 @@ function newDeck(){
     profileName:p.name,stage:{...p.stage},zones:structuredClone(p.zones),
     fonts:{...p.fonts},lang:p.lang,
     ...(p.pageNum?{pageNum:structuredClone(p.pageNum)}:{}),
+    ...(p.date?{date:structuredClone(p.date)}:{}),
     ...(p.docProps||{}),
     pages:[newPage()]};
 }
@@ -902,6 +923,12 @@ function bulletMark(p,seq){ // 回傳畫布上要顯示的符號字串（number 
 function maxPt(el){
   let m=0;
   for(const p of el.paras||[]) for(const r of p.runs||[]) m=Math.max(m,r.sizePt||18);
+  return m||18;
+}
+// 單一段落的最大字級。行距是逐段算的（見 parasToPptx），用 maxPt(el) 會讓整框跟著最大的字走
+function paraPt(p){
+  let m=0;
+  for(const r of (p&&p.runs)||[]) m=Math.max(m,r.sizePt||18);
   return m||18;
 }
 /* 線型（形狀外框／線條／文字框框線）：key＝OOXML <a:prstDash val>，PptxGenJS 的 line.dashType 直寫此值。
@@ -1449,7 +1476,7 @@ function presetPoints(key,w,h,adjs){
 }
 function shapePaths(el){
   if(el.shape==='custGeom'){ const s=custScale(el), d=custPath(el.points,s[0],s[1]);
-    return d? [{d,fill:'',noStroke:false}] : []; }
+    return d? [{d,fill:'',noStroke:false,rule:'evenodd'}] : []; }   // 規則差異見 shapeNodes
   const key=PRESET_GEOM[el.shape]? el.shape : 'rect';
   return presetPaths(key,el.w,el.h,adjVals(el));
 }
@@ -1457,20 +1484,27 @@ function shapePaths(el){
 // 不是逐路徑填了就描——chartPlus 的十字（fill="none"）就排在方框之前，逐路徑畫會被方框蓋掉。
 // cube／can 的立體感也依賴這個順序：本體填色墊底、亮面暗面疊上、外框最後統一描。
 function shapeNodes(paths,fill,lineColor,sw,da,paint){
-  // ⚠ 填充規則是 nonzero（SVG 預設），不是 even-odd。證據在 preset 資料本身：donut／frame／
-  // noSmoking 的內圈都刻意用反向繞行（帶號面積一正一負），even-odd 下這個反轉毫無意義——
-  // 會反轉就代表 DrawingML 靠繞行方向決定內外。反過來說，同向的兩條子路徑（如
-  // actionButtonBackPrevious 的按鈕面＋三角）在 nonzero 下是實心，even-odd 會誤挖成洞。
-  const out=[], mk=d=>{ const p=document.createElementNS(NS,'path');
-    p.setAttribute('d',d); p.setAttribute('fill-rule','nonzero'); return p; };
+  /* ⚠ 填充規則按來源分兩種，別統一。
+     custGeom → **even-odd**：2026-08-03 在真實 PowerPoint 實測出來的——同向繞行的兩個正方形
+       在 PowerPoint 上中間被挖空。原本從 preset 資料反推成 nonzero（donut／frame／noSmoking
+       的內圈都刻意反向繞行，「若是 even-odd 這個反轉毫無意義」），推論錯在最後那句：
+       even-odd 下反向繞行同樣挖得出洞，那個反轉只是冗餘，不構成證據。別再照這條線反推回去。
+     preset → **nonzero**：PowerPoint 畫 preset 用的是 prstGeom、它自己的內建幾何，
+       根本不看我們這份路徑資料。這裡的任務是「重現 PowerPoint 的外觀」，而 187 個 preset 中
+       有 9 條路徑（7 個 actionButton ＋ horizontal／verticalScroll）在兩種規則下結果不同，
+       even-odd 會把按鈕上的箭頭誤挖成洞。這 9 條未經 PowerPoint 實測，故維持原本的 nonzero。
+     ⚠ 兩者的交會點：preset 轉 custGeom（「編輯端點」）之後就改用 custGeom 的規則了，
+       那 9 個形狀轉完會真的變成挖洞——畫布會照實顯示，因為 PowerPoint 那時也會這樣畫。 */
+  const out=[], mk=(d,rule)=>{ const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',d); p.setAttribute('fill-rule',rule||'nonzero'); return p; };
   for(const sp of paths){
     if(sp.fill==='none'||!fill) continue;
     // 有漸層時全部子路徑用同一份漸層：立體感形狀的明暗（shadeFill）與漸層無法並存，漸層優先
-    const p=mk(sp.d); p.setAttribute('fill',paint||shadeFill(fill,sp.fill)); out.push(p);
+    const p=mk(sp.d,sp.rule); p.setAttribute('fill',paint||shadeFill(fill,sp.fill)); out.push(p);
   }
   if(lineColor!=null) for(const sp of paths){
     if(sp.noStroke) continue;
-    const p=mk(sp.d);
+    const p=mk(sp.d,sp.rule);
     p.setAttribute('fill','none');
     p.setAttribute('stroke','#'+lineColor);
     p.setAttribute('stroke-width',sw);
@@ -1479,6 +1513,34 @@ function shapeNodes(paths,fill,lineColor,sw,da,paint){
     out.push(p);
   }
   return out;
+}
+/* 這個形狀改用 even-odd 之後外觀會不會變？（＝轉成 custGeom 值不值得先警告一句）
+   不寫死清單、當場量：借一個離螢幕 SVG，同一條 d 掛兩種 fill-rule，用 isPointInFill 抽樣比對。
+   抽樣是近似的，但要偵測的是「整塊鏤空」這種尺度的差異，網格夠密就綽綽有餘。
+   實測 187 個 preset 中有 9 條路徑會變（7 個 actionButton ＋ horizontal／verticalScroll）。 */
+function ruleChangesLook(el){
+  let paths; try{ paths=shapePaths(el); }catch(e){ return false; }
+  const withFill=paths.filter(sp=>sp.d&&sp.fill!=='none'&&(sp.d.match(/M/g)||[]).length>1);
+  if(!withFill.length) return false;
+  const svg=document.createElementNS(NS,'svg');
+  svg.style.cssText='position:absolute;left:-9999px;top:0;width:1px;height:1px';
+  const a=document.createElementNS(NS,'path'), b=document.createElementNS(NS,'path');
+  a.setAttribute('fill-rule','nonzero'); b.setAttribute('fill-rule','evenodd');
+  svg.appendChild(a); svg.appendChild(b); document.body.appendChild(svg);
+  const pt=svg.createSVGPoint(), W=Math.max(1,el.w), H=Math.max(1,el.h), N=48;
+  let differ=false;
+  try{
+    for(const sp of withFill){
+      a.setAttribute('d',sp.d); b.setAttribute('d',sp.d);
+      for(let i=1;i<N&&!differ;i++) for(let j=1;j<N;j++){
+        pt.x=W*i/N; pt.y=H*j/N;
+        if(a.isPointInFill(pt)!==b.isPointInFill(pt)){ differ=true; break; }
+      }
+      if(differ) break;
+    }
+  }catch(e){ differ=false; }
+  svg.remove();
+  return differ;
 }
 function isLineEl(el){ return el&&el.type==='shape'&&!!LINE_KINDS[el.shape]; }
 // 圖片預設強制等比（整張塞進框、不變形）；切到「裁切填滿」後框比例自由，超出部分裁掉，故解除鎖定
@@ -1907,17 +1969,22 @@ function renderStage(){
   checkZones();
   if(APP.edit) editOpen();   // 編輯中：接管剛渲染好的 .txt 並還原選取，重繪不中斷編輯
 }
-// 頁碼預覽：非元素（不可選、不進圖層、不算超界警告），純粹讓使用者看到匯出後會長在哪
+/* 頁碼／日期預覽：非元素（不可選、不進圖層、不算超界警告），純粹讓使用者看到匯出後會長在哪。
+   ⚠ 母版繼承模式下這只是「這個檔自己打開時」的樣子——貼進別人的簡報後，位置與字級會改由
+   目的端母版的頁尾佔位符決定（那正是繼承模式的目的）。與字體同一個道理，同一個開關。 */
 function renderPageNum(pg){
-  if(!APP.deck.pageNum) return;
   const idx=APP.deck.pages.indexOf(pg);
-  if(APP.deck.pageNum.skipFirst&&idx===0) return;
-  const b=pageNumBox();
-  const d=document.createElement('div'); d.className='pgnum';
-  d.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;`
-    +`font-size:${pt2px(b.sizePt)}px;color:#${b.color};text-align:${b.align};`;
-  d.textContent=String(idx+1);
-  stage.appendChild(d);
+  const put=(cfg,box,txt)=>{
+    if(!cfg||(cfg.skipFirst&&idx===0)) return;
+    const b=box();
+    const d=document.createElement('div'); d.className='pgnum';
+    d.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;`
+      +`font-size:${pt2px(b.sizePt)}px;color:#${b.color};text-align:${b.align};`;
+    d.textContent=txt;
+    stage.appendChild(d);
+  };
+  put(APP.deck.pageNum,pageNumBox,String(idx+1));
+  put(APP.deck.date,dateBox,dateText());
 }
 function markOverflow(){
   for(const el of curEls()){
@@ -2731,25 +2798,48 @@ function renderProps(){
     const nt=document.createElement('textarea'); nt.rows=4; nt.placeholder='此頁備忘稿（匯出寫入 pptx 備忘稿）'; nt.value=curPage().notes||'';
     nt.onchange=()=>{ commitUndo(); curPage().notes=nt.value; };
     pp.appendChild(nt);
-    // ── 以下兩區為「整份簡報」層級（不只本頁），標題已標明，避免與頁面屬性混淆 ──
-    pp.appendChild(secTitle('頁碼（整份簡報）'));
-    const pn=APP.deck.pageNum;
-    pp.appendChild(checkRow([['顯示頁碼',()=>!!pn,v=>{ commitUndo();
-      if(v) APP.deck.pageNum={...PAGENUM_DEF}; else delete APP.deck.pageNum;
-      renderAll(); },'匯出為 PPT 原生頁碼欄位（放映／列印會自動更新）']]));
-    if(pn){
+    // ── 以下三區為「整份簡報」層級（不只本頁），標題已標明，避免與頁面屬性混淆 ──
+    /* 頁碼與日期是 PowerPoint 底部同一排的兩個佔位符，設定項目也一模一樣，故共用同一段建構程式。
+       只有「自動更新／固定文字」是日期獨有的。 */
+    for(const [key,def,label,onLabel,onHint] of [
+      ['pageNum',PAGENUM_DEF,'頁碼','顯示頁碼','匯出為 PPT 原生頁碼欄位（放映／列印會自動更新）'],
+      ['date',   DATE_DEF,   '日期','顯示日期','匯出為 PPT 原生日期佔位符（與頁碼同一排）'],
+    ]){
+      pp.appendChild(secTitle(label+'（整份簡報）'));
+      const cfg=APP.deck[key];
+      pp.appendChild(checkRow([[onLabel,()=>!!cfg,v=>{ commitUndo();
+        if(v) APP.deck[key]={...def}; else delete APP.deck[key];
+        renderAll(); },onHint]]));
+      if(!cfg) continue;
       pp.appendChild(btnRow([
-        ['左下',()=>{ commitUndo(); pn.pos='bl'; renderAll(); },'',pn.pos==='bl'],
-        ['中下',()=>{ commitUndo(); pn.pos='bc'; renderAll(); },'',pn.pos==='bc'],
-        ['右下',()=>{ commitUndo(); pn.pos='br'; renderAll(); },'',(pn.pos||'br')==='br'],
+        ['左下',()=>{ commitUndo(); cfg.pos='bl'; renderAll(); },'',cfg.pos==='bl'],
+        ['中下',()=>{ commitUndo(); cfg.pos='bc'; renderAll(); },'',cfg.pos==='bc'],
+        ['右下',()=>{ commitUndo(); cfg.pos='br'; renderAll(); },'',cfg.pos==='br'],
       ]));
-      pp.appendChild(numRow('字級',pn.sizePt||PAGENUM_DEF.sizePt,v=>{ pn.sizePt=Math.max(6,Math.min(36,v)); },{min:6,max:36,step:1,unit:'pt'}));
-      pp.appendChild(colorRow('文字',pn.color||PAGENUM_DEF.color,v=>{ pn.color=v; renderAll(); },false));
-      pp.appendChild(checkRow([['首頁不顯示',()=>!!pn.skipFirst,v=>{ commitUndo();
-        if(v) pn.skipFirst=true; else delete pn.skipFirst; renderAll(); },'封面通常不放頁碼']]));
-      const pnn=document.createElement('div'); pnn.className='row';
-      pnn.innerHTML='<span class="unit">畫布上的頁碼是<b>預覽</b>（灰底虛線框、不可選取）；匯出為原生頁碼欄位，位置落在底部頁尾預留區。</span>';
-      pp.appendChild(pnn);
+      if(key==='date'){
+        pp.appendChild(btnRow([
+          ['自動更新',()=>{ commitUndo(); cfg.fmt='auto'; renderAll(); },
+            '開檔／放映時由 PowerPoint 重算（字樣跟著開檔那台電腦的地區設定）',cfg.fmt!=='fixed'],
+          ['固定文字',()=>{ commitUndo(); cfg.fmt='fixed'; if(!cfg.text) cfg.text=dateText(); renderAll(); },
+            '寫死一段文字，例如「2026 年度報告」',cfg.fmt==='fixed'],
+        ]));
+        if(cfg.fmt==='fixed'){
+          const r=document.createElement('div'); r.className='row';
+          r.appendChild(Object.assign(document.createElement('label'),{textContent:'內容'}));
+          const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+          i.value=cfg.text||''; i.placeholder='固定顯示的文字';
+          i.onchange=()=>{ commitUndo(); cfg.text=i.value.trim().slice(0,60); renderAll(); };
+          r.appendChild(i); pp.appendChild(r);
+        }
+      }
+      pp.appendChild(numRow('字級',cfg.sizePt||def.sizePt,v=>{ cfg.sizePt=Math.max(6,Math.min(36,v)); },{min:6,max:36,step:1,unit:'pt'}));
+      pp.appendChild(colorRow('文字',cfg.color||def.color,v=>{ cfg.color=v; renderAll(); },false));
+      pp.appendChild(checkRow([['首頁不顯示',()=>!!cfg.skipFirst,v=>{ commitUndo();
+        if(v) cfg.skipFirst=true; else delete cfg.skipFirst; renderAll(); },'封面通常不放'+label]]));
+      const nn=document.createElement('div'); nn.className='row';
+      nn.innerHTML=`<span class="unit">畫布上的${label}是<b>預覽</b>（不可選取）；匯出為原生佔位符。`
+        +'「母版繼承」模式下位置與字級會改由<b>目的端母版</b>的頁尾決定，畫布顯示的是這個檔自己打開時的樣子。</span>';
+      pp.appendChild(nn);
     }
     pp.appendChild(secTitle('檔案資訊（整份簡報）'));
     for(const [key,label,ph] of [['author','作者','填入 pptx 檔案屬性'],['company','公司',''],['subject','主旨','']]){
@@ -2837,7 +2927,7 @@ function renderProps(){
     // ── 環境設定檔（profile）：把上面這些客製化整包存下／載入，並可設為新簡報的預設 ──
     pp.appendChild(secTitle('環境設定檔（profile）'));
     pp.appendChild(btnRow([
-      ['⬇ 匯出',()=>saveProfileFile(),'把尺寸／預留區／字體／語言／頁碼／檔案屬性存成 .profile.json'],
+      ['⬇ 匯出',()=>saveProfileFile(),'把尺寸／預留區／字體／語言／頁碼／日期／檔案屬性存成 .profile.json'],
       ['⬆ 載入',()=>$('#profileInput').click(),'載入 .profile.json 套用到本簡報'],
     ]));
     pp.appendChild(btnRow([
@@ -3813,7 +3903,10 @@ function gToggleNode(si,ni){   // 角點 ↔ 平滑點
   }
   gRender();
 }
-// 反轉子路徑繞行方向。nonzero 規則下，內圈要與外圈反向才會挖成洞（donut／frame 就是這樣寫的）
+/* 反轉子路徑繞行方向。⚠ 填充規則實測是 even-odd，繞行方向「不」影響挖不挖洞，
+   所以這個按鈕不是挖洞的必要步驟。留著的理由：OOXML 的官方 preset（donut／frame／
+   noSmoking）內圈都反向繞行，跟進這個慣例可讓匯出的路徑與原生形狀長得一樣，
+   也保留給日後真的需要指定方向的用途（例如描邊起點）。 */
 function gFlipSub(si){
   const s=GEO.subs[si]; if(!s) return;
   gPush();
@@ -3845,11 +3938,11 @@ function gRender(){
   svg.appendChild(mk('path',{d:gl.join(''),stroke:'#2b2f36','stroke-width':1,fill:'none'}));
   svg.appendChild(mk('rect',{x:gX(0),y:gY(0),width:W*S,height:H*S,fill:'none',
     stroke:'#575d68','stroke-dasharray':'5 4'}));
-  // 圖形本身。fill-rule 跟畫布 shapeNodes 同樣用 nonzero（＝PowerPoint 的規則），
+  // 圖形本身。fill-rule 跟畫布 shapeNodes 同樣用 even-odd（＝PowerPoint 實測的規則），
   // 所以「編輯器裡看到有沒有挖洞」＝「PPT 裡有沒有挖洞」，不會兩套結果
   const d=subsD(GEO.subs,gX,gY);
   if(d) svg.appendChild(mk('path',{d,fill:'rgba(77,157,224,.32)',stroke:'#4D9DE0','stroke-width':2,
-    'fill-rule':'nonzero','stroke-linejoin':'round','pointer-events':'none'}));
+    'fill-rule':'evenodd','stroke-linejoin':'round','pointer-events':'none'}));
   // 編輯模式：每段一條透明粗線當命中區，點一下即在該段正中插點
   if(GEO.tool==='edit') GEO.subs.forEach((s,si)=>{
     const n=s.nodes, last=s.closed? n.length-1 : n.length-2;
@@ -3916,6 +4009,11 @@ function toCustGeom(el){
     '• 換不回內建形狀（同 PowerPoint 的「編輯端點」，單向）'];
   // 子路徑原本各有填色／描邊差異的形狀（動作按鈕、圖說外框…），轉換後只剩一種填色
   if(r.mixed) warn.push('• 這個形狀的各部分原本填色／外框設定不同，轉換後會變成同一種填色（外觀會變）');
+  /* 填充規則會換一套：preset 由 PowerPoint 用內建幾何畫（本工具照 nonzero 重現），
+     custGeom 則由我們給的路徑畫，PowerPoint 對它用的是 even-odd（2026-08-03 實測）。
+     187 個 preset 裡有 9 條路徑在兩種規則下結果不同，轉完會多出洞——先講，不要讓人事後才發現。 */
+  if(ruleChangesLook(el)) warn.push('• 這個形狀轉換後中間會多出鏤空'
+    +'（內建形狀與自訂幾何的填充規則不同，PowerPoint 上也會是鏤空的）');
   warn.push('','要繼續嗎？');
   if(!confirm(warn.join('\n'))) return;
   commitUndo();
@@ -4002,8 +4100,8 @@ $('#gOK').onclick=gSave;
 $('#gCancel').onclick=gCloseEditor;
 $('#btnGeomClose').onclick=gCloseEditor;
 $('#gNote').innerHTML='<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
-  'Esc／雙擊＝結束這條路徑，之後再點就是<b>新的子路徑</b>。<b>挖洞</b>：內圈要與外圈<b>反向繞行</b>才會空心'+
-  '（PowerPoint 用 nonzero 規則，同向會是實心）——畫完內圈按「<b>⇄ 反轉方向</b>」即可，編輯器裡看到的空心＝PPT 裡的空心。'+
+  'Esc／雙擊＝結束這條路徑，之後再點就是<b>新的子路徑</b>。<b>挖洞</b>：在外圈裡面再畫一條子路徑就會空心，'+
+  '<b>繞行方向不影響</b>（PowerPoint 用 even-odd 規則，2026-08-03 實測）——編輯器裡看到的空心＝PPT 裡的空心。'+
   '<b>編輯點</b>：拖錨點移動，拖<b>藍色控制柄</b>調曲度（按住 Alt 拖＝兩側拆開成折角），'+
   '點<b>線段</b>在正中插入節點，雙擊錨點切換直線／曲線，Delete 刪除。Cmd/Ctrl+Z 在編輯器內獨立復原。'+
   '座標活在下方虛線框（＝形狀當下尺寸）內，之後拉大拉小圖案會<b>等比跟著變</b>。'+
@@ -4992,14 +5090,20 @@ function normalizeDeck(d){
   for(const k of ['author','company','subject']){   // 檔案屬性：字串才留，空值一律刪鍵
     if(d[k]==null||!String(d[k]).trim()) delete d[k]; else d[k]=String(d[k]).trim();
   }
-  // 自動頁碼：物件才留，位置／字級／顏色一律 clamp 到合法範圍
-  if(d.pageNum&&typeof d.pageNum==='object'){
-    const p=d.pageNum;
-    p.pos=['bl','bc','br'].includes(p.pos)? p.pos:'br';
-    p.sizePt=Math.max(6,Math.min(36,Math.round(+p.sizePt)||PAGENUM_DEF.sizePt));
-    p.color=hex6(p.color)||PAGENUM_DEF.color;
+  // 自動頁碼／日期：物件才留，位置／字級／顏色一律 clamp 到合法範圍
+  for(const [key,def] of [['pageNum',PAGENUM_DEF],['date',DATE_DEF]]){
+    const p=d[key];
+    if(!p||typeof p!=='object'){ delete d[key]; continue; }
+    p.pos=['bl','bc','br'].includes(p.pos)? p.pos:def.pos;
+    p.sizePt=Math.max(6,Math.min(36,Math.round(+p.sizePt)||def.sizePt));
+    p.color=hex6(p.color)||def.color;
     if(p.skipFirst) p.skipFirst=true; else delete p.skipFirst;
-  }else delete d.pageNum;
+  }
+  if(d.date){   // 日期另有「自動更新／固定文字」兩態；固定文字沒填內容等於沒設，退回自動
+    d.date.fmt= d.date.fmt==='fixed'? 'fixed':'auto';
+    const t=String(d.date.text||'').trim().slice(0,60);
+    if(t) d.date.text=t; else{ delete d.date.text; d.date.fmt='auto'; }
+  }
   {const m=normMaster(d.master); if(m) d.master=m; else delete d.master;}
   const mstIds=new Set(((d.master||{}).elements||[]).map(e=>e.id));
   const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）
@@ -6066,7 +6170,13 @@ function parasToPptx(el){
       outline:r.outline?{size:r.outline.size||0.75,color:r.outline.color||'FFFFFF'}:undefined,
       glow:r.glow?{size:r.glow.size||8,color:r.glow.color||'FFFF00',opacity:r.glow.opacity!=null?r.glow.opacity:0.6}:undefined,
       hyperlink:r.link?(r.link.url?{url:r.link.url}:{slide:Math.max(1,Math.round(r.link.slide)||1)}):undefined,
+      /* 行距要逐段給，不能只在元素層給一個值。畫布的 CSS line-height 是「無單位倍數」，
+         每個 run 各自乘自己的字級；PptxGenJS 的 lineSpacing 是「絕對點數」，元素層只能給一個。
+         元素層原本用 maxPt(el)（全元素最大字級）→ 一個 40pt 標題會把同框內 8pt 小字的行距
+         也撐成 48pt，畫布只有 9.6pt。改成每段用該段自己的最大字級，落差就只剩「同一段內
+         混字級」這種 CSS 也只能取最大值的情形。元素層那個值留著當沒有段落時的退路。 */
       ...(i===0? {bullet:bu,indentLevel:(p.bullet&&p.bullet.level)||undefined,
+        lineSpacing:Math.round(paraPt(p)*(el.lineSpacing||1.2)*10)/10,
         paraSpaceBefore:p.spaceBefore||undefined,paraSpaceAfter:p.spaceAfter||undefined} : {}),
       align:p.align||'left',
       breakLine:i===rr.length-1}}));
@@ -6371,7 +6481,12 @@ async function addElToSlide(slide,el,pend){
       const g=el.option&&el.option.grid;
       const fr=(v,tot,d)=>typeof v==='number'? Math.max(0,Math.min(0.4,v/tot)) : d;
       const L=fr(g&&g.left,el.w,0.06), R=fr(g&&g.right,el.w,0.04);
-      const T=fr(g&&g.top,el.h,0.08), B=fr(g&&g.bottom,el.h,o.showLegend?0.16:0.08);
+      /* 上緣預設要替標題留高度。PowerPoint 的標題是自動排版、繪圖區卻是這裡鎖死的，
+         不留位就會被標題壓到——圓餅／環圈這種「填滿繪圖區」的圖形最明顯（實測重疊）。
+         下緣早就替圖例留了 0.16，上緣漏掉標題，是同一件事只做了一半。
+         留多少跟著標題字級走，並給 0.14 的下限（PowerPoint 標題框自帶內距）。 */
+      const tTop=o.showTitle? Math.min(0.35,Math.max(0.14,pt2px(o.titleFontSize||14)*2.4/el.h)) : 0.08;
+      const T=fr(g&&g.top,el.h,tTop), B=fr(g&&g.bottom,el.h,o.showLegend?0.16:0.08);
       if(!o.layout) o.layout={x:L,y:T,w:Math.max(0.2,1-L-R),h:Math.max(0.2,1-T-B)};
       slide.addChart(m.type,m.data,o); return;
     }
@@ -6395,6 +6510,7 @@ async function addElToSlide(slide,el,pend){
   // margin 這裡的單位是「點」（PptxGenJS 對 addText 走 R()＝pt→EMU；表格儲存格的 margin 才是吋）
   const o={...common,valign:{top:'top',middle:'middle',bottom:'bottom'}[el.valign||'top'],
     margin:el.inset||0,fit:'none',wrap:!el.nowrap,
+    // 元素層行距只是退路：有段落時 parasToPptx 會逐段覆蓋掉它（PptxGenJS 取 run 的 options 優先）
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
   if(VERT_MODES[el.vert]) o.vert=el.vert;   // → <a:bodyPr vert="…">（PptxGenJS 原樣寫出，不驗值，故先過白名單）
   // 漸層：先寫第一個色標的 solidFill 當錨點，後製再整段換成 <a:gradFill>（PptxGenJS 無原生 API）
@@ -6456,6 +6572,62 @@ function transitionXml(tr){
   const inner={fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'}[tr.type];
   return `<p:transition spd="med">${inner}</p:transition>`;
 }
+/* ================= 頁尾佔位符（頁碼 sldNum／日期 dt） =================
+   為什麼不用 PptxGenJS 的 slide.slideNumber：它寫出的是「明寫 <a:xfrm> 座標 ＋ idx="4294967295"」
+   的佔位符。有自己的座標就不會去繼承目的端版面的位置，貼進別人的母版時永遠卡在原座標；
+   那個 idx（0xFFFFFFFF）意思是「不對應任何版面配置索引」，等於自己把繼承鏈剪斷。
+   日期（type="dt"）它則根本沒有。兩件事同源，所以整組自己寫。
+
+   兩種輸出，跟著同一個「母版繼承」開關走（與字體同一個開關，見說明面板）：
+     locked  → 投影片上寫滿座標／字級／顏色／對齊，貼到哪裡都長一樣
+     inherit → 投影片上只留空殼（<p:spPr/>、<a:bodyPr/>、<a:lstStyle/>，沒有 xfrm、沒有字級），
+               位置與樣式全部交給所屬版面配置 → 貼進別人的簡報就跟著對方的頁尾走
+   inherit 模式下這個檔自己打開時仍然正確，因為「帶座標的完整版」同時寫進了自家的 slideMaster
+   與每一個 slideLayout（見 injectHfParts）——繼承鏈是 slide → layout → master，缺一層就往上找。
+
+   idx 取 PowerPoint 版面配置的慣例值（dt=10、ftr=11、sldNum=12；母版端另有一組 2/3/4）。
+   實測一份 PowerPoint 自製範本：母版用 2/3/4、版面配置用 10/11/12，兩邊 idx 不同而繼承照樣成立
+   ——可知這三種佔位符主要靠 type 匹配、idx 只是輔助，貼到 idx 不同的別家母版上不會斷。 */
+const HF_KINDS={
+  sldNum:{sz:'quarter',idx:12,name:'Slide Number Placeholder',fld:'slidenum',
+          guid:'{F7021451-1387-4CA6-816F-3879F97B5CBC}'},
+  dt:    {sz:'half',   idx:10,name:'Date Placeholder',        fld:'datetime1',
+          guid:'{5D2C1B0A-9E44-4F27-B6D3-2A8E7C914B60}'},
+};
+const HF_ALGN={left:'l',center:'ctr',right:'r'};
+function hfSpXml(kind,o){
+  const K=HF_KINDS[kind], lang=o.lang||'en-US';
+  // auto＝可更新欄位（<a:fld>，開檔／放映時由 PowerPoint 重算）；fixed＝一般 run，字面就是內容
+  const body= o.fixed
+    ? `<a:r><a:rPr lang="${lang}"/><a:t>${xmlAttr(o.text)}</a:t></a:r>`
+    : `<a:fld id="${K.guid}" type="${K.fld}"><a:rPr lang="${lang}"/><a:t>${xmlAttr(o.text)}</a:t></a:fld>`;
+  const nv=`<p:nvSpPr><p:cNvPr id="${o.id}" name="${K.name}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>`
+    +`<p:nvPr><p:ph type="${kind}" sz="${K.sz}" idx="${K.idx}"/></p:nvPr></p:nvSpPr>`;
+  if(o.inherit)   // 空殼：一個座標、一個字級都不能寫，寫了就不是繼承
+    return `<p:sp>${nv}<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>`
+      +`<a:p>${body}<a:endParaRPr lang="${lang}"/></a:p></p:txBody></p:sp>`;
+  const b=o.box, al=HF_ALGN[b.align]||'r';
+  return `<p:sp>${nv}<p:spPr><a:xfrm><a:off x="${px2emu(b.x)}" y="${px2emu(b.y)}"/>`
+    +`<a:ext cx="${px2emu(b.w)}" cy="${px2emu(b.h)}"/></a:xfrm>`
+    +`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>`
+    +`<p:txBody><a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>`
+    +`<a:lstStyle><a:lvl1pPr algn="${al}"><a:defRPr sz="${Math.round(b.sizePt*100)}">`
+    +`<a:solidFill><a:srgbClr val="${b.color.toUpperCase()}"/></a:solidFill></a:defRPr></a:lvl1pPr></a:lstStyle>`
+    +`<a:p><a:pPr algn="${al}"/>${body}<a:endParaRPr lang="${lang}"/></a:p></p:txBody></p:sp>`;
+}
+/* 把兩個佔位符插進一份 spTree。inherit 只對投影片成立——母版與版面配置永遠寫完整座標，
+   否則這個檔案自己打開時就沒有任何一層知道頁碼該放哪裡。
+   id 取「現有最大值 +1、+2」；後續的 cNvPr id 去重（後製 (7)）仍會再兜一次底。 */
+function injectHf(xml,{inherit,lang,pageIdx}){
+  const D=APP.deck, add=[];
+  let id=Math.max(0,...[...xml.matchAll(/<p:cNvPr id="(\d+)"/g)].map(m=>+m[1]));
+  const skip=c=>pageIdx!=null&&c.skipFirst&&pageIdx===0;   // 母版／版面配置沒有頁次，一律要寫
+  if(D.pageNum&&!skip(D.pageNum)) add.push(hfSpXml('sldNum',
+    {box:pageNumBox(),text:pageIdx!=null? String(pageIdx+1):'‹#›',lang,id:++id,inherit}));
+  if(D.date&&!skip(D.date)) add.push(hfSpXml('dt',
+    {box:dateBox(),text:dateText(),fixed:D.date.fmt==='fixed',lang,id:++id,inherit}));
+  return add.length? xml.replace('</p:spTree>',add.join('')+'</p:spTree>') : xml;
+}
 function patchFonts(xml,latinFont,mode,F,lang){
   const mk= mode==='inherit'
     ? '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>'
@@ -6491,7 +6663,6 @@ async function exportPptx(download=true){
   if(APP.deck.author) pptx.author=APP.deck.author;
   if(APP.deck.company) pptx.company=APP.deck.company;
   if(APP.deck.subject) pptx.subject=APP.deck.subject;
-  const pnum=APP.deck.pageNum? pageNumBox():null;
   const pendList=[];        // 全 deck 的待插入影片清單（匯出後彙總對話框用）
   nvDowngrade.length=0;     // 勾了原生但匯出前複檢沒過的圖表（見下方降級提示）
   let wroteNotes=false;     // 是否真的有寫進備忘稿（含待辦提示）→ 決定要不要保留 notesMaster 基建
@@ -6542,10 +6713,6 @@ async function exportPptx(download=true){
       ...(pend.length? ['—— DeckJSON 待辦 ——',...pend.map(t=>'• '+t)]:[])].filter(Boolean).join('\n');
     if(noteOut){ slide.addNotes(noteOut); wroteNotes=true; }
     if(pend.length) pendList.push(`第 ${pi+1} 頁${pg.name?'（'+pg.name+'）':''}：`+pend.join('、'));
-    // 原生頁碼欄位（<a:fld type="slidenum">）：放映／列印自動更新，不是寫死的文字
-    if(pnum&&!(APP.deck.pageNum.skipFirst&&pi===0))
-      slide.slideNumber={x:px2in(pnum.x),y:px2in(pnum.y),w:px2in(pnum.w),h:px2in(pnum.h),
-        align:pnum.align,valign:'middle',margin:0,fontSize:pnum.sizePt,color:pnum.color};
   }
   /* 母版內容移植：借最後一張暫時投影片跑完既有寫入器，再把 _slideObjects 與三份 rels
      整組搬到 layout 上，然後把那張暫時投影片從輸出移除。
@@ -6692,8 +6859,12 @@ async function exportPptx(download=true){
       s=s.replace(new RegExp(`(<p:cNvPr id="\\d+" name="${reEsc(el.id)}")(?![^>]*descr=)`),
         `$1 descr="${xmlAttr(el.alt)}"`);
     }
-    // (7) cNvPr id 去重：頁碼佔位形狀的 id 被 PptxGenJS 寫死成 25，
-    //     單頁物件數 ≥24 時會與元素 id 撞號 → PowerPoint 判為毀損要求修復。重複者一律改號。
+    /* 頁碼／日期佔位符：投影片這一份依模式決定寫實或寫空殼（見 injectHf 上方說明）。
+       母版與版面配置那一份在迴圈外另外處理，永遠寫實座標。 */
+    if(!isMstPart) s=injectHf(s,{inherit:mode==='inherit',lang:LANG,
+      pageIdx:+name.match(/slide(\d+)\.xml/)[1]-1});
+    // (7) cNvPr id 去重：單頁物件數多時佔位形狀有機會與元素撞號 → PowerPoint 判為毀損要求修復。
+    //     重複者一律改號。（原本的元凶是 PptxGenJS 把頁碼佔位形狀的 id 寫死成 25，那條路已改為自寫。）
     {const all=[...s.matchAll(/<p:cNvPr id="(\d+)"/g)].map(m=>+m[1]);
      let mx=all.length? Math.max(...all):0;          // 先掃完全部再發新號，避免補的號碼撞到後面既有的
      const used=new Set();
@@ -6742,6 +6913,40 @@ async function exportPptx(download=true){
       const isTbl=seg.startsWith('<p:graphicFrame>')&&seg.includes('<a:tbl>');
       return patchFonts(seg,isTbl?F.tableLatin:F.latin,mode,F,LANG);
     }).join('');
+    zip.file(name,s);
+  }
+  /* ---- 母版與版面配置的後製 ----
+     兩件事，都是 2026-08-04 使用者實測「貼進別人的簡報，頁碼還是卡在右下角」之後才查清楚的。 */
+  for(const name of Object.keys(zip.files)){
+    if(!/^ppt\/(slideMasters\/slideMaster|slideLayouts\/slideLayout)\d+\.xml$/.test(name)) continue;
+    const isMst=/slideMasters\/slideMaster/.test(name);
+    let s=await zip.file(name).async('string');
+    /* (a) 版面配置要標成「空白」版面。
+       PptxGenJS 寫的是 `<p:sldLayout preserve="1">`——**沒有 type 屬性**，而該屬性省略時等於
+       `type="cust"`（自訂）。PowerPoint 在「使用目的地佈景主題」貼上時是**按 type 去配對**目的端的
+       版面配置；配不到就把來源的版面配置連同母版整個匯進目的端——實測結果就是目的端多出一個
+       名為 DEFAULT 的母版，投影片仍掛在我們自己的版面配置上，於是頁尾一步也不會動。
+       改標 `type="blank"`（＝PowerPoint 的「空白」版面，每個佈景主題都有）即可配對成功。
+       ⚠ 母版模式的那個版面配置維持自訂：它承載 Logo／頁尾條等真實內容，被配走就整組不見了。
+       代價是該模式下頁尾也跟著配不走；要兩者兼得請改用「畫進每一頁」。 */
+    if(!isMst&&name!==MST_LAYOUT){
+      s=s.replace(/<p:sldLayout\b(?![^>]*\stype=)/,'<p:sldLayout type="blank"');
+      s=s.replace(/(<p:cSld[^>]*\bname=")[^"]*(")/,'$1Blank$2');
+    }
+    /* (b) 頁尾佔位符：**座標只寫在母版，版面配置一律空殼**。
+       這是照 PowerPoint 自製範本實測出來的形狀——拆開範本看，11 個版面配置的 dt／ftr／sldNum
+       全都沒有 <a:xfrm> 也沒有 <a:lstStyle>，只有母版那一份帶座標。原本三層都寫滿座標是自己
+       想當然耳，副作用是「版面配置壓過母版」：使用者在 PowerPoint 裡改母版的頁尾位置會沒有反應。
+       先清掉既有的同型佔位符再插：同一個 spTree 內 type 重複會被 PowerPoint 判為毀損。
+       （<p:sp> 不會巢狀，故用「中間不得再出現 <p:sp>」把匹配起點鎖在最近的那一個開標籤。） */
+    if(APP.deck.pageNum||APP.deck.date){
+      s=s.replace(/<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:ph type="(?:sldNum|dt)"[\s\S]*?<\/p:sp>/g,'');
+      s=injectHf(s,{inherit:!isMst,lang:LANG});
+      /* <p:hf> 是母版層的「這些頁尾佔位符要不要出現」開關，PptxGenJS 寫死成全部 0。
+         屬性省略時預設為 true，故這裡只留 hdr／ftr 兩個明確關掉（本工具不做這兩種），
+         其餘交給預設——與 PowerPoint 自製範本寫的形狀一致。 */
+      if(isMst) s=s.replace(/<p:hf\b[^>]*\/>/,'<p:hf hdr="0" ftr="0"/>');
+    }
     zip.file(name,s);
   }
   const b64=await zip.generateAsync({type:'base64'});
