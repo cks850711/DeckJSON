@@ -452,7 +452,7 @@
         <li>右上「JSON」＝<b>整份簡報＋全域</b>（標題／字體模式／字型／語言／投影片尺寸／預留區）：複製給 AI 討論 → 貼回「套用」。環境設定跟著 JSON 走，所以貼來貼去不會掉。</li>
         <li>右欄「<b>本頁 JSON ▤</b>」＝可拖曳的浮動面板，只顯示目前頁；面板開著時<b>點畫布任一元素／圖片，會自動捲動並選取它的 JSON 區塊</b>，適合針對性微調。</li>
         <li>JSON 內圖片以 <code>@asset:元素id</code> 佔位顯示（base64 不塞爆視窗）；「套用」時自動還原位元組。新圖請由工具插入；存 .json 檔仍含完整圖片。</li>
-        <li>細緻的格式（單一文字框內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）由 AI 直接寫 JSON 達成；畫布上的編輯以整個元素為單位（面板操作一律套用到該元素的全部 run／段落）。</li>
+        <li>細緻的格式（文字框或<b>表格儲存格</b>內混用粗體／變色／上下標／底線／高亮／逐段項目符號、儲存格個別底色、合併儲存格）可由 AI 直接寫 JSON，也可在畫布上反白幾個字就地改。</li>
         <li>圖表存的是 ECharts option 規格，不是死圖——隨時可改數據重渲染。<b>資料交給 JSON（自己寫或請 AI 產），外觀用「視覺編輯」分頁調</b>，面板頂端有即時預覽：圖種、圖表與座標軸標題（字級／顏色）、軸線與刻度（顏色／粗細）、軸標籤（字級／顏色／傾斜）、數值軸範圍與刻度間隔／反轉、主格線（顏色／線寬／虛線）、圖例、資料標籤（位置／字級／顏色）、系列顏色與邊框／柱寬／線寬／端點、圓餅內圈與起始角、繪圖區留白、圖表底色。面板只寫它自己那幾格，手寫的進階設定不會被覆蓋。</li>
         <li>沒有 PowerPoint 原生對應的設定（長條圓角、副格線、隱藏數值軸標籤）標示「<b>僅 PNG</b>」；勾了「匯出為原生圖表」時會直接停用，不讓你設一個匯出時會消失的值。</li>
         <li>圖表可選擇匯出為 <b>PowerPoint 原生圖表</b>（PPT 內能編輯資料、跟隨目標母版），或維持 PNG（外觀與畫布一致）。</li>
@@ -474,6 +474,7 @@
         <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
         <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色／框線<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。</li>
         <li><b>逐格框線</b>：右欄「框線筆」設線寬（pt）＋顏色，再點<b>全部／外框／內部／上／下／左／右／無</b>套到反白範圍（未反白＝全表）。每格四邊、顏色線寬各自獨立（同 PowerPoint 儲存格框線）；相鄰共用邊自動雙寫同步，故畫布預覽＝匯出結果。</li>
+        <li><b>格內混排</b>：雙擊進入儲存格後<b>反白幾個字</b>，右欄「儲存格樣式」的字級／B／I／文字色就只套那幾個字；此時會多出<b>「格內文字（反白處）」</b>一排——上標／下標／底線／刪除線／高亮／清除格式。取消反白＝改回整格。</li>
         <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Tab</b>＝跳右一格（列尾自動換到下一列、跳過合併格）、<b>Shift+Tab</b>＝跳左一格、<b>Enter</b>＝跳下一格、<b>Shift+Enter</b>＝格內換行、<b>Esc</b>＝結束編輯。（PowerPoint 的 Enter 是格內換行；此處 Enter 改採試算表式跳下格，換行請用 Shift+Enter。）</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
@@ -559,7 +560,7 @@
         <li><b>本機影片不會被嵌入</b>——匯出的只是封面圖佔位，必須在 PowerPoint 手動換成真影片。這是刻意的：影片位元組會讓「整份 JSON 貼給 AI」這個用法失效。</li>
         <li><b>線上影片播放需要網路</b>；且在 Keynote／Google Slides／LibreOffice 的支援程度<b>尚未實測</b>，可能只顯示封面圖。</li>
         <li>自動存檔存在<b>這台電腦的這個瀏覽器</b>裡（IndexedDB），換瀏覽器、換電腦、清除瀏覽資料都會不見，而且<b>只保留最新一份</b>（沒有版本歷史）。要留存或轉移請按「💾 另存」。無痕視窗通常擋存取，此時頂端會轉紅字明講。</li>
-        <li><b>表格儲存格不支援格內混排</b>：一格只能整格同一種格式。若某格需要「只有幾個字變色放大」，請把該格<b>留空</b>，另拉一個文字框疊在上面。疊上去的文字框不會跟著表格移動（建議與表格<b>群組</b>），也不會被格線裁切，內距請對齊儲存格。匯出後在 PowerPoint 裡可以直接把文字打回格內、刪掉覆蓋層——PowerPoint 的儲存格本身是支援格內混排的。</li>
+        <li><b>表格儲存格的格內混排</b>：同一格內可混用粗斜體、顏色、字級、上下標、底線、刪除線、高亮。JSON 寫在該格的 <code>runs</code>（也吃 <code>md</code> 簡寫），畫布上則是<b>雙擊進格、反白幾個字</b>再按右欄按鈕。<b>上下標沒有格層級對應</b>，只能反白後從「格內文字」那排設。整格套用（沒反白）會清掉所有 run 對該項的覆寫，同 PowerPoint 行為。</li>
         <li>自訂字型（fontFace）是整個元素統一覆寫；同一文字框內逐 run 混用不同字型請走 JSON。</li>
         <li>就地編輯只在 <b>Chrome</b> 實測過；Safari／Firefox <b>尚未測試</b>，行為可能不同。</li>
         <li>轉場支援 Morph／淡出／推入／擦去（頁面屬性設定，進入該頁時播放）；Morph 依元素 id 跨頁配對，「複製此頁」保留元素 id 即為此用；元素進出動畫不支援。</li>
@@ -766,9 +767,8 @@ function mergeRuns(p){   // 併相鄰同樣式、丟空 run（全空時保留一
   if(!out.length) out.push({...runStyle((p.runs||[])[0]||{}),text:''});
   p.runs=out;
 }
-// 在段落的第 pos 個字元處切開，回傳「pos 起算的那個 run 的索引」（pos 落在邊界時不切）
-function splitAt(p,pos){
-  const runs=p.runs||(p.runs=[]);
+// 在 run 陣列的第 pos 個字元處切開，回傳「pos 起算的那個 run 的索引」（pos 落在邊界時不切）
+function runsSplitAt(runs,pos){
   let acc=0;
   for(let i=0;i<runs.length;i++){
     const t=String(runs[i].text||'');
@@ -782,6 +782,8 @@ function splitAt(p,pos){
   }
   return runs.length;
 }
+// 段落版（文字框用）。儲存格是單段模型，直接對 run 陣列呼叫 runsSplitAt
+function splitAt(p,pos){ return runsSplitAt(p.runs||(p.runs=[]),pos); }
 // 對選取範圍 {p0,o0,p1,o1} 內的每個 run 執行 fn(run,para)
 function applyRange(el,sel,fn){
   for(let pi=sel.p0;pi<=sel.p1;pi++){
@@ -1460,6 +1462,7 @@ function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
   edit:null,      // 文字框 run 級編輯狀態 {id,root,src,sel:{p0,o0,p1,o1},pushed,snap}
+  cellEdit:null,  // 格內 run 級編輯狀態 {id,r,c,root,src,sel:{o0,o1}}（單段模型，位移以整格計）
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
   tblPen:{pt:0.75,color:'999999',dash:false},   // 框線筆：線寬＋顏色＋實／虛線，供框線按鈕套用
   dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
@@ -1558,6 +1561,28 @@ function renderZones(){
 }
 
 /* ================= 渲染：畫布 ================= */
+/* 一個 run → 一個 <span>。段落與表格儲存格共用同一份實作，免得兩邊的預覽慢慢走鐘。
+   defSizePt 是「run 沒寫字級時的底」——文字框 18、儲存格 12，故由呼叫端給。 */
+function runSpan(r,defSizePt){
+  const sp=document.createElement('span');
+  sp.textContent=String(r.text);
+  sp.style.fontSize=pt2px((r.sizePt||defSizePt)*((r.sup||r.sub)?0.7:1))+'px';
+  sp.style.color='#'+(r.color||'1A1A1A');
+  if(r.bold)sp.style.fontWeight=700;
+  if(r.italic)sp.style.fontStyle='italic';
+  if(r.sup)sp.style.verticalAlign='super';
+  if(r.sub)sp.style.verticalAlign='sub';
+  // 底線／刪除線可疊加；有超連結時 PptxGenJS 會自動補 u="sng"，預覽同步畫底線（預覽＝輸出）
+  const dec=[]; if(r.underline||r.link) dec.push('underline'); if(r.strike) dec.push('line-through');
+  if(dec.length) sp.style.textDecoration=dec.join(' ');
+  if(r.highlight) sp.style.background='#'+r.highlight;
+  if(r.charSpacing) sp.style.letterSpacing=pt2px(r.charSpacing)+'px';
+  if(r.fontFace) sp.style.fontFamily=`"${r.fontFace}"`;
+  if(r.outline) sp.style.webkitTextStroke=`${pt2px(r.outline.size||0.75)}px #${r.outline.color||'FFFFFF'}`;
+  if(r.glow) sp.style.textShadow=`0 0 ${pt2px(r.glow.size||8)}px #${r.glow.color||'FFFF00'}`;
+  if(r.link) sp.title='超連結：'+(r.link.url||('本簡報第 '+r.link.slide+' 頁'));
+  return sp;
+}
 function paraDiv(p,el,seq){
   const div=document.createElement('div');
   div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
@@ -1582,25 +1607,8 @@ function paraDiv(p,el,seq){
     div.appendChild(mk);
   }
   for(let ri=0;ri<runs.length;ri++){
-    const r=runs[ri];
-    const sp=document.createElement('span');
+    const sp=runSpan(runs[ri],18);
     sp.dataset.r=ri;   // 編輯器用 (段索引, run 索引) 反查樣式
-    sp.textContent=String(r.text);
-    sp.style.fontSize=pt2px((r.sizePt||18)*((r.sup||r.sub)?0.7:1))+'px';
-    sp.style.color='#'+(r.color||'1A1A1A');
-    if(r.bold)sp.style.fontWeight=700;
-    if(r.italic)sp.style.fontStyle='italic';
-    if(r.sup)sp.style.verticalAlign='super';
-    if(r.sub)sp.style.verticalAlign='sub';
-    // 底線／刪除線可疊加；有超連結時 PptxGenJS 會自動補 u="sng"，預覽同步畫底線（預覽＝輸出）
-    const dec=[]; if(r.underline||r.link) dec.push('underline'); if(r.strike) dec.push('line-through');
-    if(dec.length) sp.style.textDecoration=dec.join(' ');
-    if(r.highlight) sp.style.background='#'+r.highlight;
-    if(r.charSpacing) sp.style.letterSpacing=pt2px(r.charSpacing)+'px';
-    if(r.fontFace) sp.style.fontFamily=`"${r.fontFace}"`;
-    if(r.outline) sp.style.webkitTextStroke=`${pt2px(r.outline.size||0.75)}px #${r.outline.color||'FFFFFF'}`;
-    if(r.glow) sp.style.textShadow=`0 0 ${pt2px(r.glow.size||8)}px #${r.glow.color||'FFFF00'}`;
-    if(r.link) sp.title='超連結：'+(r.link.url||('本簡報第 '+r.link.slide+' 頁'));
     div.appendChild(sp);
   }
   return div;
@@ -1657,7 +1665,12 @@ function renderTableInto(box,el){
         td.style['border'+side]= s? `${Math.max(1,pt2px(s.pt))}px ${s.dash?'dashed':'solid'} #${s.color}` : 'none';
       }
       td.style.whiteSpace='pre-wrap';   // 保留格內換行（Shift+Enter）與空白
-      td.textContent=String(cell.text||'');
+      /* 格內混排：有 runs 才逐 run 建 span，否則維持單一 textNode。
+         差別不只是效率——就地編輯是以 DOM 為真相，扁平格保持 textNode 才能沿用原本那條純文字路徑。 */
+      if(Array.isArray(cell.runs)&&cell.runs.length){
+        const rs=cellRuns(cell);
+        for(let ri=0;ri<rs.length;ri++){ const sp=runSpan(rs[ri],12); sp.dataset.r=ri; td.appendChild(sp); }
+      }else td.textContent=String(cell.text||'');
       tr.appendChild(td);
     }
     tb.appendChild(tr);
@@ -2156,7 +2169,7 @@ function setPage(pid){ APP.page=pid; setSel([]); APP.editing=null; APP.edit=null
 function setMasterEdit(on){
   APP.masterEdit=!!on;
   if(APP.masterEdit) masterEls();   // 首次進入時把 deck.master 建起來
-  APP.edit=null; APP.editing=null; APP.cellSel=null; setSel([]);
+  APP.edit=null; APP.editing=null; APP.cellSel=null; APP.cellEdit=null; setSel([]);
   document.body.classList.toggle('masterEdit',APP.masterEdit);
   renderAll(); syncPageJson();
 }
@@ -2587,7 +2600,9 @@ function renderMultiProps(pp){
 function propsSig(){
   const el=selEl();
   if(!el) return 'none';
+  const ce=APP.cellEdit;
   return el.id+'|'+JSON.stringify(APP.cellSel||null)
+    +'|'+(ce? ce.r+','+ce.c+','+JSON.stringify(ce.sel||null) : '')   // 格內反白改變→面板要跟著換範圍提示與樣式
     +'|'+(el.paras? JSON.stringify(panelRun(el)) : '');
 }
 let _propsSig='', _propsRaf=0;
@@ -3187,16 +3202,28 @@ function renderProps(){
     };
     const c0=cs? el.cells[cs.r0][cs.c0] : (el.cells.flat().find(c=>!c.covered)||el.cells[0][0]);
     const applyCells=fn=>{ commitUndo(); scopedCells().forEach(fn); renderStage(); renderProps(); };
+    /* ── 格內反白（run 級）優先 ──
+       正在編輯某一格、而且格內有反白文字時，樣式只套那幾個字；沒反白才退回上面的「格／全表」範圍。
+       與文字框的 runApply 同一條規則（見該函式），使用者不必記兩套。 */
+    const ce=(APP.cellEdit&&APP.cellEdit.id===el.id)? APP.cellEdit : null;
+    const ceCell=ce? (el.cells[ce.r]||[])[ce.c] : null;
+    const probe=ceCell? cellProbeRun(ceCell) : null;   // 有格內反白時，面板反映反白處的樣式
+    const runOn=!!probe;
+    const styleAt=(key,def)=>probe? (probe[key]!=null? probe[key] : def) : def;
+    // 一律先試 run 級；回 false 代表沒有格內反白，才做格層級（setCellStyle 會順手清掉 run 覆寫）
+    const applyStyle=(key,val)=>{ if(!cellRunApply(el,key,val)) applyCells(c=>setCellStyle(c,key,val)); };
     pp.appendChild(subTitle('儲存格樣式'));
     // 範圍提示（反白後樣式只作用選取格）
     const scope=document.createElement('div'); scope.className='row';
-    scope.innerHTML= cs
+    scope.innerHTML= runOn
+      ? `<span class="unit">✎ 樣式套用範圍：<b>格內反白的文字</b>（R${ce.r+1}C${ce.c+1}）。字級／粗斜體／文字色與下方「格內文字」只套那幾個字；取消反白＝改回整格。</span>`
+      : cs
       ? `<span class="unit">✎ 樣式套用範圍：<b>選取 ${scopedCells().length} 格</b>（R${cs.r0+1}C${cs.c0+1}${(cs.r1!==cs.r0||cs.c1!==cs.c0)?`–R${cs.r1+1}C${cs.c1+1}`:''}）。點別處取消反白＝改回全表。</span>`
-      : `<span class="unit">✎ 樣式套用範圍：<b>全表</b>。在表格內<b>拖曳反白</b>幾格後，下列樣式（字級／行距／粗斜體／文字色／對齊／底色／框線）只套用到選取格。</span>`;
+      : `<span class="unit">✎ 樣式套用範圍：<b>全表</b>。在表格內<b>拖曳反白</b>幾格後，下列樣式（字級／行距／粗斜體／文字色／對齊／底色／框線）只套用到選取格；<b>雙擊進格再反白幾個字</b>則只套那幾個字。</span>`;
     pp.appendChild(scope);
     const fr=document.createElement('div'); fr.className='row'; fr.innerHTML='<label>字級</label>';
-    const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=48; inp.value=c0.sizePt||12;
-    inp.onchange=()=>{ commitUndo(); scopedCells().forEach(c=>c.sizePt=+inp.value); renderStage(); };
+    const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=48; inp.value=styleAt('sizePt',c0.sizePt||12);
+    inp.onchange=()=>{ if(!cellRunApply(el,'sizePt',+inp.value)){ commitUndo(); scopedCells().forEach(c=>setCellStyle(c,'sizePt',+inp.value)); renderStage(); } };
     fr.appendChild(inp); fr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
     pp.appendChild(fr);
     const tls=document.createElement('div'); tls.className='row'; tls.innerHTML='<label>行距</label>';
@@ -3205,10 +3232,27 @@ function renderProps(){
     tls.appendChild(tli); tls.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'×字級'}));
     pp.appendChild(tls);
     pp.appendChild(btnRow([
-      ['B',()=>{ const on=!c0.bold; applyCells(c=>c.bold=on); },'粗體',c0.bold],
-      ['I',()=>{ const on=!c0.italic; applyCells(c=>c.italic=on); },'斜體',c0.italic],
+      ['B',()=>applyStyle('bold',!styleAt('bold',c0.bold)),'粗體',styleAt('bold',c0.bold)],
+      ['I',()=>applyStyle('italic',!styleAt('italic',c0.italic)),'斜體',styleAt('italic',c0.italic)],
     ]));
-    pp.appendChild(colorRow('文字',c0.color||'1A1A1A',v=>scopedCells().forEach(c=>c.color=v),false));
+    pp.appendChild(colorRow('文字',styleAt('color',c0.color||'1A1A1A'),
+      v=>{ if(!cellRunApply(el,'color',v)) scopedCells().forEach(c=>setCellStyle(c,'color',v)); },false));
+    /* 格內文字（run 級專屬）：上下標是 Excel 化學式／科學記號要能無損進來的關鍵，
+       而格層級沒有這些鍵——不開這一排，JSON 以外就沒有任何路徑設得到它們。 */
+    if(runOn){
+      const tog=(key,label,title)=>[label,()=>cellRunApply(el,key,probe[key]?undefined:true),title,!!probe[key]];
+      pp.appendChild(subTitle('格內文字（反白處）'));
+      pp.appendChild(btnRow([
+        tog('sup','x²','上標'),tog('sub','x₂','下標'),
+        tog('underline','U','底線'),tog('strike','S','刪除線'),
+      ]));
+      pp.appendChild(btnRow([
+        ['高亮',()=>cellRunApply(el,'highlight',probe.highlight?undefined:'FFFF00'),'黃色高亮',!!probe.highlight],
+        ['清除格式',()=>cellRunApply(el,Object.fromEntries(
+            ['sup','sub','underline','strike','highlight','charSpacing','fontFace','outline','glow','bold','italic','color','sizePt']
+              .map(k=>[k,undefined]))),'把反白處退回整格的樣式'],
+      ]));
+    }
     pp.appendChild(btnRow([['左',()=>applyCells(c=>c.align='left'),'',(c0.align||'left')==='left'],
       ['中',()=>applyCells(c=>c.align='center'),'',c0.align==='center'],
       ['右',()=>applyCells(c=>c.align='right'),'',c0.align==='right']]));
@@ -3294,6 +3338,48 @@ function renderProps(){
   updateCopyPalWin();
 }
 function defCell(){ return {text:'',bold:false,italic:false,color:'1A1A1A',sizePt:12,fill:null,align:'left',valign:'middle',colspan:1,rowspan:1,covered:false}; }
+/* ---- 儲存格 runs（格內混排）----
+   `cell.text` **永遠**是整格的完整純文字；`cell.runs` 是選用的，存在時才是渲染與匯出的真相，
+   而 text 同步成 runs 的串接（衍生值）。這樣舊讀者、搜尋、以及只想看內容的 AI 拿 text 就夠。
+
+   優先權：**run 有寫該鍵就用 run 的，沒寫就退回格層級**。所以 runs 只需要寫「和整格不一樣的地方」，
+   normCell 會把與格層級相同的鍵刪掉——不這樣做的話，大表格逐格長出整套樣式會讓 JSON 膨脹到吃 token
+   ——整份 JSON 要能貼給 AI，膨脹就是直接成本。
+
+   換行沿用扁平時代的作法：`\n` 留在 run 的 text 裡，不拆段。PptxGenJS 的表格儲存格會自己把含 \n 的
+   run 拆成多筆並補 breakLine，畫布則靠 `white-space:pre-wrap`，兩邊都不必另立段落模型。 */
+const CELL_STYLE_KEYS=['bold','italic','color','sizePt'];
+const cellRunKey=r=>JSON.stringify([...CELL_STYLE_KEYS,...RUN_OPT_KEYS].map(k=>r[k]??null));
+function cellBase(cell){ return {bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',sizePt:cell.sizePt||12}; }
+function cellRuns(cell){   // 一律回「已解析完繼承」的完整 run 陣列，渲染與匯出共用同一個來源
+  const base=cellBase(cell);
+  if(!Array.isArray(cell.runs)||!cell.runs.length) return [{...base,text:String(cell.text||'')}];
+  return cell.runs.map(r=>{
+    const o={...base,text:String(r.text||'')};
+    for(const k of CELL_STYLE_KEYS) if(r[k]!=null) o[k]=r[k];   // 注意用 !=null：bold:false 是合法覆寫
+    for(const k of RUN_OPT_KEYS) if(r[k]!=null) o[k]=r[k];
+    return o;
+  });
+}
+function normCell(cell){
+  cell.text=String(cell.text||'');
+  // markdown 輸入糖：與段落同一套語法（見 mdToRuns），展開成 runs 後刪鍵，存檔只留一種形式
+  if(typeof cell.md==='string'){ cell.runs=mdToRuns(cell.md,cellRuns({...cell,runs:null})[0]); delete cell.md; }
+  if(!Array.isArray(cell.runs)||!cell.runs.length){ delete cell.runs; return; }
+  const base=cellBase(cell), out=[];
+  for(const r0 of cell.runs){
+    const t=String(r0.text||''); if(!t) continue;   // 空 run 一律丟（整格空的情形由下方退回扁平接手）
+    const r={...r0,text:t}; normRunOpts(r);
+    for(const k of CELL_STYLE_KEYS) if(r[k]==null||r[k]===base[k]) delete r[k];   // 瘦身：與格層級同值不寫
+    for(const k of Object.keys(r)) if(k!=='text'&&!CELL_STYLE_KEYS.includes(k)&&!RUN_OPT_KEYS.includes(k)) delete r[k];
+    const last=out[out.length-1];
+    if(last&&cellRunKey(last)===cellRunKey(r)) last.text+=t; else out.push(r);   // 併相鄰同樣式，免得碎成一堆
+  }
+  if(!out.length){ delete cell.runs; cell.text=''; return; }
+  cell.text=out.map(r=>r.text).join('');
+  // 只剩一個 run 且沒有任何覆寫＝跟扁平結構等價，那就退回扁平，別留一層沒作用的巢狀
+  if(out.length===1&&cellRunKey(out[0])===cellRunKey({})) delete cell.runs; else cell.runs=out;
+}
 // 合併儲存格：(r,c) 為左上錨點，跨 cs 欄 rs 列。範圍內其他格標 covered；
 // 會先清掉錨點舊 span 與範圍內其他合併的 covered 標記（被覆蓋的舊合併直接還原為 1×1）
 function tableMerge(el,r,c,cs,rs){
@@ -4701,7 +4787,7 @@ function cellOwnerGrid(el){
   }
   return g;
 }
-function startCellEdit(el,td){
+function startCellEdit(el,td,initSel){
   const r=+td.dataset.r,c=+td.dataset.c;
   const cell=el.cells[r][c];
   APP.editing=el.id;
@@ -4711,12 +4797,21 @@ function startCellEdit(el,td){
   td.textContent='';
   const ed=editableDiv();
   ed.style.cssText='min-height:1em;white-space:pre-wrap;';   // pre-wrap：Shift+Enter 的格內換行才顯示得出來
-  ed.innerText=String(cell.text||'');
+  /* 逐 run 建 span 並標 data-r：格式化按鈕靠這個索引回查「開啟編輯當下」的樣式，
+     所以就算瀏覽器把 span 搬家／合併，樣式依然對得回去（同文字框編輯器的作法）。 */
+  const src=cellRuns(cell);
+  for(let i=0;i<src.length;i++){ const sp=runSpan(src[i],12); sp.dataset.r=i; ed.appendChild(sp); }
   td.appendChild(ed);
-  const grab=()=>{ ed.focus(); document.getSelection().selectAllChildren(ed); };
+  APP.cellEdit={id:el.id,r,c,root:ed,src,sel:null};
+  /* initSel＝套完格式重開編輯器時要還原的反白（見 cellRunApply）；沒給才全選（進格即改寫的手感）。
+     ⚠ rAF 那次一定要跟著判斷：初版兩次都無條件全選，於是按下「上標」後反白被吃掉，
+     連按第二個格式鍵就會套到整格。 */
+  const grab=()=>{ ed.focus();
+    if(initSel) cellEdSetSel(initSel); else document.getSelection().selectAllChildren(ed);
+    cellEdSelSync(); };
   grab(); requestAnimationFrame(grab);
   let done=false;
-  const save=()=>{ if(done) return; done=true; APP.editing=null; commitUndo(); cell.text=ed.innerText.replace(/\n$/,''); };
+  const save=()=>{ if(done) return; done=true; APP.editing=null; commitUndo(); cellEdSync(); APP.cellEdit=null; };
   // 存檔→重繪→跳到目標格繼續編輯（跨儲存格快捷）。舊 ed 失焦觸發的 blur 由 done 旗標擋掉，不重複存/重繪
   const navTo=(nr,nc)=>{
     save(); renderStage();
@@ -4738,8 +4833,159 @@ function startCellEdit(el,td){
       e.preventDefault(); document.execCommand('insertText',false,'\n');
     }else if(e.key==='Escape'){ e.preventDefault(); ed.blur(); }   // 結束編輯
   });
-  ed.addEventListener('blur',()=>{ if(done) return; save(); renderAll(); },{once:true});
+  /* 失焦才收工，但**焦點移到屬性面板時不算**——否則按下「上標」的瞬間編輯就結束了，
+     格內反白也跟著沒了，run 級按鈕永遠按不到。同文字框編輯器的 focusout 判斷。 */
+  ed.addEventListener('blur',()=>setTimeout(()=>{
+    if(done) return;
+    const cur=APP.cellEdit;
+    if(!cur||cur.root!==ed) return;        // 已被重繪換掉的舊節點，忽略
+    const a=document.activeElement;
+    if(a&&(a===ed||ed.contains(a)||(a.closest&&a.closest('#propPanel')))) return;
+    save(); renderAll();
+  },0));
 }
+/* ================= 格內 run 級編輯 =================
+   儲存格是**單段**模型（換行是留在 run 文字裡的 \n，不另立段落），所以沒有沿用文字框那套
+   以「段索引＋段內位移」為主鍵的編輯器，改用單純的「格內字元位移」重寫一份薄的。
+   資料操作本身仍共用：runsSplitAt 切開、normCell 收尾（瘦身＋併相鄰同樣式＋單 run 退回扁平）。 */
+function cellEdCell(){   // 目前正在編輯的那一格（元素可能已被重繪換掉，故每次重查）
+  const e=APP.cellEdit; if(!e) return null;
+  const el=curEls().find(x=>x.id===e.id); if(!el||el.type!=='table') return null;
+  const cell=(el.cells[e.r]||[])[e.c];
+  return cell? {el,cell} : null;
+}
+/* 換行在編輯中的 DOM 有兩種長相：<br>，以及 Chrome 把後續每一行各包成的 <div>。
+   位移換算（cellEdPos）、寫回資料（cellEdSync）、還原選取（cellEdNode）三處**必須用同一套規則**
+   數這些換行，否則按過 Enter 之後反白位置就會整個錯開一格一格累積。故三者都走這個判斷：
+   非結尾的 <br> ＝一個 \n；非開頭的區塊元素 ＝一個 \n。 */
+const CELL_ED_BLOCK=n=>n.tagName==='DIV'||n.tagName==='P';
+// (node,offset) → 格內字元位移
+function cellEdPos(root,node,offset){
+  let o=0,hit=false,started=false;
+  const walk=(n,isLast)=>{
+    if(hit) return;
+    if(n===node&&n.nodeType===1){ for(let i=0;i<offset&&i<n.childNodes.length;i++) walk(n.childNodes[i],false); hit=true; return; }
+    if(n.nodeType===3){
+      if(n===node){ o+=Math.min(offset,n.nodeValue.length); hit=true; }
+      else { o+=n.nodeValue.length; if(n.nodeValue) started=true; }
+      return;
+    }
+    if(n.nodeType!==1) return;
+    if(n.tagName==='BR'){ if(!isLast){ o+=1; started=true; } return; }
+    if(CELL_ED_BLOCK(n)&&started&&n!==root) o+=1;
+    const cs=[...n.childNodes];
+    for(let i=0;i<cs.length;i++){ walk(cs[i],isLast&&i===cs.length-1); if(hit) return; }
+  };
+  walk(root,true);
+  return hit? o : null;
+}
+// 字元位移 → (node,offset)
+function cellEdNode(root,o){
+  let acc=0,res=null,started=false;
+  const walk=(n,isLast)=>{
+    if(res) return;
+    if(n.nodeType===3){
+      const L=n.nodeValue.length;
+      if(o<=acc+L){ res={node:n,offset:o-acc}; return; }
+      acc+=L; if(L) started=true; return;
+    }
+    if(n.nodeType!==1) return;
+    if(n.tagName==='BR'){ if(!isLast){ acc+=1; started=true; } return; }
+    if(CELL_ED_BLOCK(n)&&started&&n!==root) acc+=1;
+    const cs=[...n.childNodes];
+    for(let i=0;i<cs.length;i++){ walk(cs[i],isLast&&i===cs.length-1); if(res) return; }
+  };
+  walk(root,true);
+  return res||{node:root,offset:root.childNodes.length};
+}
+function cellEdReadSel(){
+  const e=APP.cellEdit; if(!e||!e.root) return null;
+  const s=document.getSelection(); if(!s||!s.rangeCount) return null;
+  const r=s.getRangeAt(0);
+  if(!e.root.contains(r.startContainer)||!e.root.contains(r.endContainer)) return null;
+  const a=cellEdPos(e.root,r.startContainer,r.startOffset), b=cellEdPos(e.root,r.endContainer,r.endOffset);
+  return (a!=null&&b!=null)? {o0:Math.min(a,b),o1:Math.max(a,b)} : null;
+}
+function cellEdSelSync(){ const e=APP.cellEdit; if(!e) return; const s=cellEdReadSel(); if(s) e.sel=s; }
+function cellEdSetSel(sel){
+  const e=APP.cellEdit; if(!e||!e.root||!sel) return;
+  const a=cellEdNode(e.root,sel.o0), b=cellEdNode(e.root,sel.o1);
+  const r=document.createRange();
+  try{ r.setStart(a.node,a.offset); r.setEnd(b.node,b.offset); }catch(err){ return; }
+  const s=document.getSelection(); s.removeAllRanges(); s.addRange(r);
+  e.sel=sel;
+}
+/* DOM → cell.runs。樣式來源是開啟編輯時拍下的 src（data-r 是絕對索引），
+   所以瀏覽器怎麼搬 span 都對得回去；沒有 data-r 祖先的裸文字（貼上、輸入法補的）沿用左鄰樣式。 */
+function cellEdSync(){
+  const e=APP.cellEdit, cur=cellEdCell();
+  if(!e||!e.root||!cur) return;
+  const src=e.src||[], runs=[];
+  const kids=[...e.root.childNodes];
+  let started=false;   // 是否已經吐出過內容——用來判斷「開頭的區塊」不該補換行
+  const push=(txt,st)=>{ if(!txt) return; runs.push({...(st||src[0]||{}),text:txt}); started=true; };
+  const walk=(n,st,isLast)=>{
+    if(n.nodeType===3){ push(n.nodeValue,st); return; }
+    if(n.nodeType!==1) return;
+    // 末尾那個 <br> 是 Chrome 為了「讓最後一個空行看得見」補的渲染產物，不是使用者打的換行
+    if(n.tagName==='BR'){ if(!isLast) push('\n',st); return; }
+    /* Chrome 在 contenteditable 內換行（Enter／貼多行）不是插 <br>，而是把後續每一行各自包成
+       <div>。只認 <br> 的話換行會整個消失——實測 execCommand('insertText','\n') 就是走這條。
+       故區塊元素一律等同一次換行，語意對齊 innerText。 */
+    if((n.tagName==='DIV'||n.tagName==='P')&&started) push('\n',st);
+    const s=(n.dataset&&n.dataset.r!=null&&src[+n.dataset.r])? src[+n.dataset.r] : st;
+    const cs=[...n.childNodes];
+    cs.forEach((c,i)=>walk(c,s,isLast&&i===cs.length-1));
+  };
+  kids.forEach((n,i)=>walk(n,null,i===kids.length-1));
+  cur.cell.runs=runs.map(r=>({...r}));
+  normCell(cur.cell);   // 瘦身／併同樣式／單 run 退回扁平／同步 text，一次到位
+}
+/* 格式套用。**有反白就只套那幾個字（run 級），沒反白就回 false 交給呼叫端做格層級**——
+   與文字框的 runApply 同一條規則，使用者不必記兩套。key 為 CELL_STYLE_KEYS 或 RUN_OPT_KEYS 之一；
+   val 傳 undefined 代表刪除該鍵（＝退回格層級）。 */
+function cellRunApply(el,key,val){
+  const patch= (key&&typeof key==='object')? key : {[key]:val};   // 也吃 {key:val,…} 一次改多個鍵
+  const e=APP.cellEdit; if(!e||e.id!==el.id) return false;
+  cellEdSelSync();
+  const sel=e.sel; if(!sel||sel.o1<=sel.o0) return false;
+  const cur=cellEdCell(); if(!cur) return false;
+  commitUndo();
+  cellEdSync();                       // 先把 DOM 現況寫回資料，再對資料動刀
+  const rs=cellRuns(cur.cell);        // 解析完繼承的完整 run 陣列
+  const i0=runsSplitAt(rs,sel.o0), i1=runsSplitAt(rs,sel.o1);
+  for(let i=i0;i<i1;i++) for(const k of Object.keys(patch)){
+    if(patch[k]===undefined) delete rs[i][k]; else rs[i][k]=patch[k];
+  }
+  cur.cell.runs=rs;
+  normCell(cur.cell);
+  renderStage();
+  // 重繪換掉了整棵 DOM，重開編輯器並還原反白，讓使用者可以連續按（B 之後接著按底線）
+  const td=tableDom(el.id)&&[...tableDom(el.id).querySelectorAll('td')]
+    .find(t=>+t.dataset.r===e.r&&+t.dataset.c===e.c);
+  if(td) startCellEdit(el,td,sel);
+  renderProps();
+  return true;
+}
+// 面板顯示用：反白時反映範圍第一個字的樣式，否則反映整格
+function cellProbeRun(cell){
+  const e=APP.cellEdit;
+  if(e&&e.sel&&e.sel.o1>e.sel.o0){
+    const rs=cellRuns(cell); let acc=0;
+    for(const r of rs){ const n=String(r.text||'').length; if(e.sel.o0<acc+n) return r; acc+=n; }
+    return rs[rs.length-1]||cellBase(cell);
+  }
+  return null;
+}
+// 格層級套用某個樣式鍵：同時清掉所有 run 對該鍵的覆寫（同 PowerPoint「整格選起來按粗體」的行為）
+function setCellStyle(cell,key,val){
+  cell[key]=val;
+  if(Array.isArray(cell.runs)){ for(const r of cell.runs) delete r[key]; normCell(cell); }
+}
+document.addEventListener('selectionchange',()=>{
+  if(!APP.cellEdit) return;
+  cellEdSelSync(); syncProps();   // 游標一動，面板就要反映游標處的樣式（同文字框）
+});
 
 /* ================= 鍵盤 ================= */
 document.addEventListener('keydown',e=>{
@@ -5087,6 +5333,7 @@ function normEls(list,reserved){
           for(const k of Object.keys(cc.border)) if(!['t','r','b','l'].includes(k)) delete cc.border[k];
           if(!Object.keys(cc.border).length) delete cc.border;
         }else delete cc.border;
+        normCell(cc);   // 格內混排：md 展開／run 瘦身／text 同步（見 normCell 上方說明）
         return cc; }));
       el.border= ('border' in el)? (el.border? (normBorder(el.border)||null):null) : {pt:0.75,color:'999999'};
     }else{
@@ -6057,6 +6304,24 @@ for(const id of ['jsonModal','chartModal','helpModal','shapeModal','tplModal','s
   $('#'+id).addEventListener('click',e=>{ if(e.target.id===id) $('#'+id).hidden=true; });
 
 /* ================= 匯出 PPTX ================= */
+/* 一個 run → PptxGenJS 的 run options。文字框（parasToPptx）與表格儲存格（addTableToSlide）
+   共用，兩邊才不會出現「文字框有上下標、儲存格沒有」這種靠人記得同步的差異。
+   defSizePt 同 runSpan：文字框 18、儲存格 12。 */
+function runPptxOpts(r,defSizePt){
+  return {
+    bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',
+    fontSize:r.sizePt||defSizePt,
+    superscript:r.sup||undefined,subscript:r.sub||undefined,
+    underline:r.underline?{style:'sng'}:undefined,
+    strike:r.strike?'sngStrike':undefined,
+    highlight:r.highlight||undefined,
+    charSpacing:r.charSpacing||undefined,
+    fontFace:r.fontFace||undefined,
+    outline:r.outline?{size:r.outline.size||0.75,color:r.outline.color||'FFFFFF'}:undefined,
+    glow:r.glow?{size:r.glow.size||8,color:r.glow.color||'FFFF00',opacity:r.glow.opacity!=null?r.glow.opacity:0.6}:undefined,
+    hyperlink:r.link?(r.link.url?{url:r.link.url}:{slide:Math.max(1,Math.round(r.link.slide)||1)}):undefined,
+  };
+}
 function parasToPptx(el){
   const out=[];
   for(const p of el.paras||[]){
@@ -6066,17 +6331,7 @@ function parasToPptx(el){
         ? {type:'number',style:'arabicPeriod',startAt:Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
         : {code:p.bullet.code||BULLET_CHAR,indent:BULLET_INDENT}) : undefined;
     rr.forEach((r,i)=>out.push({text:String(r.text??''),options:{
-      bold:!!r.bold,italic:!!r.italic,color:r.color||'1A1A1A',
-      fontSize:r.sizePt||18,
-      superscript:r.sup||undefined,subscript:r.sub||undefined,
-      underline:r.underline?{style:'sng'}:undefined,
-      strike:r.strike?'sngStrike':undefined,
-      highlight:r.highlight||undefined,
-      charSpacing:r.charSpacing||undefined,
-      fontFace:r.fontFace||undefined,
-      outline:r.outline?{size:r.outline.size||0.75,color:r.outline.color||'FFFFFF'}:undefined,
-      glow:r.glow?{size:r.glow.size||8,color:r.glow.color||'FFFF00',opacity:r.glow.opacity!=null?r.glow.opacity:0.6}:undefined,
-      hyperlink:r.link?(r.link.url?{url:r.link.url}:{slide:Math.max(1,Math.round(r.link.slide)||1)}):undefined,
+      ...runPptxOpts(r,18),
       /* 行距要逐段給，不能只在元素層給一個值。畫布的 CSS line-height 是「無單位倍數」，
          每個 run 各自乘自己的字級；PptxGenJS 的 lineSpacing 是「絕對點數」，元素層只能給一個。
          元素層原本用 maxPt(el)（全元素最大字級）→ 一個 40pt 標題會把同框內 8pt 小字的行距
@@ -6289,7 +6544,8 @@ function addTableToSlide(slide,el){
         bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',
         fontSize:cell.sizePt||12,
         margin:[0,0.03,0,0.03],   // 單位是「吋」！0.03in ≈ 2.2pt ≈ 預覽 3px（xlsx2pptx 踩坑 #10）
-        lineSpacing:Math.round((cell.sizePt||12)*(cell.lineSpacing||1.2)*10)/10};
+        // 行距用整格最大字級：同一格內混字級時 OOXML 的 <a:lnSpc> 一段只能一個值，取最大才不會裁字
+        lineSpacing:Math.round(Math.max(...cellRuns(cell).map(r=>r.sizePt||12))*(cell.lineSpacing||1.2)*10)/10};
       // 逐格四邊：PptxGenJS border 陣列順序 [上,右,下,左]，各邊寫成原生 <a:lnT/lnR/lnB/lnL>
       // type:'dash' → 該邊 <a:prstDash val="sysDash"/>（PptxGenJS 只認 dash／solid 兩種）
       o.border= ['t','r','b','l'].map(k=>{ const s=cellSide(el,cell,k);
@@ -6297,7 +6553,17 @@ function addTableToSlide(slide,el){
       if(cell.fill) o.fill={color:cell.fill,...(tr?{transparency:tr}:{})};
       if(cell.colspan>1) o.colspan=cell.colspan;
       if(cell.rowspan>1) o.rowspan=cell.rowspan;
-      arr.push({text:String(cell.text||''),options:o});
+      /* 格內混排：PptxGenJS 的儲存格 text 本來就吃 {text,options} 陣列（和文字框共用 jt()），
+         所以這裡只要把 runs 攤成陣列即可，每個 run 都寫全樣式。
+         ⚠ 有 runs 時**必須把四個文字樣式鍵從儲存格層級拿掉**：PptxGenJS 只在值為真時才寫
+         `b="1"`／`i="1"`（原始碼 `null!=t&&t.bold? ' b="1"':''`），**沒有 `b="0"` 這條路**。
+         於是「整格粗體、某幾個字不粗」的 run 因為 bold:false 什麼都沒寫，反而被格層級的
+         b="1" 蓋回去——實測就是整格都變粗。拿掉之後每個 run 自己說了算，沒寫＝不粗。
+         扁平格仍走單一字串那條路：XML 一模一樣，舊簡報的匯出結果因此逐位元組不變。 */
+      if(Array.isArray(cell.runs)&&cell.runs.length){
+        for(const k of ['bold','italic','color','fontSize']) delete o[k];
+        arr.push({text:cellRuns(cell).map(r=>({text:String(r.text||''),options:runPptxOpts(r,12)})),options:o});
+      }else arr.push({text:String(cell.text||''),options:o});
     });
     return arr;
   });
