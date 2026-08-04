@@ -24,6 +24,7 @@
   button,select{background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer}
   button:hover{border-color:var(--accent)}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  header button.on{background:var(--accent);border-color:var(--accent);color:#fff}   /* 工具列的開關型按鈕（格線／吸附），與面板的 button.on 同一套視覺 */
   input[type=number]{width:58px;background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 5px;font:inherit}
   input[type=text]{background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
   input[type=color]{width:30px;height:26px;padding:1px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer}
@@ -64,9 +65,11 @@
   /* 寬高由 applyStage() 依 deck.stage 設定（此處僅為首次繪製前的預設 16:9） */
   #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:var(--font-latin),var(--font-ea),sans-serif}
   .outmask{position:absolute;background:rgba(30,31,36,.55);pointer-events:none;z-index:20}
+  /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
+  #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
   #stage.capturing{box-shadow:none!important}
-  #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee{display:none!important}
+  #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
   #stage.capturing .el{outline:none!important}
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
@@ -269,7 +272,9 @@
       <option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>
     </select>
   </div>
-  <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span></div>
+  <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span>
+    <button id="btnGrid" title="格線（製圖式：一格虛線、每 5 格細線、每 10 格粗線，原點在左上角）。格距／顏色在右欄「頁面 → 格線」調">⊞ 格線</button>
+    <button id="btnGridSnap" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸">🧲 吸附</button></div>
   <span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
   <div class="grp right">
     <button id="btnLayers" title="圖層面板：堆疊順序／顯示隱藏／鎖定">☰ 圖層</button>
@@ -466,7 +471,7 @@
       <h4>畫布操作</h4>
       <ul>
         <li>點選→拖曳移動（有置中／邊界磁性吸附）；八個把手縮放；方向鍵微調（Shift=10px）；Delete 刪除；Cmd/Ctrl+D 複製元素。</li>
-        <li><b>多選</b>：Shift／Cmd 點擊加減選，或在空白處拖曳框選；多選後拖<b>四角＝整組比例縮放</b>（位置、尺寸、字級同步）、拖本體＝整組移動，右欄可輸入縮放 % 與對齊。</li>
+        <li><b>多選</b>：Shift／Cmd 點擊加減選，或在空白處拖曳框選；多選後拖<b>四角＝整組比例縮放</b>（位置、尺寸、字級同步；等比只有一個比例，故以指標移動較多的那一軸為準）、拖本體＝整組移動，右欄可輸入縮放 % 與對齊。</li>
         <li><b>雙擊</b>文字／形狀＝就地編輯文字，粗體、顏色、高亮都<b>看得見也改得動</b>：<b>反白幾個字，右欄的格式按鈕就只套那幾個字</b>（沒反白＝套用整個文字框）。編輯中點右欄按鈕不會中斷編輯，反白範圍會保留。雙擊表格儲存格＝編輯內容；雙擊圖表＝編輯 option。</li>
         <li>右欄的<b>純文字編輯框</b>是「整框覆寫」用的捷徑，會清掉框內的混排格式——若偵測到混排會先跳確認。要保留格式請在畫布上就地編輯。</li>
         <li>「＋形狀」開啟圖庫：線條／矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，共 176 種，另有自訂幾何。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布輪廓即 OOXML 原生幾何，匯出為 PPT 原生幾何。</li>
@@ -481,8 +486,11 @@
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
         <li><b>☰ 圖層</b>面板（頂端按鈕，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
         <li><b>不透明度</b>：右欄滑桿 0–100%，匯出轉 PPT 原生 transparency（圖片／形狀填色／框線／表格底色可調）。</li>
-        <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。</li>
+        <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。<b>右欄有位置尺寸可填</b>：群組本身沒有座標（成員各自獨立），面板上的 X／Y／寬／高指的是<b>包圍盒</b>——改 X／Y＝整組平移，改寬／高＝以包圍盒左上角為不動點縮放整組（可鎖比例、可連字級一起縮）。</li>
         <li><b>對齊分佈</b>：多選面板有左/中/右、上/中/下對齊，及<b>水平／垂直等距</b>（需 ≥3 個，首尾固定、中間平均間隙）。</li>
+        <li><b>格線與吸附</b>：工具列「⊞ 格線」開關，製圖式三階層——一格<b>虛線</b>、每 5 格<b>細實線</b>、每 10 格<b>粗實線</b>，原點在投影片左上角。格距預設 5mm，可按 1／2／5／10mm 或自訂（mm／px／pt／cm），細線與粗線的間隔格數、顏色（預設 #ADB5BD）都可調，設定在右欄「頁面 → 格線」。<br>
+          「🧲 吸附」開啟後：<b>移動只吸左緣與上緣</b>（四邊都吸的話，寬度不是格距整數倍的元素會在兩組吸附點之間被拉來拉去，很卡手）；<b>拖白色方點縮放則四邊都吸</b>，表格的欄寬列高把手、線條端點也一樣。整組移動吸的是<b>包圍盒</b>的左上角，組內相對位置不變。<br>
+          既有的<b>輔助線吸附</b>（投影片中線／四邊／預留區外緣）一直都在，且<b>優先於格線</b>——格線密到幾乎處處可吸，不給輔助線優先權的話就再也對不到中線了。旋轉過的元素與等比鎖定時不吸（邊不平行於格線，吸了也對不齊）。<b>格線只在畫布上</b>：不匯出、不進快照、不寫進 .deck.json，設定存在這台瀏覽器。</li>
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
         <li><b>行距</b>：文字框與表格可設行距（×字級），匯出鎖為精確 spcPts；單格行距可透過 JSON 微調。</li>
@@ -517,7 +525,7 @@
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
         <li>所有元素（表格除外）有<b>淡虛線框</b>顯示框尺寸；圖片／形狀旋轉後選取框與把手跟著轉（resize 已依旋轉換算，仍正確）。</li>
-        <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／圖片／表格／圖表；文字再細分字元進階／段落／超連結／陰影，表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。未選取任何元素時顯示<b>頁面</b>屬性，其中「頁碼」「檔案資訊」「投影片尺寸」「字體」「預留區」「環境設定檔」六區是<b>整份簡報</b>層級。</li>
+        <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／圖片／表格／圖表；文字再細分字元進階／段落／超連結／陰影，表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。多選／軟群組時改顯示<b>位置尺寸（包圍盒）</b>／<b>版面</b>／<b>對齊與分佈</b>／<b>群組與動作</b>。未選取任何元素時顯示<b>頁面</b>屬性，其中「頁碼」「檔案資訊」「投影片尺寸」「字體」「預留區」「環境設定檔」六區是<b>整份簡報</b>層級，「格線」則是<b>本機檢視</b>層級（存瀏覽器，不跟著 JSON 走）。</li>
         <li>復原／重做：Cmd/Ctrl+Z、Cmd/Ctrl+Shift+Z（60 步）。</li>
       </ul>
       <h4>簡報設定（右欄「頁面」）</h4>
@@ -1552,13 +1560,35 @@ function lineEnds(el){ // P1 起點、P2 終點（箭頭端），相對元素左
   return {x1,y1,x2:el.w-x1,y2:el.h-y1};
 }
 
+/* ================= 格線（檢視輔助） =================
+   製圖式三階層：一格虛線、每 sub 格細實線、每 major 格粗實線，原點固定在投影片左上角。
+   刻意**不寫進 deck**：格線是「怎麼看」不是「簡報內容」，寫進去會污染貼給 AI 的 JSON，
+   也會讓同一份簡報在別人電腦上被迫接受你的格線設定。改存 localStorage 長期記住。 */
+const GRID_KEY='deckjson.grid';
+const MM2PX=96/25.4;   // 內部長度一律 px（1px = 1/96 吋）
+const GRID_DEF={on:false,snap:true,size:5*MM2PX,sub:5,major:10,color:'ADB5BD'};
+function normGrid(g){   // 手改 localStorage 或跨版本殘值一律過這裡，壞值退回預設
+  const d={...GRID_DEF};
+  if(!g||typeof g!=='object') return d;
+  const size=+g.size;
+  return {on:!!g.on, snap:g.snap!==false,
+    size:(isFinite(size)&&size>=1&&size<=800)? size : d.size,
+    sub:Math.max(1,Math.min(50,Math.round(+g.sub)||d.sub)),
+    major:Math.max(1,Math.min(200,Math.round(+g.major)||d.major)),
+    color:/^[0-9A-Fa-f]{6}$/.test(String(g.color||''))? String(g.color).toUpperCase() : d.color};
+}
+function loadGrid(){ try{ return normGrid(JSON.parse(lsGet(GRID_KEY)||'null')); }catch(e){ return {...GRID_DEF}; } }
+function saveGrid(){ lsSet(GRID_KEY,JSON.stringify(APP.grid)); }
+
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
+  grid:loadGrid(),   // 格線與吸附設定（不屬於 deck，見上方說明）
   edit:null,      // 文字框 run 級編輯狀態 {id,root,src,sel:{p0,o0,p1,o1},pushed,snap}
   cellEdit:null,  // 格內 run 級編輯狀態 {id,r,c,root,src,sel:{o0,o1}}（單段模型，位移以整格計）
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
   tblPen:{pt:0.75,color:'999999',dash:false},   // 框線筆：線寬＋顏色＋實／虛線，供框線按鈕套用
   dimUnit:'px',                      // 座標尺寸面板單位：px｜pt｜cm（預設 px）
+  gridUnit:'mm',                     // 格距輸入框的顯示單位（純顯示，格距內部一律 px）
   ratioLock:false,fontSync:false,scaleFont:true,   // ratioLock/fontSync＝寬高列旗標(預設關)；scaleFont＝縮放滑桿含字級(預設開)
   masterEdit:false,   // 編輯母版模式：畫布只顯示母版元素，所有工具改作用在它們身上
   ready:false};   // 自動存檔閘門：還原完才置 true，否則開機時的空白 deck 會蓋掉硬碟上的內容
@@ -1634,6 +1664,7 @@ function applyStage(){
     [-P,-P,STAGE_W+2*P,P],[-P,STAGE_H,STAGE_W+2*P,P],[-P,0,P,STAGE_H],[STAGE_W,0,P,STAGE_H]];
   masks.forEach((m,i)=>{ const [x,y,w,h]=box[i];
     m.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`; });
+  renderGrid();   // 格線鋪滿整張投影片，尺寸一改就得重畫
 }
 // 三字體槽 → CSS 變數（畫布、頁碼、表格都吃這三個變數，故「改字體＝預覽即時跟著變」）
 function applyFontVars(){
@@ -1641,6 +1672,30 @@ function applyFontVars(){
   r.setProperty('--font-latin',`"${F.latin}"`);
   r.setProperty('--font-ea',`"${F.ea}"`);
   r.setProperty('--font-table',`"${F.tableLatin}"`);
+}
+/* 格線：三條 path（虛線／細實線／粗實線）畫完整張，不用 <line> 逐條建節點——
+   1mm 格距在 16:9 上是 530 條線，三個節點與五百多個節點的差別在拖曳時看得出來。
+   插在 stage 的最前面：格線該在所有內容之下（含母版元素，那是 z-index:0），
+   同一層級靠 DOM 順序決定先後，所以位置不能只靠 z-index。
+   stroke 用 non-scaling-stroke：畫布本身被 CSS transform 縮放，不這樣做的話
+   65% 檢視下 0.5px 的線會細到看不見，放大到 200% 又粗得像內容。*/
+function renderGrid(){
+  const G=APP.grid, NS='http://www.w3.org/2000/svg';
+  let svg=$('#gridLayer');
+  if(!G.on){ if(svg) svg.remove(); return; }
+  if(!svg){ svg=document.createElementNS(NS,'svg'); svg.id='gridLayer'; }
+  if(svg.parentNode!==stage||svg.previousSibling) stage.insertBefore(svg,stage.firstChild);
+  svg.setAttribute('width',STAGE_W); svg.setAttribute('height',STAGE_H);
+  svg.setAttribute('viewBox',`0 0 ${STAGE_W} ${STAGE_H}`);
+  const step=Math.max(1,G.size), n=v=>Math.round(v*100)/100;
+  const d=['','',''];   // 0 虛線／1 細實線／2 粗實線
+  const kind=i=> i%G.major===0? 2 : (i%G.sub===0? 1:0);   // 先判 major：major 常是 sub 的倍數
+  for(let i=0;i*step<=STAGE_W+.01;i++) d[kind(i)]+=`M${n(i*step)} 0V${STAGE_H}`;
+  for(let i=0;i*step<=STAGE_H+.01;i++) d[kind(i)]+=`M0 ${n(i*step)}H${STAGE_W}`;
+  const style=[['.5','2 3','.6'],['.5','','.85'],['1.1','','1']];
+  svg.innerHTML=d.map((path,i)=> path? `<path d="${path}" fill="none" stroke="#${G.color}"`
+    +` stroke-width="${style[i][0]}"${style[i][1]?` stroke-dasharray="${style[i][1]}"`:''}`
+    +` opacity="${style[i][2]}" vector-effect="non-scaling-stroke"/>` : '').join('');
 }
 // 預留區：deck.zones 陣列 → 畫布上的虛線提示框（純輔助，不寫入任何 OOXML）
 function renderZones(){
@@ -2638,8 +2693,34 @@ function pageJsonBtn(){
 }
 function renderMultiProps(pp){
   const els=selEls();
-  pp.innerHTML=`<h4>多選 ${els.length} 個物件</h4>`;
-  pp.appendChild(secTitle('變形',true));
+  const gid=els[0]&&els[0].groupId;
+  const isGroup=!!gid&&els.every(el=>el.groupId===gid)&&groupMembers(els[0]).length===els.length;
+  pp.innerHTML=`<h4>${isGroup?'軟群組':'多選'} ${els.length} 個物件`
+    +(isGroup?` <span class="unit" style="font-weight:400">${gid}</span>`:'')+`</h4>`;
+  /* 位置尺寸：軟群組沒有自己的 x/y/w/h（成員各自獨立，匯出時攤平），這裡顯示的是**包圍盒**。
+     改 X／Y＝整組平移；改寬／高＝以包圍盒左上角為不動點縮放整組，與拖四角把手同一個模型。 */
+  pp.appendChild(secTitle('位置尺寸（包圍盒）',true));
+  pp.appendChild(dimUnitRow());
+  const moveAll=(ax,ay)=>{ for(const el of selEls()){ el.x=Math.round(el.x+ax); el.y=Math.round(el.y+ay); } };
+  pp.appendChild(dimRow('X',()=>groupBBox(selEls()).x,v=>moveAll(v-groupBBox(selEls()).x,0)));
+  pp.appendChild(dimRow('Y',()=>groupBBox(selEls()).y,v=>moveAll(0,v-groupBBox(selEls()).y)));
+  const scaleBB=(fx,fy)=>{
+    const list=selEls(), bb=groupBBox(list);
+    if(!(bb.w>0)||!(bb.h>0)) return;
+    if(APP.ratioLock){ const f=(fx!==1)?fx:fy; fx=f; fy=f; }   // 比例鎖定：改一邊另一邊跟著等比
+    groupScaleXY({anchor:{x:bb.x,y:bb.y},orig:list.map(el=>structuredClone(el)),scaleFont:APP.fontSync},fx,fy);
+  };
+  pp.appendChild(dimRow('寬',()=>groupBBox(selEls()).w,v=>{ const bb=groupBBox(selEls()); if(v>0&&bb.w>0) scaleBB(v/bb.w,1); }));
+  pp.appendChild(dimRow('高',()=>groupBBox(selEls()).h,v=>{ const bb=groupBBox(selEls()); if(v>0&&bb.h>0) scaleBB(1,v/bb.h); }));
+  pp.appendChild(checkRow([
+    ['比例鎖定',()=>APP.ratioLock,v=>APP.ratioLock=v,'鎖包圍盒寬高比：改一邊另一邊等比跟著變'],
+    ['字級同步',()=>APP.fontSync,v=>APP.fontSync=v,'改包圍盒尺寸時，組內文字的字級一起放大縮小'],
+  ]));
+  pp.appendChild(secTitle('版面'));
+  pp.appendChild(btnRow([
+    ['橫中',()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(Math.round((STAGE_W-bb.w)/2)-bb.x,0); renderStage(); renderProps(); },'整組在投影片水平置中（組內相對位置不變）'],
+    ['縱中',()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(0,Math.round((STAGE_H-bb.h)/2)-bb.y); renderStage(); renderProps(); },'整組在投影片垂直置中'],
+  ]));
   const row=document.createElement('div'); row.className='row'; row.innerHTML='<label>縮放</label>';
   const inp=document.createElement('input'); inp.type='number'; inp.min=5; inp.max=1000; inp.value=100; inp.step=5;
   inp.onchange=()=>{ const s=(+inp.value)/100; if(!(s>0))return; commitUndo();
@@ -2681,7 +2762,8 @@ function renderMultiProps(pp){
   ]));
   pp.appendChild(btnRow([['複製',()=>duplicateSelected(),'Cmd/Ctrl+D'],['刪除',()=>deleteSelected(),'Delete']]));
   const note=document.createElement('div'); note.className='row';
-  note.innerHTML='<span class="unit">拖四角＝比例縮放；拖本體＝整組移動。個別屬性請單選。</span>';
+  note.innerHTML='<span class="unit">拖四角＝比例縮放；拖本體＝整組移動（吸附作用在包圍盒上）。'
+    +'上方 X／Y／寬／高是<b>包圍盒</b>——群組本身沒有座標，成員各自獨立，匯出時攤平。個別屬性請雙擊進入該成員。</span>';
   pp.appendChild(note);
 }
 /* ---- 面板跟著游標／選取走 ----
@@ -2939,6 +3021,61 @@ function renderProps(){
     zn2.innerHTML='<span class="unit">預留區只是<b>畫布輔助線與吸附</b>（元素壓到會變紅警告，不阻擋），<b>不寫入 pptx</b>。'
       +(zs.length?'':'目前沒有預留區——若你的母版右上有 Logo、底部有頁尾，在這裡加上對應方框即可。')+'</span>';
     pp.appendChild(zn2);
+    /* ── 格線（檢視輔助）：這一區與上面幾區不同，設定**不在 deck 裡**，改存瀏覽器（見 normGrid 上方說明）。
+       標題寫「本機」而非「整份簡報」，就是要讓人一眼看出它不跟著 JSON 走。 ── */
+    pp.appendChild(secTitle('格線（本機檢視）'));
+    pp.appendChild(checkRow([
+      ['顯示格線',()=>APP.grid.on,v=>setGrid({on:!!v}),'原點在投影片左上角；一格虛線、每 N 格細實線、每 M 格粗實線'],
+      ['吸附格線',()=>APP.grid.snap,v=>setGrid({snap:!!v}),'移動吸左緣與上緣；拖白點縮放吸四邊'],
+    ]));
+    {
+      const G=APP.grid;
+      // 常用格距做成按鈕（mm 是製圖慣用刻度），非整數 mm 才落到「自訂」
+      const mm=G.size/MM2PX, PRESET=[1,2,5,10];
+      const near=PRESET.find(v=>Math.abs(mm-v)<1e-6);
+      const pr=btnRow(PRESET.map(v=>[v+'mm',()=>setGrid({size:v*MM2PX}),`格距 ${v}mm`,near===v]));
+      pr.style.gap='3px';
+      for(const b of pr.children) b.style.cssText='flex:1;padding:5px 2px';   // 四顆擠進 220px 的面板，不讓它折行
+      pp.appendChild(pr);
+      // 自訂格距：值與單位分開，換單位只換顯示不動實際大小（內部一律 px）
+      const cr=document.createElement('div'); cr.className='row';
+      cr.appendChild(Object.assign(document.createElement('label'),{textContent:'格距'}));
+      const GU={mm:MM2PX,px:1,pt:96/72,cm:96/2.54};
+      const gu=APP.gridUnit||'mm';
+      const ci=document.createElement('input'); ci.type='number'; ci.min='0.1'; ci.step= gu==='px'?1:0.5;
+      ci.value=+(G.size/GU[gu]).toFixed(3); ci.style.width='62px';
+      ci.onchange=()=>{ const v=parseFloat(ci.value);
+        if(!(v>0)){ renderProps(); return; }
+        setGrid({size:Math.max(1,Math.min(800,v*GU[gu]))}); renderProps(); };
+      cr.appendChild(ci);
+      const us=document.createElement('select'); us.style.width='auto';
+      us.innerHTML=Object.keys(GU).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join('');
+      us.onchange=()=>{ APP.gridUnit=us.value; renderProps(); };
+      cr.appendChild(us); pp.appendChild(cr);
+      const nr=document.createElement('div'); nr.className='row'; nr.style.gap='3px';
+      for(const [k,lab,tip] of [['sub','細線','每幾格畫一條細實線'],['major','粗線','每幾格畫一條粗實線']]){
+        const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; nr.appendChild(lb);
+        const i=document.createElement('input'); i.type='number'; i.min=1; i.max=200; i.value=G[k]; i.style.width='44px'; i.title=tip;
+        i.onchange=()=>setGrid({[k]:Math.max(1,Math.min(200,Math.round(+i.value)||G[k]))});
+        nr.appendChild(i);
+        nr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'格'}));
+      }
+      pp.appendChild(nr);
+      // 自寫色列而不用 colorRow：那個會 commitUndo＋renderStage，格線不是簡報內容，不該佔一步撤銷
+      const clr=document.createElement('div'); clr.className='row';
+      clr.appendChild(Object.assign(document.createElement('label'),{textContent:'顏色'}));
+      const sw=document.createElement('button'); sw.className='swatchBtn'; sw.style.background='#'+G.color;
+      sw.title='選色（設計師精選／Open Color／全色域）';
+      sw.onclick=()=>openPalette(sw,G.color,hex=>{ setGrid({color:hex}); sw.style.background='#'+hex; });
+      clr.appendChild(sw);
+      const rst=document.createElement('button'); rst.textContent='重設'; rst.title='回到預設（5mm／5／10／#ADB5BD）';
+      rst.onclick=()=>{ setGrid({size:GRID_DEF.size,sub:GRID_DEF.sub,major:GRID_DEF.major,color:GRID_DEF.color}); renderProps(); };
+      clr.appendChild(rst); pp.appendChild(clr);
+      const gn=document.createElement('div'); gn.className='row';
+      gn.innerHTML='<span class="unit">格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck.json，'
+        +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。</span>';
+      pp.appendChild(gn);
+    }
     // ── 環境設定檔（profile）：把上面這些客製化整包存下／載入，並可設為新簡報的預設 ──
     pp.appendChild(secTitle('環境設定檔（profile）'));
     pp.appendChild(btnRow([
@@ -4429,14 +4566,14 @@ stage.addEventListener('pointerdown',e=>{
         const ids=groupMembers(tel).map(m=>m.id);
         const same=APP.selIds.length===ids.length&&ids.every(id=>APP.selIds.includes(id));
         if(!same){ setSel(ids); updateSelBox(); renderProps(); syncPageJson(); }
-        drag={type:'gmove',sx:e.clientX,sy:e.clientY,orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
+        drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
         try{ stage.setPointerCapture(e.pointerId); }catch(err){}
         return;
       }
       // 已在多選內且直接拖 → 整組移動
       if(APP.selIds.length>1&&APP.selIds.includes(tel.id)){
-        drag={type:'gmove',sx:e.clientX,sy:e.clientY,orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
+        drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
         try{ stage.setPointerCapture(e.pointerId); }catch(err){}
         return;
@@ -4482,6 +4619,37 @@ function fmtDims(rows){   // rows: [[label,px],...]
 }
 function showDragTip(e,label,px){ showDragTipText(e,fmtDims([[label,px]])); }
 function hideDragTip(){ if(dragTip) dragTip.style.display='none'; }
+/* ================= 吸附 =================
+   兩種來源：**輔助線**（投影片中線／邊界／預留區四邊，一直都在）與**格線**（要開才有）。
+   容差用螢幕像素換算回畫布：不然縮到 30% 檢視時 6px 的容差在畫面上只有 2px，根本吸不到。 */
+const SNAP_TOL=6;
+function gridStep(){ const G=APP.grid; return (G.on&&G.snap&&G.size>0)? G.size : 0; }
+/* 輔助線**優先於**格線：格線密到幾乎處處可吸（5mm 格在 65% 檢視下，容差已接近半格），
+   若一視同仁比距離，離中線只差幾 px 的格線就會把「置中」整個吃掉，反而變成永遠對不到中線。
+   輔助線只有寥寥數條且都有語意（中線／邊界／預留區），在容差內就該它贏。 */
+function snapPick(v,cands,step){
+  const tol=Math.min(12,SNAP_TOL/Math.max(APP.zoom,.05));   // 容差以螢幕像素為準（縮到 30% 時 6 畫布 px 在畫面上只有 2px，吸不到）
+  let best=null, bd=tol;
+  for(const c of cands){ const d=Math.abs(v-c); if(d<bd){ bd=d; best=c; } }
+  if(best!=null) return best;
+  if(step){ const g=Math.round(v/step)*step; if(Math.abs(v-g)<tol) return g; }
+  return v;
+}
+/* 移動：候選值都是「元素左上角該落在哪」——含中線對中、貼邊、以及貼齊預留區外緣。
+   格線刻意**只吸左緣與上緣**：四邊都吸的話，寬度不是格距整數倍的元素會在左右兩組
+   吸附點之間反覆被拉走，拖起來像卡住（使用者原話：會很卡手）。 */
+function snapMove(nx,ny,w,h){
+  const zs=APP.deck.zones||[], step=gridStep();
+  return {
+    x:snapPick(nx,[(STAGE_W-w)/2,0,STAGE_W-w,...zs.flatMap(z=>[z.x-w,z.x+z.w])],step),
+    y:snapPick(ny,[(STAGE_H-h)/2,0,STAGE_H-h,...zs.flatMap(z=>[z.y-h,z.y+z.h])],step),
+  };
+}
+// 縮放：吸的是「邊本身的座標」，四邊都吸（拖把手時只有一兩條邊在動，不會互相拉扯）
+function snapEdgeX(x){ const zs=APP.deck.zones||[];
+  return snapPick(x,[0,STAGE_W/2,STAGE_W,...zs.flatMap(z=>[z.x,z.x+z.w])],gridStep()); }
+function snapEdgeY(y){ const zs=APP.deck.zones||[];
+  return snapPick(y,[0,STAGE_H/2,STAGE_H,...zs.flatMap(z=>[z.y,z.y+z.h])],gridStep()); }
 stage.addEventListener('pointermove',e=>{
   if(!drag) return;
   if(pendingUndo){ commitUndo(pendingUndo); pendingUndo=null; }
@@ -4489,15 +4657,8 @@ stage.addEventListener('pointermove',e=>{
   const dx=(e.clientX-drag.sx)*dz, dy=(e.clientY-drag.sy)*dz;
   const el=drag.el;
   if(drag.type==='move'){
-    let nx=drag.x+dx, ny=drag.y+dy;
-    const {w,h}=elSize(el); const SNAP=6;
-    // 吸附輔助線：投影片中線／邊界，加上每個預留區的四條邊（貼齊預留區外緣是最常見的需求）
-    const zs=APP.deck.zones||[];
-    const gx=[(STAGE_W-w)/2,0,STAGE_W-w,...zs.flatMap(z=>[z.x-w,z.x+z.w])];
-    const gy=[(STAGE_H-h)/2,0,STAGE_H-h,...zs.flatMap(z=>[z.y-h,z.y+z.h])];
-    for(const g of gx) if(Math.abs(nx-g)<SNAP){ nx=g; break; }
-    for(const g of gy) if(Math.abs(ny-g)<SNAP){ ny=g; break; }
-    el.x=Math.round(nx); el.y=Math.round(ny);
+    const {w,h}=elSize(el), p=snapMove(drag.x+dx,drag.y+dy,w,h);
+    el.x=Math.round(p.x); el.y=Math.round(p.y);
     updateElStyle(el);
   }else if(drag.type==='adj'){
     const {w,h}=elSize(el);
@@ -4516,8 +4677,8 @@ stage.addEventListener('pointermove',e=>{
      showDragTipText(e,A.map((v,i)=>bd[i].fixed?null:`${adjLabel(el.shape,i)} ${(v/1000).toFixed(1)}%`)
        .filter(Boolean).join('｜'));}
   }else if(drag.type==='lineEnd'){
-    let px=drag.mx+dx, py=drag.my+dy;
-    if(Math.abs(px-drag.fixed.x)<8) px=drag.fixed.x;   // 貼齊垂直
+    let px=snapEdgeX(drag.mx+dx), py=snapEdgeY(drag.my+dy);   // 端點也吸格線，否則線條是全場唯一吸不到的東西
+    if(Math.abs(px-drag.fixed.x)<8) px=drag.fixed.x;   // 貼齊垂直（優先於格線：拉水平／垂直線比對格更常用）
     if(Math.abs(py-drag.fixed.y)<8) py=drag.fixed.y;   // 貼齊水平
     const p1=drag.movingStart? {x:px,y:py}:drag.fixed;
     const p2=drag.movingStart? drag.fixed:{x:px,y:py};
@@ -4526,13 +4687,21 @@ stage.addEventListener('pointermove',e=>{
     el.flipH=p1.x>p2.x; el.flipV=p1.y>p2.y;
     updateElStyle(el);
   }else if(drag.type==='gmove'){
-    for(const o of drag.orig){ const t=curEls().find(x=>x.id===o.id); if(!t)continue; t.x=Math.round(o.x+dx); t.y=Math.round(o.y+dy); updateElStyle(t); }
+    /* 整組移動也吸附，吸的是**群組包圍盒**的左上角，再把修正量平均分回每個成員——
+       逐個成員各吸各的會把相對位置拆散，那就不叫「整組」移動了。
+       bb 在 pointerdown 就算好並存進 drag：拖曳中重算會拿到已被自己移動過的位置，愈拖愈偏。 */
+    const bb=drag.bb, p=snapMove(bb.x+dx,bb.y+dy,bb.w,bb.h);
+    const ax=p.x-bb.x, ay=p.y-bb.y;
+    for(const o of drag.orig){ const t=curEls().find(x=>x.id===o.id); if(!t)continue; t.x=Math.round(o.x+ax); t.y=Math.round(o.y+ay); updateElStyle(t); }
     updateSelBox(); checkZones();
   }else if(drag.type==='gresize'){
-    const nx=drag.ox+dx, ny=drag.oy+dy;
-    let s=(Math.abs(nx-drag.anchor.x)/(Math.abs(drag.ox-drag.anchor.x)||1)
-          +Math.abs(ny-drag.anchor.y)/(Math.abs(drag.oy-drag.anchor.y)||1))/2;
-    groupScaleTo(drag,Math.max(.05,s));
+    /* 群組把手是等比縮放，只有一個比例，兩軸不可能同時落在格線上。
+       改取「指標移動較多的那一軸」為準（原本是兩軸平均），那一邊才真的吸得到格線；
+       另一邊由群組原本的長寬比決定。平均法會讓兩邊都落在格線之間，等於吸了個寂寞。 */
+    const nx=snapEdgeX(drag.ox+dx), ny=snapEdgeY(drag.oy+dy);
+    const sx=Math.abs(nx-drag.anchor.x)/(Math.abs(drag.ox-drag.anchor.x)||1);
+    const sy=Math.abs(ny-drag.anchor.y)/(Math.abs(drag.oy-drag.anchor.y)||1);
+    groupScaleTo(drag,Math.max(.05, Math.abs(dx)>=Math.abs(dy)? sx : sy));
     const bb=groupBBox(selEls());
     showDragTipText(e,fmtDims([['寬',bb.w],['高',bb.h]]));
   }else if(drag.type==='marquee'){
@@ -4547,12 +4716,15 @@ stage.addEventListener('pointermove',e=>{
     const {w,h}=elSize(el);
     showDragTipText(e,fmtDims([['寬',w],['高',h]]));
   }else if(drag.type==='tcol'){
-    el.colW[drag.i]=Math.max(16,Math.round(drag.w+dx));
+    // 吸的是這一欄的右邊界在畫布上的絕對位置（欄寬本身跟格線無關，對齊的是那條分隔線）
+    const left=el.x+el.colW.slice(0,drag.i).reduce((a,b)=>a+b,0);
+    el.colW[drag.i]=Math.max(16,Math.round(snapEdgeX(left+drag.w+dx)-left));
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     renderTableInto(box,el); updateSelBox(); checkZones();
     showDragTip(e,`欄 ${drag.i+1} 寬`,el.colW[drag.i]);
   }else if(drag.type==='trow'){
-    el.rowH[drag.i]=Math.max(12,Math.round(drag.h+dy));
+    const top=el.y+el.rowH.slice(0,drag.i).reduce((a,b)=>a+b,0);
+    el.rowH[drag.i]=Math.max(12,Math.round(snapEdgeY(top+drag.h+dy)-top));
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     renderTableInto(box,el); updateSelBox(); checkZones();
     showDragTip(e,`列 ${drag.i+1} 高`,el.rowH[drag.i]);
@@ -4576,19 +4748,23 @@ stage.addEventListener('pointerup',()=>{
   drag=null; pendingUndo=null; renderAll();
 });
 // 群組比例縮放：從原始快照重算，避免累積誤差。d.scaleFont===false 時字級/欄列僅縮幾何、字級不動
-function groupScaleTo(d,s){
-  const a=d.anchor, sf=d.scaleFont!==false;
+function groupScaleTo(d,s){ groupScaleXY(d,s,s); }   // 等比是不等比的特例，實作只留一份
+/* 群組縮放：以 anchor 為不動點，x/w 乘 sx、y/h 乘 sy。
+   字級與線寬沒有「兩個軸」可言，用面積開根當單一比例——與單一元素 resizeBy 的 factor 同一套算法，
+   兩條路徑縮同一個東西才會得到同樣的字級。*/
+function groupScaleXY(d,sx,sy){
+  const a=d.anchor, sf=d.scaleFont!==false, s=Math.sqrt(Math.abs(sx*sy))||1;
   const fpt=v=>v?Math.max(4,round1(v*s)):v;   // 字級縮放（sf 才用）
   for(const o of d.orig){
     const el=curEls().find(e=>e.id===o.id); if(!el) continue;
-    el.x=Math.round(a.x+(o.x-a.x)*s);
-    el.y=Math.round(a.y+(o.y-a.y)*s);
+    el.x=Math.round(a.x+(o.x-a.x)*sx);
+    el.y=Math.round(a.y+(o.y-a.y)*sy);
     if(o.type==='table'){
-      el.colW=o.colW.map(w=>Math.max(8,Math.round(w*s)));
-      el.rowH=o.rowH.map(h=>Math.max(8,Math.round(h*s)));
+      el.colW=o.colW.map(w=>Math.max(8,Math.round(w*sx)));
+      el.rowH=o.rowH.map(h=>Math.max(8,Math.round(h*sy)));
       el.cells=o.cells.map(r=>r.map(c=>({...c,sizePt:sf?fpt(c.sizePt):c.sizePt})));
     }else{
-      el.w=Math.max(4,Math.round(o.w*s)); el.h=Math.max(0,Math.round(o.h*s));
+      el.w=Math.max(4,Math.round(o.w*sx)); el.h=Math.max(0,Math.round(o.h*sy));
     }
     if(o.paras) el.paras=o.paras.map(p=>({...p,runs:p.runs.map(r=>({...r,sizePt:sf?fpt(r.sizePt):r.sizePt}))}));
     if(o.linePt!=null) el.linePt=round1(o.linePt*s);
@@ -4599,15 +4775,23 @@ function resizeBy(el,d,dx,dy){
   const dir=d.dir;
   const rot=(el.rot||0)*Math.PI/180;   // 表格不旋轉→rot=0，公式自動退化為原行為
   // 螢幕位移 → 元素本地座標（未旋轉框）
-  const ldx= dx*Math.cos(rot)+dy*Math.sin(rot);
-  const ldy=-dx*Math.sin(rot)+dy*Math.cos(rot);
+  let ldx= dx*Math.cos(rot)+dy*Math.sin(rot);
+  let ldy=-dx*Math.sin(rot)+dy*Math.cos(rot);
+  /* 吸附：把「正在移動的那條邊」吸到格線／輔助線，再回推成位移量。
+     只在未旋轉時做——旋轉後元素的邊不再與格線平行，吸了也對不齊，反而讓手感失準。
+     等比鎖定時同樣跳過：吸完 x 再由長寬比推 y，兩邊都不會落在格線上，等於白吸一場。 */
+  const lockAR= imgLocked(el) || (APP.ratioLock && !isLineEl(el));   // 圖片一律鎖；其餘看 APP.ratioLock（線條除外）
+  if(!rot&&!lockAR){
+    if(dir.includes('e')) ldx=snapEdgeX(d.x+d.w+ldx)-(d.x+d.w);
+    if(dir.includes('w')) ldx=snapEdgeX(d.x+ldx)-d.x;
+    if(dir.includes('s')) ldy=snapEdgeY(d.y+d.h+ldy)-(d.y+d.h);
+    if(dir.includes('n')) ldy=snapEdgeY(d.y+ldy)-d.y;
+  }
   let w=d.w,h=d.h,signX=0,signY=0;     // signX/Y：固定角相對中心的方向
   if(dir.includes('e')){ w=d.w+ldx; signX=-1; }
   if(dir.includes('w')){ w=d.w-ldx; signX=+1; }
   if(dir.includes('s')){ h=d.h+ldy; signY=-1; }
   if(dir.includes('n')){ h=d.h-ldy; signY=+1; }
-  // 等比鎖定：圖片一律鎖；其餘看 APP.ratioLock（線條除外）
-  const lockAR= imgLocked(el) || (APP.ratioLock && !isLineEl(el));
   if(lockAR && d.w>0 && d.h>0){ const ar=d.w/d.h; if(Math.abs(ldx)>=Math.abs(ldy)) h=w/ar; else w=h*ar; }
   const MINW=16,MINH= isLineEl(el)? 0:12;
   w=Math.max(MINW,w); h=Math.max(MINH,h);
@@ -5188,6 +5372,18 @@ function fitHeight(){ const sc=$('#stageScroll'); if(sc.clientHeight<160) return
   requestAnimationFrame(centerSlide); }
 $('#btnFitW').onclick=fitWidth;
 $('#btnFitH').onclick=fitHeight;
+/* 格線與吸附：純檢視狀態，不進 undo（撤銷應該只回退簡報內容，不該把使用者的檢視設定也一起翻掉） */
+function syncGridBtns(){
+  $('#btnGrid').classList.toggle('on',APP.grid.on);
+  const sb=$('#btnGridSnap');
+  sb.classList.toggle('on',APP.grid.on&&APP.grid.snap);
+  sb.disabled=!APP.grid.on;   // 沒顯示格線卻吸得到看不見的線＝手感詭異，故連動停用
+}
+function setGrid(patch){ Object.assign(APP.grid,patch); saveGrid(); renderGrid(); syncGridBtns();
+  if(!APP.selIds.length) renderProps(); }   // 頁面面板開著時，面板上的同一組設定要跟著動
+$('#btnGrid').onclick=()=>setGrid({on:!APP.grid.on});
+$('#btnGridSnap').onclick=()=>setGrid({snap:!APP.grid.snap});
+syncGridBtns();
 window.addEventListener('resize',()=>setZoom(Math.round(APP.zoom*100)));   // 視窗改尺寸：重算置中邊距
 
 /* ================= 標題／字體模式／undo 按鈕 ================= */
@@ -7262,7 +7458,7 @@ async function checkFonts(){
 function renderAll(){
   $('#deckTitle').value=APP.deck.title;
   $('#selFontMode').value=APP.deck.fontMode;
-  applyStage(); applyFontVars(); renderZones();   // 尺寸／字體／預留區都可能被 JSON 或面板改動
+  applyStage(); applyFontVars(); renderZones(); renderGrid();   // 尺寸／字體／預留區／格線都可能被 JSON 或面板改動
   renderPanel(); renderStage(); renderProps(); updateUndoBtns();
   setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
   scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
