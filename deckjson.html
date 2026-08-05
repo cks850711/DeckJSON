@@ -4754,6 +4754,24 @@ stage.addEventListener('pointerup',()=>{
   }
   drag=null; pendingUndo=null; renderAll();
 });
+/* ---- 縮放時的儲存格字級 ----
+   儲存格的字級有**兩層**：格層級 `cell.sizePt`，以及格內混排時 run 自帶的 `sizePt`。
+   `cellRuns()` 的取值規則是「run 有寫就用 run 的，沒寫就用格的」——跟 CSS 繼承一樣，
+   **有寫的 run 對格層級的改動免疫**。所以只乘格層級的話，寫了字級的那幾個字會卡在原大小，
+   其他字縮小後它相對就變大（12pt 正文縮成 6pt 而 8pt 註記不動）。兩層同乘一個倍率才守得住比例。
+
+   `sub`/`sup` 的 0.7 不在此列：那是渲染時才乘的（見 runSpan），資料層仍只有一個字級數字。
+   段落那條路（`o.paras`／`d.origParas`）本來就是逐 run 乘的，這裡是補齊表格漏掉的同一件事。
+
+   順帶解掉淺複製的隱患：`{...c}` 會讓新 cells 與 undo 快照共用同一個 runs 陣列與 run 物件，
+   往後誰要就地改 run 就會改到快照。這裡 runs 一律產生新物件。
+   （`cell.border` 仍與快照共用——縮放不動它，但**不要原地改它**。） */
+function scaleCellPt(c,f){
+  const pt=v=> v? Math.max(4,round1(v*f)) : v;
+  const o={...c,sizePt:pt(c.sizePt)};
+  if(Array.isArray(c.runs)) o.runs=c.runs.map(r=> r.sizePt!=null? {...r,sizePt:pt(r.sizePt)} : {...r});
+  return o;
+}
 // 群組比例縮放：從原始快照重算，避免累積誤差。d.scaleFont===false 時字級/欄列僅縮幾何、字級不動
 function groupScaleTo(d,s){ groupScaleXY(d,s,s); }   // 等比是不等比的特例，實作只留一份
 /* 群組縮放：以 anchor 為不動點，x/w 乘 sx、y/h 乘 sy。
@@ -4769,7 +4787,7 @@ function groupScaleXY(d,sx,sy){
     if(o.type==='table'){
       el.colW=o.colW.map(w=>Math.max(8,Math.round(w*sx)));
       el.rowH=o.rowH.map(h=>Math.max(8,Math.round(h*sy)));
-      el.cells=o.cells.map(r=>r.map(c=>({...c,sizePt:sf?fpt(c.sizePt):c.sizePt})));
+      el.cells=o.cells.map(r=>r.map(c=> sf? scaleCellPt(c,s) : {...c}));
     }else{
       el.w=Math.max(4,Math.round(o.w*sx)); el.h=Math.max(0,Math.round(o.h*sy));
     }
@@ -4814,7 +4832,7 @@ function resizeBy(el,d,dx,dy){
     const fw=w/d.w, fh=h/d.h;
     el.colW=d.colW.map(v=>Math.max(16,Math.round(v*fw)));
     el.rowH=d.rowH.map(v=>Math.max(12,Math.round(v*fh)));
-    if(syncFont&&d.origCells) el.cells=d.origCells.map(r=>r.map(c=>({...c,sizePt:c.sizePt?Math.max(4,round1(c.sizePt*factor)):c.sizePt})));
+    if(syncFont&&d.origCells) el.cells=d.origCells.map(r=>r.map(c=>scaleCellPt(c,factor)));
     el.x=Math.round(nx); el.y=Math.round(ny);
     const box=stage.querySelector(`.el[data-id="${el.id}"]`);
     box.style.left=el.x+'px'; box.style.top=el.y+'px';
