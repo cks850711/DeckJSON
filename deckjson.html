@@ -484,6 +484,9 @@
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
+        <li><b>貼上外部表格</b>：從 <b>Excel／PowerPoint／Word／網頁</b>複製表格，直接 Cmd/Ctrl+V 貼進畫布，會變成<b>可編輯的原生表格</b>而不是圖片。合併儲存格、底色、字色、粗斜體、對齊、上下標、格內高亮都會保留，欄寬照來源。<br>
+          <b>字級一律重設為 12pt</b>，不繼承來源——來源的字級多半是「為了把表格塞進版面」被縮過的，那是別人的妥協不是階層資訊。要調整大小請選取整張表拖把手，開<b>比例鎖定＋字級同步</b>，欄寬列高與字級會一起縮，結構不會跑掉。<br>
+          <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter 轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
         <li><b>☰ 圖層</b>面板（頂端按鈕，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
         <li><b>不透明度</b>：右欄滑桿 0–100%，匯出轉 PPT 原生 transparency（圖片／形狀填色／框線／表格底色可調）。</li>
         <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。<b>右欄有位置尺寸可填</b>：群組本身沒有座標（成員各自獨立），面板上的 X／Y／寬／高指的是<b>包圍盒</b>——改 X／Y＝整組平移，改寬／高＝以包圍盒左上角為不動點縮放整組（可鎖比例、可連字級一起縮）。</li>
@@ -4468,6 +4471,10 @@ document.body.addEventListener('drop',async e=>{
 });
 document.addEventListener('paste',async e=>{
   if(APP.editing||/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  /* 圖片是**最後的退路**，不是第一順位。Excel／PowerPoint／Word 複製任何東西（表格、文字框、形狀）
+     都會順便附一份 image/png 的圖像版本；先到先贏的話，從 Office 貼過來永遠只會得到一張不能編輯的圖。
+     剪貼簿裡有 <table> 就讓給下面的表格分支，真正複製圖片時沒有 table，行為不變。*/
+  if(clipHasTable(e)) return;
   const it=[...(e.clipboardData.items||[])].find(i=>/^image\/(png|jpeg)$/.test(i.type));
   if(it){ e.preventDefault(); await insertImageFile(it.getAsFile()); }
 });
@@ -5298,6 +5305,176 @@ document.addEventListener('keydown',e=>{
 function clipboardGuard(){
   return APP.editing||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||document.activeElement.isContentEditable;
 }
+/* ---- 剪貼簿的 HTML 表格 → 表格元素 ----
+   Excel／PowerPoint／Word／網頁／md-table-converter 複製表格時，剪貼簿上都有一份 text/html，
+   裡面是結構完整的 <table>：合併寫在 colspan/rowspan 屬性、樣式寫在 inline style。這是所有來源的
+   **共同分母**，所以一支解析器就把它們全接下來，不必為每家寫一套私有格式的讀取器。
+
+   關鍵手法：把 HTML 掛進「離屏但確實在 document 上」的容器，讓**瀏覽器自己排版**，再讀
+   offsetWidth／getComputedStyle。好處有二：
+     1. 欄寬直接量得到。Markdown 表格沒有寬度資訊只能拿字數猜，HTML 這條不必猜。
+     2. PowerPoint 的 mso- 私有屬性、<o:p>、conditional comments 這些髒東西由排版引擎自行消化，
+        我們只讀計算後的值，不必逐家維護清洗規則。
+   代價是必須真的掛上 DOM（DOMParser 產生的 detached 文件沒有 computed style），故用 try/finally 確保移除。*/
+const PASTE_TBL_MAX_C=40, PASTE_TBL_MAX_R=200;   // 在 Excel 隨手框一大片就是上萬格，畫布撐不住，超過截斷
+const PASTE_TBL_MINW=.30, PASTE_TBL_MAXW=.92;    // 貼入後的總寬夾在畫布寬的這個區間（來源沒寫寬度時會量得極窄）
+function rgbToHex6(v){   // getComputedStyle 一律回 rgb()／rgba()
+  const m=String(v||'').match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/i);
+  if(!m) return hex6(v);
+  if(m[4]!=null&&+m[4]<.05) return null;   // 透明＝沒設色，不是黑色
+  return [m[1],m[2],m[3]].map(n=>Math.round(+n).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+/* 格內走訪 → runs。**刻意不讀 font-size**：來源的字級多半是「為了把表格塞進版面」被縮過的，
+   那是別人的妥協不是階層資訊，繼承進來只會把妥協一起搬過來。一律用 defCell() 的 12pt，
+   貼完再用「比例鎖定＋字級同步」拉整張表，欄寬列高與字級會一起縮，結構不會跑掉（見 resizeBy 的 table 分支）。
+   粗體／斜體／字色／底線／刪除線照收——那些是語意。與格層級同值的鍵由 normCell 統一刪除，這裡不必自己瘦身。*/
+function htmlCellRuns(td,base){
+  const runs=[], push=(t,st)=>{ if(t) runs.push({...st,text:t}); };
+  const walk=(node,st)=>{
+    for(const n of node.childNodes){
+      if(n.nodeType===3){ push(n.textContent.replace(/\s+/g,' '),st); continue; }
+      if(n.nodeType!==1) continue;   // 註解節點（conditional comments）直接跳過
+      const tag=n.tagName.toLowerCase();
+      if(tag==='br'){ if(runs.length) runs[runs.length-1].text+='\n'; else push('\n',st); continue; }
+      const cs=getComputedStyle(n), s={...st};
+      /* 區塊元素之間補換行。Word／PowerPoint 的儲存格是一行一個 <p>，不補的話多行內容會被接成一長串。
+         換行沿用扁平作法：`\n` 留在 run 的 text 裡不拆段（見 normCell 上方說明）。*/
+      if(/^(block|list-item|flow-root|table-caption)$/.test(cs.display)
+         &&runs.length&&!/\n$/.test(runs[runs.length-1].text)) runs[runs.length-1].text+='\n';
+      if(+cs.fontWeight>=600) s.bold=true;
+      if(cs.fontStyle==='italic'||cs.fontStyle==='oblique') s.italic=true;
+      if(/underline/.test(cs.textDecorationLine)) s.underline=true;
+      if(/line-through/.test(cs.textDecorationLine)) s.strike=true;
+      /* 上下標只讀**語意**（<sup>/<sub> 的 UA 樣式與行內 vertical-align 都算進 computed），
+         來源附帶的 font-size:0.8em 之類縮小一律丟掉——本工具的 sup/sub 匯出成 OOXML baseline，
+         縮小與升降由 PowerPoint 自己做。照收縮小的話會變成雙重縮小，Fe₃O₄ 的下標會小到看不見。*/
+      if(cs.verticalAlign==='super') s.sup=true;
+      else if(cs.verticalAlign==='sub') s.sub=true;
+      const c=rgbToHex6(cs.color);
+      if(c&&c!=='000000') s.color=c;   // 同 cellFromTd：純黑＝沒指定，退回格層級，免得同一格內兩種黑
+      const hl=rgbToHex6(cs.backgroundColor);   // 沒設背景時 computed 是全透明，rgbToHex6 回 null，不會誤標
+      if(hl) s.highlight=hl;
+      walk(n,s);
+    }
+  };
+  walk(td,base);
+  if(runs.length){   // 首尾的排版空白（原始碼縮排）與收尾換行都不是內容
+    runs[0].text=runs[0].text.replace(/^[ \n]+/,'');
+    runs[runs.length-1].text=runs[runs.length-1].text.replace(/[ \n]+$/,'');
+  }
+  return runs.filter(r=>r.text);
+}
+function cellFromTd(td){
+  const cs=getComputedStyle(td), cl=defCell();
+  const bg=rgbToHex6(cs.backgroundColor);
+  /* 純白視為「無底色」。Excel 匯出的 HTML 每一格都帶白底，照收的話整張表長出一堆 fill:'FFFFFF'，
+     JSON 膨脹之外還會蓋掉頁面背景（深色底的簡報會出現一塊白補丁）。真要白底再自己套。*/
+  cl.fill=(bg&&bg!=='FFFFFF')? bg : null;
+  cl.align=/right|end/.test(cs.textAlign)?'right' : /center/.test(cs.textAlign)?'center' : 'left';
+  cl.valign=/top/.test(cs.verticalAlign)?'top' : /bottom/.test(cs.verticalAlign)?'bottom' : 'middle';
+  cl.bold=+cs.fontWeight>=600;   // <th> 的粗體是 UA 樣式，computed 讀得到，不必特判標籤
+  cl.italic=cs.fontStyle==='italic'||cs.fontStyle==='oblique';
+  const fc=rgbToHex6(cs.color);
+  if(fc&&fc!=='000000') cl.color=fc;   // 純黑退回 defCell 的 1A1A1A，免得整張表逐格寫同一個顏色
+  // 底線／刪除線在本工具是 run 級屬性（格層級沒有對應欄位），故併進 run 的基底樣式
+  const rb={bold:cl.bold,italic:cl.italic,color:cl.color,sizePt:cl.sizePt};
+  if(/underline/.test(cs.textDecorationLine)) rb.underline=true;
+  if(/line-through/.test(cs.textDecorationLine)) rb.strike=true;
+  const runs=htmlCellRuns(td,rb);
+  cl.text=runs.map(r=>r.text).join('');
+  if(runs.length) cl.runs=runs;   // 單一 run 且無覆寫時，normCell 會自動退回扁平結構
+  return cl;
+}
+function htmlToTableEl(html){
+  /* 量測容器必須做兩件事，缺一結果就會歪：
+     ① **隔離本工具自己的樣式**。容器掛在 document 上才有 computed style，但這也代表沒設色的 <td>
+        會繼承到 app UI 的深色主題文字色（實測會量到 #E8E8EA），被當成來源指定的字色收進去。
+        故把所有「會被繼承」的屬性明確壓成中性值。
+     ② **用本工具渲染表格的同一組度量**（12pt＝16px、padding 0 3px、line-height 1.2，見 :is(.el,.mel) td）。
+        量測的目的不是重現來源的長相，而是求出「貼進來以 12pt 渲染時文字剛好放得下」的欄寬。
+        來源字級被縮過（PPT 常見）時，照它的寬度收會太窄，一貼進來就整片折行。
+     來源自己寫在 style 屬性上的 padding/width 仍然勝出（inline 特異性最高），所以 Excel 的欄寬照樣生效。*/
+  const box=document.createElement('div');
+  box.id='pasteMeasure';
+  box.style.cssText='position:fixed;left:-99999px;top:0;width:'+STAGE_W+'px;visibility:hidden;'
+    +'color:#000;font:16px/1.2 "Roboto","Noto Sans TC",sans-serif;font-weight:400;font-style:normal;'
+    +'text-align:left;text-decoration:none;background:transparent';
+  const sty=document.createElement('style');
+  /* 字級要用 !important 壓過來源的 inline style：既然輸出固定 12pt，量測就必須也在 12pt 下進行，
+     否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。欄寬屬性（Excel 的 width=）
+     不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。*/
+  sty.textContent='#pasteMeasure table{border-collapse:collapse}'
+    +'#pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}'
+    // margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
+    // 會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。
+    +'#pasteMeasure *{font-size:'+pt2px(12)+'px!important;line-height:1.2!important;margin:0!important}';
+  box.appendChild(sty);
+  document.body.appendChild(box);
+  try{
+    box.insertAdjacentHTML('beforeend',html);
+    const tbl=box.querySelector('table'); if(!tbl) return null;
+    const trs=[...tbl.querySelectorAll('tr')].filter(tr=>tr.querySelector('td,th'));
+    if(!trs.length) return null;
+    /* 先建佔位表推真正的 (r,c)：有 colspan/rowspan 時「第幾個 <td>」跟「第幾欄」對不上，
+       拿 index 當欄號會讓整張表從第一個合併之後全部錯位。 */
+    const occ=[], items=[];
+    let nR=0,nC=0;
+    trs.forEach((tr,r)=>{
+      let c=0;
+      for(const td of tr.children){
+        if(!/^(TD|TH)$/.test(td.tagName)) continue;
+        while((occ[r]||[])[c]) c++;
+        const cs=Math.max(1,td.colSpan||1), rs=Math.max(1,td.rowSpan||1);
+        items.push({r,c,cs,rs,td});
+        for(let i=r;i<r+rs;i++) for(let j=c;j<c+cs;j++) (occ[i]=occ[i]||[])[j]=true;
+        c+=cs; nC=Math.max(nC,c);
+      }
+      nR=r+1;
+    });
+    nC=Math.min(nC,PASTE_TBL_MAX_C); nR=Math.min(nR,PASTE_TBL_MAX_R);
+    if(!nR||!nC) return null;
+    // 欄寬／列高：只拿「沒有跨格」的格子量，跨格的量到的是合併後的總寬，會把該欄撐爆
+    const colW=new Array(nC).fill(0), rowH=new Array(nR).fill(0);
+    for(const it of items){
+      if(it.cs===1&&it.c<nC) colW[it.c]=Math.max(colW[it.c],it.td.offsetWidth);
+      if(it.rs===1&&it.r<nR) rowH[it.r]=Math.max(rowH[it.r],it.td.offsetHeight);
+    }
+    const avg=a=>{ const v=a.filter(n=>n>0); return v.length? v.reduce((x,y)=>x+y,0)/v.length : 0; };
+    const dw=avg(colW)||96, dh=avg(rowH)||28;   // 整欄都被合併蓋住 → 沒得量，用其他欄的平均頂上
+    /* 列高下限＝1.5 倍字級高。本工具的儲存格沒有上下內距（見 :is(.el,.mel) td），12pt 量到的就是
+       純文字高 19px，照收會擠成一團；來源自己有內距的（Excel）量到的本來就比這高，不受影響。*/
+    const rhMin=Math.round(pt2px(12)*1.5);
+    for(let i=0;i<nC;i++) colW[i]=Math.max(24,Math.round(colW[i]||dw));
+    for(let i=0;i<nR;i++) rowH[i]=Math.max(rhMin,Math.round(rowH[i]||dh));
+    // 總寬夾進畫布的合理區間：來源沒寫寬度時（如 md-table-converter 的輸出）會量到極窄的縮到最小寬
+    let tw=colW.reduce((a,b)=>a+b,0);
+    const lo=STAGE_W*PASTE_TBL_MINW, hi=STAGE_W*PASTE_TBL_MAXW;
+    const sc= tw>hi? hi/tw : tw<lo? lo/tw : 1;
+    if(sc!==1){ for(let i=0;i<nC;i++) colW[i]=Math.max(24,Math.round(colW[i]*sc)); tw=colW.reduce((a,b)=>a+b,0); }
+    const cells=[];
+    for(let r=0;r<nR;r++){ cells[r]=[]; for(let c=0;c<nC;c++) cells[r][c]=defCell(); }
+    for(const it of items){
+      if(it.r>=nR||it.c>=nC) continue;
+      const cs=Math.min(it.cs,nC-it.c), rs=Math.min(it.rs,nR-it.r);
+      const cl=cellFromTd(it.td);
+      cl.colspan=cs; cl.rowspan=rs; cl.covered=false;
+      cells[it.r][it.c]=cl;
+      for(let i=it.r;i<it.r+rs;i++) for(let j=it.c;j<it.c+cs;j++)
+        if(i!==it.r||j!==it.c) cells[i][j].covered=true;
+    }
+    const th=rowH.reduce((a,b)=>a+b,0);
+    /* 框線一律用整表預設細線，不逐格反推來源。Excel 複製時會把「網格線」也寫成 border，
+       照收的話貼進來是滿版格線；而框線在本工具是一鍵可套的，反推錯了反而更難清。*/
+    return {id:uid('e'),type:'table',
+      x:Math.max(0,Math.round((STAGE_W-tw)/2)), y:Math.max(0,Math.round((STAGE_H-th)/2)),
+      colW,rowH,cells,border:{pt:0.75,color:'999999'}};
+  }catch(err){ return null; }
+  finally{ box.remove(); }
+}
+const clipHasTable=e=>{
+  const h=e.clipboardData&&e.clipboardData.getData('text/html');
+  return !!h&&/<table[\s>]/i.test(h);
+};
 document.addEventListener('copy',e=>{
   if(clipboardGuard()||!APP.selIds.length) return;
   const els=selEls().map(el=>structuredClone(el));
@@ -5311,14 +5488,22 @@ document.addEventListener('cut',e=>{
   e.preventDefault();
   deleteSelected();
 });
+/* 貼上優先權：結構化內容 > 圖片。① 本工具自己的元素 JSON ② 任何來源的 HTML <table>
+   ③ 圖片（在上面那個 listener，已讓位給 ②）。②③ 的先後是刻意的，理由見該處說明。*/
 document.addEventListener('paste',e=>{
   if(clipboardGuard()) return;
-  const t=e.clipboardData.getData('text/plain'); if(!t||t[0]!=='{'&&t[0]!=='[') return;
-  let o; try{ o=JSON.parse(t); }catch(err){ return; }
-  let els=null;
-  if(o&&o.format==='deckjson-elements'&&Array.isArray(o.elements)) els=o.elements;
-  else if(o&&Array.isArray(o.elements)&&!o.pages) els=o.elements;            // 整頁物件 → 取其元素
-  else if(o&&o.type&&o.x!=null) els=[o];                                     // 單一元素物件
+  let els=null, placed=false;
+  const t=e.clipboardData.getData('text/plain');
+  if(t&&(t[0]==='{'||t[0]==='[')){
+    let o=null; try{ o=JSON.parse(t); }catch(err){ o=null; }
+    if(o&&o.format==='deckjson-elements'&&Array.isArray(o.elements)) els=o.elements;
+    else if(o&&Array.isArray(o.elements)&&!o.pages) els=o.elements;          // 整頁物件 → 取其元素
+    else if(o&&o.type&&o.x!=null) els=[o];                                   // 單一元素物件
+  }
+  if(!els&&clipHasTable(e)){                                                 // Excel／PPT／Word／網頁／md-table-converter
+    const tb=htmlToTableEl(e.clipboardData.getData('text/html'));
+    if(tb){ els=[tb]; placed=true; }   // 已算好置中座標，不要再套下面的防重疊偏移
+  }
   const OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
   els=els&&els.filter(x=>x&&typeof x==='object'&&OK[x.type]);
   if(!els||!els.length) return;
@@ -5326,7 +5511,7 @@ document.addEventListener('paste',e=>{
   // @asset 佔位 → 還原 base64（同檔內複製時；跨檔貼遮罩 JSON 找不到位元組則擋下）
   try{ resolveAssets({elements:els}); }catch(err){ alert('貼上失敗：'+err.message); return; }
   commitUndo();
-  const clash=els.some(src=>curEls().some(t2=>t2.x===src.x&&t2.y===src.y&&t2.type===src.type));
+  const clash=!placed&&els.some(src=>curEls().some(t2=>t2.x===src.x&&t2.y===src.y&&t2.type===src.type));
   const off=clash?16:0;
   const gidMap=new Map(), ids=[];
   for(const src of els){
