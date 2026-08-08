@@ -275,6 +275,8 @@
   <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span>
     <button id="btnGrid" title="格線（製圖式：一格虛線、每 5 格細線、每 10 格粗線，原點在左上角）。格距／顏色在右欄「頁面 → 格線」調">⊞ 格線</button>
     <button id="btnGridSnap" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸">🧲 吸附</button></div>
+  <div class="grp"><label>貼上</label>
+    <button id="btnPasteWhite" title="貼上外部表格時，來源沒指定底色（或指定純白）的格子要填白還是留透明。預設白底——貼上的字色是深色，透明貼到深色背景上會整張看不見。少數想讓背景透出來的場合再關掉。此設定存在這台瀏覽器，不隨簡報走">▦ 白底</button></div>
   <span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
   <div class="grp right">
     <button id="btnLayers" title="圖層面板：堆疊順序／顯示隱藏／鎖定">☰ 圖層</button>
@@ -486,7 +488,9 @@
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
         <li><b>貼上外部表格</b>：從 <b>Excel／PowerPoint／Word／網頁</b>複製表格，直接 Cmd/Ctrl+V 貼進畫布，會變成<b>可編輯的原生表格</b>而不是圖片。合併儲存格、底色、字色、粗斜體、對齊、上下標、格內高亮都會保留，欄寬照來源。<br>
           <b>字級一律重設為 12pt</b>，不繼承來源——來源的字級多半是「為了把表格塞進版面」被縮過的，那是別人的妥協不是階層資訊。要調整大小請選取整張表拖把手，開<b>比例鎖定＋字級同步</b>，欄寬列高與字級會一起縮，結構不會跑掉。<br>
-          <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter 轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
+          <b>來源沒指定底色（或指定純白）的格子預設填白</b>，由工具列「貼上 ▦ 白底」切換成透明。預設白底是因為貼上的字色是深色，透明貼到深色背景上會整張看不見；少數想讓背景透出來的場合再關掉。已經貼進來的表格要改，選取整張表用右欄「儲存格 → 底色」一次套完。<br>
+          <b>格內圖片會變成獨立的圖片元素</b>，與表格綁成一個<b>軟群組</b>——整組搬移或等比縮放時圖跟著走，但單獨拖某一欄的寬度時圖不會跟。這不是偷懶：PowerPoint 的表格儲存格本來就放不了圖片，它自己「在格子裡插入圖片」也是浮在表格上方的獨立物件。只收<b>內嵌位元組</b>（<code>data:</code>）的圖；網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。<br>
+          <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter 轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式；圖片要先在那邊掛載圖片資料夾才帶得過來）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
         <li><b>☰ 圖層</b>面板（頂端按鈕，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
         <li><b>不透明度</b>：右欄滑桿 0–100%，匯出轉 PPT 原生 transparency（圖片／形狀填色／框線／表格底色可調）。</li>
         <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。<b>右欄有位置尺寸可填</b>：群組本身沒有座標（成員各自獨立），面板上的 X／Y／寬／高指的是<b>包圍盒</b>——改 X／Y＝整組平移，改寬／高＝以包圍盒左上角為不動點縮放整組（可鎖比例、可連字級一起縮）。</li>
@@ -1490,9 +1494,25 @@ function normGrid(g){   // 手改 localStorage 或跨版本殘值一律過這裡
 function loadGrid(){ try{ return normGrid(JSON.parse(lsGet(GRID_KEY)||'null')); }catch(e){ return {...GRID_DEF}; } }
 function saveGrid(){ lsSet(GRID_KEY,JSON.stringify(APP.grid)); }
 
+/* 貼上外部表格時，來源「沒指定底色」或「指定純白」的格子要不要填白。
+   **預設填白，而且這是修正而非偏好**：同一條貼上路徑會把純黑字色退回 `1A1A1A`（深色），
+   底色卻留空——深色字配透明底，只要簡報背景不是淺色就整張看不見。兩種壞法不對等：
+   白底貼到深色簡報是「醜但讀得到，選全表清掉底色即可」，透明是「內容消失，且要同時改底色與字色」。
+   而且 PowerPoint 內建的表格樣式全都有填色，透明表格本來就是要特地去設的例外。
+
+   一律套用所有來源，不分 converter／Excel／Word／網頁：DeckJSON 收到的只是 HTML，
+   而 Excel 複製出來每一格也都寫著白色，字面上都是 `#FFFFFF`，**分不出誰寫的**。
+   要分就得讓 converter 在 HTML 上留私有記號，那是兩個 app 之間的隱形耦合，不划算。
+
+   同格線，存 localStorage 不寫進 deck：這是「怎麼貼」不是「簡報內容」。 */
+const PASTEW_KEY='deckjson.pasteWhite';
+function loadPasteWhite(){ return lsGet(PASTEW_KEY)!=='0'; }   // 未設過＝預設開
+function savePasteWhite(){ lsSet(PASTEW_KEY,APP.pasteWhite?'1':'0'); }
+
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
   grid:loadGrid(),   // 格線與吸附設定（不屬於 deck，見上方說明）
+  pasteWhite:loadPasteWhite(),   // 貼上外部表格：無底色格填白（同樣不屬於 deck）
   edit:null,      // 文字框 run 級編輯狀態 {id,root,src,sel:{p0,o0,p1,o1},pushed,snap}
   cellEdit:null,  // 格內 run 級編輯狀態 {id,r,c,root,src,sel:{o0,o1}}（單段模型，位移以整格計）
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
@@ -5241,6 +5261,14 @@ function clipboardGuard(){
      2. PowerPoint 的 mso- 私有屬性、<o:p>、conditional comments 這些髒東西由排版引擎自行消化，
         我們只讀計算後的值，不必逐家維護清洗規則。
    代價是必須真的掛上 DOM（DOMParser 產生的 detached 文件沒有 computed style），故用 try/finally 確保移除。*/
+/* 貼上表格的固定字級：10.5pt＝14px。
+   為什麼是這個數字：md-table-converter 的預覽刻意對齊 Obsidian 的表格渲染（14px 字、行高 1.3），
+   使用者用佔位符在 Obsidian 裡「畫」出來的欄寬列高就是以 14px 為尺量出來的。這邊用同一個尺接，
+   兩端才是同一個座標系，送過來的 width/height 才對得上。對 Excel／PowerPoint／網頁來源同樣適用——
+   分來源給不同字級會讓同一個貼上功能有兩種行為，日後難查。
+   10.5pt 對投影片偏小是刻意的：貼入固定字級、再用比例鎖定與字級同步整體放大，
+   比讓來源字級決定一切可控得多：來源字級多半是為了塞進原本的版面而縮過的妥協值，繼承過來只會把別人的妥協帶進這裡。*/
+const PASTE_TBL_PT=10.5;
 const PASTE_TBL_MAX_C=40, PASTE_TBL_MAX_R=200;   // 在 Excel 隨手框一大片就是上萬格，畫布撐不住，超過截斷
 const PASTE_TBL_MINW=.30, PASTE_TBL_MAXW=.92;    // 貼入後的總寬夾在畫布寬的這個區間（來源沒寫寬度時會量得極窄）
 function rgbToHex6(v){   // getComputedStyle 一律回 rgb()／rgba()
@@ -5291,10 +5319,14 @@ function htmlCellRuns(td,base){
 }
 function cellFromTd(td){
   const cs=getComputedStyle(td), cl=defCell();
+  cl.sizePt=PASTE_TBL_PT;   // 貼上一律固定字級，不繼承來源（見 PASTE_TBL_PT 的說明）
   const bg=rgbToHex6(cs.backgroundColor);
-  /* 純白視為「無底色」。Excel 匯出的 HTML 每一格都帶白底，照收的話整張表長出一堆 fill:'FFFFFF'，
-     JSON 膨脹之外還會蓋掉頁面背景（深色底的簡報會出現一塊白補丁）。真要白底再自己套。*/
-  cl.fill=(bg&&bg!=='FFFFFF')? bg : null;
+  /* 來源指定了非白的底色就照收；「純白」與「根本沒設」則收斂成同一件事，交給 APP.pasteWhite 決定。
+     為什麼純白要和「沒設」同一組：Excel 匯出的 HTML **每一格都帶白底**，那是它的習慣不是使用者的意圖，
+     兩者字面上都是 `#FFFFFF`，分不出來，硬要分只能靠來源留私有記號（見 PASTEW_KEY 的說明）。
+     預設填白的理由也在那裡——下面 `cl.color` 那行會把純黑退回深色的 1A1A1A，
+     深色字配透明底在非淺色背景上是整張看不見。*/
+  cl.fill=(bg&&bg!=='FFFFFF')? bg : (APP.pasteWhite? 'FFFFFF' : null);
   cl.align=/right|end/.test(cs.textAlign)?'right' : /center/.test(cs.textAlign)?'center' : 'left';
   cl.valign=/top/.test(cs.verticalAlign)?'top' : /bottom/.test(cs.verticalAlign)?'bottom' : 'middle';
   cl.bold=+cs.fontWeight>=600;   // <th> 的粗體是 UA 樣式，computed 讀得到，不必特判標籤
@@ -5310,7 +5342,30 @@ function cellFromTd(td){
   if(runs.length) cl.runs=runs;   // 單一 run 且無覆寫時，normCell 會自動退回扁平結構
   return cl;
 }
-function htmlToTableEl(html){
+/* 等格內圖片載入完成。**這是量測正確性的前提，不是效能優化**：未載入的 <img> 尺寸是 0，
+   欄寬會被低估、列高整列塌掉，而且是「有時候對有時候不對」的那種——快取命中就對，
+   第一次貼就錯。所以量測前一律等到底。
+   逾時是護欄：來源若掛著連不到的遠端圖，不能讓整個貼上永遠卡住。逾時的那幾張會被
+   當成量不到（尺寸 0）而略過，其餘照常。*/
+const PASTE_IMG_WAIT=3000;
+function waitImgs(box){
+  const ims=[...box.querySelectorAll('img')].filter(im=>!im.complete);
+  if(!ims.length) return Promise.resolve();
+  return Promise.all(ims.map(im=>new Promise(res=>{
+    const done=()=>res();
+    im.addEventListener('load',done,{once:true});
+    im.addEventListener('error',done,{once:true});
+    setTimeout(done,PASTE_IMG_WAIT);
+  })));
+}
+/* 格內圖片走「浮動圖片＋軟群組」（缺口總表 §I.7 的路線乙）。
+   DrawingML 的 <a:tc> 只有 <a:txBody> 與 <a:tcPr>，**沒有圖片的容身處**；PowerPoint 自己
+   在格子裡「插入圖片」時，那張圖也是浮在表格上方的獨立物件。所以這不是把圖片塞進儲存格，
+   而是照著目標格式本來的做法擺——表格與圖片是平級的兄弟，靠 groupId 綁在一起。
+   選路線甲（<a:tcPr> 的 <a:blipFill>）的話圖會被拉伸填滿整格、比例全毀，那是色塊／浮水印
+   的用法，不是產品照。乙唯一的退步是「拖單一欄寬時圖不跟」，但那在 PowerPoint 裡本來就得手動對齊。
+   回傳陣列（表格在前、圖片在後）而非單一元素，因為這件事在資料模型上本來就是多個元素。 */
+async function htmlToTableEl(html){
   /* 量測容器必須做兩件事，缺一結果就會歪：
      ① **隔離本工具自己的樣式**。容器掛在 document 上才有 computed style，但這也代表沒設色的 <td>
         會繼承到 app UI 的深色主題文字色（實測會量到 #E8E8EA），被當成來源指定的字色收進去。
@@ -5322,17 +5377,22 @@ function htmlToTableEl(html){
   const box=document.createElement('div');
   box.id='pasteMeasure';
   box.style.cssText='position:fixed;left:-99999px;top:0;width:'+STAGE_W+'px;visibility:hidden;'
-    +'color:#000;font:16px/1.2 "Roboto","Noto Sans TC",sans-serif;font-weight:400;font-style:normal;'
+    +'color:#000;font:'+pt2px(PASTE_TBL_PT)+'px/1.2 "Roboto","Noto Sans TC",sans-serif;font-weight:400;font-style:normal;'
     +'text-align:left;text-decoration:none;background:transparent';
   const sty=document.createElement('style');
-  /* 字級要用 !important 壓過來源的 inline style：既然輸出固定 12pt，量測就必須也在 12pt 下進行，
+  /* 字級要用 !important 壓過來源的 inline style：既然輸出固定 PASTE_TBL_PT，量測就必須也在同一個字級下進行，
      否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。欄寬屬性（Excel 的 width=）
      不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。*/
   sty.textContent='#pasteMeasure table{border-collapse:collapse}'
     +'#pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}'
+    /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
+       來源那邊的列高就是在這個規則下量出來的，這裡若讓 <img> 退回 inline，會多出一段基線
+       下墜空間，同一張表在兩邊量到不同的列高。順帶讓「圖片置中於格內」這個放置模型
+       在量測階段就成立，不是事後硬套。margin 要 !important，否則被下面的 * 規則歸零。*/
+    +'#pasteMeasure img{display:block!important;margin:2px auto!important}'
     // margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
     // 會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。
-    +'#pasteMeasure *{font-size:'+pt2px(12)+'px!important;line-height:1.2!important;margin:0!important}';
+    +'#pasteMeasure *{font-size:'+pt2px(PASTE_TBL_PT)+'px!important;line-height:1.2!important;margin:0!important}';
   box.appendChild(sty);
   document.body.appendChild(box);
   try{
@@ -5358,6 +5418,27 @@ function htmlToTableEl(html){
     });
     nC=Math.min(nC,PASTE_TBL_MAX_C); nR=Math.min(nR,PASTE_TBL_MAX_R);
     if(!nR||!nC) return null;
+    /* 來源有沒有指定「絕對」欄寬（px 或 HTML width 屬性的純數字）。百分比不算——那要有容器寬度
+       才有意義，本質上仍是「沒有絕對資訊」。
+       量到絕對寬度時必須把量測容器放寬：容器原本是 STAGE_W，比畫布寬的表格會被容器本身壓縮
+       （auto layout 下 CJK 可折行，瀏覽器就照折），量出來的數字已經不是來源指定的了，
+       後面再怎麼判斷都來不及。實測 1370px 的表在 1280px 容器裡量到 1279px。*/
+    const ABS_W=/^\s*[\d.]+(px)?\s*$/i, PCT_W=/%/;
+    const wOf=el=>[el.style.width||'', el.getAttribute('width')||''];
+    const absW=el=>wOf(el).some(v=>ABS_W.test(v));
+    // <col width> 也算：Excel 的欄寬寫在 <colgroup> 上，<td> 身上沒有
+    const cols=[...tbl.querySelectorAll('col')];
+    const hasSrcW=items.some(it=>absW(it.td))||cols.some(absW);
+    if(hasSrcW){
+      /* 放寬容器前必須先中和百分比寬。百分比是相對容器的，容器一放到 99999px 就跟著膨脹——
+         實測 `<table style="width:100%">` 配 td 的 px 寬（Word 常見組合），330px 的表量成 99998px。
+         既然這條路已經確定有絕對寬度可用，百分比就是多餘且有害的資訊，直接拿掉。*/
+      for(const el of [tbl, ...cols, ...items.map(it=>it.td)]){
+        if(wOf(el).some(v=>PCT_W.test(v))){ el.style.width='auto'; el.removeAttribute('width'); }
+      }
+      box.style.width='99999px';
+    }
+    await waitImgs(box);   // 必須在任何 offsetWidth／offsetHeight 之前
     // 欄寬／列高：只拿「沒有跨格」的格子量，跨格的量到的是合併後的總寬，會把該欄撐爆
     const colW=new Array(nC).fill(0), rowH=new Array(nR).fill(0);
     for(const it of items){
@@ -5368,16 +5449,26 @@ function htmlToTableEl(html){
     const dw=avg(colW)||96, dh=avg(rowH)||28;   // 整欄都被合併蓋住 → 沒得量，用其他欄的平均頂上
     /* 列高下限＝1.5 倍字級高。本工具的儲存格沒有上下內距（見 :is(.el,.mel) td），12pt 量到的就是
        純文字高 19px，照收會擠成一團；來源自己有內距的（Excel）量到的本來就比這高，不受影響。*/
-    const rhMin=Math.round(pt2px(12)*1.5);
+    const rhMin=Math.round(pt2px(PASTE_TBL_PT)*1.5);
     for(let i=0;i<nC;i++) colW[i]=Math.max(24,Math.round(colW[i]||dw));
     for(let i=0;i<nR;i++) rowH[i]=Math.max(rhMin,Math.round(rowH[i]||dh));
-    // 總寬夾進畫布的合理區間：來源沒寫寬度時（如 md-table-converter 的輸出）會量到極窄的縮到最小寬
+    /* 總寬夾進畫布的合理區間，但**來源有寫寬度就完全不夾**（兩個方向都不夾）。
+       這個夾取是「來源沒給寬度，只能從量測猜」時的補救，不是政策：
+       ① 放大：Word／網頁那類沒有寬度資訊的來源量出來會極窄，不撐開就是一條線。
+       ② 縮小：同理，猜出來的寬度沒有權威性，超出畫布就壓回去。
+       但 md-table-converter 送過來的 inline width 是使用者在 Obsidian 用 `---------0---------0`
+       這類佔位符刻意撐出來的幾何，而且是 nowrap 量的「剛好夠」——沒有餘裕，**縮任何一點都必然折行**，
+       且最緊的欄先爆，看起來是欄寬亂擠而不是整體變小。加上這裡只縮 colW、不動 rowH／sizePt，
+       縮完連比例都不對。所以超寬的表格照原尺寸放進來、讓它超出畫布邊界，
+       由使用者用比例鎖定＋字級同步自行縮放——那才是等比的，且資訊不會在貼上階段就被斬掉。
+       （hasSrcW 在上面量測前就算好了，因為它同時決定量測容器要不要放寬。）*/
     let tw=colW.reduce((a,b)=>a+b,0);
     const lo=STAGE_W*PASTE_TBL_MINW, hi=STAGE_W*PASTE_TBL_MAXW;
-    const sc= tw>hi? hi/tw : tw<lo? lo/tw : 1;
+    const sc= hasSrcW? 1 : tw>hi? hi/tw : tw<lo? lo/tw : 1;
     if(sc!==1){ for(let i=0;i<nC;i++) colW[i]=Math.max(24,Math.round(colW[i]*sc)); tw=colW.reduce((a,b)=>a+b,0); }
     const cells=[];
     for(let r=0;r<nR;r++){ cells[r]=[]; for(let c=0;c<nC;c++) cells[r][c]=defCell(); }
+    const pics=[]; let skipped=0;
     for(const it of items){
       if(it.r>=nR||it.c>=nC) continue;
       const cs=Math.min(it.cs,nC-it.c), rs=Math.min(it.rs,nR-it.r);
@@ -5386,13 +5477,43 @@ function htmlToTableEl(html){
       cells[it.r][it.c]=cl;
       for(let i=it.r;i<it.r+rs;i++) for(let j=it.c;j<it.c+cs;j++)
         if(i!==it.r||j!==it.c) cells[i][j].covered=true;
+      /* 格內圖片：只收 data: URI。本工具的簡報必須自足可攜（匯出前的檢查會擋沒有 dataUrl 的
+         圖片元素），而遠端網址既不自足，跨來源的 canvas 又會被污染、轉不成位元組。
+         剪貼簿的 HTML flavor 本來就只能靠 data URI 帶位元組，所以 md-table-converter 那條路
+         天生就對得上；網頁複製的表格多半是遠端網址，那些會被略過並回報，不再靜默消失。 */
+      for(const im of it.td.querySelectorAll('img')){
+        const src=im.getAttribute('src')||'';
+        const iw=im.offsetWidth, ih=im.offsetHeight;
+        if(!/^data:image\//i.test(src)||iw<1||ih<1){ skipped++; continue; }
+        const tr=it.td.getBoundingClientRect(), ir=im.getBoundingClientRect();
+        pics.push({r:it.r,c:it.c,cs,rs,src,w:iw,h:ih,dy:Math.round(ir.top-tr.top),
+                   natW:im.naturalWidth||iw, natH:im.naturalHeight||ih});
+      }
     }
     const th=rowH.reduce((a,b)=>a+b,0);
+    const tx=Math.max(0,Math.round((STAGE_W-tw)/2)), ty=Math.max(0,Math.round((STAGE_H-th)/2));
     /* 框線一律用整表預設細線，不逐格反推來源。Excel 複製時會把「網格線」也寫成 border，
        照收的話貼進來是滿版格線；而框線在本工具是一鍵可套的，反推錯了反而更難清。*/
-    return {id:uid('e'),type:'table',
-      x:Math.max(0,Math.round((STAGE_W-tw)/2)), y:Math.max(0,Math.round((STAGE_H-th)/2)),
+    const tbl2={id:uid('e'),type:'table',x:tx,y:ty,
       colW,rowH,cells,border:{pt:0.75,color:'999999'}};
+    if(!pics.length) return {els:[tbl2],skipped};
+    /* 座標一律從**最終的** colW／rowH 推，不用量測時的絕對位置：欄寬在上面可能被 sc 縮過
+       （而 rowH 沒有），照抄量測座標會整排橫向錯位。橫向置中呼應量測時的 margin:0 auto；
+       縱向沿用格內量到的位移，文字在上、圖在下的格子才不會被壓成疊字。 */
+    const sum=(a,i,n)=>a.slice(i,i+n).reduce((x,y)=>x+y,0);
+    const gid=uid('g');
+    tbl2.groupId=gid;
+    const els=[tbl2];
+    for(const p of pics){
+      const cw=sum(colW,p.c,p.cs), ch=sum(rowH,p.r,p.rs);
+      const k=Math.min(1,cw/p.w);   // 欄寬被夾取縮過時，圖跟著等比縮，不讓它橫向溢出格子
+      const w=Math.max(1,Math.round(p.w*k)), h=Math.max(1,Math.round(p.h*k));
+      els.push({id:uid('e'),type:'image',groupId:gid,
+        x:Math.round(tx+sum(colW,0,p.c)+(cw-w)/2),
+        y:Math.round(ty+sum(rowH,0,p.r)+Math.min(Math.max(0,p.dy*k),Math.max(0,ch-h))),
+        w,h,natW:p.natW,natH:p.natH,dataUrl:p.src});
+    }
+    return {els,skipped};
   }catch(err){ return null; }
   finally{ box.remove(); }
 }
@@ -5417,7 +5538,7 @@ document.addEventListener('cut',e=>{
    ③ 圖片（在上面那個 listener，已讓位給 ②）。②③ 的先後是刻意的，理由見該處說明。*/
 document.addEventListener('paste',e=>{
   if(clipboardGuard()) return;
-  let els=null, placed=false;
+  let els=null;
   const t=e.clipboardData.getData('text/plain');
   if(t&&(t[0]==='{'||t[0]==='[')){
     let o=null; try{ o=JSON.parse(t); }catch(err){ o=null; }
@@ -5426,13 +5547,31 @@ document.addEventListener('paste',e=>{
     else if(o&&o.type&&o.x!=null) els=[o];                                   // 單一元素物件
   }
   if(!els&&clipHasTable(e)){                                                 // Excel／PPT／Word／網頁／md-table-converter
-    const tb=htmlToTableEl(e.clipboardData.getData('text/html'));
-    if(tb){ els=[tb]; placed=true; }   // 已算好置中座標，不要再套下面的防重疊偏移
+    /* 這條路是非同步的：格內圖片必須先載入完成才量得到尺寸（見 waitImgs）。
+       clipboardData 只在同步階段有效，所以先把字串取出來、先 preventDefault，
+       剩下的交給 Promise——插入邏輯與同步路徑共用 insertPasted()。*/
+    const html=e.clipboardData.getData('text/html');
+    e.preventDefault();
+    htmlToTableEl(html).then(res=>{
+      if(!res||!res.els.length) return;
+      insertPasted(res.els,true);   // 已算好置中座標，不要再套防重疊偏移
+      if(res.skipped) alert(`有 ${res.skipped} 張格內圖片未收進來。\n本工具只接受內嵌位元組（data: URI）的圖片——`
+        +`遠端網址的圖既不能隨簡報帶走，也無法轉成位元組（跨來源 canvas 會被污染）。\n`
+        +`若來源是 md-table-converter，請確認已掛載圖片資料夾後再複製。`);
+    });
+    return;
   }
-  const OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
-  els=els&&els.filter(x=>x&&typeof x==='object'&&OK[x.type]);
+  // 先過濾再決定要不要吃掉這次貼上：濾完是空的就讓瀏覽器照原本的方式處理
+  els=els&&els.filter(pastableEl);
   if(!els||!els.length) return;
   e.preventDefault();
+  insertPasted(els,false);
+});
+const PASTE_OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
+const pastableEl=x=>!!x&&typeof x==='object'&&!!PASTE_OK[x.type];
+function insertPasted(els,placed){
+  els=els.filter(pastableEl);
+  if(!els.length) return;
   // @asset 佔位 → 還原 base64（同檔內複製時；跨檔貼遮罩 JSON 找不到位元組則擋下）
   try{ resolveAssets({elements:els}); }catch(err){ alert('貼上失敗：'+err.message); return; }
   commitUndo();
@@ -5447,7 +5586,7 @@ document.addEventListener('paste',e=>{
   }
   try{ normalizeDeck(APP.deck); }catch(err){ undo(); alert('貼上的元素格式不完整：'+err.message); return; }
   setSel(ids); renderAll(); syncPageJson();
-});
+}
 
 /* ================= 檢視縮放 ================= */
 const WORK_PAD=240;   // 投影片四周工作區留白（CSS px）：拖出畫布的物件落在可捲範圍內，救得回
@@ -5494,6 +5633,15 @@ function setGrid(patch){ Object.assign(APP.grid,patch); saveGrid(); renderGrid()
 $('#btnGrid').onclick=()=>setGrid({on:!APP.grid.on});
 $('#btnGridSnap').onclick=()=>setGrid({snap:!APP.grid.snap});
 syncGridBtns();
+/* 貼上白底：同樣不進 undo（它影響的是「下一次貼上」，不是簡報現況；
+   已經貼進來的表格要改底色請用右欄「儲存格 → 底色」，選全表一次套完）。*/
+function syncPasteWhiteBtn(){
+  const b=$('#btnPasteWhite');
+  b.classList.toggle('on',APP.pasteWhite);
+  b.textContent=APP.pasteWhite? '▦ 白底' : '▢ 透明';
+}
+$('#btnPasteWhite').onclick=()=>{ APP.pasteWhite=!APP.pasteWhite; savePasteWhite(); syncPasteWhiteBtn(); };
+syncPasteWhiteBtn();
 window.addEventListener('resize',()=>setZoom(Math.round(APP.zoom*100)));   // 視窗改尺寸：重算置中邊距
 
 /* ================= 標題／字體模式／undo 按鈕 ================= */
