@@ -2136,6 +2136,36 @@ function checkZones(){
 /* ================= 頁面面板 ================= */
 const PANEL_DRAG={item:null,order:null};
 const THUMB_BG=new Map();   // 背景圖 dataUrl → Image（縮圖非同步繪製用，載完重畫一次）
+// 圖表縮圖：el.id → {sig, cv}。sig 含尺寸與 option，任一改動即失效重畫。
+// 快取是必要的而非最佳化——drawThumb 每次 renderAll 都會對每一頁跑一遍，
+// 沒快取就等於每次重繪都 init 一次 ECharts。
+const THUMB_CHART=new Map();
+function chartThumbCanvas(el){
+  const sig=el.w+'|'+el.h+'|'+JSON.stringify(el.option);
+  const hit=THUMB_CHART.get(el.id);
+  if(hit&&hit.sig===sig) return hit.cv;
+  // 以元素原尺寸離屏渲染再由 drawImage 縮小，視覺才與畫布等比一致。
+  // 直接用縮圖尺寸渲染的話，option 內的 fontSize 是絕對值，小圖上會佔滿整張。
+  const div=document.createElement('div');
+  div.style.cssText=`position:fixed;left:-10000px;top:0;width:${el.w}px;height:${el.h}px;`;
+  document.body.appendChild(div);
+  let out=null;
+  try{
+    const inst=echarts.init(div,null,{renderer:'canvas'});
+    inst.setOption(Object.assign(structuredClone(el.option),{animation:false}),true);
+    // 取 ECharts 自己的 canvas 拷一份：dispose() 會把 DOM 連同 canvas 清掉，
+    // 而 getDataURL() 回傳的字串要再經 Image 非同步解碼，縮圖就得等一輪。
+    const src=div.querySelector('canvas');
+    if(src&&src.width&&src.height){
+      out=document.createElement('canvas'); out.width=src.width; out.height=src.height;
+      out.getContext('2d').drawImage(src,0,0);
+    }
+    inst.dispose();
+  }catch(e){ out=null; }   // option 壞掉時退回色塊，不讓縮圖列整個掛掉
+  div.remove();
+  THUMB_CHART.set(el.id,{sig,cv:out});
+  return out;
+}
 function drawThumb(cv,pg){
   const ctx=cv.getContext('2d'); const s=cv.width/STAGE_W;
   ctx.fillStyle='#'+(pg.bg||'FFFFFF'); ctx.fillRect(0,0,cv.width,cv.height);
@@ -2170,7 +2200,11 @@ function drawThumb(cv,pg){
       ctx.stroke();
     }
     else if(el.type==='image'){ ctx.fillStyle='rgba(150,150,150,.5)'; ctx.fillRect(x,y,ww,hh); }
-    else if(el.type==='chart'){ ctx.fillStyle='rgba(77,157,224,.35)'; ctx.fillRect(x,y,ww,hh); }
+    else if(el.type==='chart'){
+      const cc=chartThumbCanvas(el);
+      if(cc) ctx.drawImage(cc,x,y,ww,hh);
+      else { ctx.fillStyle='rgba(77,157,224,.35)'; ctx.fillRect(x,y,ww,hh); }
+    }
     else if(el.type==='video'){ ctx.fillStyle='rgba(40,44,52,.75)'; ctx.fillRect(x,y,ww,hh);
       ctx.fillStyle='rgba(255,255,255,.8)'; ctx.beginPath();
       const cx=x+ww/2,cy=y+hh/2,r=Math.min(ww,hh)*.22;
@@ -2187,6 +2221,13 @@ function drawThumb(cv,pg){
 }
 function renderPanel(){
   const panel=$('#pagePanel'); panel.innerHTML='';
+  // 圖表縮圖快取的回收：刪頁或刪元素之後，那些 canvas 不該永久留著
+  if(THUMB_CHART.size){
+    const live=new Set();
+    for(const el of [...APP.deck.pages.flatMap(p=>p.elements), ...((APP.deck.master&&APP.deck.master.elements)||[])])
+      if(el.type==='chart') live.add(el.id);
+    for(const k of [...THUMB_CHART.keys()]) if(!live.has(k)) THUMB_CHART.delete(k);
+  }
   APP.deck.pages.forEach((pg,idx)=>{
     // 章節起點：在該頁縮圖上方插一條標題列（比照 PowerPoint 縮圖窗格的章節分隔）
     if(pg.section){
@@ -5599,7 +5640,7 @@ function insertPasted(els,placed){
     curEls().push(cp); ids.push(cp.id);
   }
   try{ normalizeDeck(APP.deck); }catch(err){ undo(); alert('貼上的元素格式不完整：'+err.message); return; }
-  setSel(ids); renderAll(); syncPageJson();
+  setSel(ids); renderAll(); syncPageJson(); reportChartColors();
 }
 
 /* ================= 檢視縮放 ================= */
@@ -5792,7 +5833,43 @@ function normParaOpts(p){
     const n=+p[k]; if(isFinite(n)&&n>0) p[k]=Math.min(72,n); else delete p[k];
   }
 }
+/* ---- chart.option 的顏色檢查 ----
+   option 原封不動交給 ECharts，最終落到 ctx.fillStyle，所以裡面必須是「合法 CSS 色」；
+   而 deck 其餘欄位（run.color／fill／lineColor…）的慣例是不帶 # 的裸碼。同一份檔案兩套互斥慣例，
+   是 2026-08-07 那次「七張圖表全黑」的成因：canvas 對無效色字串靜默沿用前一個值，不報錯、不進 console。
+
+   這裡只改「原值不是合法色、補上 # 之後才是 6／8 位色碼」的字串，其餘一律不動。
+   兩道判準缺一不可：
+   - CSS.supports 認出已經合法的值（具名色 red、rgba()、transparent）不要碰
+   - 長度限 6／8 位。實測 'fade'／'beef' 這種英文單字補上 # 之後是合法的 4 位 hex 色，
+     只靠 CSS.supports 會把它們改成顏色。裸碼慣例本來就是 6 位，3／4 位一律歸類為無法辨識並回報 */
+const CHART_COLOR_KEY=/^(color|borderColor|backgroundColor|shadowColor|textBorderColor|textShadowColor|areaColor|fill|stroke)$/;
+const NORM_REPORT={colorFixed:0,colorBad:[]};
+function fixChartColor(v,k,out){
+  if(!CHART_COLOR_KEY.test(k||'')||!v) return undefined;
+  if(CSS.supports('color',v)) return undefined;                 // 已合法（含具名色、rgba()、漸層關鍵字）
+  if(/^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(v)&&CSS.supports('color','#'+v)){ out.colorFixed++; return '#'+v; }
+  if(out.colorBad.length<20) out.colorBad.push(k+': '+String(v).slice(0,24));
+  return undefined;                                             // 補了也不合法：留著原樣，只回報
+}
+function normChartColors(node,key,out){
+  if(Array.isArray(node)){
+    // 陣列元素沿用上層鍵名：頂層色盤 color:[…]、visualMap.inRange.color:[…] 都是這個形狀
+    node.forEach((v,i)=>{
+      if(typeof v==='string'){ const f=fixChartColor(v,key,out); if(f!==undefined) node[i]=f; }
+      else normChartColors(v,key,out);
+    });
+    return;
+  }
+  if(!node||typeof node!=='object') return;
+  for(const k in node){
+    const v=node[k];
+    if(typeof v==='string'){ const f=fixChartColor(v,k,out); if(f!==undefined) node[k]=f; }
+    else normChartColors(v,k,out);
+  }
+}
 function normalizeDeck(d){
+  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error('不是有效的 DeckJSON（缺 pages）');
   d.format='deckjson'; d.version=d.version||1;
   d.title=d.title||'未命名簡報';
@@ -5834,7 +5911,21 @@ function normalizeDeck(d){
     if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
     pg.elements=normEls(pg.elements,mstIds);
   }
+  // console 一律留痕（含自動存檔還原這條靜默路徑）；要不要跳視窗由呼叫端決定
+  if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
+    console.warn('[deckjson] chart.option 顏色：自動補 # '+NORM_REPORT.colorFixed+' 處'
+      +(NORM_REPORT.colorBad.length? '；無法辨識 '+NORM_REPORT.colorBad.length+' 處 → '+NORM_REPORT.colorBad.join('、') : ''));
   return d;
+}
+// 開檔與套用 JSON 這兩個「人剛貼進來一份東西」的時機才跳視窗——
+// 這個缺陷的本質是靜默，修法的重點就在會不會叫
+function reportChartColors(){
+  const r=NORM_REPORT, msg=[];
+  if(r.colorFixed) msg.push(`已自動補上 # 的圖表顏色：${r.colorFixed} 處。\n`
+    +'（chart.option 是原生 ECharts 規格，顏色必須帶 #；deck 其餘欄位相反，一律裸碼。）');
+  if(r.colorBad.length) msg.push('以下圖表顏色無法辨識，已原樣保留——畫布上該處可能不顯示，或沿用前一個元素的顏色：\n'
+    +r.colorBad.join('\n'));
+  if(msg.length) alert(msg.join('\n\n'));
 }
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
    撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
@@ -5918,6 +6009,7 @@ function normEls(list,reserved){
       delete p.md;
       if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
     if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
+    if(el.type==='chart') normChartColors(el.option,'',NORM_REPORT);
     // native 只是旗標，映射不過就當沒勾——不能讓 JSON 帶進一個匯出時才發現無效的狀態
     if(el.type==='chart'){ if(el.native&&nativeMap(el.option).ok) el.native=true; else delete el.native; }
     if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
@@ -5990,6 +6082,7 @@ function loadDeck(obj){
   APP.masterEdit=false; document.body.classList.remove('masterEdit');   // 新簡報的母版是別份，不能停在編輯狀態
   APP.deck=d; APP.page=d.pages[0].id; setSel([]);
   renderAll(); syncPageJson();
+  reportChartColors();
 }
 function applyPageJson(obj){
   if(!obj||typeof obj!=='object') throw new Error('不是有效的頁面 JSON');
@@ -6000,7 +6093,7 @@ function applyPageJson(obj){
     const t=structuredClone(APP.deck);
     t.master=Object.assign({on:true,flatten:false},t.master,{elements:obj.elements});
     const dm=normalizeDeck(t);
-    commitUndo(); APP.edit=null; APP.editing=null; APP.deck=dm; setSel([]); renderAll(); return;
+    commitUndo(); APP.edit=null; APP.editing=null; APP.deck=dm; setSel([]); renderAll(); reportChartColors(); return;
   }
   const temp=structuredClone(APP.deck);
   const idx=temp.pages.findIndex(p=>p.id===APP.page);
@@ -6017,6 +6110,7 @@ function applyPageJson(obj){
   APP.edit=null; APP.editing=null;   // 同 loadDeck：整頁換掉，編輯狀態一併收掉
   APP.deck=d; APP.page=d.pages[idx].id; setSel([]);
   renderAll();
+  reportChartColors();
 }
 // 右上：整份簡報＋全域 JSON（modal；圖片以 @asset 佔位顯示）
 $('#btnJson').onclick=()=>{ $('#jsonArea').value=maskedJson(APP.deck); $('#jsonModal').hidden=false; };
@@ -6424,9 +6518,13 @@ $('#btnChartApply').onclick=()=>{
   const el=chartTarget(); if(!el) return;
   try{
     const opt=JSON.parse($('#chartArea').value);
+    // 這裡是手貼 option 的正門，也是「顏色少 # 」最常見的入口，先過一次顏色檢查
+    NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[];
+    normChartColors(opt,'',NORM_REPORT);
     commitUndo(); el.option=opt;
     $('#chartModal').hidden=true; chartTargetRef=null;
     renderAll();
+    reportChartColors();
   }catch(err){ alert('option JSON 解析失敗：'+err.message); }
 };
 
@@ -6795,8 +6893,15 @@ function buildChartVis(){
       const r=row();
       r.appendChild(Object.assign(document.createElement('span'),
         {textContent:x.name||('數列 '+(i+1)),style:'font-size:12px;min-width:64px;color:var(--fg-dim)'}));
-      color(r,hexOf(x.itemStyle&&x.itemStyle.color,CHART_PAL[i%CHART_PAL.length]),
-        h=>cvSet(op,'series.'+i+'.itemStyle.color','#'+h),'系列顏色');
+      /* 折線／區域圖：線色與點色在 ECharts 是 lineStyle.color 與 itemStyle.color 兩個欄位。
+         面板只寫後者的話，改完顏色線不會變——這裡一次寫兩個。
+         要拆開設不同色的（少數情形）請走 JSON 分頁；面板刻意不為此多開一格。
+         顯示值也要回退到 lineStyle.color，否則只設了線色的圖會顯示成預設色盤。 */
+      const isLine=!(kind==='bar'||kind==='barH');
+      color(r,hexOf((x.itemStyle&&x.itemStyle.color)||(isLine&&x.lineStyle&&x.lineStyle.color),CHART_PAL[i%CHART_PAL.length]),
+        h=>{ cvSet(op,'series.'+i+'.itemStyle.color','#'+h);
+             if(isLine) cvSet(op,'series.'+i+'.lineStyle.color','#'+h); },
+        isLine?'線與資料點的顏色':'系列顏色');
       if(kind==='bar'||kind==='barH'){
         const bw=(x.itemStyle&&x.itemStyle.borderWidth)||0;
         num(r,'邊框',bw,v=>cvSet(op,'series.'+i+'.itemStyle.borderWidth',v||undefined),{min:0,max:10,unit:'px'});
@@ -6925,6 +7030,11 @@ function gridLine(ax){
   return Object.keys(o).length? o : undefined;
 }
 function nvNum(v){ return typeof v==='object'&&v? (Array.isArray(v)? v[1] : v.value) : v; }
+/* 一個 series 在 OOXML 只有一個顏色，但 ECharts 把線色與點色分成兩個欄位。
+   優先取 itemStyle（圖例與資料標籤跟著它走），沒設才退到 lineStyle——
+   先前只讀 itemStyle，「只設了線色」的折線圖匯出會靜靜退回 ECharts 預設色盤，
+   畫布與 PPT 各自看起來都正常，是最難察覺的那種落差。 */
+const serColor=s=>nvHex(s.itemStyle&&s.itemStyle.color)||nvHex(s.lineStyle&&s.lineStyle.color);
 // ECharts 允許 #f00 縮寫，OOXML 的 srgbClr 只認 6 位，要展開
 function nvHex(c){
   if(typeof c!=='string') return null;
@@ -6951,6 +7061,9 @@ function nativeMap(op){
     chk(s.type!=='pie'&&Array.isArray(s.data)&&s.data.some(v=>v&&typeof v==='object'&&v.itemStyle),
       '逐點自訂顏色');
     chk(s.itemStyle&&s.itemStyle.borderRadius,'長條圓角（OOXML 無此概念）');
+    // 折線的線色與點色在 ECharts 是兩個欄位，OOXML 的一個 series 只有一個顏色
+    {const a=nvHex(s.itemStyle&&s.itemStyle.color), b=nvHex(s.lineStyle&&s.lineStyle.color);
+     chk(a&&b&&a!==b,'折線與資料點不同色（原生圖表一個數列只有一種顏色，取資料點色）');}
   }
   chk(op.visualMap,'視覺映射（visualMap）');
   for(const ax of [op.xAxis,op.yAxis])
@@ -6972,7 +7085,7 @@ function nativeMap(op){
     legendPos:legend? ({top:'t',bottom:'b',left:'l',right:'r'}[
       ['top','bottom','left','right'].find(k=>op.legend[k]!=null&&op.legend[k]!=='auto')]||'b') : 'b',
     // 能鎖的全鎖上：字體與色盤不交給目標母版主題決定，盡量貼近畫布
-    chartColors:ss.map((s,i)=>nvHex(s.itemStyle&&s.itemStyle.color)||CHART_PAL[i%CHART_PAL.length]),
+    chartColors:ss.map((s,i)=>serColor(s)||CHART_PAL[i%CHART_PAL.length]),
     dataLabelFontFace:'Noto Sans TC',catAxisLabelFontFace:'Noto Sans TC',
     showValue:ss.some(s=>s.label&&s.label.show),
     dataLabelFontSize:lb0.fontSize,
