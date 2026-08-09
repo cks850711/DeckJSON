@@ -2352,7 +2352,14 @@ document.addEventListener('pointerdown',e=>{ if(!$('#palettePop').hidden && !e.t
 
 /* ===== JSON 模式色票複製小窗 =====
    本頁 JSON 面板開啟＋選中表格/圖表（這兩者的細部樣式主要靠 JSON 手改）時，右下角浮出三頁籤色票；
-   點色塊是「複製色碼」不是套用（JSON 用不帶 # 的 6 位碼，故複製 4D9DE0 這種格式）。點開其他元素即收起。 */
+   點色塊是「複製色碼」不是套用。點開其他元素即收起。
+
+   ⚠ 複製出來的格式**隨選中的元素而變**，因為 deck 內有兩套互斥的顏色慣例：
+     表格等元素層 → 不帶 # 的 6 位碼 "4D9DE0"（畫布渲染時程式自己補 '#'，匯出走 srgbClr 也只認 6 位）
+     圖表 option  → 合法 CSS 色 "#4D9DE0"（option 原封不動交給 ECharts，最終落到 ctx.fillStyle）
+   少了 # 時 canvas 會**靜默忽略**該次賦值（不報錯、不進 console），線條變黑、文字整段不畫；
+   而匯出 pptx 走 nvHex() 兩種都吃，所以只有畫布壞掉，症狀分裂特別難察覺。
+   先前這裡一律複製裸碼並在註解裡寫「JSON 用不帶 # 的 6 位碼」，對圖表是錯的，已修正。 */
 let copyPalTab='designer';
 function buildCopyPalWin(){
   let w=$('#palCopyWin');
@@ -2363,11 +2370,18 @@ function buildCopyPalWin(){
     document.body.appendChild(w);
   }
   w.innerHTML='';
+  // 圖表的 option 是 raw ECharts，複製時要帶 #；表格等元素層一律裸碼。見本區塊開頭註解。
+  const forChart=((selEl()||{}).type==='chart');
   const head=document.createElement('div'); head.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
-  const title=document.createElement('span'); title.textContent='色票 → 複製色碼'; title.style.cssText='font-size:11px;color:var(--fg-dim);margin-right:auto;';
+  const title=document.createElement('span');
+  title.textContent=forChart? '色票 → 複製 #色碼（圖表）' : '色票 → 複製色碼';
+  title.title=forChart? 'chart.option 是 raw ECharts，顏色必須帶 #，與 deck 其餘欄位相反'
+                      : '元素層用不帶 # 的 6 位碼，畫布渲染時程式自己補';
+  title.style.cssText='font-size:11px;color:var(--fg-dim);margin-right:auto;';
   const toast=document.createElement('span'); toast.style.cssText='font-size:11px;color:#69db7c;';
   head.appendChild(title); head.appendChild(toast); w.appendChild(head);
-  const copy=async hex=>{ hex=String(hex).replace('#','').toUpperCase();
+  const fmt=c=>(forChart?'#':'')+String(c).replace('#','').toUpperCase();
+  const copy=async c=>{ const hex=fmt(c);
     try{ await navigator.clipboard.writeText(hex); }catch(e){}
     toast.textContent='已複製 '+hex;
     setTimeout(()=>{ if(toast.textContent==='已複製 '+hex) toast.textContent=''; },1600); };
@@ -2379,7 +2393,7 @@ function buildCopyPalWin(){
     tabs.appendChild(b);
   }
   w.appendChild(tabs);
-  const sw=c=>{ const s=document.createElement('div'); s.className='palSw'; s.style.background=(String(c)[0]==='#'?c:'#'+c); s.title=String(c).replace('#','').toUpperCase(); s.style.cursor='copy'; s.onclick=()=>copy(c); return s; };
+  const sw=c=>{ const s=document.createElement('div'); s.className='palSw'; s.style.background=(String(c)[0]==='#'?c:'#'+c); s.title=fmt(c); s.style.cursor='copy'; s.onclick=()=>copy(c); return s; };
   if(copyPalTab==='designer'){
     for(const p of DESIGNER_PALETTES){
       const row=document.createElement('div'); row.className='palRow';
