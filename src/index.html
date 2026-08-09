@@ -289,6 +289,7 @@
   <input type="file" id="bgInput" accept="image/png,image/jpeg" hidden>
   <input type="file" id="jsonInput" accept=".json,application/json" hidden>
   <input type="file" id="mergeInput" accept=".json,application/json" hidden>
+  <input type="file" id="mapInput" accept=".json,.geojson,application/json,application/geo+json" hidden>
   <input type="file" id="profileInput" accept=".json,application/json" hidden>
   <input type="file" id="vidInput" accept="video/*" hidden>
   <input type="file" id="coverInput" accept="image/png,image/jpeg" hidden>
@@ -417,8 +418,10 @@
     </div>
     <div id="chartJsonPane" hidden>
       <textarea id="chartArea" spellcheck="false"></textarea>
-      <div class="mbtns"><button id="btnChartApply" class="primary">套用</button></div>
-      <div class="mnote">貼上 ECharts option 的 JSON（不支援函式）。<b>資料（類別、數值、系列名）在這裡改</b>，外觀請用「視覺編輯」分頁。預設以 3 倍解析度 PNG 匯出；側欄勾「匯出為原生圖表」可改為 PowerPoint 原生圖表。</div>
+      <div class="mbtns"><button id="btnChartApply" class="primary">套用</button>
+        <button id="btnChartMap">匯入地圖 GeoJSON…</button>
+        <span id="chartMapList" class="mnote" style="margin-left:8px"></span></div>
+      <div class="mnote">貼上 ECharts option 的 JSON（不支援函式）。<b>資料（類別、數值、系列名）在這裡改</b>，外觀請用「視覺編輯」分頁。預設以 3 倍解析度 PNG 匯出；側欄勾「匯出為原生圖表」可改為 PowerPoint 原生圖表。<br><b>地圖</b>：<code>{"type":"map","map":"名稱"}</code> 的幾何資料存在整份簡報的 <code>maps</code> 欄位，用上面的按鈕匯入 GeoJSON；PowerPoint 沒有原生地圖，一律以 PNG 匯出。</div>
     </div>
   </div>
 </div>
@@ -2652,7 +2655,10 @@ function applyDim(el,isWidth,newPx){
     if(isWidth) el.colW=el.colW.map(w=>Math.max(16,Math.round(w*f)));
     else el.rowH=el.rowH.map(h=>Math.max(12,Math.round(h*f)));
   }else{
+    const ow=el.w, oh=el.h;
+    const og=el.type==='chart'&&el.option&&el.option.graphic&&structuredClone(el.option.graphic);
     if(isWidth) el.w=Math.max(8,Math.round(newPx)); else el.h=Math.max(4,Math.round(newPx));
+    if(og) applyGraphicScale(el,og,el.w/ow,el.h/oh);   // 單軸改尺寸也要帶著 graphic 走
   }
 }
 // 不透明度滑桿（0–100，預設 100=不透明）；拖曳一次只記一步 undo，即時更新畫布
@@ -4512,7 +4518,8 @@ stage.addEventListener('pointerdown',e=>{
     drag={type:'resize',dir:rh.dataset.dir,el,sx:e.clientX,sy:e.clientY,
       x:el.x,y:el.y,w:elSize(el).w,h:elSize(el).h,
       colW:el.colW&&[...el.colW],rowH:el.rowH&&[...el.rowH],
-      origParas:el.paras&&structuredClone(el.paras),origCells:el.cells&&structuredClone(el.cells)};   // 字級同步用
+      origParas:el.paras&&structuredClone(el.paras),origCells:el.cells&&structuredClone(el.cells),   // 字級同步用
+      origGraphic:el.type==='chart'&&el.option&&el.option.graphic&&structuredClone(el.option.graphic)};
   }else if(tch&&el){ drag={type:'tcol',el,i:+tch.dataset.i,sx:e.clientX,w:el.colW[+tch.dataset.i]}; }
   else if(trh&&el){ drag={type:'trow',el,i:+trh.dataset.i,sy:e.clientY,h:el.rowH[+trh.dataset.i]}; }
   else{
@@ -4754,6 +4761,43 @@ function scaleCellPt(c,f){
   if(Array.isArray(c.runs)) o.runs=c.runs.map(r=> r.sizePt!=null? {...r,sizePt:pt(r.sizePt)} : {...r});
   return o;
 }
+/* ---- 圖表 option.graphic 的座標縮放 ----
+   graphic 用的是圖表容器的像素座標（grid／series 是百分比，只有它不是），
+   所以圖表元素改尺寸時，畫在上面的自由圖層不會跟著動——先前只能靠「改尺寸就重新產生」的紀律。
+   一律從原始快照重算（與字級同步同一套作法），連續拖曳才不會累積浮點誤差。 */
+const GFX_X=new Set(['x','x1','x2','cx','cpx1','cpx2','width','left','right']);
+const GFX_Y=new Set(['y','y1','y2','cy','cpy1','cpy2','height','top','bottom']);
+// 半徑、線寬、字級沒有「兩個軸」可言——ECharts 的 text 也無法非等比拉伸，取小的那個比例
+const GFX_ISO=new Set(['r','r0','lineWidth','fontSize','borderWidth']);
+function scaleGraphic(node,sx,sy,st){
+  st=st||{n:0};
+  if(Array.isArray(node)){ node.forEach(c=>scaleGraphic(c,sx,sy,st)); return st; }
+  if(!node||typeof node!=='object') return st;
+  const iso=Math.min(sx,sy);
+  for(const k in node){
+    const v=node[k];
+    if(k==='points'&&Array.isArray(v)){
+      for(const p of v) if(Array.isArray(p)&&p.length>=2&&isFinite(p[0])&&isFinite(p[1])){ p[0]*=sx; p[1]*=sy; st.n++; }
+      continue;
+    }
+    if(typeof v==='number'&&isFinite(v)){
+      // left:'center'／top:'10%' 這種字串定位不在這裡處理，typeof 已經濾掉
+      if(GFX_X.has(k)){ node[k]=v*sx; st.n++; }
+      else if(GFX_Y.has(k)){ node[k]=v*sy; st.n++; }
+      else if(GFX_ISO.has(k)){ node[k]=v*iso; st.n++; }
+      continue;
+    }
+    if(v&&typeof v==='object') scaleGraphic(v,sx,sy,st);
+  }
+  return st;
+}
+// 從快照重算某個圖表元素的 graphic。orig 是縮放前的 option.graphic
+function applyGraphicScale(el,origGraphic,sx,sy){
+  if(el.type!=='chart'||!origGraphic||!(sx>0)||!(sy>0)) return;
+  el.option=el.option||{};
+  el.option.graphic=structuredClone(origGraphic);
+  scaleGraphic(el.option.graphic,sx,sy);
+}
 // 群組比例縮放：從原始快照重算，避免累積誤差。d.scaleFont===false 時字級/欄列僅縮幾何、字級不動
 function groupScaleTo(d,s){ groupScaleXY(d,s,s); }   // 等比是不等比的特例，實作只留一份
 /* 群組縮放：以 anchor 為不動點，x/w 乘 sx、y/h 乘 sy。
@@ -4772,6 +4816,8 @@ function groupScaleXY(d,sx,sy){
       el.cells=o.cells.map(r=>r.map(c=> sf? scaleCellPt(c,s) : {...c}));
     }else{
       el.w=Math.max(4,Math.round(o.w*sx)); el.h=Math.max(0,Math.round(o.h*sy));
+      if(o.type==='chart'&&o.option&&o.option.graphic)
+        applyGraphicScale(el,o.option.graphic,el.w/o.w,el.h/o.h);
     }
     if(o.paras) el.paras=o.paras.map(p=>({...p,runs:p.runs.map(r=>({...r,sizePt:sf?fpt(r.sizePt):r.sizePt}))}));
     if(o.linePt!=null) el.linePt=round1(o.linePt*s);
@@ -4823,6 +4869,7 @@ function resizeBy(el,d,dx,dy){
   }
   if(syncFont&&d.origParas) el.paras=d.origParas.map(p=>({...p,runs:p.runs.map(r=>({...r,sizePt:r.sizePt?Math.max(4,round1(r.sizePt*factor)):r.sizePt}))}));
   el.x=Math.round(nx); el.y=Math.round(ny); el.w=Math.round(w); el.h=Math.round(h);
+  if(d.origGraphic) applyGraphicScale(el,d.origGraphic,el.w/d.w,el.h/d.h);
   updateElStyle(el);
 }
 
@@ -5640,7 +5687,7 @@ function insertPasted(els,placed){
     curEls().push(cp); ids.push(cp.id);
   }
   try{ normalizeDeck(APP.deck); }catch(err){ undo(); alert('貼上的元素格式不完整：'+err.message); return; }
-  setSel(ids); renderAll(); syncPageJson(); reportChartColors();
+  setSel(ids); renderAll(); syncPageJson(); reportChartIssues();
 }
 
 /* ================= 檢視縮放 ================= */
@@ -5844,7 +5891,7 @@ function normParaOpts(p){
    - 長度限 6／8 位。實測 'fade'／'beef' 這種英文單字補上 # 之後是合法的 4 位 hex 色，
      只靠 CSS.supports 會把它們改成顏色。裸碼慣例本來就是 6 位，3／4 位一律歸類為無法辨識並回報 */
 const CHART_COLOR_KEY=/^(color|borderColor|backgroundColor|shadowColor|textBorderColor|textShadowColor|areaColor|fill|stroke)$/;
-const NORM_REPORT={colorFixed:0,colorBad:[]};
+const NORM_REPORT={colorFixed:0,colorBad:[],mapMissing:[],mapNameBad:[]};
 function fixChartColor(v,k,out){
   if(!CHART_COLOR_KEY.test(k||'')||!v) return undefined;
   if(CSS.supports('color',v)) return undefined;                 // 已合法（含具名色、rgba()、漸層關鍵字）
@@ -5868,9 +5915,50 @@ function normChartColors(node,key,out){
     else normChartColors(v,k,out);
   }
 }
+/* ---- deck 層地圖 ----
+   ECharts 的 map series 要先 echarts.registerMap(名稱, GeoJSON)，而那是 option 之外的
+   執行期呼叫——option 自己存不下地圖幾何，換一台電腦開就是空白。把 GeoJSON 收進
+   deck.maps，載入時逐一註冊，map series 才成為「單檔可攜」的。
+   代價：map 在 NCHART_UNSUP 內（PowerPoint 沒有原生地圖），匯出一律走 PNG。 */
+function normMaps(m){
+  if(!m||typeof m!=='object'||Array.isArray(m)) return null;
+  const o={};
+  for(const k of Object.keys(m)){
+    const g=m[k], name=String(k).trim().slice(0,40);
+    if(!name||!g||typeof g!=='object') continue;
+    // 只認 GeoJSON 的兩種頂層形狀。registerMap 收到別的東西不會當場失敗，
+    // 而是等到畫的時候才炸，錯誤訊息也指不回這裡
+    const ok= g.type==='FeatureCollection'? Array.isArray(g.features)
+            : g.type==='GeometryCollection'? Array.isArray(g.geometries) : false;
+    if(ok) o[name]=g;
+  }
+  return Object.keys(o).length? o : null;
+}
+/* map series 的兩種靜默失敗，症狀都是「那一塊沒上色」而不是報錯：
+   一是 series.map 指到未註冊的名稱（整張圖空白），
+   二是 data[].name 與 GeoJSON 的 properties.name 對不上（那一個縣市維持底色）。
+   後者實測踩過：名稱多了 ' City' 這種後綴就對不上。 */
+function checkMapSeries(s,out){
+  if(!s||s.type!=='map'||!s.map) return;
+  const mp=echarts.getMap(s.map);
+  if(!mp){ if(!out.mapMissing.includes(s.map)) out.mapMissing.push(s.map); return; }
+  const names=new Set(((mp.geoJson||{}).features||[]).map(f=>((f||{}).properties||{}).name));
+  for(const d of (s.data||[]))
+    if(d&&d.name&&!names.has(d.name)&&out.mapNameBad.length<20&&!out.mapNameBad.includes(d.name))
+      out.mapNameBad.push(d.name);
+}
+function registerMaps(d){
+  for(const k in (d.maps||{})){
+    // 已註冊就跳過：registerMap 對大 GeoJSON 要做一輪座標轉換，而 normalizeDeck
+    // 每次貼上、每次套用 JSON 都會跑。換地圖走匯入那條路徑，那裡一律覆蓋註冊
+    if(!echarts.getMap(k)) try{ echarts.registerMap(k,d.maps[k]); }catch(e){ console.warn('[deckjson] 地圖 '+k+' 註冊失敗：'+e.message); }
+  }
+}
 function normalizeDeck(d){
-  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[];
+  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error('不是有效的 DeckJSON（缺 pages）');
+  // 地圖要在 normEls 之前註冊：那裡會檢查 map series 引用的名稱在不在
+  {const mp=normMaps(d.maps); if(mp){ d.maps=mp; registerMaps(d); } else delete d.maps;}
   d.format='deckjson'; d.version=d.version||1;
   d.title=d.title||'未命名簡報';
   d.fontMode= d.fontMode==='inherit'?'inherit':'locked';
@@ -5915,16 +6003,24 @@ function normalizeDeck(d){
   if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
     console.warn('[deckjson] chart.option 顏色：自動補 # '+NORM_REPORT.colorFixed+' 處'
       +(NORM_REPORT.colorBad.length? '；無法辨識 '+NORM_REPORT.colorBad.length+' 處 → '+NORM_REPORT.colorBad.join('、') : ''));
+  if(NORM_REPORT.mapMissing.length)
+    console.warn('[deckjson] map series 引用了 deck.maps 沒有的地圖：'+NORM_REPORT.mapMissing.join('、'));
+  if(NORM_REPORT.mapNameBad.length)
+    console.warn('[deckjson] map series 的區域名稱在 GeoJSON 找不到：'+NORM_REPORT.mapNameBad.join('、'));
   return d;
 }
 // 開檔與套用 JSON 這兩個「人剛貼進來一份東西」的時機才跳視窗——
-// 這個缺陷的本質是靜默，修法的重點就在會不會叫
-function reportChartColors(){
+// 這類缺陷的本質是靜默，修法的重點就在會不會叫
+function reportChartIssues(){
   const r=NORM_REPORT, msg=[];
   if(r.colorFixed) msg.push(`已自動補上 # 的圖表顏色：${r.colorFixed} 處。\n`
     +'（chart.option 是原生 ECharts 規格，顏色必須帶 #；deck 其餘欄位相反，一律裸碼。）');
   if(r.colorBad.length) msg.push('以下圖表顏色無法辨識，已原樣保留——畫布上該處可能不顯示，或沿用前一個元素的顏色：\n'
     +r.colorBad.join('\n'));
+  if(r.mapMissing.length) msg.push('以下地圖沒有幾何資料，圖表會是空白：'+r.mapMissing.join('、')
+    +'\n請在圖表的「option JSON」分頁按「匯入地圖 GeoJSON」補上，名稱要與 series.map 相同。');
+  if(r.mapNameBad.length) msg.push('以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n'
+    +r.mapNameBad.join('、')+'\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）');
   if(msg.length) alert(msg.join('\n\n'));
 }
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
@@ -6009,7 +6105,10 @@ function normEls(list,reserved){
       delete p.md;
       if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
     if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
-    if(el.type==='chart') normChartColors(el.option,'',NORM_REPORT);
+    if(el.type==='chart'){
+      normChartColors(el.option,'',NORM_REPORT);
+      for(const s of (el.option.series||[])) checkMapSeries(s,NORM_REPORT);
+    }
     // native 只是旗標，映射不過就當沒勾——不能讓 JSON 帶進一個匯出時才發現無效的狀態
     if(el.type==='chart'){ if(el.native&&nativeMap(el.option).ok) el.native=true; else delete el.native; }
     if(el.type==='image'&&!el.dataUrl) throw new Error(`圖片 ${el.id} 缺 dataUrl`);
@@ -6040,6 +6139,11 @@ function maskedJson(root){
   const maskPg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.length>80) p.bgImage='@asset:'+p.id+' ('+kb(p.bgImage)+')'; walk(p.elements); };
   if(o.pages){ o.pages.forEach(maskPg); if(o.master) walk(o.master.elements); }
   else if(o.id||o.elements) maskPg(o); else walk(o.elements||(Array.isArray(o)?o:[]));
+  // 地圖 GeoJSON 動輒數十 KB，比照圖片遮罩，否則整份 JSON 一開就被幾何座標塞爆
+  if(o.maps) for(const k in o.maps){
+    const g=o.maps[k];
+    if(g&&typeof g==='object') o.maps[k]='@map:'+k+' ('+Math.round(JSON.stringify(g).length/1024)+'KB)';
+  }
   return JSON.stringify(o,null,1);
 }
 function assetMap(){
@@ -6072,6 +6176,14 @@ function resolveAssets(obj){
   if(obj&&obj.pages){ obj.pages.forEach(pg); if(obj.master) walk(obj.master.elements); }
   else if(obj&&(obj.id||obj.elements)) pg(obj);
   else if(obj) walk(Array.isArray(obj)?obj:[]);
+  // @map: 佔位還原（來源是目前簡報的 deck.maps，與圖片的 @asset: 同一套機制）
+  if(obj&&obj.maps) for(const k in obj.maps){
+    const v=obj.maps[k];
+    if(typeof v!=='string'||!v.startsWith('@map:')) continue;
+    const cur=(APP.deck.maps||{})[k];
+    if(!cur) throw new Error(`地圖佔位 @map:${k} 在目前簡報找不到幾何資料`);
+    obj.maps[k]=structuredClone(cur);
+  }
   return obj;
 }
 function loadDeck(obj){
@@ -6082,7 +6194,7 @@ function loadDeck(obj){
   APP.masterEdit=false; document.body.classList.remove('masterEdit');   // 新簡報的母版是別份，不能停在編輯狀態
   APP.deck=d; APP.page=d.pages[0].id; setSel([]);
   renderAll(); syncPageJson();
-  reportChartColors();
+  reportChartIssues();
 }
 function applyPageJson(obj){
   if(!obj||typeof obj!=='object') throw new Error('不是有效的頁面 JSON');
@@ -6093,7 +6205,7 @@ function applyPageJson(obj){
     const t=structuredClone(APP.deck);
     t.master=Object.assign({on:true,flatten:false},t.master,{elements:obj.elements});
     const dm=normalizeDeck(t);
-    commitUndo(); APP.edit=null; APP.editing=null; APP.deck=dm; setSel([]); renderAll(); reportChartColors(); return;
+    commitUndo(); APP.edit=null; APP.editing=null; APP.deck=dm; setSel([]); renderAll(); reportChartIssues(); return;
   }
   const temp=structuredClone(APP.deck);
   const idx=temp.pages.findIndex(p=>p.id===APP.page);
@@ -6110,7 +6222,7 @@ function applyPageJson(obj){
   APP.edit=null; APP.editing=null;   // 同 loadDeck：整頁換掉，編輯狀態一併收掉
   APP.deck=d; APP.page=d.pages[idx].id; setSel([]);
   renderAll();
-  reportChartColors();
+  reportChartIssues();
 }
 // 右上：整份簡報＋全域 JSON（modal；圖片以 @asset 佔位顯示）
 $('#btnJson').onclick=()=>{ $('#jsonArea').value=maskedJson(APP.deck); $('#jsonModal').hidden=false; };
@@ -6505,8 +6617,37 @@ function chartTab(which){
   $('#chartVisPane').hidden=!v; $('#chartJsonPane').hidden=v;
   const el=chartTarget(); if(!el) return;
   if(v) buildChartVis();
-  else $('#chartArea').value=JSON.stringify(el.option,null,1);
+  else { $('#chartArea').value=JSON.stringify(el.option,null,1); syncMapList(); }
 }
+// 已載入哪些地圖、各多大——不列出來的話，series.map 該填什麼名稱只能靠猜
+function syncMapList(){
+  const m=APP.deck.maps||{}, ks=Object.keys(m);
+  $('#chartMapList').textContent= ks.length
+    ? '已有地圖：'+ks.map(k=>k+'（'+Math.round(JSON.stringify(m[k]).length/1024)+'KB）').join('、')
+    : '尚無地圖資料';
+}
+$('#btnChartMap').onclick=()=>$('#mapInput').click();
+$('#mapInput').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  try{
+    const g=JSON.parse(await f.text());
+    const one=normMaps({tmp:g});
+    if(!one) throw new Error('不是 GeoJSON：頂層要有 type:"FeatureCollection"（含 features 陣列）或 "GeometryCollection"');
+    // 預設名稱取檔名去副檔名；名稱就是 series.map 要填的字串，所以讓使用者自己定
+    const def=f.name.replace(/\.(geo)?json$/i,'').slice(0,40);
+    const name=(prompt('地圖名稱（series.map 要填的就是這個字串）：',def)||'').trim().slice(0,40);
+    if(!name) return;
+    commitUndo();
+    APP.deck.maps=Object.assign({},APP.deck.maps,{[name]:g});
+    echarts.registerMap(name,g);   // 這條路徑一律覆蓋註冊，才能換掉同名的舊地圖
+    THUMB_CHART.clear();           // 已有的圖表縮圖是「地圖畫不出來」的版本，全部作廢
+    renderAll(); syncPageJson(); syncMapList();
+    alert(`已載入地圖「${name}」（${Math.round(JSON.stringify(g).length/1024)}KB）。\n`
+      +`在 option 內寫 series:[{"type":"map","map":"${name}", …}] 即可使用。\n`
+      +'地圖資料會存進這份簡報的 maps 欄位，換一台電腦開也在。');
+  }catch(err){ alert('GeoJSON 載入失敗：'+err.message); }
+};
 $('#tabChartVis').onclick=()=>chartTab('vis');
 $('#tabChartJson').onclick=()=>chartTab('json');
 function closeChartModal(){
@@ -6518,13 +6659,14 @@ $('#btnChartApply').onclick=()=>{
   const el=chartTarget(); if(!el) return;
   try{
     const opt=JSON.parse($('#chartArea').value);
-    // 這裡是手貼 option 的正門，也是「顏色少 # 」最常見的入口，先過一次顏色檢查
-    NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[];
+    // 這裡是手貼 option 的正門，也是「顏色少 # 」與「地圖名稱打錯」最常見的入口
+    NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
     normChartColors(opt,'',NORM_REPORT);
+    for(const s of (opt.series||[])) checkMapSeries(s,NORM_REPORT);
     commitUndo(); el.option=opt;
     $('#chartModal').hidden=true; chartTargetRef=null;
     renderAll();
-    reportChartColors();
+    reportChartIssues();
   }catch(err){ alert('option JSON 解析失敗：'+err.message); }
 };
 
