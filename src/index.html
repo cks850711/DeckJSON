@@ -4066,7 +4066,10 @@ function downscaleCanvas(img,w,h){
    回傳 natW/natH 是重編碼後的實際像素，呼叫端必須一起寫回元素——匯出 srcRect 依賴它。 */
 async function recodeImage(dataUrl,maxW,maxH,q){
   const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
-  const s=Math.min(1,maxW/img.naturalWidth,maxH/img.naturalHeight);
+  /* 取 max 而非 min：這裡要的是「兩軸都不低於需求」，不是「整張塞進 maxW×maxH」。
+     框被 Alt 非等比拉伸過時 maxW/maxH 的比例與原圖不同，取 min 會讓較緊的那一軸
+     決定係數，另一軸就被縮到不夠、放大後糊掉。等比未變形時兩者相等，行為不變。 */
+  const s=Math.min(1,Math.max(maxW/img.naturalWidth,maxH/img.naturalHeight));
   if(s>=1) return null;
   const w=Math.max(1,Math.round(img.naturalWidth*s)), h=Math.max(1,Math.round(img.naturalHeight*s));
   const cv=downscaleCanvas(img,w,h);
@@ -4120,7 +4123,8 @@ function imageCompressRows(el){
     const [tw,th]=targetPixels(el,p.mul);
     const b=document.createElement('button');
     b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left;display:flex;justify-content:space-between;align-items:baseline;gap:6px';
-    const tooBig=!(el.natW>0)||tw>=el.natW;
+    // 與 recodeImage 的 s>=1 同條件：任一軸已達需求就壓不出效益（漏看高的話按鈕會亮著卻壓不動）
+    const tooBig=!(el.natW>0)||!(el.natH>0)||tw>=el.natW||th>=el.natH;
     b.innerHTML=`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`;
     if(tooBig){
       b.disabled=true;
