@@ -274,8 +274,8 @@
   <input type="text" id="deckTitle" title="簡報標題（匯出檔名）" value="未命名簡報">
   <div class="grp">
     <button id="btnNew" title="開新簡報（清空目前內容，需二次確認）">📄 開新</button>
-    <button id="btnOpen" title="開啟 .deck.json 檔">📂 開啟</button>
-    <button id="btnSaveAs" title="另存 .deck.json 檔（Cmd/Ctrl+S）">💾 另存</button>
+    <button id="btnOpen" title="開啟 .deck 檔（舊的 .deck.json 也開得起來）">📂 開啟</button>
+    <button id="btnSaveAs" title="另存 .deck 檔（Cmd/Ctrl+S）">💾 另存</button>
   </div>
   <div class="grp"><button id="btnUndo" title="復原（Cmd/Ctrl+Z）" disabled>↺</button><button id="btnRedo" title="重做（Cmd/Ctrl+Shift+Z）" disabled>↻</button></div>
   <div class="grp">
@@ -306,8 +306,8 @@
   </div>
   <input type="file" id="imgInput" accept="image/png,image/jpeg" hidden>
   <input type="file" id="bgInput" accept="image/png,image/jpeg" hidden>
-  <input type="file" id="jsonInput" accept=".json,application/json" hidden>
-  <input type="file" id="mergeInput" accept=".json,application/json" hidden>
+  <input type="file" id="jsonInput" accept=".deck,.json,application/json" hidden>
+  <input type="file" id="mergeInput" accept=".deck,.json,application/json" hidden>
   <input type="file" id="mapInput" accept=".json,.geojson,application/json,application/geo+json" hidden>
   <input type="file" id="profileInput" accept=".json,application/json" hidden>
   <input type="file" id="vidInput" accept="video/*" hidden>
@@ -491,7 +491,7 @@
       <h4>存檔</h4>
       <ul>
         <li><b>自動存檔</b>：每次改動後約 1 秒自動存進瀏覽器（IndexedDB），<b>重新整理／關掉分頁再打開會自動還原</b>，頂端會顯示存檔時間。存不進去時（容量滿、無痕模式）會轉<b>紅字明講原因</b>，不會靜默失敗。</li>
-        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 另存</b>：讀寫 <code>.deck.json</code> 檔（Cmd/Ctrl+S 直接另存）。</li>
+        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 另存</b>：讀寫 <code>.deck</code> 檔（內容仍是 JSON，舊的 <code>.deck.json</code> 照樣開得起來；Cmd/Ctrl+S 直接另存）。</li>
         <li>自動存檔只有一份、只在這台瀏覽器。<b>重要進度請另存成檔案</b>——那才是可備份、可轉移、可貼給 AI 的形式。</li>
       </ul>
       <h4>畫布操作</h4>
@@ -521,7 +521,7 @@
         <li><b>對齊分佈</b>：多選面板有左/中/右、上/中/下對齊，及<b>水平／垂直等距</b>（需 ≥3 個，首尾固定、中間平均間隙）。</li>
         <li><b>格線與吸附</b>：工具列「⊞ 格線」開關，製圖式三階層——一格<b>虛線</b>、每 5 格<b>細實線</b>、每 10 格<b>粗實線</b>，原點在投影片左上角。格距預設 5mm，可按 1／2／5／10mm 或自訂（mm／px／pt／cm），細線與粗線的間隔格數、顏色（預設 #ADB5BD）都可調，設定在右欄「頁面 → 格線」。<br>
           「🧲 吸附」開啟後：<b>移動只吸左緣與上緣</b>（四邊都吸的話，寬度不是格距整數倍的元素會在兩組吸附點之間被拉來拉去，很卡手）；<b>拖白色方點縮放則四邊都吸</b>，表格的欄寬列高把手、線條端點也一樣。整組移動吸的是<b>包圍盒</b>的左上角，組內相對位置不變。<br>
-          既有的<b>輔助線吸附</b>（投影片中線／四邊／預留區外緣）一直都在，且<b>優先於格線</b>——格線密到幾乎處處可吸，不給輔助線優先權的話就再也對不到中線了。旋轉過的元素與等比鎖定時不吸（邊不平行於格線，吸了也對不齊）。<b>格線只在畫布上</b>：不匯出、不進快照、不寫進 .deck.json，設定存在這台瀏覽器。</li>
+          既有的<b>輔助線吸附</b>（投影片中線／四邊／預留區外緣）一直都在，且<b>優先於格線</b>——格線密到幾乎處處可吸，不給輔助線優先權的話就再也對不到中線了。旋轉過的元素與等比鎖定時不吸（邊不平行於格線，吸了也對不齊）。<b>格線只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，設定存在這台瀏覽器。</li>
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
         <li><b>行距</b>：文字框與表格可設行距（×字級），匯出鎖為精確 spcPts；單格行距可透過 JSON 微調。</li>
@@ -554,7 +554,7 @@
         <li><b>圖形編輯器</b>：<b>鋼筆</b>點一下＝角點、按住拖＝帶曲度的平滑點、點回黃色起點＝閉合，Esc／雙擊結束後再點就是新的子路徑。<b>編輯點</b>可拖錨點、拖控制柄調曲度（Alt 拖＝兩側拆開成折角）、點線段在正中插節點、雙擊錨點切換直線／曲線、Delete 刪點。另有格線吸附（間距可選）與編輯器內獨立的 Cmd/Ctrl+Z。<b>挖洞</b>只要在外圈裡面再畫一條子路徑就會空心，<b>繞行方向不影響</b>（PowerPoint 用 even-odd 填充規則）。</li>
         <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
-        <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併 .json」把另一份簡報附加為後續頁。</li>
+        <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併簡報」把另一份 <code>.deck</code> 附加為後續頁。</li>
         <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
         <li>所有元素（表格除外）有<b>淡虛線框</b>顯示框尺寸；圖片／形狀旋轉後選取框與把手跟著轉（resize 已依旋轉換算，仍正確）。</li>
         <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／圖片／表格／圖表；文字再細分字元進階／段落／超連結／陰影，表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。多選／軟群組時改顯示<b>位置尺寸（包圍盒）</b>／<b>版面</b>／<b>對齊與分佈</b>／<b>群組與動作</b>。未選取任何元素時顯示<b>頁面</b>屬性，其中「頁碼」「檔案資訊」「投影片尺寸」「字體」「預留區」「環境設定檔」六區是<b>整份簡報</b>層級，「格線」則是<b>本機檢視</b>層級（存瀏覽器，不跟著 JSON 走）。</li>
@@ -3097,7 +3097,7 @@ function renderProps(){
       rst.onclick=()=>{ setGrid({size:GRID_DEF.size,sub:GRID_DEF.sub,major:GRID_DEF.major,color:GRID_DEF.color}); renderProps(); };
       clr.appendChild(rst); pp.appendChild(clr);
       const gn=document.createElement('div'); gn.className='row';
-      gn.innerHTML='<span class="unit">格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck.json，'
+      gn.innerHTML='<span class="unit">格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，'
         +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。</span>';
       pp.appendChild(gn);
     }
@@ -3121,7 +3121,7 @@ function renderProps(){
       +'設定跟著這份簡報的 JSON 走，所以貼給 AI 再貼回來不會掉。</span>';
     pp.appendChild(pfn);
     pp.appendChild(secTitle('範本與匯出'));
-    pp.appendChild(btnRow([['📋 套範本',()=>openTemplateModal(),'插入版型頁'],['⧉ 合併 .json',()=>$('#mergeInput').click(),'附加另一份簡報的頁']]));
+    pp.appendChild(btnRow([['📋 套範本',()=>openTemplateModal(),'插入版型頁'],['⧉ 合併簡報',()=>$('#mergeInput').click(),'把另一份 .deck 的頁附加進來']]));
     pp.appendChild(pageJsonBtn());
     const note=document.createElement('div'); note.className='row';
     note.innerHTML='<span class="unit">點選元素編輯屬性；Shift／框選可多選。</span>';
@@ -4873,7 +4873,12 @@ $('#coverInput').addEventListener('change',async e=>{
 document.body.addEventListener('dragover',e=>e.preventDefault());
 document.body.addEventListener('drop',async e=>{
   e.preventDefault();
-  const f=[...(e.dataTransfer.files||[])].find(f=>/^image\/(png|jpeg)$/.test(f.type));
+  const fs=[...(e.dataTransfer.files||[])];
+  /* 簡報檔比圖片優先。.deck 不是註冊過的 MIME 型別，File.type 會是空字串，只能認副檔名；
+     舊的 .deck.json 與純 .json 一併收下，是不是簡報檔交給 openDeckFile 判斷並回報。 */
+  const dk=fs.find(f=>/\.(deck|json)$/i.test(f.name));
+  if(dk){ await openDeckFile(dk,true); return; }
+  const f=fs.find(f=>/^image\/(png|jpeg)$/.test(f.type));
   if(f){
     const r=stage.getBoundingClientRect();
     await insertImageFile(f,(e.clientX-r.left)/APP.zoom,(e.clientY-r.top)/APP.zoom);
@@ -5799,7 +5804,7 @@ document.addEventListener('keydown',e=>{
     if(inField) return;
     e.preventDefault(); if(e.shiftKey) redo(); else undo(); return;
   }
-  // Cmd/Ctrl+S 另存 .deck.json：這裡不擋 inField，改標題／編輯文字中按存檔是常見動作
+  // Cmd/Ctrl+S 另存 .deck：這裡不擋 inField，改標題／編輯文字中按存檔是常見動作
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveDeckFile(); return; }
   if(inField) return;
   if(!APP.selIds.length) return;
@@ -6858,8 +6863,7 @@ $('#btnJsonLoad').onclick=()=>$('#jsonInput').click();
 $('#jsonInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   if(!f) return;
-  try{ loadDeck(JSON.parse(await f.text())); $('#jsonModal').hidden=true; }
-  catch(err){ alert('載入失敗：'+err.message); }
+  if(await openDeckFile(f)) $('#jsonModal').hidden=true;
 });
 
 /* ================= 自動存檔（IndexedDB） =================
@@ -6929,10 +6933,24 @@ async function asRestore(){
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
 }
 /* ---- 開新／開啟／另存 ---- */
+/* 開啟簡報檔的唯一入口：📂 開啟與拖放共用同一條解析路徑，免得兩邊的驗證與錯誤處理日久分岔。
+   ask=true（拖放）時，畫布上已有內容就先問一次——拖錯檔案不該直接蓋掉正在做的簡報。 */
+async function openDeckFile(f,ask){
+  let obj;
+  try{ obj=JSON.parse(await f.text()); }
+  catch(err){ alert('載入失敗：「'+f.name+'」不是有效的 JSON\n\n'+err.message); return false; }
+  // 先輕量認一下是不是簡報檔，才不會為了一個不相干的 .json 也去問「要不要取代」
+  if(!obj||typeof obj!=='object'||!Array.isArray(obj.pages)||!obj.pages.length){
+    alert('載入失敗：「'+f.name+'」不是 DeckJSON 簡報檔（缺 pages）'); return false; }
+  const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
+  if(ask&&n&&!confirm('載入「'+f.name+'」會取代目前的 '+APP.deck.pages.length+' 頁／'+n+' 個元素。\n\n還留一步 Cmd/Ctrl+Z 後路。要繼續嗎？')) return false;
+  try{ loadDeck(obj); return true; }
+  catch(err){ alert('載入失敗：'+err.message); return false; }
+}
 function saveDeckFile(){
   const a=document.createElement('a');
   a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
-  a.download=(APP.deck.title||'deckjson')+'.deck.json';
+  a.download=(APP.deck.title||'deckjson')+'.deck';
   a.click();
 }
 $('#btnSaveAs').onclick=saveDeckFile;

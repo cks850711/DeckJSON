@@ -1,0 +1,6 @@
+{
+  // .deck 的內容就是 JSON，只是副檔名不同——沒有這條就沒有語法上色與括號配對
+  "files.associations": {
+    "*.deck": "json"
+  }
+}
