@@ -7006,7 +7006,10 @@ const as2=n=>String(n).padStart(2,'0');
 function asStamp(t){ const d=new Date(t); return as2(d.getHours())+':'+as2(d.getMinutes())+':'+as2(d.getSeconds()); }
 function asSaveNow(){
   if(asOff) return Promise.resolve(false);
-  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now()};
+  let fh=null;
+  // 先試複製：萬一這個環境的 handle 不能結構化複製，寧可不記檔案，也不要讓自動存檔整條掛掉
+  if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){} }
+  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now(),handle:fh};
   return asTx('readwrite',st=>st.put(rec,AS_KEY))
     .then(()=>{ asHint('已自動存檔 '+asStamp(rec.at)); return true; })
     .catch(err=>{
@@ -7035,13 +7038,9 @@ async function asRestore(){
       UNDO.length=0; REDO.length=0;   // 還原＝重新開始，不繼承上一場的復原堆疊
       setSel([]); renderAll(); syncPageJson();
       asHint('已還原上次內容（'+asStamp(rec.at)+'）');
-      /* 連「上次開的是哪個檔」一起接回來。只在自動存檔真的還原成功時才接：否則會出現
-         「空白簡報卻指著某個檔」，一按 Cmd/Ctrl+S 就拿空白蓋掉人家。
+      /* 「上次開的是哪個檔」就在同一筆記錄裡，與剛還原的內容必然成對（見上方〈檔案存檔〉的說明）。
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
-      try{
-        const fr=await asTx('readonly',st=>st.get(AS_FILE));
-        if(fr&&fr.handle){ APP.file={handle:fr.handle,name:fr.handle.name,stamp:0,stale:true}; fileHint(); }
-      }catch(e){}
+      if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
     }catch(err){ asHint('⚠ 上次的自動存檔讀不回來：'+err.message,true); }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
@@ -7058,7 +7057,10 @@ async function asRestore(){
    user gesture 裡叫——所以底下每個要權限的動作都由按鍵／點擊直接觸發，不從計時器或還原流程呼叫。 */
 const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.showOpenFilePicker==='function';
 const DECK_TYPES=[{description:'DeckJSON 簡報',accept:{'application/json':['.deck','.deck.json']}}];
-const AS_FILE='fileHandle';   // handle 存 IndexedDB（與自動存檔同一個 store，不同鍵）以跨工作階段記住
+/* handle 跟著自動存檔寫在**同一筆記錄**裡，不另立鍵。
+   理由是多分頁：IndexedDB 是整個 origin 共用的，分開存就會出現「內容來自這個分頁、
+   handle 來自另一個分頁」的錯配——重載後按一次 Cmd/Ctrl+S，就把甲的內容寫進乙的檔案。
+   綁成同一次寫入之後，還原時內容與檔案必然成對（頂多是整組被別的分頁蓋掉，那不會損毀資料）。 */
 
 function fileHint(){
   const s=$('#fileHint'); if(!s) return;
@@ -7067,13 +7069,11 @@ function fileHint(){
   s.className=APP.file.stale?'stale':(APP.dirty?'dirty':'');
   s.title=(APP.file.stale? '重整後權限要重新取得：按 💾 存檔即可\n':'')+'目前開啟：'+APP.file.name;
 }
-function rememberFile(h){   // 記不住不影響本次工作，故失敗只吞掉
-  try{ return asTx('readwrite',st=>h? st.put({handle:h},AS_FILE): st.delete(AS_FILE)).catch(()=>{}); }
-  catch(e){ return Promise.resolve(); }
-}
 function setDeckFile(h,f){
   APP.file=h? {handle:h,name:h.name,stamp:f?f.lastModified:0,stale:false} : null;
-  APP.dirty=false; fileHint(); rememberFile(h);
+  APP.dirty=false; fileHint();
+  // 有檔案才排自動存檔；h 為 null 時不排，否則「📄 開新」剛清掉的自動存檔會被空白 deck 寫回去
+  if(h&&APP.ready) scheduleAutosave();
 }
 async function ensureRW(h){
   const opt={mode:'readwrite'};
@@ -7091,8 +7091,9 @@ async function writeDeckTo(h){
   await w.write(deckJson());
   await w.close();
   let stamp=0; try{ stamp=(await h.getFile()).lastModified; }catch(e){}
-  APP.file={handle:h,name:h.name,stamp,stale:false}; APP.dirty=false; fileHint(); rememberFile(h);
-  asHint('已存檔 '+h.name+'　'+asStamp(Date.now()));
+  APP.file={handle:h,name:h.name,stamp,stale:false}; APP.dirty=false; fileHint();
+  await asSaveNow().catch(()=>{});   // 立刻落一筆「內容＋檔案」成對的記錄，不等 1.2 秒排程
+  asHint('已存檔 '+h.name+'　'+asStamp(Date.now()));   // 蓋掉 asSaveNow 的提示：這裡要講的是檔案存好了
 }
 async function saveDeck(){          // Cmd/Ctrl+S
   if(!FS_OK) return saveDeckDownload();
@@ -7144,7 +7145,7 @@ async function openDeckFile(f,ask,h){
     alert('載入失敗：「'+f.name+'」不是 DeckJSON 簡報檔（缺 pages）'); return false; }
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
   if(ask&&n&&!confirm('載入「'+f.name+'」會取代目前的 '+APP.deck.pages.length+' 頁／'+n+' 個元素。\n\n還留一步 Cmd/Ctrl+Z 後路。要繼續嗎？')) return false;
-  try{ loadDeck(obj); setDeckFile(h||null,f); return true; }
+  try{ loadDeck(obj); setDeckFile(h||null,f); if(APP.ready) scheduleAutosave(); return true; }
   catch(err){ alert('載入失敗：'+err.message); return false; }
 }
 $('#btnSave').onclick=saveDeck;
