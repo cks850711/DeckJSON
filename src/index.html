@@ -34,6 +34,9 @@
   #btnHelp{border-radius:50%;width:30px;height:30px;padding:0;font-weight:700;color:var(--fg-dim)}
   #warn{color:var(--danger);font-size:12px;font-weight:600}
   /* 自動存檔狀態：平時灰字報時間，存檔失敗時轉紅字（容量超限必須看得見，不能靜默） */
+  #fileHint{font-size:11px;color:var(--fg-dim);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+  #fileHint.dirty{color:var(--fg);font-weight:600}
+  #fileHint.stale{color:var(--danger)}
   #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
   #saveHint.bad{color:var(--danger);font-weight:600}
   #fontWarn{color:#e0b34d;font-size:11px}
@@ -275,7 +278,8 @@
   <div class="grp">
     <button id="btnNew" title="開新簡報（清空目前內容，需二次確認）">📄 開新</button>
     <button id="btnOpen" title="開啟 .deck 檔（舊的 .deck.json 也開得起來）">📂 開啟</button>
-    <button id="btnSaveAs" title="另存 .deck 檔（Cmd/Ctrl+S）">💾 另存</button>
+    <button id="btnSave" title="存檔（Cmd/Ctrl+S）：寫回目前開啟的檔案">💾 存檔</button>
+    <button id="btnSaveAs" title="另存新檔（Cmd/Ctrl+Shift+S）：選一個新位置存">另存</button>
   </div>
   <div class="grp"><button id="btnUndo" title="復原（Cmd/Ctrl+Z）" disabled>↺</button><button id="btnRedo" title="重做（Cmd/Ctrl+Shift+Z）" disabled>↻</button></div>
   <div class="grp">
@@ -296,7 +300,7 @@
     <button id="btnGridSnap" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸">🧲 吸附</button></div>
   <div class="grp"><label>貼上</label>
     <button id="btnPasteWhite" title="貼上外部表格時，來源沒指定底色（或指定純白）的格子要填白還是留透明。預設白底——貼上的字色是深色，透明貼到深色背景上會整張看不見。少數想讓背景透出來的場合再關掉。此設定存在這台瀏覽器，不隨簡報走">▦ 白底</button></div>
-  <span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
+  <span id="fileHint" title="目前開啟的檔案（● ＝有未存檔的變更）"></span><span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
   <div class="grp right">
     <button id="btnLayers" title="圖層面板：堆疊順序／顯示隱藏／鎖定">☰ 圖層</button>
     <button id="btnSnap" title="快照匯出 PNG／JPG">🖼 快照</button>
@@ -491,7 +495,7 @@
       <h4>存檔</h4>
       <ul>
         <li><b>自動存檔</b>：每次改動後約 1 秒自動存進瀏覽器（IndexedDB），<b>重新整理／關掉分頁再打開會自動還原</b>，頂端會顯示存檔時間。存不進去時（容量滿、無痕模式）會轉<b>紅字明講原因</b>，不會靜默失敗。</li>
-        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 另存</b>：讀寫 <code>.deck</code> 檔（內容仍是 JSON，舊的 <code>.deck.json</code> 照樣開得起來；Cmd/Ctrl+S 直接另存）。</li>
+        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 存檔</b>／<b>另存</b>：讀寫 <code>.deck</code> 檔（內容仍是 JSON，舊的 <code>.deck.json</code> 照樣開得起來）。<b>Cmd/Ctrl+S</b> 寫回你開啟的那個檔，<b>Cmd/Ctrl+Shift+S</b> 換位置另存；工具列會顯示目前檔名，<b>●</b> 代表有還沒存的變更。<b>就地覆寫需要從 <code>http://localhost</code> 開啟</b>（用專案根的 <code>start-localhost.command</code>）——瀏覽器不發寫入權給直接雙擊開啟的頁面，那種情況下存檔會退回「下載一份副本到下載資料夾」，提示列會明講。</li>
         <li>自動存檔只有一份、只在這台瀏覽器。<b>重要進度請另存成檔案</b>——那才是可備份、可轉移、可貼給 AI 的形式。</li>
       </ul>
       <h4>畫布操作</h4>
@@ -1542,6 +1546,8 @@ function savePasteWhite(){ lsSet(PASTEW_KEY,APP.pasteWhite?'1':'0'); }
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
   grid:loadGrid(),   // 格線與吸附設定（不屬於 deck，見上方說明）
   pasteWhite:loadPasteWhite(),   // 貼上外部表格：無底色格填白（同樣不屬於 deck）
+  file:null,      // 就地覆寫的目標 {handle,name,stamp,stale}；null＝還沒有對應的硬碟檔案（見〈檔案存檔〉）
+  dirty:false,    // 上次寫檔之後改過沒有（給 #fileHint 的 ● 用；與自動存檔無關）
   edit:null,      // 文字框 run 級編輯狀態 {id,root,src,sel:{p0,o0,p1,o1},pushed,snap}
   cellEdit:null,  // 格內 run 級編輯狀態 {id,r,c,root,src,sel:{o0,o1}}（單段模型，位移以整格計）
   cellSel:null,   // 表格儲存格反白範圍 {id,r0,c0,r1,c1}（規範化：含 min/max、外擴到整塊合併）
@@ -4876,8 +4882,15 @@ document.body.addEventListener('drop',async e=>{
   const fs=[...(e.dataTransfer.files||[])];
   /* 簡報檔比圖片優先。.deck 不是註冊過的 MIME 型別，File.type 會是空字串，只能認副檔名；
      舊的 .deck.json 與純 .json 一併收下，是不是簡報檔交給 openDeckFile 判斷並回報。 */
-  const dk=fs.find(f=>/\.(deck|json)$/i.test(f.name));
-  if(dk){ await openDeckFile(dk,true); return; }
+  const di=fs.findIndex(f=>/\.(deck|json)$/i.test(f.name));
+  if(di>=0){
+    /* getAsFileSystemHandle() 必須在讓出執行權之前呼叫——第一個 await 之後 dataTransfer.items
+       就作廢了。先拿到 promise，await 留到後面。 */
+    const it=(e.dataTransfer.items||[])[di];
+    const hp=(FS_OK&&it&&it.getAsFileSystemHandle)? it.getAsFileSystemHandle():null;
+    await openDeckFile(fs[di],true, hp? await hp.catch(()=>null):null);
+    return;
+  }
   const f=fs.find(f=>/^image\/(png|jpeg)$/.test(f.type));
   if(f){
     const r=stage.getBoundingClientRect();
@@ -5804,8 +5817,8 @@ document.addEventListener('keydown',e=>{
     if(inField) return;
     e.preventDefault(); if(e.shiftKey) redo(); else undo(); return;
   }
-  // Cmd/Ctrl+S 另存 .deck：這裡不擋 inField，改標題／編輯文字中按存檔是常見動作
-  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveDeckFile(); return; }
+  // Cmd/Ctrl+S 存檔（加 Shift＝另存新檔）：這裡不擋 inField，改標題／編輯文字中按存檔是常見動作
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); if(e.shiftKey) saveDeckAs(); else saveDeck(); return; }
   if(inField) return;
   if(!APP.selIds.length) return;
   if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); deleteSelected(); return; }
@@ -6858,8 +6871,8 @@ $('#btnLayerClose').onclick=()=>$('#layerPanel').hidden=true;
   head.addEventListener('pointerup',()=>d=null);
 })();
 
-$('#btnJsonSave').onclick=()=>saveDeckFile();
-$('#btnJsonLoad').onclick=()=>$('#jsonInput').click();
+$('#btnJsonSave').onclick=()=>saveDeck();
+$('#btnJsonLoad').onclick=openDeckPicker;
 $('#jsonInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   if(!f) return;
@@ -6911,6 +6924,7 @@ function asSaveNow(){
     });
 }
 function scheduleAutosave(){
+  if(APP.ready&&!APP.dirty){ APP.dirty=true; fileHint(); }   // 標在 early return 之前：自動存檔停用不代表檔案沒改
   if(asOff||!APP.ready) return;
   clearTimeout(asTimer);
   asHint('存檔中…');
@@ -6928,14 +6942,107 @@ async function asRestore(){
       UNDO.length=0; REDO.length=0;   // 還原＝重新開始，不繼承上一場的復原堆疊
       setSel([]); renderAll(); syncPageJson();
       asHint('已還原上次內容（'+asStamp(rec.at)+'）');
+      /* 連「上次開的是哪個檔」一起接回來。只在自動存檔真的還原成功時才接：否則會出現
+         「空白簡報卻指著某個檔」，一按 Cmd/Ctrl+S 就拿空白蓋掉人家。
+         權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
+      try{
+        const fr=await asTx('readonly',st=>st.get(AS_FILE));
+        if(fr&&fr.handle){ APP.file={handle:fr.handle,name:fr.handle.name,stamp:0,stale:true}; fileHint(); }
+      }catch(e){}
     }catch(err){ asHint('⚠ 上次的自動存檔讀不回來：'+err.message,true); }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
 }
+/* ================= 檔案存檔（就地覆寫） =================
+   瀏覽器預設碰不到硬碟。File System Access API 給的是「使用者在對話框裡親自挑過的那一個檔」
+   的寫入權，回傳的 handle 就是那張門票——有票就直接覆寫，沒票才跳對話框。
+
+   票只在 secure context 發（https 或 http://localhost）。雙擊開啟的 file:// 頁面拿不到，
+   那時整條退回原本的下載行為，並且在提示列講明白：靜默降級成「以為覆寫了、其實掉進下載
+   資料夾」比沒有這個功能更糟。專案根的 start-localhost.command 就是為了讓日常使用走 localhost。
+
+   權限不跨頁面重載：重整後 queryPermission 會回到 'prompt'，且 requestPermission 只能在
+   user gesture 裡叫——所以底下每個要權限的動作都由按鍵／點擊直接觸發，不從計時器或還原流程呼叫。 */
+const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.showOpenFilePicker==='function';
+const DECK_TYPES=[{description:'DeckJSON 簡報',accept:{'application/json':['.deck','.deck.json']}}];
+const AS_FILE='fileHandle';   // handle 存 IndexedDB（與自動存檔同一個 store，不同鍵）以跨工作階段記住
+
+function fileHint(){
+  const s=$('#fileHint'); if(!s) return;
+  if(!APP.file){ s.textContent=''; s.className=''; return; }
+  s.textContent=(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?'（需重新授權）':'');
+  s.className=APP.file.stale?'stale':(APP.dirty?'dirty':'');
+  s.title=(APP.file.stale? '重整後權限要重新取得：按 💾 存檔即可\n':'')+'目前開啟：'+APP.file.name;
+}
+function rememberFile(h){   // 記不住不影響本次工作，故失敗只吞掉
+  try{ return asTx('readwrite',st=>h? st.put({handle:h},AS_FILE): st.delete(AS_FILE)).catch(()=>{}); }
+  catch(e){ return Promise.resolve(); }
+}
+function setDeckFile(h,f){
+  APP.file=h? {handle:h,name:h.name,stamp:f?f.lastModified:0,stale:false} : null;
+  APP.dirty=false; fileHint(); rememberFile(h);
+}
+async function ensureRW(h){
+  const opt={mode:'readwrite'};
+  if(await h.queryPermission(opt)==='granted') return true;
+  return await h.requestPermission(opt)==='granted';
+}
+/* 寫入前比對 mtime：別的分頁、姊妹外掛或同步軟體可能動過同一個檔。
+   沒有基準（剛從 IndexedDB 還原、還沒讀過檔）時不猜，直接放行——寧可少問，不要每次都問。 */
+async function externallyChanged(){
+  const f=APP.file; if(!f||f.stale||!f.stamp) return false;
+  try{ return (await f.handle.getFile()).lastModified>f.stamp; }catch(e){ return false; }
+}
+async function writeDeckTo(h){
+  const w=await h.createWritable();   // 寫進暫存檔，close() 才原子換掉原檔：寫到一半當掉不會留半截檔
+  await w.write(deckJson());
+  await w.close();
+  let stamp=0; try{ stamp=(await h.getFile()).lastModified; }catch(e){}
+  APP.file={handle:h,name:h.name,stamp,stale:false}; APP.dirty=false; fileHint(); rememberFile(h);
+  asHint('已存檔 '+h.name+'　'+asStamp(Date.now()));
+}
+async function saveDeck(){          // Cmd/Ctrl+S
+  if(!FS_OK) return saveDeckDownload();
+  if(!APP.file) return saveDeckAs();
+  try{
+    if(!await ensureRW(APP.file.handle)){ asHint('⚠ 沒拿到寫入權限，改用另存新檔',true); return saveDeckAs(); }
+    if(await externallyChanged() &&
+       !confirm('「'+APP.file.name+'」在硬碟上被改過（可能是別的分頁或其他程式）。\n\n繼續存檔會蓋掉那些變更。要繼續嗎？')) return;
+    await writeDeckTo(APP.file.handle);
+  }catch(err){ if(err.name!=='AbortError') asHint('⚠ 存檔失敗：'+(err.message||err),true); }
+}
+async function saveDeckAs(){        // Cmd/Ctrl+Shift+S
+  if(!FS_OK) return saveDeckDownload();
+  try{
+    const h=await showSaveFilePicker({
+      suggestedName: APP.file? APP.file.name : (APP.deck.title||'deckjson')+'.deck',
+      types:DECK_TYPES});
+    await writeDeckTo(h);
+  }catch(err){ if(err.name!=='AbortError') asHint('⚠ 另存失敗：'+(err.message||err),true); }   // AbortError＝按了取消，不是錯誤
+}
+function saveDeckDownload(){        // 沒有 FSA 時的退路（Safari／Firefox／file:// 開啟）
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
+  a.download=(APP.deck.title||'deckjson')+'.deck';
+  a.click();
+  APP.dirty=false; fileHint();
+  asHint('已下載一份副本到下載資料夾（此環境無法就地覆寫，見「?」說明）');
+}
+async function openDeckPicker(){
+  if(!FS_OK) return $('#jsonInput').click();
+  try{
+    const [h]=await showOpenFilePicker({types:DECK_TYPES,multiple:false});
+    const f=await h.getFile();
+    if(await openDeckFile(f,false,h)) $('#jsonModal').hidden=true;
+  }catch(err){ if(err.name!=='AbortError') alert('開啟失敗：'+(err.message||err)); }
+}
+
 /* ---- 開新／開啟／另存 ---- */
 /* 開啟簡報檔的唯一入口：📂 開啟與拖放共用同一條解析路徑，免得兩邊的驗證與錯誤處理日久分岔。
-   ask=true（拖放）時，畫布上已有內容就先問一次——拖錯檔案不該直接蓋掉正在做的簡報。 */
-async function openDeckFile(f,ask){
+   ask=true（拖放）時，畫布上已有內容就先問一次——拖錯檔案不該直接蓋掉正在做的簡報。
+   h＝這個檔的 FileSystemFileHandle（拖放與 showOpenFilePicker 拿得到，<input type=file> 拿不到）。
+   沒有 h 時必須把 APP.file 清成 null：否則接下來的 Cmd/Ctrl+S 會覆寫到「上一個」檔案。 */
+async function openDeckFile(f,ask,h){
   let obj;
   try{ obj=JSON.parse(await f.text()); }
   catch(err){ alert('載入失敗：「'+f.name+'」不是有效的 JSON\n\n'+err.message); return false; }
@@ -6944,17 +7051,16 @@ async function openDeckFile(f,ask){
     alert('載入失敗：「'+f.name+'」不是 DeckJSON 簡報檔（缺 pages）'); return false; }
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
   if(ask&&n&&!confirm('載入「'+f.name+'」會取代目前的 '+APP.deck.pages.length+' 頁／'+n+' 個元素。\n\n還留一步 Cmd/Ctrl+Z 後路。要繼續嗎？')) return false;
-  try{ loadDeck(obj); return true; }
+  try{ loadDeck(obj); setDeckFile(h||null,f); return true; }
   catch(err){ alert('載入失敗：'+err.message); return false; }
 }
-function saveDeckFile(){
-  const a=document.createElement('a');
-  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
-  a.download=(APP.deck.title||'deckjson')+'.deck';
-  a.click();
+$('#btnSave').onclick=saveDeck;
+$('#btnSaveAs').onclick=saveDeckAs;
+$('#btnOpen').onclick=openDeckPicker;
+if(!FS_OK){   // 講明白比靜默降級重要：按鈕上就要看得出這個環境存出去的是副本
+  $('#btnSave').title='存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾';
+  $('#btnSaveAs').title='另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾';
 }
-$('#btnSaveAs').onclick=saveDeckFile;
-$('#btnOpen').onclick=()=>$('#jsonInput').click();
 $('#btnNew').onclick=()=>{
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
   // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
@@ -6963,6 +7069,7 @@ $('#btnNew').onclick=()=>{
   asClear();
   commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
+  setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪
   APP.edit=null; APP.editing=null; setSel([]);
   renderAll(); syncPageJson(); asHint('');
 };
