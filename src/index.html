@@ -73,9 +73,15 @@
   #btnExport{height:30px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;color:#0b1a26}
   /* 偏好：低頻但不能沒有的兩個設定（母版模式、貼上白底），收進齒輪 */
   .popwrap{position:relative;flex:none}
-  #prefsPop{position:absolute;right:0;top:36px;z-index:150;width:236px;padding:11px 13px;
+  /* ⚠ 必須是 fixed 不能是 absolute：header 帶 overflow:hidden（防工具列在窄視窗下溢出），
+     彈窗高 142px 而 header 只有 46px，absolute 會被裁掉 139.5px，等於整個看不見。
+     座標由 JS 依按鈕位置在開啟當下算，見 #btnPrefs 的 onclick。 */
+  #prefsPop{position:fixed;z-index:150;width:236px;padding:11px 13px;
     background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-lg);
     box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+  /* ⚠ 這條不可省：#prefsPop 是 id 選擇器，它的 display:flex 優先度壓過 [hidden] 的
+     display:none，少了它 hidden 屬性完全不生效，彈窗會一直開著。 */
+  #prefsPop[hidden]{display:none}
   #prefsPop .pr{display:flex;flex-direction:column;gap:5px}
   #prefsPop .pr>span{font-size:11px;color:var(--fg-mute)}
   #prefsPop select{width:100%}
@@ -247,8 +253,22 @@
   .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
   #propPanel textarea{width:100%;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 inherit;padding:6px;resize:vertical}
   .scopeBtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  #propPanel{width:var(--props-w);flex-shrink:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:12px;font-size:12px}
-  #propPanel h4{margin:0 0 8px;color:var(--accent);font-size:12px}
+  /* 分頁化後 propPanel 只當容器：捲動下放到 .propPane，標題與分頁列固定不捲。
+     內距也一併下放，否則分頁列會被 12px 推離邊緣。 */
+  #propPanel{width:var(--props-w);flex-shrink:0;overflow:hidden;background:var(--panel);
+    border-left:1px solid var(--line);font-size:12px;display:flex;flex-direction:column}
+  #propHead{flex:none;padding:10px 12px 6px}
+  #propTabs{flex:none;display:flex;gap:2px;padding:0 8px;border-bottom:1px solid var(--line)}
+  .propTab{flex:1;height:28px;padding:0;background:none;border:none;border-bottom:2px solid transparent;
+    border-radius:var(--r-sm) var(--r-sm) 0 0;color:var(--fg-mute);font:inherit;font-size:12px;cursor:pointer;
+    transition:color .12s,background .12s}
+  #propPanel .propTab:hover{color:var(--fg-dim);background:var(--bg-raised)}
+  /* 要壓過既有的 #propPanel button.on（實心藍）——那條是給面板內的開關鈕用的，頁籤不該長那樣 */
+  #propPanel .propTab.on{background:none;border-color:transparent;border-bottom-color:var(--accent);
+    color:var(--fg);font-weight:600}
+  .propPane{flex:1;overflow-y:auto;padding:12px}
+  .propPane[hidden]{display:none}
+  #propPanel h4{margin:0;color:var(--accent);font-size:12px}
   #propPanel .row{display:flex;align-items:center;gap:5px;margin:6px 0;flex-wrap:wrap}
   #propPanel .row label{color:var(--fg-dim);min-width:30px}
   #propPanel input[type=number]{width:52px}
@@ -2889,6 +2909,74 @@ function renderMultiProps(pp){
    才會突然更新，看起來就是「每項調整都慢半拍」。
    但也不能無條件重繪：拖曳反白時 selectionchange 每一像素都會觸發，而 renderProps 是整個
    重建 #propPanel，會把使用者正在操作的控制項抽掉。故設三道閘。*/
+/* ══ 右欄分頁 ══
+   renderProps 產生的是**扁平**節點（H4／secTitle／subTitle／row…全在同一層），所以分頁
+   做成事後處理：切群組 → 依標題歸頁 → 搬進 pane。renderProps 那 799 行一行都不用改，
+   新增的區塊最差也只是落到預設頁，不會消失。
+
+   為什麼要切到 subTitle 而不只是 secTitle：實測選中表格時「表格」這一個 secTitle 區塊
+   自己就 1026px（全欄 1538px），只按 secTitle 分頁的話那一頁照樣要捲。切到 subTitle 後
+   三頁分別是 670／480／546px，都在可見高度內。 */
+const TAB_SEL_ARRANGE=['位置尺寸','位置尺寸（包圍盒）','版面','排列','對齊與分佈','動作','群組與動作'];
+const TAB_SEL_STYLE=['文字樣式','形狀樣式','儲存格樣式','框線'];
+const TAB_NONE_PAGE=['頁面樣式','章節','備忘稿','圖片壓縮（本頁）'];
+/* 無選取時有 15 個區塊、共 2072px，三頁分不平（「簡報」那頁實測仍要捲 136px），故拆四頁。
+   四個兩字頁籤在 220px 欄寬下各佔約 53px，剛好放得下。 */
+const TAB_NONE_OUT=['頁碼（整份簡報）','日期（整份簡報）','檔案資訊（整份簡報）',
+  '圖片壓縮（整份簡報）','背景圖壓縮（整份簡報）','範本與匯出'];
+const TAB_NONE_TOOL=['格線（本機檢視）','環境設定檔（profile）'];
+const TAB_CONTENT_NAME={text:'文字',shape:'形狀',table:'表格',image:'圖片',chart:'圖表',video:'影片'};
+const propTabMem={sel:0,none:0};   // 分頁選擇要撐過重繪——renderProps 每次改動都全量重建
+function applyPropTabs(){
+  const pp=$('#propPanel');
+  const kids=[...pp.childNodes];
+  if(!kids.length) return;
+  const head=(kids[0].nodeType===1&&kids[0].tagName==='H4')? kids.shift() : null;
+  // 切群組：secTitle／subTitle 各開一段，之後的節點都歸該段
+  const groups=[]; let cur=null;
+  for(const n of kids){
+    const c=n.nodeType===1&&n.classList;
+    if(c&&(c.contains('secTitle')||c.contains('subTitle'))){ cur={t:n.textContent.trim(),nodes:[]}; groups.push(cur); }
+    if(!cur){ cur={t:'',nodes:[]}; groups.push(cur); }
+    cur.nodes.push(n);
+  }
+  const mode=APP.selIds.length? 'sel' : 'none';
+  const el=APP.selIds.length===1? selEl() : null;
+  // null ＝這一頁收容所有沒被前面認領的區塊
+  const defs= mode==='sel'
+    ? [['排列',TAB_SEL_ARRANGE],['樣式',TAB_SEL_STYLE],[(el&&TAB_CONTENT_NAME[el.type])||'內容',null]]
+    : [['頁面',TAB_NONE_PAGE],['簡報',null],['輸出',TAB_NONE_OUT],['工具',TAB_NONE_TOOL]];
+  const fb=defs.findIndex(d=>d[1]===null);
+  const buckets=defs.map(()=>[]);
+  for(const g of groups){
+    let i=g.t? defs.findIndex(d=>d[1]&&d[1].includes(g.t)) : 0;
+    buckets[i<0? fb : i].push(g);
+  }
+  pp.innerHTML='';
+  if(head){ const hd=document.createElement('div'); hd.id='propHead'; hd.appendChild(head); pp.appendChild(hd); }
+  const fill=(pane,gs)=>{ gs.forEach(g=>g.nodes.forEach(n=>pane.appendChild(n)));
+    // 每頁的第一個 secTitle 都要是 .first（沒有上邊框），否則每頁開頭都多一條線
+    const secs=[...pane.querySelectorAll('.secTitle')];
+    secs.forEach((n,i)=>n.classList.toggle('first',i===0)); };
+  const live=defs.map((d,i)=>[d[0],buckets[i]]).filter(x=>x[1].length);
+  if(live.length<=1){   // 只有一頁（如多選）就不擺分頁列，省一行高度
+    const pane=document.createElement('div'); pane.className='propPane';
+    live.forEach(([,gs])=>fill(pane,gs)); pp.appendChild(pane); return;
+  }
+  const bar=document.createElement('div'); bar.id='propTabs';
+  const panes=[];
+  const sync=()=>{ const k=Math.min(propTabMem[mode]||0,panes.length-1);
+    panes.forEach(([b,pn],j)=>{ b.classList.toggle('on',j===k); pn.hidden=j!==k; }); };
+  live.forEach(([name,gs],i)=>{
+    const b=document.createElement('button'); b.className='propTab'; b.textContent=name;
+    b.onclick=()=>{ propTabMem[mode]=i; sync(); };
+    const pane=document.createElement('div'); pane.className='propPane'; fill(pane,gs);
+    bar.appendChild(b); panes.push([b,pane]);
+  });
+  pp.appendChild(bar); panes.forEach(([,pn])=>pp.appendChild(pn));
+  sync();
+}
+function renderProps(){ renderPropsBody(); applyPropTabs(); }
 function propsSig(){
   const el=selEl();
   if(!el) return 'none';
@@ -2908,7 +2996,7 @@ function syncProps(){
     renderProps();
   });
 }
-function renderProps(){
+function renderPropsBody(){
   _propsSig=propsSig();
   const pp=$('#propPanel'); pp.innerHTML='';
   if(APP.selIds.length>1){ renderMultiProps(pp); updateCopyPalWin(); return; }
@@ -6323,7 +6411,11 @@ function fitHeight(){ const sc=$('#stageScroll'); if(sc.clientHeight<160) return
   requestAnimationFrame(centerSlide); }
 /* 偏好選單：母版模式與貼上白底都是低頻設定，收進齒輪，不再佔工具列一整組。
    capture 階段關閉，才不會被其他 pointerdown 處理器攔在前面（畫布的選取邏輯就吃 capture）。 */
-$('#btnPrefs').onclick=e=>{ e.stopPropagation(); const p=$('#prefsPop'); p.hidden=!p.hidden; };
+$('#btnPrefs').onclick=e=>{ e.stopPropagation();
+  const p=$('#prefsPop');
+  if(p.hidden){ const r=$('#btnPrefs').getBoundingClientRect();
+    p.style.top=(r.bottom+6)+'px'; p.style.right=Math.max(8,innerWidth-r.right)+'px'; }
+  p.hidden=!p.hidden; };
 document.addEventListener('pointerdown',e=>{ const p=$('#prefsPop');
   if(p&&!p.hidden&&!(e.target.closest&&e.target.closest('.popwrap'))) p.hidden=true; },true);
 $('#btnFitW').onclick=fitWidth;
