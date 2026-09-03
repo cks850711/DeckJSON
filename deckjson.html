@@ -9,11 +9,20 @@
      頂端 #fontWarn 會明講「預覽用替代字體、匯出仍寫原字體名」。 -->
 <style>
   :root{
-    --bg:#1e1f24; --panel:#2a2c33; --line:#3d4048; --fg:#e8e8ea; --fg-dim:#9a9da6;
-    --accent:#4d9de0; --danger:#e05d5d;
+    /* ── 底色五階。舊版只有 --bg／--panel 兩階，控件與面板同色，整片糊在一起；拉開成
+         「最外層／畫布外圍／面板／控件／控件 hover」後，層次不必靠框線就分得出來。
+         變數名一律沿用舊的（--bg／--panel／--line…），全庫 113 處引用因此不動一行。 ── */
+    --bg:#131418; --bg-sunken:#0e0f12; --panel:#1c1e24; --bg-raised:#262a33; --bg-hover:#31353f;
+    --line:#2b2e37; --line-strong:#3c414d;
+    --fg:#e6e8ec; --fg-dim:#8b909c; --fg-mute:#5d626d;
+    --accent:#4d9de0; --accent-hi:#63aee8; --accent-soft:rgba(77,157,224,.14);
+    --danger:#e0625d; --warn:#e0b34d; --ok:#5fbf7f;
+    --r-sm:4px; --r:6px; --r-lg:9px;   /* 圓角三級：小控件／按鈕／面板 */
+    --props-w:220px;                   /* 右欄寬。浮動檢視列靠它算避讓距離，改寬度只要改這裡 */
     /* 三字體槽（deck.fonts）：JS 於 applyFontVars() 覆寫；此處為中性預設 */
     --font-latin:Arial; --font-ea:sans-serif; --font-table:Arial;
     --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -21,16 +30,15 @@
   header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
   header .grp{display:flex;align-items:center;gap:6px}
   header label{color:var(--fg-dim);font-size:12px}
-  button,select{background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer}
+  button,select{background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer}
   button:hover{border-color:var(--accent)}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-  header button.on{background:var(--accent);border-color:var(--accent);color:#fff}   /* 工具列的開關型按鈕（格線／吸附），與面板的 button.on 同一套視覺 */
-  input[type=number]{width:58px;background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 5px;font:inherit}
-  input[type=text]{background:#383b44;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
-  input[type=color]{width:30px;height:26px;padding:1px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+  header button.on,#viewBar button.on{background:var(--accent-soft);border-color:rgba(77,157,224,.35);color:var(--accent-hi)}   /* 工具列的開關型按鈕（格線／吸附），與面板的 button.on 同一套視覺 */
+  input[type=number]{width:58px;background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 5px;font:inherit}
+  input[type=text]{background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+  input[type=color]{width:30px;height:26px;padding:1px;background:var(--bg-raised);border:1px solid var(--line);border-radius:6px;cursor:pointer}
   .unit{color:var(--fg-dim);font-size:12px}
   .grp.right{margin-left:auto}
-  #deckTitle{width:150px}
   #btnHelp{border-radius:50%;width:30px;height:30px;padding:0;font-weight:700;color:var(--fg-dim)}
   #warn{color:var(--danger);font-size:12px;font-weight:600}
   /* 自動存檔狀態：平時灰字報時間，存檔失敗時轉紅字（容量超限必須看得見，不能靜默） */
@@ -40,7 +48,52 @@
   #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
   #saveHint.bad{color:var(--danger);font-weight:600}
   #fontWarn{color:#e0b34d;font-size:11px}
-  main{flex:1;display:flex;overflow:hidden}
+  /* ── 工具列：單排 46px。舊版靠 flex-wrap 疊成四排（實測 179px，佔視窗高 18%），
+       且命令／工具／檢視設定／狀態顯示四類東西長得一模一樣。現在只留命令與工具，
+       檢視設定下放畫布浮動列、狀態顯示下放底部狀態列。 ── */
+  header{height:46px;flex-wrap:nowrap;padding:0 10px;gap:3px;overflow:hidden}
+  svg.ic{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none;pointer-events:none}
+  /* 幽靈按鈕：工具列與浮動列用。面板內仍走 button 的預設（灰底描邊），兩者刻意不同級 */
+  .tb{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 9px;
+    background:transparent;border:1px solid transparent;border-radius:var(--r);color:var(--fg-dim);
+    white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+  .tb:hover{background:var(--bg-raised);color:var(--fg);border-color:transparent}
+  .tb.ico{width:30px;padding:0}
+  .tb:disabled{opacity:.32;pointer-events:none}
+  .vr{width:1px;height:20px;background:var(--line-strong);flex:none;margin:0 5px}
+  .spring{flex:1;min-width:6px}
+  /* 插入工具自成一框：視覺上宣告「這是工具，不是命令」 */
+  .tools{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;flex:none}
+  .tools .tb{height:26px;border-radius:var(--r-sm)}
+  #deckTitle{width:190px;flex:none;height:28px;background:transparent;border:1px solid transparent;
+    color:var(--fg);font-weight:600;text-align:center;padding:0 9px}
+  #deckTitle:hover{background:var(--bg-raised)}
+  #deckTitle:focus{background:var(--bg);border-color:var(--accent);outline:none}
+  #btnExport{height:30px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;color:#0b1a26}
+  /* 偏好：低頻但不能沒有的兩個設定（母版模式、貼上白底），收進齒輪 */
+  .popwrap{position:relative;flex:none}
+  #prefsPop{position:absolute;right:0;top:36px;z-index:150;width:236px;padding:11px 13px;
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-lg);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+  #prefsPop .pr{display:flex;flex-direction:column;gap:5px}
+  #prefsPop .pr>span{font-size:11px;color:var(--fg-mute)}
+  #prefsPop select{width:100%}
+  /* ── 畫布浮動檢視列：縮放／適合／格線／吸附。這幾個改的是「怎麼看」不是「內容」，
+       擺在畫布上比擺在工具列更近手。right 靠 --props-w 避開右欄。 ── */
+  #viewBar{position:absolute;right:calc(var(--props-w) + 14px);bottom:20px;z-index:110;
+    display:flex;align-items:center;gap:2px;padding:3px;
+    background:rgba(28,30,36,.93);backdrop-filter:blur(8px);
+    border:1px solid var(--line-strong);border-radius:var(--r-lg);box-shadow:0 6px 20px rgba(0,0,0,.45)}
+  #viewBar .tb{height:26px;border-radius:var(--r-sm);font-size:12px}
+  #viewBar .tb.ico{width:26px}
+  #viewBar input[type=number]{width:52px;height:24px;text-align:center;font-family:var(--font-mono);font-size:11px}
+  #viewBar .vr{height:16px;margin:0 3px}
+  /* ── 狀態列：舊版這五個 span 夾在工具列按鈕之間，既搶注意力又把工具列撐寬 ── */
+  #statusBar{height:23px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;
+    background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--fg-mute)}
+  #statusBar>span:empty{display:none}
+  main{flex:1;display:flex;overflow:hidden;position:relative}
   #pagePanel{width:158px;flex-shrink:0;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:10px}
   .pageItem{cursor:pointer;border:2px solid transparent;border-radius:6px;padding:4px;text-align:center;position:relative}
   .pageItem:hover{border-color:var(--line)}
@@ -62,7 +115,7 @@
   .pageDel{position:absolute;top:1px;right:1px;width:16px;height:16px;line-height:14px;border-radius:50%;background:rgba(224,93,93,.9);color:#fff;font-size:11px;text-align:center;cursor:pointer;display:none;z-index:2}
   .pageItem:hover .pageDup,.pageItem:hover .pageDel{display:block}
   #btnAddPage{margin-top:2px}
-  #stageScroll{flex:1;overflow:auto;padding:0}   /* 留白全由 stage margin 控制，避免 padding 重複計入置中 */
+  #stageScroll{flex:1;overflow:auto;padding:0;background:var(--bg-sunken)}   /* 留白全由 stage margin 控制，避免 padding 重複計入置中 */
   #stageOuter{margin:0 auto;display:flow-root}   /* flow-root：擋 margin collapse，stage 的置中邊距才留在 outer 內 */
   /* overflow 刻意可見：物件拖出投影片仍看得到、救得回（外圍由 .outmask 壓半灰） */
   /* 寬高由 applyStage() 依 deck.stage 設定（此處僅為首次繪製前的預設 16:9） */
@@ -188,13 +241,13 @@
   #shapeGrid h5{margin:12px 0 6px;color:var(--accent);font-size:12px;font-weight:600}
   #shapeGrid .empty{color:var(--dim);font-size:12px;padding:16px 2px}
   .shapeCat{display:flex;flex-wrap:wrap;gap:6px}
-  .shapeBtn{position:relative;width:44px;height:44px;background:#383b44;border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .shapeBtn{position:relative;width:44px;height:44px;background:var(--bg-raised);border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   .shapeBtn:hover{border-color:var(--accent)}
   /* 支援畫布 adj 黃點的形狀，在縮圖右上角標一顆黃點 */
   .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
   #propPanel textarea{width:100%;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 inherit;padding:6px;resize:vertical}
   .scopeBtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  #propPanel{width:220px;flex-shrink:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:12px;font-size:12px}
+  #propPanel{width:var(--props-w);flex-shrink:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:12px;font-size:12px}
   #propPanel h4{margin:0 0 8px;color:var(--accent);font-size:12px}
   #propPanel .row{display:flex;align-items:center;gap:5px;margin:6px 0;flex-wrap:wrap}
   #propPanel .row label{color:var(--fg-dim);min-width:30px}
@@ -260,7 +313,7 @@
   #palettePop{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);width:288px;padding:8px;font-size:12px}
   #palettePop[hidden]{display:none}
   #palettePop .ptabs{display:flex;gap:4px;margin-bottom:8px}
-  #palettePop .ptab{flex:1;padding:5px 4px;font-size:11px;text-align:center;border-radius:6px;cursor:pointer;background:#383b44;border:1px solid var(--line)}
+  #palettePop .ptab{flex:1;padding:5px 4px;font-size:11px;text-align:center;border-radius:6px;cursor:pointer;background:var(--bg-raised);border:1px solid var(--line)}
   #palettePop .ptab.on{background:var(--accent);border-color:var(--accent);color:#fff}
   #palettePop .pbody{max-height:280px;overflow-y:auto}
   .palRow{display:flex;align-items:center;gap:5px;margin:4px 0}
@@ -273,41 +326,73 @@
 </style>
 </head>
 <body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="ic-new" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="ic-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="ic-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="ic-saveas" viewBox="0 0 24 24"><path d="M19 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7"/><path d="M17 3v8M21 7l-4-4-4 4"/></symbol>
+  <symbol id="ic-undo" viewBox="0 0 24 24"><path d="M3 8h11a5 5 0 0 1 0 10H8"/><path d="M7 4 3 8l4 4"/></symbol>
+  <symbol id="ic-redo" viewBox="0 0 24 24"><path d="M21 8H10a5 5 0 0 0 0 10h6"/><path d="m17 4 4 4-4 4"/></symbol>
+  <symbol id="ic-text" viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6"/></symbol>
+  <symbol id="ic-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/></symbol>
+  <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m3 17 5-4 4 3 3-2 6 5"/></symbol>
+  <symbol id="ic-shape" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><rect x="11" y="11" width="10" height="10" rx="1.5"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="ic-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></symbol>
+  <symbol id="ic-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></symbol>
+  <symbol id="ic-code" viewBox="0 0 24 24"><path d="m9 18-6-6 6-6M15 6l6 6-6 6"/></symbol>
+  <symbol id="ic-camera" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="ic-export" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.9 15.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.05 2.05 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-2.87 1.2v.18a2.05 2.05 0 1 1-4.1 0v-.1a1.7 1.7 0 0 0-2.93-1.16l-.06.06a2.05 2.05 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0-1.2-2.87h-.18a2.05 2.05 0 1 1 0-4.1h.1A1.7 1.7 0 0 0 4.43 7.6l-.06-.06a2.05 2.05 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 2.87-1.2v-.18a2.05 2.05 0 1 1 4.1 0v.1a1.7 1.7 0 0 0 2.93 1.16l.06-.06a2.05 2.05 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0 1.2 2.87h.18a2.05 2.05 0 1 1 0 4.1h-.1a1.7 1.7 0 0 0-1.56 1.05z"/></symbol>
+  <symbol id="ic-grid" viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
+  <symbol id="ic-magnet" viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z"/></symbol>
+  <symbol id="ic-white" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+</svg>
 <header>
+  <div class="grp">
+    <button id="btnNew" class="tb ico" title="開新簡報（清空目前內容，需二次確認）"><svg class="ic"><use href="#ic-new"/></svg></button>
+    <button id="btnOpen" class="tb ico" title="開啟 .deck 檔（舊的 .deck.json 也開得起來）"><svg class="ic"><use href="#ic-open"/></svg></button>
+    <button id="btnSave" class="tb ico" title="存檔（Cmd/Ctrl+S）：寫回目前開啟的檔案"><svg class="ic"><use href="#ic-save"/></svg></button>
+    <button id="btnSaveAs" class="tb ico" title="另存新檔（Cmd/Ctrl+Shift+S）：選一個新位置存"><svg class="ic"><use href="#ic-saveas"/></svg></button>
+  </div>
+  <i class="vr"></i>
+  <div class="grp">
+    <button id="btnUndo" class="tb ico" title="復原（Cmd/Ctrl+Z）" disabled><svg class="ic"><use href="#ic-undo"/></svg></button>
+    <button id="btnRedo" class="tb ico" title="重做（Cmd/Ctrl+Shift+Z）" disabled><svg class="ic"><use href="#ic-redo"/></svg></button>
+  </div>
+  <i class="vr"></i>
+  <div class="tools">
+    <button id="btnAddText" class="tb ico" title="插入文字"><svg class="ic"><use href="#ic-text"/></svg></button>
+    <button id="btnAddTable" class="tb ico" title="插入表格"><svg class="ic"><use href="#ic-table"/></svg></button>
+    <button id="btnAddImage" class="tb ico" title="插入圖片"><svg class="ic"><use href="#ic-image"/></svg></button>
+    <button id="btnAddShape" class="tb ico" title="插入形狀"><svg class="ic"><use href="#ic-shape"/></svg></button>
+    <button id="btnAddChart" class="tb ico" title="插入圖表"><svg class="ic"><use href="#ic-chart"/></svg></button>
+    <button id="btnAddVideo" class="tb ico" title="插入影片：YouTube 連結（匯出為 PPT 原生線上影片）或本機影片（只取一張封面，匯出後在 PPT 換成真影片）"><svg class="ic"><use href="#ic-video"/></svg></button>
+  </div>
+  <span class="spring"></span>
   <input type="text" id="deckTitle" title="簡報標題（匯出檔名）" value="未命名簡報">
+  <span class="spring"></span>
   <div class="grp">
-    <button id="btnNew" title="開新簡報（清空目前內容，需二次確認）">📄 開新</button>
-    <button id="btnOpen" title="開啟 .deck 檔（舊的 .deck.json 也開得起來）">📂 開啟</button>
-    <button id="btnSave" title="存檔（Cmd/Ctrl+S）：寫回目前開啟的檔案">💾 存檔</button>
-    <button id="btnSaveAs" title="另存新檔（Cmd/Ctrl+Shift+S）：選一個新位置存">另存</button>
+    <button id="btnLayers" class="tb ico" title="圖層面板：堆疊順序／顯示隱藏／鎖定"><svg class="ic"><use href="#ic-layers"/></svg></button>
+    <button id="btnJson" class="tb ico" title="JSON 面板"><svg class="ic"><use href="#ic-code"/></svg></button>
+    <button id="btnSnap" class="tb ico" title="快照匯出 PNG／JPG"><svg class="ic"><use href="#ic-camera"/></svg></button>
+    <div class="popwrap">
+      <button id="btnPrefs" class="tb ico" title="偏好設定"><svg class="ic"><use href="#ic-gear"/></svg></button>
+      <div id="prefsPop" hidden>
+        <div class="pr"><span>母版</span>
+          <select id="selFontMode" title="鎖定樣式：匯出寫死你設定的三個字體名，頁碼／日期也寫死座標，貼到哪裡都長一樣。母版繼承：字體改寫成主題槽引用、頁碼／日期改成不帶座標的空殼佔位符，貼到別的母版時由該母版接手。字體名在右欄「頁面 → 字體」設定。">
+            <option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>
+          </select>
+        </div>
+        <div class="pr"><span>貼上外部表格</span>
+          <button id="btnPasteWhite" title="貼上外部表格時，來源沒指定底色（或指定純白）的格子要填白還是留透明。預設白底——貼上的字色是深色，透明貼到深色背景上會整張看不見。少數想讓背景透出來的場合再關掉。此設定存在這台瀏覽器，不隨簡報走"><svg class="ic"><use href="#ic-white"/></svg> 白底</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="grp"><button id="btnUndo" title="復原（Cmd/Ctrl+Z）" disabled>↺</button><button id="btnRedo" title="重做（Cmd/Ctrl+Shift+Z）" disabled>↻</button></div>
-  <div class="grp">
-    <button id="btnAddText">＋文字</button>
-    <button id="btnAddTable">＋表格</button>
-    <button id="btnAddImage">＋圖片</button>
-    <button id="btnAddShape">＋形狀</button>
-    <button id="btnAddChart">＋圖表</button>
-    <button id="btnAddVideo" title="插入影片：YouTube 連結（匯出為 PPT 原生線上影片）或本機影片（只取一張封面，匯出後在 PPT 換成真影片）">＋影片</button>
-  </div>
-  <div class="grp"><label>母版</label>
-    <select id="selFontMode" title="鎖定樣式：匯出寫死你設定的三個字體名，頁碼／日期也寫死座標，貼到哪裡都長一樣。母版繼承：字體改寫成主題槽引用、頁碼／日期改成不帶座標的空殼佔位符，貼到別的母版時由該母版接手。字體名在右欄「頁面 → 字體」設定。">
-      <option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>
-    </select>
-  </div>
-  <div class="grp"><label>檢視</label><button id="btnFitW">適寬</button><button id="btnFitH">適高</button><input type="number" id="zoomNum" min="10" max="300" value="65"><span class="unit">%</span>
-    <button id="btnGrid" title="格線（製圖式：一格虛線、每 5 格細線、每 10 格粗線，原點在左上角）。格距／顏色在右欄「頁面 → 格線」調">⊞ 格線</button>
-    <button id="btnGridSnap" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸">🧲 吸附</button></div>
-  <div class="grp"><label>貼上</label>
-    <button id="btnPasteWhite" title="貼上外部表格時，來源沒指定底色（或指定純白）的格子要填白還是留透明。預設白底——貼上的字色是深色，透明貼到深色背景上會整張看不見。少數想讓背景透出來的場合再關掉。此設定存在這台瀏覽器，不隨簡報走">▦ 白底</button></div>
-  <span id="fileHint" title="目前開啟的檔案（● ＝有未存檔的變更）"></span><span id="saveHint" title="自動存檔狀態"></span><span id="warn"></span><span id="fontWarn"></span><span id="painterHint" style="color:#4d9de0;font-size:12px;font-weight:600"></span>
-  <div class="grp right">
-    <button id="btnLayers" title="圖層面板：堆疊順序／顯示隱藏／鎖定">☰ 圖層</button>
-    <button id="btnSnap" title="快照匯出 PNG／JPG">🖼 快照</button>
-    <button id="btnJson">JSON</button>
-    <button id="btnExport" class="primary">匯出 pptx</button>
-    <button id="btnHelp" title="使用說明">?</button>
-  </div>
+  <i class="vr"></i>
+  <button id="btnExport" class="primary"><svg class="ic"><use href="#ic-export"/></svg>匯出 pptx</button>
+  <button id="btnHelp" title="使用說明">?</button>
   <input type="file" id="imgInput" accept="image/png,image/jpeg" hidden>
   <input type="file" id="bgInput" accept="image/png,image/jpeg" hidden>
   <input type="file" id="jsonInput" accept=".deck,.json,application/json" hidden>
@@ -329,7 +414,22 @@
     </div>
   </div>
   <aside id="propPanel"></aside>
+  <div id="viewBar">
+    <button id="btnFitW" class="tb" title="縮放至符合寬度">適寬</button>
+    <button id="btnFitH" class="tb" title="縮放至符合高度">適高</button>
+    <input type="number" id="zoomNum" min="10" max="300" value="65" title="縮放 %"><span class="unit">%</span>
+    <i class="vr"></i>
+    <button id="btnGrid" class="tb ico" title="格線（製圖式：一格虛線、每 5 格細線、每 10 格粗線，原點在左上角）。格距／顏色在右欄「頁面 → 格線」調"><svg class="ic"><use href="#ic-grid"/></svg></button>
+    <button id="btnGridSnap" class="tb ico" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸"><svg class="ic"><use href="#ic-magnet"/></svg></button>
+  </div>
 </main>
+<div id="statusBar">
+  <span id="fileHint" title="目前開啟的檔案（● ＝有未存檔的變更）"></span>
+  <span id="saveHint" title="自動存檔狀態"></span>
+  <span id="warn"></span>
+  <span id="fontWarn"></span>
+  <span id="painterHint" style="color:var(--accent);font-weight:600"></span>
+</div>
 
 <div id="jsonModal" class="modal" hidden>
   <div class="mbox">
@@ -494,8 +594,8 @@
       </ul>
       <h4>存檔</h4>
       <ul>
-        <li><b>自動存檔</b>：每次改動後約 1 秒自動存進瀏覽器（IndexedDB），<b>重新整理／關掉分頁再打開會自動還原</b>，頂端會顯示存檔時間。存不進去時（容量滿、無痕模式）會轉<b>紅字明講原因</b>，不會靜默失敗。</li>
-        <li><b>📄 開新</b>：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>📂 開啟</b>／<b>💾 存檔</b>／<b>另存</b>：讀寫 <code>.deck</code> 檔（內容仍是 JSON，舊的 <code>.deck.json</code> 照樣開得起來）。<b>Cmd/Ctrl+S</b> 寫回你開啟的那個檔，<b>Cmd/Ctrl+Shift+S</b> 換位置另存；工具列會顯示目前檔名，<b>●</b> 代表有還沒存的變更。<b>就地覆寫需要從 <code>http://localhost</code> 開啟</b>（用專案根的 <code>start-localhost.command</code>）——瀏覽器不發寫入權給直接雙擊開啟的頁面，那種情況下存檔會退回「下載一份副本到下載資料夾」，提示列會明講。</li>
+        <li><b>自動存檔</b>：每次改動後約 1 秒自動存進瀏覽器（IndexedDB），<b>重新整理／關掉分頁再打開會自動還原</b>，底部狀態列會顯示存檔時間。存不進去時（容量滿、無痕模式）會轉<b>紅字明講原因</b>，不會靜默失敗。</li>
+        <li><b>開新</b>（工具列最左那組）：清空重來，需<b>連按兩次確認</b>；還留一步 Cmd/Ctrl+Z 後路。<b>開啟</b>／<b>存檔</b>／<b>另存</b>（同一組）：讀寫 <code>.deck</code> 檔（內容仍是 JSON，舊的 <code>.deck.json</code> 照樣開得起來）。<b>Cmd/Ctrl+S</b> 寫回你開啟的那個檔，<b>Cmd/Ctrl+Shift+S</b> 換位置另存；底部狀態列會顯示目前檔名，<b>●</b> 代表有還沒存的變更。<b>就地覆寫需要從 <code>http://localhost</code> 開啟</b>（用專案根的 <code>start-localhost.command</code>）——瀏覽器不發寫入權給直接雙擊開啟的頁面，那種情況下存檔會退回「下載一份副本到下載資料夾」，提示列會明講。</li>
         <li>自動存檔只有一份、只在這台瀏覽器。<b>重要進度請另存成檔案</b>——那才是可備份、可轉移、可貼給 AI 的形式。</li>
       </ul>
       <h4>畫布操作</h4>
@@ -510,21 +610,21 @@
         <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色／框線<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。</li>
         <li><b>逐格框線</b>：右欄「框線筆」設線寬（pt）＋顏色，再點<b>全部／外框／內部／上／下／左／右／無</b>套到反白範圍（未反白＝全表）。每格四邊、顏色線寬各自獨立（同 PowerPoint 儲存格框線）；相鄰共用邊自動雙寫同步，故畫布預覽＝匯出結果。</li>
         <li><b>格內混排</b>：雙擊進入儲存格後<b>反白幾個字</b>，右欄「儲存格樣式」的字級／B／I／文字色就只套那幾個字；此時會多出<b>「格內文字（反白處）」</b>一排——上標／下標／底線／刪除線／高亮／清除格式。取消反白＝改回整格。</li>
-        <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Tab</b>＝跳右一格（列尾自動換到下一列、跳過合併格）、<b>Shift+Tab</b>＝跳左一格、<b>Enter</b>＝跳下一格、<b>Shift+Enter</b>＝格內換行、<b>Esc</b>＝結束編輯。（PowerPoint 的 Enter 是格內換行；此處 Enter 改採試算表式跳下格，換行請用 Shift+Enter。）</li>
+        <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Enter</b>＝格內換行（同 PowerPoint）、<b>Esc</b>＝結束編輯。Tab 不跳格。換格請直接<b>雙擊</b>目標格。</li>
         <li>右欄「縮放 %」＝單一元素<b>等比縮放</b>（尺寸、字級、欄寬列高、線寬同步，可小數）；圖片與形狀另有<b>角度／90°／水平垂直翻轉</b>。</li>
         <li>物件拖出投影片外仍<b>半透明可見、可拖回</b>；超出區域僅供暫放，匯出時照座標輸出（會有超出警告）。</li>
         <li>圖片：「＋圖片」選檔，或直接把圖檔拖進畫布、貼上剪貼簿圖片；縮放固定等比。</li>
         <li><b>貼上外部表格</b>：從 <b>Excel／PowerPoint／Word／網頁</b>複製表格，直接 Cmd/Ctrl+V 貼進畫布，會變成<b>可編輯的原生表格</b>而不是圖片。合併儲存格、底色、字色、粗斜體、對齊、上下標、格內高亮都會保留，欄寬照來源。<br>
           <b>字級一律重設為 12pt</b>，不繼承來源——來源的字級多半是「為了把表格塞進版面」被縮過的，那是別人的妥協不是階層資訊。要調整大小請選取整張表拖把手，開<b>比例鎖定＋字級同步</b>，欄寬列高與字級會一起縮，結構不會跑掉。<br>
-          <b>來源沒指定底色（或指定純白）的格子預設填白</b>，由工具列「貼上 ▦ 白底」切換成透明。預設白底是因為貼上的字色是深色，透明貼到深色背景上會整張看不見；少數想讓背景透出來的場合再關掉。已經貼進來的表格要改，選取整張表用右欄「儲存格 → 底色」一次套完。<br>
+          <b>來源沒指定底色（或指定純白）的格子預設填白</b>，由工具列右側齒輪（偏好設定）裡的「白底」切換成透明。預設白底是因為貼上的字色是深色，透明貼到深色背景上會整張看不見；少數想讓背景透出來的場合再關掉。已經貼進來的表格要改，選取整張表用右欄「儲存格 → 底色」一次套完。<br>
           <b>格內圖片會變成獨立的圖片元素</b>，與表格綁成一個<b>軟群組</b>——整組搬移或等比縮放時圖跟著走，但單獨拖某一欄的寬度時圖不會跟。這不是偷懶：PowerPoint 的表格儲存格本來就放不了圖片，它自己「在格子裡插入圖片」也是浮在表格上方的獨立物件。只收<b>內嵌位元組</b>（<code>data:</code>）的圖；網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。<br>
           <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter（姊妹專案）轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式；圖片要先在那邊掛載圖片資料夾才帶得過來）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
-        <li><b>☰ 圖層</b>面板（頂端按鈕，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
+        <li><b>圖層</b>面板（工具列右側，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
         <li><b>不透明度</b>：右欄滑桿 0–100%，匯出轉 PPT 原生 transparency（圖片／形狀填色／框線／表格底色可調）。</li>
         <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。<b>右欄有位置尺寸可填</b>：群組本身沒有座標（成員各自獨立），面板上的 X／Y／寬／高指的是<b>包圍盒</b>——改 X／Y＝整組平移，改寬／高＝以包圍盒左上角為不動點縮放整組（可鎖比例、可連字級一起縮）。</li>
         <li><b>對齊分佈</b>：多選面板有左/中/右、上/中/下對齊，及<b>水平／垂直等距</b>（需 ≥3 個，首尾固定、中間平均間隙）。</li>
-        <li><b>格線與吸附</b>：工具列「⊞ 格線」開關，製圖式三階層——一格<b>虛線</b>、每 5 格<b>細實線</b>、每 10 格<b>粗實線</b>，原點在投影片左上角。格距預設 5mm，可按 1／2／5／10mm 或自訂（mm／px／pt／cm），細線與粗線的間隔格數、顏色（預設 #ADB5BD）都可調，設定在右欄「頁面 → 格線」。<br>
-          「🧲 吸附」開啟後：<b>移動只吸左緣與上緣</b>（四邊都吸的話，寬度不是格距整數倍的元素會在兩組吸附點之間被拉來拉去，很卡手）；<b>拖白色方點縮放則四邊都吸</b>，表格的欄寬列高把手、線條端點也一樣。整組移動吸的是<b>包圍盒</b>的左上角，組內相對位置不變。<br>
+        <li><b>格線與吸附</b>：畫布右下浮動列的「格線」鈕開關，製圖式三階層——一格<b>虛線</b>、每 5 格<b>細實線</b>、每 10 格<b>粗實線</b>，原點在投影片左上角。格距預設 5mm，可按 1／2／5／10mm 或自訂（mm／px／pt／cm），細線與粗線的間隔格數、顏色（預設 #ADB5BD）都可調，設定在右欄「頁面 → 格線」。<br>
+          同一列的「吸附」開啟後：<b>移動只吸左緣與上緣</b>（四邊都吸的話，寬度不是格距整數倍的元素會在兩組吸附點之間被拉來拉去，很卡手）；<b>拖白色方點縮放則四邊都吸</b>，表格的欄寬列高把手、線條端點也一樣。整組移動吸的是<b>包圍盒</b>的左上角，組內相對位置不變。<br>
           既有的<b>輔助線吸附</b>（投影片中線／四邊／預留區外緣）一直都在，且<b>優先於格線</b>——格線密到幾乎處處可吸，不給輔助線優先權的話就再也對不到中線了。旋轉過的元素與等比鎖定時不吸（邊不平行於格線，吸了也對不齊）。<b>格線只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，設定存在這台瀏覽器。</li>
         <li><b>格式刷</b>：選來源元素按「🖌 複製樣式」武裝（游標變 copy、頂端提示），再點目標套用其字體／顏色／對齊／填色／框線／不透明度（不改內容與尺寸）；可<b>連續</b>套多個，Esc 取消。</li>
         <li><b>縮放</b>：右欄滑桿 0.1–2.0×（停頓於 0.5／0.8／1.0／1.2／1.5），旁邊「含字級」勾選（預設開）；放開歸回 1.0×。寬高旁「比例鎖定／字級同步」勾選（預設關）影響數字輸入與拖曳 resize。</li>
@@ -559,7 +659,7 @@
         <li><b>自訂幾何會跟著形狀縮放</b>：座標活在形狀自己的路徑座標空間（<code>pathW</code>／<code>pathH</code>），拉大拉小圖案<b>等比跟著變</b>，與 PPT 內建形狀的行為一致。</li>
         <li><b>色票</b>：所有選色開三頁籤面板——設計師精選（每組 5 色）／Open Color（14×10）／全色域調色盤。</li>
         <li><b>範本庫</b>：頁面面板「📋 套範本」插入標題頁／兩欄／圖表頁等版型（文字帶 <code>role</code>）。<b>Deck 合併</b>「⧉ 合併簡報」把另一份 <code>.deck</code> 附加為後續頁。</li>
-        <li><b>快照匯出</b>：頂端「🖼 快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
+        <li><b>快照匯出</b>：工具列右側的「快照」輸出本頁或全部（zip）為 PNG／JPG，可選 1–3× 解析度。<b>講者備忘稿</b>在頁面面板編輯，匯出寫入 pptx。</li>
         <li>所有元素（表格除外）有<b>淡虛線框</b>顯示框尺寸；圖片／形狀旋轉後選取框與把手跟著轉（resize 已依旋轉換算，仍正確）。</li>
         <li>右側面板分組：<b>位置尺寸</b>（X 上方可切 px／pt／cm，預設 px）／<b>版面</b>（縮放、不透明、置中、角度翻轉）／<b>內容樣式</b>（依類型：文字／線條／形狀／圖片／表格／圖表；文字再細分字元進階／段落／超連結／陰影，表格再細分結構／儲存格樣式／框線／合併）／<b>排列</b>（層級）／<b>動作</b>（格式刷、複製、刪除）。多選／軟群組時改顯示<b>位置尺寸（包圍盒）</b>／<b>版面</b>／<b>對齊與分佈</b>／<b>群組與動作</b>。未選取任何元素時顯示<b>頁面</b>屬性，其中「頁碼」「檔案資訊」「投影片尺寸」「字體」「預留區」「環境設定檔」六區是<b>整份簡報</b>層級，「格線」則是<b>本機檢視</b>層級（存瀏覽器，不跟著 JSON 走）。</li>
         <li>復原／重做：Cmd/Ctrl+Z、Cmd/Ctrl+Shift+Z（60 步）。</li>
@@ -5074,8 +5174,12 @@ stage.addEventListener('pointerdown',e=>{
       // 裁切模式：記下圖片此刻在畫布上的位置與尺寸，整段拖曳期間都以它為錨點
       imgFix:(APP.cropping===el.id)? (()=>{ const g=imgGeom(el,cropOf(el));
         return {ix:el.x+g.left,iy:el.y+g.top,dw:g.dw,dh:g.dh}; })() : null};
-  }else if(tch&&el){ drag={type:'tcol',el,i:+tch.dataset.i,sx:e.clientX,w:el.colW[+tch.dataset.i]}; }
-  else if(trh&&el){ drag={type:'trow',el,i:+trh.dataset.i,sy:e.clientY,h:el.rowH[+trh.dataset.i]}; }
+  /* 按下就先報現值，不必等拖動——欄寬列高是右側面板唯一查不到的尺寸，
+     「先看到原本多少再決定要不要調」是這兩支把手獨有的需求（元素寬高在面板上一直看得到）。 */
+  }else if(tch&&el){ drag={type:'tcol',el,i:+tch.dataset.i,sx:e.clientX,w:el.colW[+tch.dataset.i]};
+    showDragTip(e,`欄 ${drag.i+1} 寬`,drag.w); }
+  else if(trh&&el){ drag={type:'trow',el,i:+trh.dataset.i,sy:e.clientY,h:el.rowH[+trh.dataset.i]};
+    showDragTip(e,`列 ${drag.i+1} 高`,drag.h); }
   else{
     let box=e.target.closest('.el');
     if(box){ const t0=curEls().find(x=>x.id===box.dataset.id); if(t0&&t0.locked) box=null; }  // 鎖定：畫布不可選拖，當作點空白
@@ -5593,7 +5697,10 @@ function onEditPaste(ev){   // 一律轉純文字：擋掉從網頁帶進來的�
   if(t) document.execCommand('insertText',false,t.replace(/\r\n?/g,'\n'));
 }
 function onEditKey(ev){
-  if(ev.isComposing) return;   // 輸入法組字中不攔截
+  if(ev.isComposing||ev.keyCode===229) return;   // 輸入法組字中不攔截
+  /* 選字確認的餘波：引擎若先發 compositionend 再發 keydown，那一下的 isComposing 已是 false，
+     注音按 Enter 確認選字就會順帶多分一段。同儲存格編輯器的 60ms 守衛。 */
+  if(ev.key==='Enter'&&APP.edit&&APP.edit.compEnd&&Date.now()-APP.edit.compEnd<60){ APP.edit.compEnd=0; return; }
   if(ev.key==='Escape'){ ev.preventDefault(); editCommit(); return; }
   if(ev.key!=='Enter') return;
   // 分段自己接管：不讓瀏覽器決定要生 <div> 還是 <br>，段落結構才守得住
@@ -5627,8 +5734,8 @@ function editOpen(){
   ed.addEventListener('input',onEditInput);
   ed.addEventListener('keydown',onEditKey);
   ed.addEventListener('paste',onEditPaste);
-  ed.addEventListener('compositionstart',()=>{ if(APP.edit) APP.edit.composing=true; });
-  ed.addEventListener('compositionend',()=>{ if(APP.edit){ APP.edit.composing=false; onEditInput(); } });
+  ed.addEventListener('compositionstart',()=>{ if(APP.edit){ APP.edit.composing=true; APP.edit.compEnd=0; } });
+  ed.addEventListener('compositionend',()=>{ if(APP.edit){ APP.edit.composing=false; APP.edit.compEnd=Date.now(); onEditInput(); } });
   ed.addEventListener('focusout',()=>setTimeout(()=>{
     const cur=APP.edit;
     if(!cur||cur.root!==ed) return;                       // 已被重繪換掉的舊節點，忽略
@@ -5682,17 +5789,6 @@ function panelRun(el){
   }
   return baseRun(el);
 }
-// 每個 grid 位置由哪個錨點格佔用（含合併覆蓋範圍）→ 供 Enter 往下找「下方可見格」
-function cellOwnerGrid(el){
-  const R=el.rowH.length,C=el.colW.length;
-  const g=Array.from({length:R},()=>Array(C).fill(null));
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
-    const cc=el.cells[r][c]; if(cc.covered) continue;
-    const rs=cc.rowspan||1,cs=cc.colspan||1;
-    for(let y=r;y<Math.min(R,r+rs);y++)for(let x=c;x<Math.min(C,c+cs);x++) g[y][x]=[r,c];
-  }
-  return g;
-}
 function startCellEdit(el,td,initSel){
   const r=+td.dataset.r,c=+td.dataset.c;
   const cell=el.cells[r][c];
@@ -5702,7 +5798,7 @@ function startCellEdit(el,td,initSel){
   focusCellJson(el.id,r,c);   // JSON 面板開著時捲至該格
   td.textContent='';
   const ed=editableDiv();
-  ed.style.cssText='min-height:1em;white-space:pre-wrap;';   // pre-wrap：Shift+Enter 的格內換行才顯示得出來
+  ed.style.cssText='min-height:1em;white-space:pre-wrap;';   // pre-wrap：Enter 的格內換行才顯示得出來
   /* 逐 run 建 span 並標 data-r：格式化按鈕靠這個索引回查「開啟編輯當下」的樣式，
      所以就算瀏覽器把 span 搬家／合併，樣式依然對得回去（同文字框編輯器的作法）。 */
   const src=cellRuns(cell);
@@ -5718,25 +5814,21 @@ function startCellEdit(el,td,initSel){
   grab(); requestAnimationFrame(grab);
   let done=false;
   const save=()=>{ if(done) return; done=true; APP.editing=null; commitUndo(); cellEdSync(); APP.cellEdit=null; };
-  // 存檔→重繪→跳到目標格繼續編輯（跨儲存格快捷）。舊 ed 失焦觸發的 blur 由 done 旗標擋掉，不重複存/重繪
-  const navTo=(nr,nc)=>{
-    save(); renderStage();
-    const nd=tableDom(el.id)&&[...tableDom(el.id).querySelectorAll('td')].find(t=>+t.dataset.r===nr&&+t.dataset.c===nc);
-    if(nd) startCellEdit(el,nd); else renderProps();
-  };
+  /* 輸入法（注音／拼音／日文）確認選字按的也是 Enter。Chrome 對那一下送的 keydown 帶
+     isComposing=true／keyCode 229，擋得掉；但引擎若先發 compositionend 再發 keydown，
+     那一下的 isComposing 已是 false，會被誤當成「換行」而在選完字之後多跑一行。
+     故再用 compositionend 的時間戳補一道守門：組字剛結束的那 60ms 內，Enter 只當作確認。
+     （人要在 60ms 內打完字再按 Enter 等於每秒 16 下，構不成誤擋。） */
+  let compEnd=0;
+  ed.addEventListener('compositionstart',()=>{ compEnd=0; });
+  ed.addEventListener('compositionend',()=>{ compEnd=Date.now(); });
   ed.addEventListener('keydown',e=>{
-    if(e.key==='Tab'){   // Tab／Shift+Tab＝右／左一格（依 DOM 閱讀順序，自動跳過合併 covered 格、列尾換行）
-      e.preventDefault();
-      const tds=[...tableDom(el.id).querySelectorAll('td')];
-      const i=tds.findIndex(t=>+t.dataset.r===r&&+t.dataset.c===c);
-      const nx=tds[i+(e.shiftKey?-1:1)];
-      if(nx) navTo(+nx.dataset.r,+nx.dataset.c);
-    }else if(e.key==='Enter'&&!e.shiftKey){   // Enter＝跳下方格（跳過合併覆蓋，落在下一個可見格）
-      e.preventDefault();
-      const tr=r+(cell.rowspan||1);
-      if(tr<el.rowH.length){ const own=cellOwnerGrid(el)[tr][c]; if(own) navTo(own[0],own[1]); }
-    }else if(e.key==='Enter'&&e.shiftKey){   // Shift+Enter＝格內換行（明確插入 \n，不依賴瀏覽器預設，跨引擎一致）
+    if(e.isComposing||e.keyCode===229) return;   // 組字中不攔截（含 Esc：那是取消組字，不是結束編輯）
+    if(e.key==='Enter'&&compEnd&&Date.now()-compEnd<60){ compEnd=0; return; }   // 選字確認的餘波
+    if(e.key==='Enter'){   // Enter／Shift+Enter＝格內換行（明確插入 \n，不依賴瀏覽器預設，跨引擎一致）
       e.preventDefault(); document.execCommand('insertText',false,'\n');
+    }else if(e.key==='Tab'){   // 吃掉 Tab：不跳格，也不讓瀏覽器把焦點帶去別的控件（那會意外結束編輯）
+      e.preventDefault();
     }else if(e.key==='Escape'){ e.preventDefault(); ed.blur(); }   // 結束編輯
   });
   /* 失焦才收工，但**焦點移到屬性面板時不算**——否則按下「上標」的瞬間編輯就結束了，
@@ -5763,14 +5855,28 @@ function cellEdCell(){   // 目前正在編輯的那一格（元素可能已被�
 /* 換行在編輯中的 DOM 有兩種長相：<br>，以及 Chrome 把後續每一行各包成的 <div>。
    位移換算（cellEdPos）、寫回資料（cellEdSync）、還原選取（cellEdNode）三處**必須用同一套規則**
    數這些換行，否則按過 Enter 之後反白位置就會整個錯開一格一格累積。故三者都走這個判斷：
-   非結尾的 <br> ＝一個 \n；非開頭的區塊元素 ＝一個 \n。 */
+   行尾的 <br> ＝渲染佔位，不算；非行尾的 <br> ＝一個 \n；非開頭的區塊元素 ＝一個 \n。
+
+   ⚠「行尾」指**所在區塊容器的最後一個節點**，不是整棵樹的最後。初版寫成後者，於是連按兩次
+   換行產生的 <div><span><br></span></div>（Chrome 用來表示空行）被記成兩個 \n——區塊記一個、
+   裡面的佔位 <br> 又記一個，實測 "a\n\nb" 存成 "a\n\n\nb"。故 walk 進區塊元素時把 isLast
+   基準重設為 true（見 CELL_ED_LAST）。 */
 const CELL_ED_BLOCK=n=>n.tagName==='DIV'||n.tagName==='P';
+// 子節點的 isLast 基準：進到區塊元素就重新起算，讓「行尾 <br>」以該區塊為界
+const CELL_ED_LAST=(n,isLast)=>CELL_ED_BLOCK(n)? true : isLast;
 // (node,offset) → 格內字元位移
 function cellEdPos(root,node,offset){
   let o=0,hit=false,started=false;
   const walk=(n,isLast)=>{
     if(hit) return;
-    if(n===node&&n.nodeType===1){ for(let i=0;i<offset&&i<n.childNodes.length;i++) walk(n.childNodes[i],false); hit=true; return; }
+    /* 區塊自身帶的那個換行要在**命中判斷之前**記。range 指向區塊本身（空行的行首就長這樣）
+       時，若先命中再記，那個 \n 會漏掉，跟 cellEdNode 的落點對不起來。 */
+    if(n.nodeType===1&&CELL_ED_BLOCK(n)&&started&&n!==root) o+=1;
+    if(n===node&&n.nodeType===1){
+      const cs=[...n.childNodes], lb=CELL_ED_LAST(n,true);
+      for(let i=0;i<offset&&i<cs.length;i++) walk(cs[i],lb&&i===cs.length-1);
+      hit=true; return;
+    }
     if(n.nodeType===3){
       if(n===node){ o+=Math.min(offset,n.nodeValue.length); hit=true; }
       else { o+=n.nodeValue.length; if(n.nodeValue) started=true; }
@@ -5778,9 +5884,9 @@ function cellEdPos(root,node,offset){
     }
     if(n.nodeType!==1) return;
     if(n.tagName==='BR'){ if(!isLast){ o+=1; started=true; } return; }
-    if(CELL_ED_BLOCK(n)&&started&&n!==root) o+=1;
     const cs=[...n.childNodes];
-    for(let i=0;i<cs.length;i++){ walk(cs[i],isLast&&i===cs.length-1); if(hit) return; }
+    const lb=CELL_ED_LAST(n,isLast);
+    for(let i=0;i<cs.length;i++){ walk(cs[i],lb&&i===cs.length-1); if(hit) return; }
   };
   walk(root,true);
   return hit? o : null;
@@ -5796,10 +5902,18 @@ function cellEdNode(root,o){
       acc+=L; if(L) started=true; return;
     }
     if(n.nodeType!==1) return;
-    if(n.tagName==='BR'){ if(!isLast){ acc+=1; started=true; } return; }
-    if(CELL_ED_BLOCK(n)&&started&&n!==root) acc+=1;
+    /* 換行本身也要能當落點。只在文字節點產生 res 的話，游標落在換行上時 acc 已經超過 o，
+       會一路走到下一個文字節點算出**負的 offset**，`setStart` 拋 IndexSizeError 被 catch 吞掉，
+       表現為「套完格式後反白沒還原」。故兩種換行都在記完位移後立刻檢查是不是就落在這裡。 */
+    if(n.tagName==='BR'){
+      if(!isLast){ acc+=1; started=true;
+        if(o===acc){ const ps=[...n.parentNode.childNodes]; res={node:n.parentNode,offset:ps.indexOf(n)+1}; } }
+      return;
+    }
+    if(CELL_ED_BLOCK(n)&&started&&n!==root){ acc+=1; if(o===acc){ res={node:n,offset:0}; return; } }
     const cs=[...n.childNodes];
-    for(let i=0;i<cs.length;i++){ walk(cs[i],isLast&&i===cs.length-1); if(res) return; }
+    const lb=CELL_ED_LAST(n,isLast);
+    for(let i=0;i<cs.length;i++){ walk(cs[i],lb&&i===cs.length-1); if(res) return; }
   };
   walk(root,true);
   return res||{node:root,offset:root.childNodes.length};
@@ -5838,10 +5952,11 @@ function cellEdSync(){
     /* Chrome 在 contenteditable 內換行（Enter／貼多行）不是插 <br>，而是把後續每一行各自包成
        <div>。只認 <br> 的話換行會整個消失——實測 execCommand('insertText','\n') 就是走這條。
        故區塊元素一律等同一次換行，語意對齊 innerText。 */
-    if((n.tagName==='DIV'||n.tagName==='P')&&started) push('\n',st);
+    if(CELL_ED_BLOCK(n)&&started) push('\n',st);
     const s=(n.dataset&&n.dataset.r!=null&&src[+n.dataset.r])? src[+n.dataset.r] : st;
     const cs=[...n.childNodes];
-    cs.forEach((c,i)=>walk(c,s,isLast&&i===cs.length-1));
+    const lb=CELL_ED_LAST(n,isLast);
+    cs.forEach((c,i)=>walk(c,s,lb&&i===cs.length-1));
   };
   kids.forEach((n,i)=>walk(n,null,i===kids.length-1));
   cur.cell.runs=runs.map(r=>({...r}));
@@ -6299,6 +6414,11 @@ function fitWidth(){ const sc=$('#stageScroll'); if(sc.clientWidth<200) return;
 function fitHeight(){ const sc=$('#stageScroll'); if(sc.clientHeight<160) return;
   for(let i=0;i<2;i++) setZoom(Math.floor((sc.clientHeight-32)/STAGE_H*100));
   requestAnimationFrame(centerSlide); }
+/* 偏好選單：母版模式與貼上白底都是低頻設定，收進齒輪，不再佔工具列一整組。
+   capture 階段關閉，才不會被其他 pointerdown 處理器攔在前面（畫布的選取邏輯就吃 capture）。 */
+$('#btnPrefs').onclick=e=>{ e.stopPropagation(); const p=$('#prefsPop'); p.hidden=!p.hidden; };
+document.addEventListener('pointerdown',e=>{ const p=$('#prefsPop');
+  if(p&&!p.hidden&&!(e.target.closest&&e.target.closest('.popwrap'))) p.hidden=true; },true);
 $('#btnFitW').onclick=fitWidth;
 $('#btnFitH').onclick=fitHeight;
 /* 格線與吸附：純檢視狀態，不進 undo（撤銷應該只回退簡報內容，不該把使用者的檢視設定也一起翻掉） */
@@ -6318,7 +6438,8 @@ syncGridBtns();
 function syncPasteWhiteBtn(){
   const b=$('#btnPasteWhite');
   b.classList.toggle('on',APP.pasteWhite);
-  b.textContent=APP.pasteWhite? '▦ 白底' : '▢ 透明';
+  // 用 innerHTML 而非 textContent：這顆按鈕帶 SVG 圖示，textContent 會把圖示一起洗掉
+  b.innerHTML='<svg class="ic"><use href="#ic-white"/></svg> '+(APP.pasteWhite? '白底' : '透明');
 }
 $('#btnPasteWhite').onclick=()=>{ APP.pasteWhite=!APP.pasteWhite; savePasteWhite(); syncPasteWhiteBtn(); };
 syncPasteWhiteBtn();
@@ -7015,7 +7136,7 @@ function asSaveNow(){
     .catch(err=>{
       asOff=true;   // 容量超限／私密模式擋存取：停止重試，但把原因寫在畫面上
       const q=/quota|exceed/i.test(String(err&&err.name)+String(err&&err.message));
-      asHint(q? '⚠ 自動存檔失敗：瀏覽器容量已滿，請「💾 另存」成檔案' : '⚠ 自動存檔停用：'+(err&&err.message||err),true);
+      asHint(q? '⚠ 自動存檔失敗：瀏覽器容量已滿，請用工具列的「另存」存成檔案' : '⚠ 自動存檔停用：'+(err&&err.message||err),true);
       return false;
     });
 }
@@ -7067,7 +7188,7 @@ function fileHint(){
   if(!APP.file){ s.textContent=''; s.className=''; return; }
   s.textContent=(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?'（需重新授權）':'');
   s.className=APP.file.stale?'stale':(APP.dirty?'dirty':'');
-  s.title=(APP.file.stale? '重整後權限要重新取得：按 💾 存檔即可\n':'')+'目前開啟：'+APP.file.name;
+  s.title=(APP.file.stale? '重整後權限要重新取得：按工具列的存檔鈕即可\n':'')+'目前開啟：'+APP.file.name;
 }
 function setDeckFile(h,f){
   APP.file=h? {handle:h,name:h.name,stamp:f?f.lastModified:0,stale:false} : null;
