@@ -251,7 +251,7 @@
   .shapeBtn:hover{border-color:var(--accent)}
   /* 支援畫布 adj 黃點的形狀，在縮圖右上角標一顆黃點 */
   .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
-  #propPanel textarea{width:100%;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 inherit;padding:6px;resize:vertical}
+  #propPanel textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:var(--r-sm);font:12px/1.5 inherit;padding:7px;resize:vertical}
   .scopeBtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
   /* 分頁化後 propPanel 只當容器：捲動下放到 .propPane，標題與分頁列固定不捲。
      內距也一併下放，否則分頁列會被 12px 推離邊緣。 */
@@ -268,16 +268,48 @@
     color:var(--fg);font-weight:600}
   .propPane{flex:1;overflow-y:auto;padding:12px}
   .propPane[hidden]{display:none}
-  #propPanel h4{margin:0;color:var(--accent);font-size:12px}
-  #propPanel .row{display:flex;align-items:center;gap:5px;margin:6px 0;flex-wrap:wrap}
-  #propPanel .row label{color:var(--fg-dim);min-width:30px}
-  #propPanel input[type=number]{width:52px}
-  #propPanel button{padding:3px 8px;font-size:12px}
-  #propPanel button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  #propPanel h4{margin:0;color:var(--fg);font-size:13px;font-weight:650}
+  /* ── 面板控件：一律 26px 高、圓角 var(--r-sm)，標籤欄固定 40px 讓各列數值對齊同一條軸 ── */
+  #propPanel .row{display:flex;align-items:center;gap:6px;margin:7px 0;flex-wrap:wrap}
+  #propPanel .row label{color:var(--fg-mute);min-width:40px;white-space:nowrap}
+  #propPanel input[type=number],#propPanel input[type=text]{height:26px;padding:0 7px;
+    background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);
+    font-family:var(--font-mono);font-size:12px}   /* 等寬：數值跳動時左右不晃 */
+  #propPanel input[type=number]{width:64px}   /* 要放得下「0.75」：spinner 佔約 15px */
+  #propPanel input[type=number]:focus,#propPanel input[type=text]:focus,
+  #propPanel select:focus,#propPanel textarea:focus{outline:none;border-color:var(--accent)}
+  #propPanel select{height:26px;padding:0 6px;border-radius:var(--r-sm);background:var(--bg-raised)}
+  #propPanel button{height:26px;padding:0 9px;font-size:12px;border-radius:var(--r-sm);
+    background:var(--bg-raised);border-color:var(--line);color:var(--fg-dim)}
+  #propPanel button:hover{background:var(--bg-hover);border-color:var(--fg-mute);color:var(--fg)}
+  /* 選中態改用淡底＋亮字。舊版是整顆實心藍，在深色面板裡比「匯出」主行動還搶眼，
+     一排開關全開時整片藍，反而看不出哪個才是重點 */
+  #propPanel button.on,.scopeBtn.on{background:var(--accent-soft);border-color:rgba(77,157,224,.35);
+    color:var(--accent-hi);font-weight:600}
+  #propPanel .swatchBtn{width:28px;height:26px;padding:0;border-radius:var(--r-sm)}
+  #propPanel input[type=color]{width:28px;height:26px;border-radius:var(--r-sm)}
+  /* 滑桿：舊版是瀏覽器預設樣式，在深色底上是一條亮灰粗槽，比它旁邊的數值還搶眼 */
+  #propPanel input[type=range]{appearance:none;height:3px;padding:0;border:none;border-radius:2px;
+    background:var(--line-strong);cursor:pointer}
+  #propPanel input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:12px;
+    border-radius:50%;background:var(--fg);border:2px solid var(--panel);cursor:pointer}
+  #propPanel input[type=range]:hover::-webkit-slider-thumb{background:var(--accent-hi)}
+  /* 核取：原生 checkbox 在深色底上是白框白底，跟面板完全不搭 */
+  #propPanel .chk{display:flex;align-items:center;gap:5px;min-width:auto;cursor:pointer;color:var(--fg-dim)}
+  #propPanel .chk input[type=checkbox]{appearance:none;width:14px;height:14px;flex:none;margin:0;
+    border:1px solid var(--line-strong);border-radius:3px;background:var(--bg);cursor:pointer;position:relative}
+  #propPanel .chk input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+  #propPanel .chk input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1px;
+    width:4px;height:8px;border:solid #0b1a26;border-width:0 2px 2px 0;transform:rotate(42deg)}
   #propPanel .sep{border-top:1px solid var(--line);margin:10px 0}
-  #propPanel .secTitle{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--fg-dim);text-transform:uppercase;margin:14px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
+  /* 面板裡的說明文字是 renderProps 直接 append 的裸 div（沒有 class）。
+     弱化顏色並給行高，否則它跟控件同色同密度，會把整頁的視覺重量壓平。 */
+  .propPane>div:not(.row):not(.secTitle):not(.subTitle):not(.sep){
+    color:var(--fg-mute);line-height:1.65;margin:7px 0}
+  #propPanel .secTitle{font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--fg-mute);
+    text-transform:uppercase;margin:16px 0 8px;padding-top:13px;border-top:1px solid var(--line)}
   #propPanel .secTitle.first{margin-top:0;padding-top:0;border-top:none}
-  #propPanel .subTitle{font-size:11px;font-weight:600;color:var(--fg-dim);margin:10px 0 2px}
+  #propPanel .subTitle{font-size:11px;font-weight:600;color:var(--fg-dim);margin:12px 0 4px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
   .modal[hidden]{display:none}
   .mbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:min(720px,92vw);max-height:85vh;overflow-y:auto;padding:6px 24px 18px;display:flex;flex-direction:column}
@@ -2783,8 +2815,9 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 function checkRow(items){
   const row=document.createElement('div'); row.className='row';
   for(const [label,get,set,title] of items){
-    const lb=document.createElement('label'); lb.style.cssText='display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer'; if(title)lb.title=title;
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=get(); cb.style.width='auto';
+    // 用 class 不用 inline style：inline 會壓過 #propPanel .chk 那組自訂核取樣式
+    const lb=document.createElement('label'); lb.className='chk'; if(title)lb.title=title;
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=get();
     cb.onchange=()=>set(cb.checked);
     lb.appendChild(cb); lb.appendChild(document.createTextNode(label)); row.appendChild(lb);
   }
