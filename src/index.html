@@ -17,6 +17,8 @@
     --fg:#e6e8ec; --fg-dim:#8b909c; --fg-mute:#5d626d;
     --accent:#4d9de0; --accent-hi:#63aee8; --accent-soft:rgba(77,157,224,.14);
     --danger:#e0625d; --warn:#e0b34d; --ok:#5fbf7f;
+    /* 母版模式專用色：與 --warn 刻意分開，warn 是「出事了」，master 是「你在另一個模式裡」 */
+    --master:#c08a33; --master-dark:#8a6120; --master-soft:rgba(192,138,51,.72);
     --r-sm:4px; --r:6px; --r-lg:9px;   /* 圓角三級：小控件／按鈕／面板 */
     --props-w:220px;                   /* 右欄寬。浮動檢視列靠它算避讓距離，改寬度只要改這裡 */
     /* 三字體槽（deck.fonts）：JS 於 applyFontVars() 覆寫；此處為中性預設 */
@@ -92,6 +94,8 @@
     background:rgba(28,30,36,.93);backdrop-filter:blur(8px);
     border:1px solid var(--line-strong);border-radius:var(--r-lg);box-shadow:0 6px 20px rgba(0,0,0,.45)}
   #viewBar .tb{height:26px;border-radius:var(--r-sm);font-size:12px}
+  /* 母版提示列置中在 bottom:18，寬度足以壓到右下的浮動檢視列上——編輯母版時把檢視列讓上去 */
+  body.masterEdit #viewBar{bottom:76px}
   #viewBar .tb.ico{width:26px}
   #viewBar input[type=number]{width:52px;height:24px;text-align:center;font-family:var(--font-mono);font-size:11px}
   #viewBar .vr{height:16px;margin:0 3px}
@@ -132,7 +136,7 @@
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
   #stage.capturing{box-shadow:none!important}
   #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
-  #stage.capturing .el{outline:none!important}
+  #stage.capturing :is(.el,.mel){outline:none!important}
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
@@ -141,13 +145,31 @@
      下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
      圖片改用原始像素大小、SVG 被裁掉溢出、文字塊失去 flex 版面（valign 失效）。*/
   .mel{position:absolute;pointer-events:none;z-index:0}
+  /* 母版元素在一般頁上點不到，外觀又和一般元素一模一樣 → 只會覺得「這東西怎麼選不起來」。
+     給一圈淡虛線當身分標記：看得到框的就是母版的，要改請進「編輯母版」。
+     ⚠ 用 outline 不用 border：border 會參與排版，母版元素的位置會整個偏掉。
+     開關存 localStorage（同格線，屬「怎麼看」不屬簡報內容），預設開。*/
+  /* ⚠ 1px 在這裡不夠：畫布本身帶 transform:scale（常態 0.67），outline 會跟著縮到不足 1px，
+     淡到看不見。1.5px 縮完約當一條實線的份量，才真的看得出來 */
+  body.melMark .mel{outline:1.5px dashed var(--master-soft);outline-offset:0}
   /* 編輯母版時整個畫布加一圈提示邊，避免改了一堆才發現改錯地方 */
-  #stage.masterEdit{outline:3px solid #b07d2b;outline-offset:0}
+  #stage.masterEdit{outline:3px solid var(--master);outline-offset:0}
+  /* 母版是空的時候畫布會全白（本頁內容已隱藏），什麼都沒有反而像出錯——補一段引導 */
+  #stage.masterEdit.melEmpty::after{content:"母版目前是空的　·　在這裡放的元素會出現在每一頁";
+    position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;
+    color:var(--master-dark);font-size:15px;pointer-events:none;z-index:1}
+  /* 工具列跟著換色：只有畫布外框變色的話，視線在右欄時完全感覺不到自己還在母版模式 */
+  body.masterEdit header{box-shadow:inset 0 -2px 0 var(--master)}
   /* 放畫布底部而非頂部：頂部是工具列，蓋上去會擋住按鈕 */
   #masterBar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;display:none;
-    align-items:center;gap:10px;background:#b07d2b;color:#fff;padding:6px 14px;border-radius:6px;
-    font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
-  #masterBar button{background:#fff;color:#8a6120;border:0;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:13px}
+    align-items:center;gap:12px;background:var(--master);color:#fff;padding:7px 8px 7px 14px;border-radius:7px;
+    font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3);max-width:calc(100vw - 40px)}
+  /* 兩行排版：第一行說「你在哪」，第二行說「你的東西沒有不見」。
+     擠成一行會撞到右下的浮動檢視列，也會把按鈕的字折斷 */
+  #masterBar .mbText{display:flex;flex-direction:column;gap:1px;line-height:1.35;min-width:0}
+  #masterBar .mbText small{font-size:11.5px;opacity:.88}
+  #masterBar button{background:#fff;color:var(--master-dark);border:0;border-radius:4px;padding:4px 10px;
+    cursor:pointer;font-size:13px;white-space:nowrap;flex:none}
   body.masterEdit #masterBar{display:flex}
   /* 自動頁碼預覽：不是元素（不可選取、不可拖曳），快照與匯出都會有；垂直置中對齊匯出的 anchor="ctr" */
   .pgnum{position:absolute;pointer-events:none;display:grid;align-content:center;
@@ -238,10 +260,18 @@
   .layerRow:hover{background:#30333b}
   .layerRow.sel{background:rgba(77,157,224,.22)}
   .layerRow.hid .lname,.layerRow.hid .licon{opacity:.45}
-  .layerRow .licon{width:16px;text-align:center;flex-shrink:0}
+  .layerRow .licon{width:16px;display:grid;place-content:center;flex-shrink:0;color:var(--fg-dim)}
+  .layerRow.sel .licon{color:var(--accent-hi)}
+  .layerRow .licon svg.ic,.layerRow .ltog svg.ic{width:14px;height:14px}
+  #layerPanel .pjBtns svg.ic{width:13px;height:13px;vertical-align:-2px}
   .layerRow .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
-  .layerRow .ltog{cursor:pointer;flex-shrink:0;background:none;border:0;padding:0 2px;font-size:13px;line-height:1;color:var(--fg-dim)}
+  .layerRow .ltog{cursor:pointer;flex-shrink:0;background:none;border:0;padding:0 2px;line-height:0;
+    display:grid;place-content:center;color:var(--fg-mute)}
   .layerRow .ltog.on{color:var(--accent)}
+  /* 眼睛與鎖的 .on 語意相反：可見是常態（低調），隱藏才要醒目；鎖定則沿用 .on 的強調色。
+     兩者共用 .ltog，靠 .eyeTog 把眼睛那組的規則抽出來壓過上面那條 */
+  .layerRow .eyeTog.on{color:var(--fg-mute)}
+  .layerRow .eyeTog:not(.on){color:var(--warn)}
   .layerRow.dragover{box-shadow:inset 0 2px 0 0 var(--accent)}
   #shapeGrid{max-height:56vh;overflow:auto;padding-right:4px}
   #shapeGrid h5{margin:12px 0 6px;color:var(--accent);font-size:12px;font-weight:600}
@@ -399,6 +429,11 @@
   <symbol id="ic-grid" viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
   <symbol id="ic-magnet" viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z"/></symbol>
   <symbol id="ic-white" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+  <symbol id="ic-master" viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" rx="1.5"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/></symbol>
+  <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-eye-off" viewBox="0 0 24 24"><path d="M10.6 6.1A9.9 9.9 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17.7 17.7 0 0 1-3.3 4.1M6.5 7.9A17.6 17.6 0 0 0 2 12s3.6 6.5 10 6.5a10 10 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+  <symbol id="ic-unlock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 7.7-1.5"/></symbol>
 </svg>
 <header>
   <div class="grp">
@@ -455,7 +490,7 @@
   <input type="file" id="coverInput" accept="image/png,image/jpeg" hidden>
   <datalist id="scaleTicks"><option value="0.5"></option><option value="0.8"></option><option value="1.0"></option><option value="1.2"></option><option value="1.5"></option></datalist>
 </header>
-<div id="masterBar"><span>正在編輯母版　·　這裡的元素會出現在每一頁</span><button type="button" id="btnMasterDone">完成，回到頁面</button></div>
+<div id="masterBar"><span class="mbText"><b>正在編輯母版</b><small>這裡放的元素會出現在每一頁　·　本頁原本的內容只是暫時隱藏，離開後就回來</small></span><button type="button" id="btnMasterDone">完成，回到頁面</button></div>
 <main>
   <aside id="pagePanel"></aside>
   <div id="stageScroll">
@@ -473,6 +508,7 @@
     <i class="vr"></i>
     <button id="btnGrid" class="tb ico" title="格線（製圖式：一格虛線、每 5 格細線、每 10 格粗線，原點在左上角）。格距／顏色在右欄「頁面 → 格線」調"><svg class="ic"><use href="#ic-grid"/></svg></button>
     <button id="btnGridSnap" class="tb ico" title="吸附格線：移動時吸左緣與上緣，拖白點縮放時四邊都吸"><svg class="ic"><use href="#ic-magnet"/></svg></button>
+    <button id="btnMelMark" class="tb ico" title="標示母版元素：一般頁上的母版元素加一圈虛線。有框的點不到，要改請進「編輯母版」"><svg class="ic"><use href="#ic-master"/></svg></button>
   </div>
 </main>
 <div id="statusBar">
@@ -513,7 +549,7 @@
 <div id="layerPanel" hidden style="right:236px;top:56px">
   <div class="pjHead" id="layerHead">圖層（上＝最上層）<span class="pjClose" id="btnLayerClose">×</span></div>
   <div id="layerList"></div>
-  <div class="pjBtns"><span class="unit">拖曳重排堆疊；👁 顯示／隱藏；🔒 鎖定（畫布不可選）</span></div>
+  <div class="pjBtns"><span class="unit">拖曳重排堆疊；<svg class="ic"><use href="#ic-eye"/></svg> 顯示／隱藏；<svg class="ic"><use href="#ic-lock"/></svg> 鎖定（畫布不可選）</span></div>
 </div>
 
 <div id="shapeModal" class="modal" hidden>
@@ -671,7 +707,7 @@
           <b>來源沒指定底色（或指定純白）的格子預設填白</b>，由工具列右側齒輪（偏好設定）裡的「白底」切換成透明。預設白底是因為貼上的字色是深色，透明貼到深色背景上會整張看不見；少數想讓背景透出來的場合再關掉。已經貼進來的表格要改，選取整張表用右欄「儲存格 → 底色」一次套完。<br>
           <b>格內圖片會變成獨立的圖片元素</b>，與表格綁成一個<b>軟群組</b>——整組搬移或等比縮放時圖跟著走，但單獨拖某一欄的寬度時圖不會跟。這不是偷懶：PowerPoint 的表格儲存格本來就放不了圖片，它自己「在格子裡插入圖片」也是浮在表格上方的獨立物件。只收<b>內嵌位元組</b>（<code>data:</code>）的圖；網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。<br>
           <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter（姊妹專案）轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式；圖片要先在那邊掛載圖片資料夾才帶得過來）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
-        <li><b>圖層</b>面板（工具列右側，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、👁 顯示／隱藏、🔒 鎖定（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
+        <li><b>圖層</b>面板（工具列右側，可拖曳）：列出當頁元素（上＝最上層），拖曳重排堆疊、眼睛鈕<b>顯示／隱藏</b>、鎖頭鈕<b>鎖定</b>（畫布不可選拖，仍可從面板點選）；點列選取（群組則選全組）。隱藏元素不渲染也<b>不匯出</b>。</li>
         <li><b>不透明度</b>：右欄滑桿 0–100%，匯出轉 PPT 原生 transparency（圖片／形狀填色／框線／表格底色可調）。</li>
         <li><b>軟群組</b>：多選後按「群組」；之後點群組任一成員即<b>選全組</b>並可整組移動／縮放，雙擊可進入編輯單一成員；單選面板或多選面板可「解散」。匯出時攤平為獨立元素。<b>右欄有位置尺寸可填</b>：群組本身沒有座標（成員各自獨立），面板上的 X／Y／寬／高指的是<b>包圍盒</b>——改 X／Y＝整組平移，改寬／高＝以包圍盒左上角為不動點縮放整組（可鎖比例、可連字級一起縮）。</li>
         <li><b>對齊分佈</b>：多選面板有左/中/右、上/中/下對齊，及<b>水平／垂直等距</b>（需 ≥3 個，首尾固定、中間平均間隙）。</li>
@@ -1697,6 +1733,7 @@ function savePasteWhite(){ lsSet(PASTEW_KEY,APP.pasteWhite?'1':'0'); }
 /* ================= App 狀態 ================= */
 const APP={deck:newDeck(),page:null,sel:null,selIds:[],zoom:.65,editing:null,painter:null,
   grid:loadGrid(),   // 格線與吸附設定（不屬於 deck，見上方說明）
+  melMark:lsGet('deckjson.melmark')!=='0',   // 一般頁上是否給母版元素畫虛線（同格線，屬檢視設定）
   pasteWhite:loadPasteWhite(),   // 貼上外部表格：無底色格填白（同樣不屬於 deck）
   file:null,      // 就地覆寫的目標 {handle,name,stamp,stale}；null＝還沒有對應的硬碟檔案（見〈檔案存檔〉）
   dirty:false,    // 上次寫檔之後改過沒有（給 #fileHint 的 ● 用；與自動存檔無關）
@@ -2132,6 +2169,9 @@ function renderStage(){
   stage.style.backgroundImage= pg.bgImage? `url("${pg.bgImage}")` : '';
   stage.style.backgroundSize='100% 100%'; stage.style.backgroundRepeat='no-repeat';
   stage.classList.toggle('masterEdit',!!APP.masterEdit);
+  // 母版空的時候畫布全白，補一句引導；順便同步母版標記鈕（啟用母版與否會變）
+  stage.classList.toggle('melEmpty',!!APP.masterEdit&&!curEls().length);
+  if(typeof syncMelBtn==='function') syncMelBtn();
   const liveIds=new Set();
   /* 母版元素墊在最底下，且刻意不給 .el（不可選、不可拖、不進圖層、不算超界）——
      它們不屬於這一頁，要改請按「編輯母版」，否則在某頁改動會無聲影響全部頁面。 */
@@ -6465,6 +6505,16 @@ function setGrid(patch){ Object.assign(APP.grid,patch); saveGrid(); renderGrid()
 $('#btnGrid').onclick=()=>setGrid({on:!APP.grid.on});
 $('#btnGridSnap').onclick=()=>setGrid({snap:!APP.grid.snap});
 syncGridBtns();
+/* 母版元素的虛線標記。純檢視設定，和格線一樣存 localStorage、不寫進 deck。
+   只有這份簡報真的有啟用母版時才擺出這顆鈕，否則它按了畫面毫無反應。 */
+function syncMelBtn(){
+  const b=$('#btnMelMark'); if(!b) return;
+  b.hidden=!masterOn();
+  b.classList.toggle('on',APP.melMark);
+  document.body.classList.toggle('melMark',APP.melMark);
+}
+$('#btnMelMark').onclick=()=>{ APP.melMark=!APP.melMark; lsSet('deckjson.melmark',APP.melMark?'1':'0'); syncMelBtn(); };
+syncMelBtn();
 /* 貼上白底：同樣不進 undo（它影響的是「下一次貼上」，不是簡報現況；
    已經貼進來的表格要改底色請用右欄「儲存格 → 底色」，選全表一次套完）。*/
 function syncPasteWhiteBtn(){
@@ -7062,7 +7112,8 @@ $('#btnPageJsonApply').onclick=()=>{
 })();
 // ================= 圖層面板 =================
 let LAYER_DRAG=null;
-const L_ICON={text:'T',table:'▦',image:'🖼',shape:'◇',chart:'📊',video:'🎬'};
+const L_ICON={text:'ic-text',table:'ic-table',image:'ic-image',shape:'ic-shape',chart:'ic-chart',video:'ic-video'};
+const licon=id=>`<svg class="ic"><use href="#${id}"/></svg>`;
 const L_NAME={text:'文字',table:'表格',image:'圖片',shape:'形狀',chart:'圖表',video:'影片'};
 function layersOpen(){ return !$('#layerPanel').hidden; }
 function layerLabel(el){
@@ -7079,11 +7130,11 @@ function renderLayers(){
     const row=document.createElement('div'); row.className='layerRow'; row.dataset.id=el.id;
     if(APP.selIds.includes(el.id)) row.classList.add('sel');
     if(el.hidden) row.classList.add('hid');
-    const eye=document.createElement('button'); eye.className='ltog'+(el.hidden?'':' on'); eye.textContent=el.hidden?'🙈':'👁'; eye.title='顯示／隱藏';
+    const eye=document.createElement('button'); eye.className='ltog eyeTog'+(el.hidden?'':' on'); eye.innerHTML=licon(el.hidden?'ic-eye-off':'ic-eye'); eye.title='顯示／隱藏';
     eye.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.hidden) delete el.hidden; else el.hidden=true; renderStage(); renderProps(); };
-    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.textContent=el.locked?'🔒':'🔓'; lock.title='鎖定（畫布不可選拖）';
+    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.innerHTML=licon(el.locked?'ic-lock':'ic-unlock'); lock.title='鎖定（畫布不可選拖）';
     lock.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.locked){ delete el.locked; } else { el.locked=true; if(APP.selIds.includes(el.id)) setSel(APP.selIds.filter(id=>id!==el.id)); } renderStage(); renderProps(); };
-    const icon=document.createElement('span'); icon.className='licon'; icon.textContent=L_ICON[el.type]||'?';
+    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(L_ICON[el.type]||'ic-shape');
     const nm=document.createElement('span'); nm.className='lname'; nm.textContent=(el.groupId?'⧉ ':'')+layerLabel(el); nm.title=el.id;
     row.append(eye,lock,icon,nm);
     row.onclick=()=>{ setSel(el.groupId?groupMembers(el).map(m=>m.id):[el.id]); updateSelBox(); renderProps(); syncPageJson(); renderLayers(); };
