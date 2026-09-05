@@ -120,7 +120,31 @@
     background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--fg-mute)}
   #statusBar>span:empty{display:none}
   main{flex:1;display:flex;overflow:hidden;position:relative}
-  #pagePanel{width:158px;flex-shrink:0;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:10px}
+  /* 頁面欄拆兩層：上半是會捲的縮圖清單，下半是釘住的母版入口。
+     母版若跟著清單捲，頁數一多就又滑出視野——那正是要修掉的毛病。 */
+  #pageBar{width:158px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;
+    background:var(--panel);border-right:1px solid var(--line)}
+  #pagePanel{flex:1;min-height:0;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:10px}
+  /* 母版入口：長得像縮圖項但用母版色，和頁面在視覺上分屬兩類 */
+  #masterSlot{flex:none;padding:8px;border-top:1px solid var(--line);background:var(--bg-sunken)}
+  .masterItem{display:block;width:100%;cursor:pointer;position:relative;text-align:center;
+    border:2px solid transparent;border-radius:6px;padding:4px;background:none;font:inherit;color:inherit}
+  .masterItem:hover{border-color:var(--master-soft)}
+  .masterItem.on{border-color:var(--master)}
+  .masterItem canvas{width:100%;background:#fff;border-radius:3px;display:block}
+  .masterItem .mtLabel{display:flex;align-items:center;justify-content:center;gap:4px;
+    margin-top:4px;font-size:11px;color:var(--fg-dim);white-space:nowrap}
+  .masterItem.on .mtLabel{color:var(--master-dark);font-weight:600}
+  .masterItem .mtLabel .ic{width:12px;height:12px}
+  /* 未啟用：沒有內容可畫，改用虛線框請人按下去 */
+  .masterItem.off{border-style:dashed;border-color:var(--line-strong);padding:10px 4px}
+  .masterItem.off:hover{border-color:var(--master-soft);color:var(--master-dark)}
+  .masterItem.empty::after{content:'空的';position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
+    font-size:10px;color:var(--fg-mute);pointer-events:none}
+  /* 編輯母版時，頁面清單整體退到背景：現在的編輯對象不是它們 */
+  body.masterEdit #pagePanel{opacity:.55}
+  body.masterEdit #pagePanel:hover{opacity:1}
+  body.masterEdit .pageItem.active{border-color:var(--line-strong)}
   .pageItem{cursor:pointer;border:2px solid transparent;border-radius:6px;padding:4px;text-align:center;position:relative}
   .pageItem:hover{border-color:var(--line)}
   .pageItem.active{border-color:var(--accent)}
@@ -552,7 +576,7 @@
 <div id="gridPop" class="ppctl" hidden></div>
 <div id="masterBar"><span class="mbText"><b>正在編輯母版</b><small>這裡放的元素會出現在每一頁　·　本頁原本的內容只是暫時隱藏，離開後就回來</small></span><button type="button" id="btnMasterDone">完成，回到頁面</button></div>
 <main>
-  <aside id="pagePanel"></aside>
+  <aside id="pageBar"><div id="pagePanel"></div><div id="masterSlot"></div></aside>
   <div id="stageScroll">
     <div id="stageOuter">
       <!-- 外圍半灰遮罩（.outmask）與預留區（.safezone）都由 JS 依 deck.stage／deck.zones 生成，
@@ -2579,7 +2603,8 @@ function renderPanel(){
       if(APP.page===pg.id) APP.page=APP.deck.pages[Math.max(0,idx-1)].id;
       setSel([]); renderAll(); };
     item.appendChild(del);
-    item.onclick=()=>{ if(pg.id!==APP.page) setPage(pg.id); };
+    item.onclick=()=>{ if(APP.masterEdit) setMasterEdit(false);   // 點頁面就是要回去看頁面，不必先按「完成」
+      if(pg.id!==APP.page) setPage(pg.id); };
     item.draggable=true;
     item.addEventListener('dragstart',e=>{ PANEL_DRAG.item=item; PANEL_DRAG.order=APP.deck.pages.map(p=>p.id); e.dataTransfer.effectAllowed='move'; });
     item.addEventListener('dragover',e=>{
@@ -2602,6 +2627,40 @@ function renderPanel(){
   const add=document.createElement('button'); add.id='btnAddPage'; add.textContent='＋ 新頁';
   add.onclick=()=>{ commitUndo(); const pg=newPage(); APP.deck.pages.push(pg); setPage(pg.id); };
   panel.appendChild(add);
+  renderMasterSlot();
+}
+/* 母版入口（頁面欄底部，比照 PowerPoint 的投影片母版擺在檢視層級）。
+   三種狀態共用一個按鈕：沒啟用→一按同時啟用並進去；啟用了→進去編輯；正在編輯→按了出來。
+   舊版把入口埋在「右欄 → 頁面 → 母版 → 啟用 → 編輯」五層底下，等於沒有入口。 */
+function renderMasterSlot(){
+  const slot=$('#masterSlot'); if(!slot) return;
+  slot.innerHTML='';
+  const on=masterOn(), editing=!!APP.masterEdit;
+  const b=document.createElement('button'); b.type='button'; b.className='masterItem';
+  if(editing) b.classList.add('on');
+  if(!on) b.classList.add('off');
+  if(on){
+    const cv=document.createElement('canvas');
+    cv.width=132; cv.height=Math.max(24,Math.round(132*STAGE_H/STAGE_W));
+    // noMaster:true 是必要的——drawThumb 會替一般頁墊母版，母版自己再墊一次就畫兩遍
+    drawThumb(cv,{elements:masterEls(),noMaster:true});
+    b.appendChild(cv);
+    if(!masterEls().length) b.classList.add('empty');
+  }
+  const lb=document.createElement('div'); lb.className='mtLabel';
+  lb.innerHTML='<svg class="ic"><use href="#ic-master"/></svg><span>'
+    +(editing?'完成編輯':(on?'母版':'＋ 母版'))+'</span>';   // 欄寬只有 158px，長標題會頂到邊；完整說法在畫布下方的母版列
+  b.appendChild(lb);
+  b.title= editing? '離開母版編輯，回到原本那一頁'
+    : on? '編輯母版：畫布只顯示母版元素，一般工具全部照用'
+        : '啟用母版並開始編輯：把 Logo／頁尾等每頁都要的東西放在一份「信紙」上，改一次全部頁面跟著變';
+  b.onclick=()=>{
+    if(editing){ setMasterEdit(false); return; }
+    if(!on){ commitUndo(); masterEls(); APP.deck.master.on=true; }   // 未啟用時一按到底，不讓人再去右欄找開關
+    setMasterEdit(true);
+    syncMelBtn();
+  };
+  slot.appendChild(b);
 }
 function setPage(pid){
   if(!$('#chartModal').hidden) closeChartModal();   // 面板編輯的是原頁的圖表，換頁就失去意義
@@ -3093,12 +3152,17 @@ function renderMultiProps(pp){
    三頁分別是 670／480／546px，都在可見高度內。 */
 const TAB_SEL_ARRANGE=['位置尺寸','位置尺寸（包圍盒）','版面','排列','對齊與分佈','動作','群組與動作'];
 const TAB_SEL_STYLE=['文字樣式','形狀樣式','儲存格樣式','框線'];
-const TAB_NONE_PAGE=['頁面樣式','章節','備忘稿','圖片壓縮（本頁）'];
+const TAB_NONE_PAGE=['頁面樣式','章節','備忘稿'];
 /* 無選取時有 15 個區塊、共 2072px，三頁分不平（「簡報」那頁實測仍要捲 136px），故拆四頁。
-   四個兩字頁籤在 220px 欄寬下各佔約 53px，剛好放得下。 */
-const TAB_NONE_OUT=['頁碼（整份簡報）','日期（整份簡報）','檔案資訊（整份簡報）',
-  '圖片壓縮（整份簡報）','背景圖壓縮（整份簡報）','範本與匯出'];
-const TAB_NONE_TOOL=['環境設定檔（profile）'];
+   四個兩字頁籤在 220px 欄寬下各佔約 53px，剛好放得下。
+   三個壓縮區塊歸「工具」而非「輸出」：它們是對簡報動手術（不可逆地重編碼位元組），
+   不是匯出時的設定；擺在一起也方便比較「本頁／整份／背景圖」三者的現況。
+   ⚠ 量分頁高度時不能用 pane.scrollHeight：.propPane 是 flex:1，內容再短也被拉滿，
+   量到的永遠等於可用高度。要量「首子元素 top → 末子元素 bottom」，且一次只開一個 pane。
+   照這個量法，四頁實際是 367／601／455／289px（可用 668px），都不必捲。 */
+const TAB_NONE_OUT=['頁碼（整份簡報）','日期（整份簡報）','檔案資訊（整份簡報）','範本與匯出'];
+const TAB_NONE_TOOL=['圖片壓縮（本頁）','圖片壓縮（整份簡報）','背景圖壓縮（整份簡報）',
+  '環境設定檔（profile）'];
 const TAB_CONTENT_NAME={text:'文字',shape:'形狀',table:'表格',image:'圖片',chart:'圖表',video:'影片'};
 const propTabMem={sel:0,none:0};   // 分頁選擇要撐過重繪——renderProps 每次改動都全量重建
 function applyPropTabs(){
@@ -3217,19 +3281,22 @@ function renderPropsBody(){
     /* 母版（「信紙」）：一份共用元素墊在每一頁底下，改一處全部頁面跟著變。
        整份簡報層級的設定，但放在頁面屬性裡，因為「本頁不套母版」是逐頁的。 */
     pp.appendChild(secTitle('母版（整份簡報）'));
+    /* 進出母版的入口一律在左側頁面欄底部（另有畫布下方的母版列可離開）。
+       這裡只留「整份簡報怎麼套」的設定，不再重複放進出按鈕。 */
     if(APP.masterEdit){
       const mh=document.createElement('div'); mh.className='row';
       mh.innerHTML='<span class="unit">正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，'
-        +'一般工具全部照用。改完按上方的「完成，回到頁面」。</span>';
+        +'一般工具全部照用。改完按<b>左側頁面欄底部</b>或畫布下方的「完成，回到頁面」，'
+        +'也可以直接點左邊任一頁縮圖離開。</span>';
       pp.appendChild(mh);
-      pp.appendChild(btnRow([['完成，回到頁面',()=>setMasterEdit(false),'離開母版編輯']]));
     }else{
     pp.appendChild(checkRow([['啟用母版',()=>masterOn(),v=>{ commitUndo();
       masterEls(); APP.deck.master.on=!!v; renderAll(); syncPageJson(); },
       '把 Logo／頁尾等每頁都要的東西放在一份「信紙」上，改一次全部頁面跟著變']]));
     if(masterOn()){
-      pp.appendChild(btnRow([['✎ 編輯母版內容',()=>setMasterEdit(true),
-        '進入母版編輯：畫布只顯示母版元素，一般工具（文字／形狀／圖片…）全部照用']]));
+      const me=document.createElement('div'); me.className='row';
+      me.innerHTML='<span class="unit">編輯母版內容請按<b>左側頁面欄底部的「母版」</b>。</span>';
+      pp.appendChild(me);
       const mr=document.createElement('div'); mr.className='row'; mr.innerHTML='<label>匯出方式</label>';
       const ms=document.createElement('select');
       ms.innerHTML='<option value="master">放在母版上（檔案小）</option>'
@@ -9070,6 +9137,7 @@ function renderAll(){
   $('#selFontMode').value=APP.deck.fontMode;
   applyStage(); applyFontVars(); renderZones(); renderGrid();   // 尺寸／字體／預留區／格線都可能被 JSON 或面板改動
   renderPanel(); renderStage(); renderProps(); updateUndoBtns();
+  syncMelBtn();   // 母版可能剛被啟用／關閉，標示鈕的去留跟著變
   setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
   scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
 }
