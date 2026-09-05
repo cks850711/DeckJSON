@@ -341,6 +341,13 @@
   #propPanel .propTab.on{background:none;border-color:transparent;border-bottom-color:var(--accent);
     color:var(--fg);font-weight:600}
   .propPane{flex:1;overflow-y:auto;padding:12px}
+  /* 動作（格式刷／複製／刪除／本頁 JSON）不隨分頁切換：任何時候都可能想按，
+     關在某一頁裡等於要先猜它在哪。抽到面板底部釘住，順帶讓各分頁矮一截。 */
+  #propFoot{flex:none;padding:8px 12px 10px;border-top:1px solid var(--line);background:var(--bg-sunken)}
+  #propFoot .secTitle{display:none}   /* 位置本身就說明它是動作列，標題純佔高度 */
+  #propFoot .row{margin:0;gap:6px}
+  #propFoot button{flex:1}
+  #propFoot button.danger{flex:none;color:var(--warn);border-color:rgba(224,93,93,.35)}
   .propPane[hidden]{display:none}
   #propPanel h4{margin:0;color:var(--fg);font-size:13px;font-weight:650}
   /* ── 面板控件：一律 26px 高、圓角 var(--r-sm)，標籤欄固定 40px 讓各列數值對齊同一條軸 ── */
@@ -536,6 +543,7 @@
   <symbol id="ic-reverse" viewBox="0 0 24 24"><path d="M4 9h13M14 6l3 3-3 3"/><path d="M20 15H7M10 12l-3 3 3 3"/></symbol>
   <symbol id="ic-front" viewBox="0 0 24 24"><rect x="3" y="3" width="12" height="12" rx="1.5"/><path d="M9 21h12V9" stroke-dasharray="2 3"/></symbol>
   <symbol id="ic-back" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="1.5"/><path d="M15 3H3v12" stroke-dasharray="2 3"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
   <symbol id="ic-forward" viewBox="0 0 24 24"><rect x="3" y="10" width="11" height="11" rx="1.5"/><path d="M18 14V4M14.5 7.5L18 4l3.5 3.5"/></symbol>
   <symbol id="ic-backward" viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="1.5"/><path d="M18 10v10M14.5 16.5L18 20l3.5-3.5"/></symbol>
   <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
@@ -3220,7 +3228,7 @@ function renderMultiProps(pp){
     ['比例鎖定',()=>APP.ratioLock,v=>APP.ratioLock=v,'鎖包圍盒寬高比：改一邊另一邊等比跟著變'],
     ['字級同步',()=>APP.fontSync,v=>APP.fontSync=v,'改包圍盒尺寸時，組內文字的字級一起放大縮小'],
   ]));
-  pp.appendChild(secTitle('版面'));
+  pp.appendChild(secTitle('變形'));
   pp.appendChild(btnRow([
     ['橫中',()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(Math.round((STAGE_W-bb.w)/2)-bb.x,0); renderStage(); renderProps(); },'整組在投影片水平置中（組內相對位置不變）'],
     ['縱中',()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(0,Math.round((STAGE_H-bb.h)/2)-bb.y); renderStage(); renderProps(); },'整組在投影片垂直置中'],
@@ -3284,8 +3292,18 @@ function renderMultiProps(pp){
    為什麼要切到 subTitle 而不只是 secTitle：實測選中表格時「表格」這一個 secTitle 區塊
    自己就 1026px（全欄 1538px），只按 secTitle 分頁的話那一頁照樣要捲。切到 subTitle 後
    三頁分別是 670／480／546px，都在可見高度內。 */
-const TAB_SEL_ARRANGE=['位置尺寸','位置尺寸（包圍盒）','版面','排列','對齊與分佈','動作','群組與動作'];
-const TAB_SEL_STYLE=['文字樣式','形狀樣式','儲存格樣式','框線'];
+/* 分頁的語意（2026-09-05 重整）：
+   第一頁＝與內容無關的操作（位置、變形、層級、對齊、複製刪除）
+   中間頁＝這個型別特有的內容與樣式，頁名就是型別名
+   最後一頁＝所有型別都有的效果（超連結、陰影）
+   舊分法是固定的「排列／樣式／型別名」三頁，名字對不上內容：「形狀」頁裡
+   沒有形狀（形狀樣式被『樣式』頁認領走，只剩超連結與陰影），而圖表與影片
+   因為沒有區塊落進『樣式』，分頁列會從三顆掉成兩顆。 */
+const TAB_SEL_ARRANGE=['位置尺寸','位置尺寸（包圍盒）','變形','排列','對齊與分佈'];
+const TAB_SEL_ACT=['動作','群組與動作'];   // 不進分頁，釘在面板底部
+const TAB_SEL_FX=['超連結','超連結（整個物件）','陰影'];
+const TAB_SEL_CELL=['儲存格樣式','框線','格內文字（反白處）'];
+const TAB_SEL_PARA=['字元進階','段落'];
 const TAB_NONE_PAGE=['頁面樣式','章節','備忘稿'];
 /* 無選取時有 15 個區塊、共 2072px，三頁分不平（「簡報」那頁實測仍要捲 136px），故拆四頁。
    四個兩字頁籤在 220px 欄寬下各佔約 53px，剛好放得下。
@@ -3312,11 +3330,26 @@ function applyPropTabs(){
     if(!cur){ cur={t:'',nodes:[]}; groups.push(cur); }
     cur.nodes.push(n);
   }
+  // 動作段抽出來釘底部，不參與分頁裝箱
+  const actGroups=groups.filter(g=>TAB_SEL_ACT.includes(g.t));
+  if(actGroups.length){
+    const keep=new Set(actGroups);
+    for(let i=groups.length-1;i>=0;i--) if(keep.has(groups[i])) groups.splice(i,1);
+  }
   const mode=APP.selIds.length? 'sel' : 'none';
   const el=APP.selIds.length===1? selEl() : null;
   // null ＝這一頁收容所有沒被前面認領的區塊
+  // 型別名：形狀若是線條類，內容區塊叫「線條樣式」，頁名跟著叫「線條」
+  const typeName= el? (isLineEl(el)? '線條' : (TAB_CONTENT_NAME[el.type]||'內容')) : '內容';
+  const hasText= el&&(el.type==='text'||(el.type==='shape'&&el.paras));
   const defs= mode==='sel'
-    ? [['排列',TAB_SEL_ARRANGE],['樣式',TAB_SEL_STYLE],[(el&&TAB_CONTENT_NAME[el.type])||'內容',null]]
+    ? (el&&el.type==='table'
+        // 表格區塊多且高（單「表格」一段就 1026px），拆成結構與儲存格兩頁
+        ? [['版面',TAB_SEL_ARRANGE],['表格',null],['儲存格',TAB_SEL_CELL],['效果',TAB_SEL_FX]]
+      : hasText
+        // 文字樣式＋字元進階＋段落合起來 774px，矮一點的視窗就要捲，故段落另立一頁
+        ? [['版面',TAB_SEL_ARRANGE],[typeName,null],['段落',TAB_SEL_PARA],['效果',TAB_SEL_FX]]
+        : [['版面',TAB_SEL_ARRANGE],[typeName,null],['效果',TAB_SEL_FX]])
     : [['頁面',TAB_NONE_PAGE],['簡報',null],['輸出',TAB_NONE_OUT],['工具',TAB_NONE_TOOL]];
   const fb=defs.findIndex(d=>d[1]===null);
   const buckets=defs.map(()=>[]);
@@ -3325,6 +3358,11 @@ function applyPropTabs(){
     buckets[i<0? fb : i].push(g);
   }
   pp.innerHTML='';
+  const addFoot=()=>{ if(!actGroups.length) return;
+    const foot=document.createElement('div'); foot.id='propFoot';
+    actGroups.forEach(g=>g.nodes.forEach(n=>foot.appendChild(n)));
+    const s0=foot.querySelector('.secTitle'); if(s0) s0.classList.add('first');
+    pp.appendChild(foot); };
   if(head){ const hd=document.createElement('div'); hd.id='propHead'; hd.appendChild(head); pp.appendChild(hd); }
   const fill=(pane,gs)=>{ gs.forEach(g=>g.nodes.forEach(n=>pane.appendChild(n)));
     // 每頁的第一個 secTitle 都要是 .first（沒有上邊框），否則每頁開頭都多一條線
@@ -3333,7 +3371,7 @@ function applyPropTabs(){
   const live=defs.map((d,i)=>[d[0],buckets[i]]).filter(x=>x[1].length);
   if(live.length<=1){   // 只有一頁（如多選）就不擺分頁列，省一行高度
     const pane=document.createElement('div'); pane.className='propPane';
-    live.forEach(([,gs])=>fill(pane,gs)); pp.appendChild(pane); return;
+    live.forEach(([,gs])=>fill(pane,gs)); pp.appendChild(pane); addFoot(); return;
   }
   const bar=document.createElement('div'); bar.id='propTabs';
   const panes=[];
@@ -3345,7 +3383,7 @@ function applyPropTabs(){
     const pane=document.createElement('div'); pane.className='propPane'; fill(pane,gs);
     bar.appendChild(b); panes.push([b,pane]);
   });
-  pp.appendChild(bar); panes.forEach(([,pn])=>pp.appendChild(pn));
+  pp.appendChild(bar); panes.forEach(([,pn])=>pp.appendChild(pn)); addFoot();
   sync();
 }
 function renderProps(){ renderPropsBody(); applyPropTabs(); }
@@ -3410,6 +3448,10 @@ function renderPropsBody(){
       pp.appendChild(mn);
     }
     // 本頁圖片批次壓縮：含元素圖與本頁背景圖，每張各自依自己的顯示尺寸換算目標像素
+    // 隱藏投影片：仍在檔案裡、放映時跳過（匯出為 <p:sld show="0">）
+    pp.appendChild(checkRow([['不放映此頁',()=>!!curPage().skip,v=>{ commitUndo();
+      if(v) curPage().skip=true; else delete curPage().skip;
+      renderAll(); syncPageJson(); },'頁仍在檔案內，但放映與「從頭開始」會跳過（PPT 的「隱藏投影片」）']]));
     pp.appendChild(secTitle('圖片壓縮（本頁）'));
     pp.appendChild(batchCompressRows('page'));
     /* 母版（「信紙」）：一份共用元素墊在每一頁底下，改一處全部頁面跟著變。
@@ -3471,10 +3513,6 @@ function renderPropsBody(){
       sn.innerHTML='<span class="unit">本頁到下一個章節起點之間的頁面同屬此章。章節名<b>必須唯一</b>，撞名會自動補「(2)」——PowerPoint 是靠名稱認章節的。</span>';
       pp.appendChild(sn);
     }
-    // 隱藏投影片：仍在檔案裡、放映時跳過（匯出為 <p:sld show="0">）
-    pp.appendChild(checkRow([['不放映此頁',()=>!!curPage().skip,v=>{ commitUndo();
-      if(v) curPage().skip=true; else delete curPage().skip;
-      renderAll(); syncPageJson(); },'頁仍在檔案內，但放映與「從頭開始」會跳過（PPT 的「隱藏投影片」）']]));
     pp.appendChild(secTitle('備忘稿'));
     const nl=document.createElement('div'); nl.className='row'; nl.innerHTML='<label style="min-width:auto">講者備忘稿</label>';
     pp.appendChild(nl);
@@ -3636,10 +3674,11 @@ function renderPropsBody(){
     pp.appendChild(pfn);
     pp.appendChild(secTitle('範本與匯出'));
     pp.appendChild(btnRow([[{ic:'ic-template',txt:'套範本'},()=>openTemplateModal(),'插入版型頁'],[{ic:'ic-merge',txt:'合併簡報'},()=>$('#mergeInput').click(),'把另一份 .deck 的頁附加進來']]));
-    pp.appendChild(pageJsonBtn());
-    const note=document.createElement('div'); note.className='row';
-    note.innerHTML='<span class="unit">點選元素編輯屬性；Shift／框選可多選。</span>';
-    pp.appendChild(note);
+    /* 「本頁 JSON」不屬於「範本與匯出」，改放底部動作列——與選取元素時同一個位置。
+       這一段是無選取時唯一的動作，標題仍用「動作」才會被 applyPropTabs 抽到 propFoot。 */
+    pp.appendChild(secTitle('動作'));
+    pp.appendChild(btnRow([[{ic:'ic-code',txt:'本頁 JSON'},()=>openPageJson(),
+      '開啟本頁 JSON 面板（點畫布元素會聚焦其 JSON）']]));
     updateCopyPalWin();
     return;
   }
@@ -3657,7 +3696,7 @@ function renderPropsBody(){
     ['字級同步',()=>APP.fontSync,v=>APP.fontSync=v,'改尺寸／拖曳 resize 時字級一起放大'],
   ]));
   // 縮放滑桿（0.1–2.0×，停頓於 0.5/0.8/1.0/1.2/1.5）＋含字級（預設開）；放開歸回 1.0×
-  pp.appendChild(secTitle('版面'));
+  pp.appendChild(secTitle('變形'));
   const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; scWrap.innerHTML='<label>縮放</label>';
   const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.style.flex='1'; sl.style.minWidth='90px'; sl.setAttribute('list','scaleTicks');
   const scVal=Object.assign(document.createElement('span'),{className:'unit'}); scVal.textContent='1.00×';
@@ -3703,6 +3742,11 @@ function renderPropsBody(){
       [{ic:'ic-flip-v',txt:''},()=>{ commitUndo(); el.flipV=!el.flipV; renderStage(); renderProps(); },'垂直翻轉',!!el.flipV],
     ]));
   }
+  /* 幾何：編輯端點／圖形編輯器／adj 黃點微調。自成一段才不會被歸進上面的「變形」，
+     那會讓它們跟著跑到「版面」分頁，而它們明明是形狀本身的事。 */
+  if(el.type==='shape'&&((el.shape!=='custGeom'&&!LINE_KINDS[el.shape]&&PRESET_GEOM[el.shape])
+      ||el.shape==='custGeom'||adjCount(el.shape)))
+    pp.appendChild(subTitle('幾何'));
   /* 內建形狀 → custGeom（等同 PowerPoint 的「編輯端點」）。
      單向不可逆，且會失去黃點與子路徑各自的填色／描邊差異，故先問清楚才做。 */
   if(el.type==='shape'&&el.shape!=='custGeom'&&!LINE_KINDS[el.shape]&&PRESET_GEOM[el.shape]){
@@ -3742,7 +3786,8 @@ function renderPropsBody(){
       pp.appendChild(ar);
     });
   }
-  const contentTitle= el.type==='text'||(el.type==='shape'&&el.paras) ? '文字樣式'
+  const contentTitle= el.type==='text' ? '文字樣式'
+    : (el.type==='shape'&&el.paras&&!isLineEl(el)) ? '形狀與文字樣式'   // 這段底下同時有底色／漸層／框線與字級行距
     : isLineEl(el) ? '線條樣式'
     : el.type==='shape' ? '形狀樣式'
     : el.type==='table' ? '表格'
@@ -4103,16 +4148,18 @@ function renderPropsBody(){
     [{ic:'ic-backward',txt:''},()=>{ if(idx<=0)return; commitUndo(); pg.elements.splice(idx,1); pg.elements.splice(idx-1,0,el); renderStage(); },'下移一層'],
     [{ic:'ic-back',txt:''},()=>{ commitUndo(); pg.elements.splice(idx,1); pg.elements.unshift(el); renderStage(); },'置底'],
   ]));
+  /* 動作列釘在面板底部（見 applyPropTabs 的 propFoot），所以壓成單列圖示：
+     它每一頁都在，多佔一列高度就等於每一頁都少一列。 */
   pp.appendChild(secTitle('動作'));
-  pp.appendChild(btnRow([
-    [{ic:'ic-brush',txt:'複製樣式'},()=>armPainter(el),'格式刷：武裝後點其他元素套用其字體/顏色/填色/框線'],
-    ...(el.groupId? [['解散群組',()=>{ commitUndo(); for(const m of groupMembers(el)) delete m.groupId; setSel([el.id]); renderStage(); renderProps(); },'取消此群組']] : []),
-  ]));
-  pp.appendChild(btnRow([
-    ['複製',()=>duplicateEl(el),'Cmd/Ctrl+D'],
-    ['刪除',()=>deleteEl(el),'Delete'],
-  ]));
-  pp.appendChild(pageJsonBtn());
+  const act=btnRow([
+    [{ic:'ic-brush',txt:''},()=>armPainter(el),'複製樣式（格式刷）：武裝後點其他元素套用其字體/顏色/填色/框線'],
+    [{ic:'ic-copy',txt:''},()=>duplicateEl(el),'複製（Cmd/Ctrl+D）'],
+    [{ic:'ic-code',txt:''},()=>openPageJson(),'開啟本頁 JSON 面板（點畫布元素會聚焦其 JSON）'],
+    ...(el.groupId? [[{ic:'ic-merge',txt:''},()=>{ commitUndo(); for(const m of groupMembers(el)) delete m.groupId; setSel([el.id]); renderStage(); renderProps(); },'解散群組']] : []),
+    [{ic:'ic-trash',txt:''},()=>deleteEl(el),'刪除（Delete）'],
+  ]);
+  act.lastChild.classList.add('danger');   // 刪除排最後並描紅，與其他動作拉開距離
+  pp.appendChild(act);
   updateCopyPalWin();
 }
 function defCell(){ return {text:'',bold:false,italic:false,color:'1A1A1A',sizePt:12,fill:null,align:'left',valign:'middle',colspan:1,rowspan:1,covered:false}; }
