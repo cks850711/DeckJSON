@@ -3545,6 +3545,22 @@ function renderPropsBody(){
   const pp=$('#propPanel'); pp.innerHTML='';
   if(APP.selIds.length>1){ renderMultiProps(pp); updateCopyPalWin(); return; }
   const el=selEl();
+  if(!el&&APP.masterEdit){
+    /* 母版編輯中沒選東西時，右欄不該顯示頁面屬性——那些控件（底色、背景圖、備忘稿、
+       章節、不放映此頁）全都作用在**離開母版後會回去的那一頁**，不是母版。畫面上正在
+       編輯母版卻擺著一排會改到別處的控件，是會讓人改錯東西的誤導。 */
+    pp.innerHTML='<h4>母版</h4>';
+    pp.appendChild(secTitle('母版',true));
+    const mi=document.createElement('div'); mi.className='row';
+    mi.innerHTML='<span class="unit">正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，一般工具全部照用；'
+      +'<b>選取任一母版元素</b>即可在此編輯它的屬性。<br><br>'
+      +'頁面層級的設定（底色、背景圖、備忘稿、章節）在母版模式下無從編輯——它們屬於個別頁面。'
+      +'整份簡報的設定請按工具列的<b>全簡報設定</b>。</span>';
+    pp.appendChild(mi);
+    pp.appendChild(btnRow([[{ic:'ic-master',txt:'完成，回到頁面'},()=>setMasterEdit(false),'離開母版編輯']]));
+    updateCopyPalWin();
+    return;
+  }
   if(!el){
     pp.innerHTML='<h4>頁面</h4>';
     pp.appendChild(secTitle('頁面樣式',true));
