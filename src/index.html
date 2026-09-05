@@ -303,6 +303,10 @@
   .layerRow .licon{width:16px;display:grid;place-content:center;flex-shrink:0;color:var(--fg-dim)}
   .layerRow.sel .licon{color:var(--accent-hi)}
   .layerRow .licon svg.ic,.layerRow .ltog svg.ic{width:14px;height:14px}
+  /* 面板按鈕內的圖示：比工具列小一號，與文字基線對齊 */
+  button.icBtn{display:inline-flex;align-items:center;gap:5px}
+  button.icBtn svg.ic{width:14px;height:14px}
+  #painterHint svg.ic{width:13px;height:13px;vertical-align:-2px;margin-right:4px}
   #layerPanel .pjBtns svg.ic{width:13px;height:13px;vertical-align:-2px}
   .layerRow .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
   .layerRow .ltog{cursor:pointer;flex-shrink:0;background:none;border:0;padding:0 2px;line-height:0;
@@ -513,6 +517,9 @@
   <symbol id="ic-white" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
   <symbol id="ic-caret" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
   <symbol id="ic-master" viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" rx="1.5"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/></symbol>
+  <symbol id="ic-brush" viewBox="0 0 24 24"><path d="M6 12V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7"/><path d="M6 12h12v3a2 2 0 0 1-2 2h-2v3a2 2 0 0 1-4 0v-3H8a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="ic-template" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></symbol>
+  <symbol id="ic-merge" viewBox="0 0 24 24"><path d="M4 5h5a4 4 0 0 1 4 4v6a4 4 0 0 0 4 4h7"/><path d="M17 16l3 3-3 3"/></symbol>
   <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="ic-eye-off" viewBox="0 0 24 24"><path d="M10.6 6.1A9.9 9.9 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17.7 17.7 0 0 1-3.3 4.1M6.5 7.9A17.6 17.6 0 0 0 2 12s3.6 6.5 10 6.5a10 10 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></symbol>
   <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
@@ -2867,10 +2874,18 @@ function colorRow(label,val,onSet,allowNone){
 function secTitle(text,first){ const d=document.createElement('div'); d.className='secTitle'+(first?' first':''); d.textContent=text; return d; }
 // 組內次標題（如表格的「結構／儲存格樣式／框線」）：更輕量，無分隔線
 function subTitle(text){ const d=document.createElement('div'); d.className='subTitle'; d.textContent=text; return d; }
+/* label 可以是字串，或 {ic:'ic-image',txt:'背景圖'} —— 後者用工具列同一套 sprite。
+   面板按鈕原本混用彩色 emoji（🖼🖌📋），在深色介面裡與描邊圖示格格不入。 */
 function btnRow(defs){ // [[label,fn,title,on],...]
   const row=document.createElement('div'); row.className='row';
   for(const [label,fn,title,on] of defs){
-    const b=document.createElement('button'); b.textContent=label; if(title)b.title=title; if(on)b.classList.add('on');
+    const b=document.createElement('button');
+    if(label&&typeof label==='object'&&label.ic){
+      b.className='icBtn';
+      b.innerHTML='<svg class="ic"><use href="#'+label.ic+'"/></svg>';
+      b.appendChild(document.createTextNode(label.txt));
+    }else b.textContent=label;
+    if(title)b.title=title; if(on)b.classList.add('on');
     b.onclick=fn; row.appendChild(b);
   }
   return row;
@@ -3245,7 +3260,7 @@ function renderPropsBody(){
     pp.appendChild(colorRow('底色',curPage().bg,v=>{curPage().bg=v||'FFFFFF';},false));
     // 頁面背景圖（滿版拉伸，匯出為原生 <p:bg> blipFill；蓋在底色之上、所有元素之下）
     pp.appendChild(btnRow([
-      ['🖼 背景圖',()=>$('#bgInput').click(),'選一張圖當本頁滿版背景（匯出為原生頁面背景）'],
+      [{ic:'ic-image',txt:'背景圖'},()=>$('#bgInput').click(),'選一張圖當本頁滿版背景（匯出為原生頁面背景）'],
       ...(curPage().bgImage? [['清除',()=>{ commitUndo(); delete curPage().bgImage; renderAll(); syncPageJson(); },'移除背景圖']]:[]),
     ]));
     if(curPage().bgImage){
@@ -3501,7 +3516,7 @@ function renderPropsBody(){
       +'設定跟著這份簡報的 JSON 走，所以貼給 AI 再貼回來不會掉。</span>';
     pp.appendChild(pfn);
     pp.appendChild(secTitle('範本與匯出'));
-    pp.appendChild(btnRow([['📋 套範本',()=>openTemplateModal(),'插入版型頁'],['⧉ 合併簡報',()=>$('#mergeInput').click(),'把另一份 .deck 的頁附加進來']]));
+    pp.appendChild(btnRow([[{ic:'ic-template',txt:'套範本'},()=>openTemplateModal(),'插入版型頁'],[{ic:'ic-merge',txt:'合併簡報'},()=>$('#mergeInput').click(),'把另一份 .deck 的頁附加進來']]));
     pp.appendChild(pageJsonBtn());
     const note=document.createElement('div'); note.className='row';
     note.innerHTML='<span class="unit">點選元素編輯屬性；Shift／框選可多選。</span>';
@@ -3812,7 +3827,7 @@ function renderPropsBody(){
       pp.appendChild(sn);
     }
     pp.appendChild(btnRow([
-      ['🖼 換封面圖',()=>{ COVER_TARGET=el.id; $('#coverInput').click(); },'選一張圖當封面（PNG／JPG）'],
+      [{ic:'ic-image',txt:'換封面圖'},()=>{ COVER_TARGET=el.id; $('#coverInput').click(); },'選一張圖當封面（PNG／JPG）'],
       ...(el.mode==='local'? [['↻ 重抓封面',()=>{ VID_RECOVER=el.id; $('#vidInput').click(); },'重新選同一個影片檔並抓一格畫面']]:[]),
     ]));
     const alr=document.createElement('div'); alr.className='row'; alr.innerHTML='<label>替代文字</label>';
@@ -3971,7 +3986,7 @@ function renderPropsBody(){
   ]));
   pp.appendChild(secTitle('動作'));
   pp.appendChild(btnRow([
-    ['🖌 複製樣式',()=>armPainter(el),'格式刷：武裝後點其他元素套用其字體/顏色/填色/框線'],
+    [{ic:'ic-brush',txt:'複製樣式'},()=>armPainter(el),'格式刷：武裝後點其他元素套用其字體/顏色/填色/框線'],
     ...(el.groupId? [['解散群組',()=>{ commitUndo(); for(const m of groupMembers(el)) delete m.groupId; setSel([el.id]); renderStage(); renderProps(); },'取消此群組']] : []),
   ]));
   pp.appendChild(btnRow([
@@ -4236,7 +4251,7 @@ function armPainter(el){ APP.painter=extractStyle(el); updatePainterHint(); }
 function updatePainterHint(){
   const on=!!APP.painter;
   stage.style.cursor= on?'copy':'';
-  $('#painterHint').textContent= on?'🖌 格式刷啟用：點元素套用（可連續，Esc 取消）':'';
+  $('#painterHint').innerHTML= on?'<svg class="ic"><use href="#ic-brush"/></svg>格式刷啟用：點元素套用（可連續，Esc 取消）':'';
 }
 function applyPainterTo(el){ if(!APP.painter||!el) return; commitUndo(); applyStyle(el,APP.painter); renderStage(); if(APP.sel===el.id) renderProps(); }
 
