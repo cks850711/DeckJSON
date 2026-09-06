@@ -283,7 +283,10 @@
   .ah:active{cursor:grabbing}
   .el.multisel{outline:1.5px solid rgba(77,157,224,.7)}
   #marquee{position:absolute;border:1px solid var(--accent);background:rgba(77,157,224,.12);z-index:35;pointer-events:none}
-  #pageJsonPanel{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,.5);width:380px;display:flex;flex-direction:column;overflow:hidden}
+  /* 寬度不寫死：色票欄掛進來時整個面板一起變寬，收起時自動縮回 .pjMain 的 380px。 */
+  #pageJsonPanel{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
+  #pageJsonPanel .pjBody{display:flex;align-items:stretch;min-height:0}
+  #pageJsonPanel .pjMain{width:380px;flex:none;display:flex;flex-direction:column;min-width:0}
   #pageJsonPanel[hidden]{display:none}
   #pageJsonPanel .pjHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#23252b;cursor:move;font-size:12px;font-weight:600;user-select:none}
   #pageJsonPanel .pjHead .pjClose{margin-left:auto;cursor:pointer;color:var(--fg-dim);font-weight:700}
@@ -498,6 +501,9 @@
   #palettePop .ptab{flex:1;padding:5px 4px;font-size:11px;text-align:center;border-radius:6px;cursor:pointer;background:var(--bg-raised);border:1px solid var(--line)}
   #palettePop .ptab.on{background:var(--accent);border-color:var(--accent);color:#fff}
   #palettePop .pbody{max-height:280px;overflow-y:auto}
+  /* 色票欄是「本頁 JSON」面板的右半邊，不是獨立浮窗——跟著面板一起拖、一起關。 */
+  #palCopyWin{width:280px;flex:none;padding:8px;overflow:auto;border-left:1px solid var(--line);background:var(--bg-sunken,#1c1e23)}
+  #palCopyWin[hidden]{display:none}
   .palRow{display:flex;align-items:center;gap:5px;margin:4px 0}
   .palRow .palName{width:64px;flex-shrink:0;color:var(--fg-dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .palSw{width:22px;height:22px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,.25)}
@@ -522,6 +528,7 @@
   <symbol id="ic-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
   <symbol id="ic-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></symbol>
   <symbol id="ic-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
   <symbol id="ic-code" viewBox="0 0 24 24"><path d="m9 18-6-6 6-6M15 6l6 6-6 6"/></symbol>
   <symbol id="ic-camera" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="ic-export" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
@@ -661,6 +668,7 @@
 
 <div id="pageJsonPanel" hidden style="right:236px;bottom:16px">
   <div class="pjHead" id="pageJsonHead">本頁 JSON<span class="unit" id="pageJsonName" style="font-weight:400"></span><span class="pjClose" id="btnPageJsonClose">×</span></div>
+  <div class="pjBody"><div class="pjMain">
   <textarea id="pageJsonArea" spellcheck="false"></textarea>
   <div class="pjBtns">
     <button id="btnPageJsonRefresh" class="icBtn"><svg class="ic"><use href="#ic-refresh"/></svg>重新讀取</button>
@@ -668,6 +676,7 @@
     <button id="btnPageJsonCopyRaw" title="不遮罩圖片，複製含完整 base64 的本頁 JSON。給外部工具用（例如 Obsidian 的 deckjson codeblock）——@asset 佔位只有本簡報自己還原得回來">複製（含 base64）</button>
     <button id="btnPageJsonApply" class="primary">套用本頁</button>
   </div>
+  </div><!-- #palCopyWin 由 buildCopyPalWin() 掛在這裡，與 .pjMain 並排 --></div>
 </div>
 
 <div id="layerPanel" hidden style="right:236px;top:56px">
@@ -3129,9 +3138,11 @@ document.querySelectorAll('#palettePop .ptab').forEach(t=>t.onclick=()=>{ palTab
   document.querySelectorAll('#palettePop .ptab').forEach(x=>x.classList.toggle('on',x===t)); buildPalBody(); });
 document.addEventListener('pointerdown',e=>{ if(!$('#palettePop').hidden && !e.target.closest('#palettePop') && !e.target.closest('.swatchBtn')) closePalette(); },true);
 
-/* ===== JSON 模式色票複製小窗 =====
-   本頁 JSON 面板開啟＋選中表格/圖表（這兩者的細部樣式主要靠 JSON 手改）時，右下角浮出三頁籤色票；
-   點色塊是「複製色碼」不是套用。點開其他元素即收起。
+/* ===== JSON 模式色票欄 =====
+   「本頁 JSON」面板的右半邊，隨面板開關與拖曳連動（DOM 上就掛在 .pjBody 內，不是獨立浮窗）。
+   點色塊是「複製色碼」不是套用——貼到左邊 JSON 裡用。
+   任何選取狀態都在（含沒選取，因為頁面層的 bg 也要調），不再限定表格/圖表：
+   手改 JSON 這件事本來就不分元素型別。
 
    ⚠ 複製出來的格式**隨選中的元素而變**，因為 deck 內有兩套互斥的顏色慣例：
      表格等元素層 → 不帶 # 的 6 位碼 "4D9DE0"（畫布渲染時程式自己補 '#'，匯出走 srgbClr 也只認 6 位）
@@ -3144,13 +3155,12 @@ function buildCopyPalWin(){
   let w=$('#palCopyWin');
   if(!w){
     w=document.createElement('div'); w.id='palCopyWin';
-    w.style.cssText='position:fixed;right:12px;bottom:12px;width:300px;max-height:44vh;overflow:auto;z-index:60;'
-      +'background:var(--panel,#23252b);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.5);';
-    document.body.appendChild(w);
+    $('#pageJsonPanel').querySelector('.pjBody').appendChild(w);
   }
   w.innerHTML='';
   // 圖表的 option 是 raw ECharts，複製時要帶 #；表格等元素層一律裸碼。見本區塊開頭註解。
   const forChart=((selEl()||{}).type==='chart');
+  w.dataset.fc=forChart?'1':'0';
   const head=document.createElement('div'); head.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
   const title=document.createElement('span');
   title.textContent=forChart? '色票 → 複製 #色碼（圖表）' : '色票 → 複製色碼';
@@ -3198,11 +3208,13 @@ function buildCopyPalWin(){
   }
 }
 function updateCopyPalWin(){
-  const el=selEl();
-  const show=pageJsonOpen()&&el&&(el.type==='table'||el.type==='chart');
   const w=$('#palCopyWin');
-  if(show) { buildCopyPalWin(); $('#palCopyWin').hidden=false; }
-  else if(w) w.hidden=true;
+  if(!pageJsonOpen()){ if(w) w.hidden=true; return; }
+  /* 只在「複製格式會變」時重建。這函式每次改選取都會跑，無條件重建會把使用者
+     正在捲動的色票清單彈回頂端——選元素跟挑顏色是同時進行的兩件事。 */
+  const fc=((selEl()||{}).type==='chart')?'1':'0';
+  if(!w||w.dataset.fc!==fc) buildCopyPalWin();
+  $('#palCopyWin').hidden=false;
 }
 
 function colorRow(label,val,onSet,allowNone){
