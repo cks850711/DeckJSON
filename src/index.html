@@ -491,6 +491,14 @@
   .gSegHit:hover{stroke:rgba(93,169,233,.35)}
   /* 分頁列釘在捲動容器頂端。負邊距是為了讓它橫跨 .mbody 的 16px 內距——
      否則捲動時內文會從分頁列兩側的縫隙透出來。 */
+  /* 說明配圖。底層是縮小的真實舞台（renderEl 的產物），上層是標註 SVG。
+     標註層刻意放在 scale 之外——若畫進被 scale(0.25) 的容器裡，stroke-width
+     會一起縮成 0.375px 的髮絲。 */
+  .helpFig{position:relative;overflow:hidden;border:1px solid var(--line-strong);
+    border-radius:6px;margin:8px 0 10px;background:#fff}
+  .helpFigStage{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+  .helpFigNote{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .helpFigCap{font-size:12px;color:var(--fg-mute);margin:-4px 0 10px}
   /* 說明面板高度固定，不隨分頁內容伸縮。彈窗是垂直置中的，高度一變上緣就跟著跳，
      切分頁時分頁列會上下移動——而分頁列是導覽控制，必須待在原地。
      用 85vh（＝ .mbox 原本的上限）而非固定像素：各分頁一樣大，且視窗大就顯示得多。 */
@@ -500,6 +508,15 @@
   #helpBody .helpTabs .propTab{flex:none;padding:0 12px}
   #helpBody .helpPane[hidden]{display:none}
   #helpBody .helpPane>h4:first-child{margin-top:0}
+  /* 「進階」摺疊區：技術細節（OOXML 對應、識別符）收在這裡。不刪是因為
+     說明面板有兩個讀者——人看主線，AI 要抄得出規格。摺起來只是讓人先看見操作。 */
+  #helpBody details.hAdv{margin:6px 0 10px;border-left:2px solid var(--line-strong);padding-left:10px}
+  #helpBody details.hAdv>summary{cursor:pointer;color:var(--fg-mute);font-size:12px;list-style:none}
+  #helpBody details.hAdv>summary::-webkit-details-marker{display:none}
+  #helpBody details.hAdv>summary::before{content:'▸ ';color:var(--fg-mute)}
+  #helpBody details.hAdv[open]>summary::before{content:'▾ '}
+  #helpBody details.hAdv>summary:hover{color:var(--fg-dim)}
+  #helpBody details.hAdv li{color:var(--fg-dim)}
   #helpBody h4{margin:14px 0 4px;color:var(--accent)}
   #helpBody p,#helpBody li{font-size:13px;line-height:1.7;margin:2px 0;max-width:76ch}
   #helpBody ul{margin:2px 0;padding-left:20px}
@@ -893,20 +910,38 @@
         <li><b>文字框內距／不換行</b>：內距讓有填色的卡片式文字框不再貼邊（匯出為 <code>lIns/tIns/rIns/bIns</code>）；「不自動換行」適合單行標籤（匯出 <code>wrap="none"</code>）。</li>
       </ul>
       <h4 data-tab="表格">欄列、合併與格內樣式</h4>
+      <div data-fig="tbl-handles"></div>
       <ul>
-        <li>表格選取後：上緣／左緣<b>藍色把手</b>調欄寬列高；把手之間的<b>灰色區段</b>滑過變紅、點擊即<b>刪除該欄／列</b>（合併儲存格自動縮減，其餘欄寬列高不動）；右側面板「新增」加欄列。</li>
-        <li><b>合併儲存格</b>：表格選取後，在格子內<b>拖曳反白</b>要合併的相鄰範圍（會自動外擴，不切穿既有合併），點反白框旁的<b>「合併儲存格」</b>鈕；反白單一已合併格則點<b>「取消合併」</b>。此時<b>移動整張表</b>改由拖曳表格<b>邊框帶</b>（外圈約 16px）。雙擊某格＝編輯該格文字。</li>
-        <li><b>逐格／多格改樣式</b>：拖曳反白幾格後，右側面板的字級／行距／粗斜體／文字色／對齊／底色／框線<b>只套用到選取格</b>（面板頂端會顯示套用範圍）；未反白則套用全表。</li>
-        <li><b>逐格框線</b>：右欄「框線筆」設線寬（pt）＋顏色，再點<b>全部／外框／內部／上／下／左／右／無</b>套到反白範圍（未反白＝全表）。每格四邊、顏色線寬各自獨立（同 PowerPoint 儲存格框線）；相鄰共用邊自動雙寫同步，故畫布預覽＝匯出結果。</li>
-        <li><b>格內混排</b>：雙擊進入儲存格後<b>反白幾個字</b>，右欄「儲存格樣式」的字級／B／I／文字色就只套那幾個字；此時會多出<b>「格內文字（反白處）」</b>一排——上標／下標／底線／刪除線／高亮／清除格式。取消反白＝改回整格。</li>
-        <li><b>格內編輯快捷</b>：編輯儲存格時，<b>Enter</b>＝格內換行（同 PowerPoint）、<b>Esc</b>＝結束編輯。Tab 不跳格。換格請直接<b>雙擊</b>目標格。</li>
-        <li><b>貼上外部表格</b>：從 <b>Excel／PowerPoint／Word／網頁</b>複製表格，直接 Cmd/Ctrl+V 貼進畫布，會變成<b>可編輯的原生表格</b>而不是圖片。合併儲存格、底色、字色、粗斜體、對齊、上下標、格內高亮都會保留，欄寬照來源。<br>
-          <b>字級一律重設為 12pt</b>，不繼承來源——來源的字級多半是「為了把表格塞進版面」被縮過的，那是別人的妥協不是階層資訊。要調整大小請選取整張表拖把手，開<b>比例鎖定＋字級同步</b>，欄寬列高與字級會一起縮，結構不會跑掉。<br>
-          <b>來源沒指定底色（或指定純白）的格子預設填白</b>，由工具列右側齒輪（偏好設定）裡的「白底」切換成透明。預設白底是因為貼上的字色是深色，透明貼到深色背景上會整張看不見；少數想讓背景透出來的場合再關掉。已經貼進來的表格要改，選取整張表用右欄「儲存格 → 底色」一次套完。<br>
-          <b>格內圖片會變成獨立的圖片元素</b>，與表格綁成一個<b>軟群組</b>——整組搬移或等比縮放時圖跟著走，但單獨拖某一欄的寬度時圖不會跟。這不是偷懶：PowerPoint 的表格儲存格本來就放不了圖片，它自己「在格子裡插入圖片」也是浮在表格上方的獨立物件。只收<b>內嵌位元組</b>（<code>data:</code>）的圖；網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。<br>
-          <span class="unit">Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先；真的要貼圖片版就先貼進別處再截圖。Obsidian 的 Markdown 表格請走 md-table-converter（姊妹專案）轉一手（它的「複製到剪貼簿」輸出的就是這裡吃的格式；圖片要先在那邊掛載圖片資料夾才帶得過來）。框線不從來源反推（Excel 會把網格線也寫成 border），一律套整表細線，需要再自行調整。</span></li>
-        <li><b>表格虛線框線</b>：框線筆旁勾「虛線」再套（全部／外框／內部／各邊），匯出為 <code>prstDash sysDash</code>；實線虛線可逐格逐邊混用。</li>
+        <li><b>調欄寬列高</b>：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右側面板的「新增」。</li>
+        <li><b>刪掉整欄或整列</b>：把手之間的灰色區段，滑過會變紅，點一下就刪掉。合併過的儲存格會自動縮減，其他欄寬列高不受影響。</li>
       </ul>
+      <div data-fig="tbl-merge"></div>
+      <ul>
+        <li><b>合併儲存格</b>：在格子裡拖曳反白要合併的範圍，按反白框旁的「合併儲存格」。範圍會自動外擴，不會切穿既有的合併。反白單一已合併的格子，那顆鈕會變成「取消合併」。</li>
+        <li>合併模式下，格子內部改成拖曳反白，所以<b>搬動整張表要改抓外圈那一圈邊框</b>（約 16px 寬）。想編輯某一格的文字，雙擊它。</li>
+        <li><b>只改某幾格的樣式</b>：拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色、框線就只作用在那幾格，面板頂端會顯示目前的套用範圍。沒反白就是整張表。</li>
+        <li><b>框線</b>：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊，套到反白範圍；沒反白一樣是整張表。旁邊勾「虛線」就畫虛線，實線虛線可以逐格逐邊混用。</li>
+        <li><b>只改格子裡的幾個字</b>：雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體、文字色就只套在它們身上。這時會多出一排「格內文字（反白處）」，放上標、下標、底線、刪除線、高亮與清除格式。取消反白就回到整格。</li>
+        <li><b>格內編輯的按鍵</b>：Enter 是在格子裡換行，跟 PowerPoint 一樣；Esc 結束編輯。Tab 不跳格，要換格請直接雙擊目標格。</li>
+      </ul>
+      <h4>從別的軟體貼表格進來</h4>
+      <ul>
+        <li>從 <b>Excel、PowerPoint、Word 或網頁</b>複製表格，直接 Cmd/Ctrl+V 貼進畫布，會變成<b>可以編輯的原生表格</b>，不是一張圖。合併儲存格、底色、字色、粗斜體、對齊、上下標與格內高亮都會保留，欄寬照來源。</li>
+        <li><b>字級一律重設為 12pt</b>，不繼承來源。來源的字級多半是為了把表格塞進版面而縮過的，那是別人的妥協，不是內容本身的階層。要整體改大小，選取整張表拖把手，並打開「比例鎖定」與「字級同步」——欄寬列高與字級會一起縮，結構不會跑掉。</li>
+        <li><b>來源沒指定底色的格子會填白。</b>貼進來的字通常是深色，透明底疊到深色背景上會整張看不見。想讓背景透出來，齒輪（偏好設定）裡可以關掉「白底」；已經貼進來的表格，選取整張表用右欄的「儲存格 → 底色」一次改完。</li>
+        <li><b>格子裡的圖片會變成獨立的圖片元素</b>，和表格綁成一個軟群組。整組搬移或等比縮放時圖會跟著走，但單獨拖某一欄的寬度時不會跟。這不是偷懶——PowerPoint 的儲存格本來就放不了圖片，它自己「在格子裡插入圖片」也是浮在表格上方的獨立物件。</li>
+      </ul>
+      <details class="hAdv">
+        <summary>進階：來源差異與匯出對應</summary>
+        <ul>
+          <li>Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先。真的想要圖片版，先貼到別處再截圖。</li>
+          <li>Obsidian 的 Markdown 表格請走 md-table-converter（姊妹專案）轉一手——它的「複製到剪貼簿」輸出的就是這裡吃的格式。圖片要先在那邊掛載圖片資料夾才帶得過來。</li>
+          <li>框線不從來源反推，因為 Excel 會把網格線也寫成 border。一律套整表細線，需要再自行調整。</li>
+          <li>只收內嵌位元組（<code>data:</code>）的圖片。網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。</li>
+          <li>每一格的四邊、顏色與線寬各自獨立，與 PowerPoint 的儲存格框線相同。相鄰的共用邊會自動雙寫同步，所以畫布上看到的就是匯出結果。</li>
+          <li>虛線框線匯出為 <code>prstDash sysDash</code>。</li>
+        </ul>
+      </details>
       <h4 data-tab="形狀">形狀與自訂幾何</h4>
       <ul>
         <li>「＋形狀」開啟圖庫：線條／矩形／基本圖案／箭號／方程式／流程圖／星星綵帶／圖說／動作按鈕，共 176 種，另有自訂幾何。線條類（直線、箭頭、雙頭、肘形）選取後拖曳<b>兩端圓點</b>改方向，可水平、垂直、斜向；畫布輪廓即 OOXML 原生幾何，匯出為 PPT 原生幾何。</li>
@@ -8424,6 +8459,106 @@ function buildChartVis(){
 }
 
 /* ================= 說明 ================= */
+/* ===== 說明配圖 =====
+   一張圖 ＝ 縮小的真實舞台 ＋ 一層標註。舞台那半用 renderEl()——就是畫布本身
+   那支渲染器，不是縮圖列的 drawThumb()。後者是另一套獨立實作（兩者共用 0 行），
+   曾長期把圖表畫成半透明色塊；拿它配圖會讓手冊在兩套渲染器漂移的地方顯示錯的東西。
+
+   標註用**舞台座標**書寫（跟元素的 x/y 同一個座標系，不必自己乘縮放比），
+   線寬與字級則固定成裝置像素——換句話說，改縮放比時圖會整個縮小，但箭頭不會變細、
+   字不會變小。這是刻意的：圖縮小是為了省版面，標註縮小只會看不清楚。 */
+/* 一張圖不畫整張投影片，只框住要講的那一塊：view=[x,y,w,h] 是舞台座標上的取景框，
+   圖寬固定 420px，縮放比由取景框寬度反推。畫整張的話主體會小到看不清楚，
+   標註也擠成一團——第一版就是這樣，改用取景框後主體大了三倍。 */
+const HF_W=420;
+function helpFig(o){
+  const v=o.view||[0,0,STAGE_W,STAGE_H];
+  const k=HF_W/v[2], W=HF_W, H=Math.round(v[3]*k);
+  const fig=document.createElement('div'); fig.className='helpFig';
+  fig.style.width=W+'px'; fig.style.height=H+'px';
+
+  const st=document.createElement('div'); st.className='helpFigStage';
+  st.style.width=STAGE_W+'px'; st.style.height=STAGE_H+'px';
+  st.style.transform='translate('+(-v[0]*k)+'px,'+(-v[1]*k)+'px) scale('+k+')';
+  st.style.background='#'+(o.bg||'FFFFFF');
+  for(const el of (o.els||[])) st.appendChild(renderEl(el));
+  fig.appendChild(st);
+
+  const X=n=>+((n-v[0])*k).toFixed(1), Y=n=>+((n-v[1])*k).toFixed(1);
+  const A=(x,y)=>X(x)+' '+Y(y);
+  const parts=['<defs><marker id="hfA" viewBox="0 0 8 8" refX="7" refY="4" '
+    +'markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#E0B04D"/>'
+    +'</marker></defs>'];
+  for(const n of (o.notes||[])){
+    if(n.box)  parts.push('<rect x="'+(X(n.box[0])-3)+'" y="'+(Y(n.box[1])-3)+'" width="'+(n.box[2]*k+6).toFixed(1)
+      +'" height="'+(n.box[3]*k+6).toFixed(1)+'" fill="none" stroke="#4D9DE0" stroke-width="1.5" stroke-dasharray="5 3"/>');
+    if(n.dot)  parts.push('<rect x="'+(X(n.dot[0])-3.5)+'" y="'+(Y(n.dot[1])-3.5)
+      +'" width="7" height="7" rx="1.5" fill="#4D9DE0"/>');
+    if(n.arrow)parts.push('<path d="M '+A(n.arrow[0],n.arrow[1])+' L '+A(n.arrow[2],n.arrow[3])
+      +'" fill="none" stroke="#E0B04D" stroke-width="1.5" marker-end="url(#hfA)"/>');
+    if(n.label){const [lx,ly,tx]=n.label;
+      parts.push('<text x="'+X(lx)+'" y="'+Y(ly)+'" font-size="11" font-weight="600" fill="#B8860B" '
+        +'paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round" '
+        +'text-anchor="'+(n.anchor||'start')+'">'+tx+'</text>');}
+    if(n.cursor)parts.push('<g transform="translate('+A(n.cursor[0],n.cursor[1])+')">'
+      +'<path d="M0 0 L0 15 L4 11.5 L6.4 17 L8.6 16 L6.2 10.6 L11.5 10.4 Z" fill="#fff" stroke="#111" '
+      +'stroke-width="1.2" stroke-linejoin="round"/></g>');
+  }
+  const ov=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  ov.setAttribute('class','helpFigNote'); ov.setAttribute('viewBox','0 0 '+W+' '+H);
+  ov.innerHTML=parts.join('');
+  fig.appendChild(ov);
+
+  const wrap=document.createElement('div');
+  wrap.appendChild(fig);
+  if(o.cap){ const c=document.createElement('div'); c.className='helpFigCap'; c.innerHTML=o.cap; wrap.appendChild(c); }
+  return wrap;
+}
+/* 圖的內容寫在這裡，HTML 那邊只放 <div data-fig="名字">。示範元素的 JSON
+   不必手寫座標——在 DeckJSON 裡把示範頁畫出來，用「本頁 JSON」面板複製即可。 */
+const _hc=(t,o)=>Object.assign({text:t||'',bold:false,italic:false,color:'1A1A1A',sizePt:14,
+  fill:null,align:'center',valign:'middle',colspan:1,rowspan:1,covered:false},o||{});
+const _hHdr=t=>_hc(t,{bold:true,fill:'EEF2F8'});
+const _hTable=(cells,o)=>Object.assign({id:'hf-t',type:'table',x:340,y:284,
+  colW:[200,200,200],rowH:[44,40,40],cells,border:{pt:0.75,color:'999999'}},o||{});
+
+const HELP_FIGS={
+  /* 欄列把手：這張圖取代原文那句「上緣／左緣藍色把手調欄寬列高；把手之間的灰色
+     區段滑過變紅、點擊即刪除該欄／列」——兩個動作、兩種控制項擠在一個分號句裡。 */
+  'tbl-handles':{
+    view:[280,200,720,290],
+    els:[_hTable([
+      [_hHdr('項目'),_hHdr('數量'),_hHdr('備註')],
+      [_hc('外框'),_hc('12'),_hc('')],
+      [_hc('內襯'),_hc('8'),_hc('')],
+    ])],
+    notes:[
+      {dot:[540,272]},{dot:[740,272]},
+      {arrow:[560,232,542,264]},
+      {label:[566,228,'拖曳藍點：調欄寬']},
+      {box:[744,264,192,14]},
+      {cursor:[830,282]},
+      {arrow:[890,470,858,300]},
+      {label:[896,478,'點灰色區段：刪掉整欄'],anchor:'end'},
+    ],
+    cap:'列高同理，把手在左緣。'
+  },
+  'tbl-merge':{
+    view:[280,240,720,290],
+    els:[_hTable([
+      [_hHdr('項目'),_hHdr('數量'),_hHdr('備註')],
+      [_hc('外框'),_hc('12'),_hc('')],
+      [_hc('小計 20',{colspan:2,fill:'FFF6E0'}),_hc('',{covered:true}),_hc('')],
+    ])],
+    notes:[
+      {box:[340,368,400,40]},
+      {arrow:[420,470,470,414]},
+      {label:[414,478,'反白這兩格，按「合併儲存格」']},
+    ],
+    cap:'反白單一已合併的格子，按鈕會變成「取消合併」。'
+  },
+};
+
 /* 說明面板的分頁：內容在 HTML 裡是一長串，開啟時才切成分頁。
    切法比照 applyPropTabs——掃過扁平的 DOM，遇到帶 data-tab 的 <h4> 就開新一頁，
    沒帶的 <h4> 屬於前一頁（所以「入門」能同時裝「這是什麼」與「存檔」兩個小節）。
@@ -8453,6 +8588,11 @@ function applyHelpTabs(){
     b.textContent=g.name; b.onclick=()=>show(i); bar.appendChild(b);
   });
   show(0);
+  for(const ph of hb.querySelectorAll('[data-fig]')){
+    const f=HELP_FIGS[ph.dataset.fig];
+    if(f) ph.replaceWith(helpFig(f));
+    else ph.remove();                    // 沒對應的圖就整個拿掉，不留空盒子
+  }
   hb.dataset.tabbed='1';
 }
 $('#btnHelp').onclick=()=>{ $('#helpModal').hidden=false; applyHelpTabs(); };
