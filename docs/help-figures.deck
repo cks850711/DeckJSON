@@ -692,6 +692,120 @@
        ]
       }
      ]
+    },
+    {
+     "id": "pr-sf0174",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "調欄寬列高",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右側面板的「新增」。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "刪掉整欄或整列",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：把手之間的灰色區段，滑過會變紅，點一下就刪掉。合併過的儲存格會自動縮減，其他欄寬列高不受影響。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-b92m4c",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "調欄寬列高",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右側面板的「新增」。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "刪掉整欄或整列",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：把手之間的灰色區段，滑過會變紅，點一下就刪掉。合併過的儲存格會自動縮減，其他欄寬列高不受影響。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1229,6 +1343,306 @@
          "text": "(caption — to translate)",
          "sizePt": 11,
          "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-wt2fou",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "合併儲存格",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：在格子裡拖曳反白要合併的範圍，按反白框旁的「合併儲存格」。範圍會自動外擴，不會切穿既有的合併。反白單一已合併的格子，那顆鈕會變成「取消合併」。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "合併模式下，格子內部改成拖曳反白，所以",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "搬動整張表要改抓外圈那一圈邊框",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "（約 16px 寬）。想編輯某一格的文字，雙擊它。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只改某幾格的樣式",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色、框線就只作用在那幾格，面板頂端會顯示目前的套用範圍。沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "框線",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊，套到反白範圍；沒反白一樣是整張表。旁邊勾「虛線」就畫虛線，實線虛線可以逐格逐邊混用。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只改格子裡的幾個字",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體、文字色就只套在它們身上。這時會多出一排「格內文字（反白處）」，放上標、下標、底線、刪除線、高亮與清除格式。取消反白就回到整格。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格內編輯的按鍵",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：Enter 是在格子裡換行，跟 PowerPoint 一樣；Esc 結束編輯。Tab 不跳格，要換格請直接雙擊目標格。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-5yz5co",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "合併儲存格",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：在格子裡拖曳反白要合併的範圍，按反白框旁的「合併儲存格」。範圍會自動外擴，不會切穿既有的合併。反白單一已合併的格子，那顆鈕會變成「取消合併」。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "合併模式下，格子內部改成拖曳反白，所以",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "搬動整張表要改抓外圈那一圈邊框",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "（約 16px 寬）。想編輯某一格的文字，雙擊它。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只改某幾格的樣式",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色、框線就只作用在那幾格，面板頂端會顯示目前的套用範圍。沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "框線",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊，套到反白範圍；沒反白一樣是整張表。旁邊勾「虛線」就畫虛線，實線虛線可以逐格逐邊混用。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只改格子裡的幾個字",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體、文字色就只套在它們身上。這時會多出一排「格內文字（反白處）」，放上標、下標、底線、刪除線、高亮與清除格式。取消反白就回到整格。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格內編輯的按鍵",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：Enter 是在格子裡換行，跟 PowerPoint 一樣；Esc 結束編輯。Tab 不跳格，要換格請直接雙擊目標格。",
+         "sizePt": 10,
          "color": "AAAAAA"
         }
        ]

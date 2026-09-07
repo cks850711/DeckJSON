@@ -18,12 +18,67 @@
  */
 const fs=require('fs'), vm=require('vm');
 const ZH={x:40,y:96,w:580,h:300}, EN={x:660,y:96,w:580,h:300};
+const PROSE={y:452,h:248};                       // 說明文字區（左右各 580 寬）
 const uid=p=>p+'-'+Math.random().toString(36).slice(2,8);
+
+/* ── 說明文字：HTML → 簡報段落 ────────────────────────────
+   單向。說明本文的正本永遠是 src/index.html——它有 <code>、巢狀清單與
+   摺疊區，簡報的文字框裝不下這些結構，能往返的話遲早掉格式。
+   這裡只是把它「印」進簡報，讓這份檔案本身就是一份看得懂的說明文件。 */
+function htmlToRuns(html,base){
+  const runs=[]; let bold=false, code=false, i=0;
+  /* color 一定要寫。沒寫的話畫布不是給黑色，而是繼承 app 的介面前景色
+     （近白），在白底投影片上等於隱形——實際踩過。 */
+  const push=t=>{ if(!t) return;
+    const r={text:t,sizePt:base,color:'1A1A1A'};
+    if(bold) r.bold=true;
+    if(code){ r.fontFace='Menlo'; r.color='2E6DA4'; }
+    runs.push(r); };
+  while(i<html.length){
+    const lt=html.indexOf('<',i);
+    if(lt<0){ push(decode(html.slice(i))); break; }
+    push(decode(html.slice(i,lt)));
+    const gt=html.indexOf('>',lt);
+    if(gt<0) break;
+    const tag=html.slice(lt+1,gt).toLowerCase().replace(/\s.*$/,'');
+    if(tag==='b'||tag==='strong') bold=true;
+    else if(tag==='/b'||tag==='/strong') bold=false;
+    else if(tag==='code') code=true;
+    else if(tag==='/code') code=false;
+    else if(tag==='br') push(' ');
+    i=gt+1;
+  }
+  return runs.length?runs:[{text:'',sizePt:base}];
+}
+function decode(t){
+  return t.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+          .replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+}
+/* 圖與文字的對應：<div data-fig="X"> 後面緊接的那個 <ul> 就是它在講的東西。 */
+function proseFor(html,figName){
+  const ph='data-fig="'+figName+'"';
+  const a=html.indexOf(ph); if(a<0) return [];
+  const us=html.indexOf('<ul',a); if(us<0) return [];
+  const ue=html.indexOf('</ul>',us);
+  const seg=html.slice(us,ue);
+  const out=[];
+  const re=/<li>([\s\S]*?)<\/li>/g; let m;
+  while((m=re.exec(seg))) out.push(m[1]);
+  return out;
+}
+function proseEl(x,items,muted){
+  return {id:uid('pr'),type:'text',x,y:PROSE.y,w:580,h:PROSE.h,valign:'top',
+    fill:null,lineColor:null,
+    paras:items.map(h=>({align:'left',bullet:{type:'char',level:0,code:'2022'},
+      spaceAfter:4,
+      runs:htmlToRuns(h,10).map(r=>muted?Object.assign({},r,{color:'AAAAAA'}):r)}))};
+}
 
 function readFigs(htmlPath){
   const s=fs.readFileSync(htmlPath,'utf8');
-  const a=s.indexOf('const _hc=(t,o)=>');
-  const b=s.indexOf('\n};', s.indexOf('const HELP_FIGS={'))+3;
+  let a=s.indexOf('const _hc=(t,o)=>');                 // bootstrap 期的手寫版帶輔助函式
+  if(a<0) a=s.indexOf('const HELP_FIGS=');               // 產生版是純資料
+  const b=s.indexOf('\n};', s.indexOf('const HELP_FIGS='))+3;
   if(a<0||b<3) throw new Error('在 '+htmlPath+' 找不到 HELP_FIGS 區塊');
   const ctx={};
   vm.createContext(ctx);
@@ -31,7 +86,7 @@ function readFigs(htmlPath){
   return ctx.__out;
 }
 
-function toDeck(figs){
+function toDeck(figs,helpHtml){
   const conv=(fig,R)=>{
     const v=fig.view||[0,0,1280,720];
     const k=Math.min(R.w/v[2], R.h/v[3]);
@@ -83,6 +138,11 @@ function toDeck(figs){
       ...conv(figs[name],ZH), ...conv(figs[name],EN),
       txt(40,406,580,40,(figs[name].cap||'').replace(/<[^>]+>/g,''),{valign:'top'}),
       txt(660,406,580,40,'(caption — to translate)',{valign:'top',c:'AAAAAA'}),
+      ...(()=>{ const items=proseFor(helpHtml,name);
+        if(!items.length) return [];
+        /* 英文那半先放同一份中文、字色壓灰——翻譯時直接覆蓋，
+           結構與長度都對得上，也一眼看得出還沒翻。 */
+        return [proseEl(40,items,false), proseEl(660,items,true)]; })(),
     ]}));
   return {format:'deckjson',version:1,title:'DeckJSON 說明配圖',stage:{w:1280,h:720},pages};
 }
@@ -128,9 +188,31 @@ function writeFigs(htmlPath,figs){
   return out.length;
 }
 
+/* ── prose：只更新簡報下半的說明文字，圖完全不動 ──────────
+   圖歸簡報（人調），文字歸 HTML（正本）。這支就是把後者印進前者。
+   舊的文字元素靠 id 前綴 pr- 辨識後整批換掉，不會累積。 */
+function refreshProse(deckPath,htmlPath){
+  const deck=JSON.parse(fs.readFileSync(deckPath,'utf8'));
+  const html=fs.readFileSync(htmlPath,'utf8');
+  let n=0, empty=[];
+  for(const pg of deck.pages){
+    pg.elements=pg.elements.filter(e=>!/^pr-/.test(e.id));
+    const items=proseFor(html,pg.name);
+    if(!items.length){ empty.push(pg.name); continue; }
+    pg.elements.push(proseEl(40,items,false), proseEl(660,items,true));
+    n+=items.length;
+  }
+  fs.writeFileSync(deckPath, JSON.stringify(deck,null,1));
+  return {n,empty};
+}
+
 const [,,cmd,inp,outp,...rest]=process.argv;
 const lang=(rest.find(a=>a.startsWith('--lang='))||'--lang=zh').split('=')[1];
-if(cmd==='import'){
+if(cmd==='prose'){
+  const r=refreshProse(inp,outp);
+  console.log('寫入 '+r.n+' 條說明文字 → '+inp);
+  if(r.empty.length) console.log('  （找不到對應文字的圖：'+r.empty.join('、')+'）');
+}else if(cmd==='import'){
   const deck=JSON.parse(fs.readFileSync(inp,'utf8'));
   const figs=fromDeck(deck,lang);
   const n=writeFigs(outp,figs);
@@ -138,12 +220,14 @@ if(cmd==='import'){
   for(const k in figs) console.log('  '+k.padEnd(16)+String(figs[k].els.length).padStart(3)+' 個元素');
 }else if(cmd==='export'){
   const figs=readFigs(inp);
-  const deck=toDeck(figs);
+  const deck=toDeck(figs, fs.readFileSync(inp,'utf8'));
   fs.writeFileSync(outp, JSON.stringify(deck,null,1));
   console.log('匯出 %d 頁 → %s（%d 位元組）',deck.pages.length,outp,fs.statSync(outp).size);
   for(const p of deck.pages) console.log('  '+p.name.padEnd(16)+String(p.elements.length).padStart(3)+' 個元素');
 }else{
-  console.log('用法：\n  node tools/figdeck.js export <index.html> <out.deck>\n'
-    +'  node tools/figdeck.js import <in.deck> <index.html> [--lang=zh|en]');
+  console.log('用法：\n'
+    +'  node tools/figdeck.js prose  <deck> <index.html>      只更新簡報內的說明文字\n'
+    +'  node tools/figdeck.js import <deck> <index.html> [--lang=zh|en]   簡報 → HELP_FIGS\n'
+    +'  node tools/figdeck.js export <index.html> <deck>      一次性 bootstrap（會蓋掉人工調過的圖）');
   process.exit(1);
 }
