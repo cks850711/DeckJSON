@@ -3176,9 +3176,9 @@ function buildDeckSettings(pp){
     fmr.appendChild(fms); pp.appendChild(fmr);
     const fmn=document.createElement('div'); fmn.className='row';
     fmn.innerHTML='<span class="unit">'+(APP.deck.fontMode==='inherit'
-      ? '<b>母版繼承</b>：字體寫成主題槽引用、頁碼／日期改成不帶座標的空殼佔位符，貼到別的母版時由<b>該母版</b>接手。'
-      : '<b>鎖定樣式</b>：匯出寫死你設定的三個字體名，頁碼／日期也寫死座標，貼到哪裡都長一樣。')
-      +'　字體名在下方「字體（整份簡報）」設定。</span>';
+      ? '<b>母版繼承</b>：字體改成引用主題槽，頁碼與日期寫成不帶座標的空殼。貼到別的母版時，這些都由<b>那個母版</b>接手。'
+      : '<b>鎖定樣式</b>：匯出時字體名與頁碼、日期的座標都寫死，貼到哪裡都長一樣。')
+      +'　字體名在下面的「字體（整份簡報）」設定。</span>';
     pp.appendChild(fmn);
     /* 頁碼與日期是 PowerPoint 底部同一排的兩個佔位符，設定項目也一模一樣，故共用同一段建構程式。
        只有「自動更新／固定文字」是日期獨有的。 */
@@ -3218,8 +3218,8 @@ function buildDeckSettings(pp){
       pp.appendChild(checkRow([['首頁不顯示',()=>!!cfg.skipFirst,v=>{ commitUndo();
         if(v) cfg.skipFirst=true; else delete cfg.skipFirst; renderAll(); },'封面通常不放'+label]]));
       const nn=document.createElement('div'); nn.className='row';
-      nn.innerHTML=`<span class="unit">畫布上的${label}是<b>預覽</b>（不可選取）；匯出為原生佔位符。`
-        +'「母版繼承」模式下位置與字級會改由<b>目的端母版</b>的頁尾決定，畫布顯示的是這個檔自己打開時的樣子。</span>';
+      nn.innerHTML=`<span class="unit">畫布上的${label}只是<b>預覽</b>，點不到也選不起來，匯出時是 PowerPoint 原生的佔位符。`
+        +'切到「母版繼承」之後，位置與字級會改由<b>目的端母版</b>的頁尾決定；畫布上顯示的，是這個檔自己打開時的樣子。</span>';
       pp.appendChild(nn);
     }
     pp.appendChild(secTitle('檔案資訊'));
@@ -3233,7 +3233,7 @@ function buildDeckSettings(pp){
       r.appendChild(i); pp.appendChild(r);
     }
     const mn2=document.createElement('div'); mn2.className='row';
-    mn2.innerHTML='<span class="unit">標題取頂端「簡報標題」欄；三欄留空則該欄位不寫入。</span>';
+    mn2.innerHTML='<span class="unit">標題取自頂端的「簡報標題」欄。下面三欄留空的話，那一欄就不寫進檔案屬性。</span>';
     pp.appendChild(mn2);
     // ── 投影片尺寸（整份簡報）：預設值或自訂 px；改尺寸不會搬動既有元素，需自行重排 ──
     pp.appendChild(secTitle('投影片尺寸'));
@@ -3962,9 +3962,9 @@ function renderPropsBody(){
     pp.innerHTML='<h4>母版</h4>';
     pp.appendChild(secTitle('母版',true));
     const mi=document.createElement('div'); mi.className='row';
-    mi.innerHTML='<span class="unit">正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，一般工具全部照用；'
-      +'<b>選取任一母版元素</b>即可在此編輯它的屬性。<br><br>'
-      +'頁面層級的設定（底色、背景圖、備忘稿、章節）在母版模式下無從編輯——它們屬於個別頁面。'
+    mi.innerHTML='<span class="unit">正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，一般工具全部照用，'
+      +'<b>點任何一個母版元素</b>就能在這裡改它的屬性。<br><br>'
+      +'底色、背景圖、備忘稿、章節這些屬於個別頁面，母版模式下改不到。'
       +'整份簡報的設定請按工具列的<b>全簡報設定</b>。</span>';
     pp.appendChild(mi);
     pp.appendChild(btnRow([[{ic:'ic-master',txt:'完成，回到頁面'},()=>setMasterEdit(false),'離開母版編輯']]));
@@ -4515,10 +4515,11 @@ function renderPropsBody(){
     pp.appendChild(nrow);
     const nn=document.createElement('div'); nn.className='row';
     nn.innerHTML='<span class="unit">'+(!nm.ok
-      ? '此圖走 PNG：<b>'+esc(nm.reason)+'</b>。'
+      ? '這張圖走 PNG，因為<b>'+esc(nm.reason)+'</b>。'
       : el.native
-        ? '匯出為 <b>'+nm.type+'</b> 原生圖表，PPT 內可改資料。顏色／字體／繪圖區已鎖定；'
-          +'<b>圖例換行與過長軸標籤的截字由 PowerPoint 決定</b>，無法鎖。陰影與超連結原生圖表不支援。'
+        ? '匯出為 <b>'+nm.type+'</b> 原生圖表，在 PowerPoint 裡可以改資料。顏色、字體與繪圖區已經鎖定，'
+          +'但<b>圖例要不要換行、太長的軸標籤怎麼截字，是 PowerPoint 自己決定的</b>，鎖不住。'
+          +'原生圖表也不支援陰影與超連結。'
           +(nm.drop.length? '<br>將不保留：'+esc(nm.drop.join('、')) : '')
         : '目前以 3 倍解析度 PNG 匯出（外觀與畫布一致，PPT 內不可改資料）。可勾選改為原生 <b>'+nm.type+'</b>。')
       +'</span>';
