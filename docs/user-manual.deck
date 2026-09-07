@@ -437,7 +437,7 @@
      ]
     },
     {
-     "id": "pr-cwazv3",
+     "id": "pr-vy6413",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -673,7 +673,7 @@
      ]
     },
     {
-     "id": "pr-8517lo",
+     "id": "pr-7nbq6g",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1524,7 +1524,7 @@
      ]
     },
     {
-     "id": "pr-8shqwd",
+     "id": "pr-fnqssb",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1674,7 +1674,7 @@
      ]
     },
     {
-     "id": "pr-b8wb3u",
+     "id": "pr-grz6oq",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -2446,7 +2446,7 @@
      ]
     },
     {
-     "id": "pr-csa8uf",
+     "id": "pr-esf2jf",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -2546,7 +2546,7 @@
      ]
     },
     {
-     "id": "pr-s5ajxk",
+     "id": "pr-2qdazz",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -3309,7 +3309,7 @@
      ]
     },
     {
-     "id": "pr-8fqci7",
+     "id": "pr-z09a21",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -3409,7 +3409,7 @@
      ]
     },
     {
-     "id": "pr-k3e7wk",
+     "id": "pr-iogxge",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -4235,7 +4235,7 @@
      ]
     },
     {
-     "id": "pr-zn173p",
+     "id": "pr-ggsbp7",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -4357,7 +4357,7 @@
      ]
     },
     {
-     "id": "pr-pmvfce",
+     "id": "pr-u2szlf",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -4767,7 +4767,7 @@
      ]
     },
     {
-     "id": "pr-9qxzlg",
+     "id": "pr-sxlufj",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -4938,7 +4938,7 @@
      ]
     },
     {
-     "id": "pr-tzk61x",
+     "id": "pr-2di8le",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -5813,7 +5813,7 @@
      ]
     },
     {
-     "id": "pr-4vb2e3",
+     "id": "pr-qcqkvl",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -5985,7 +5985,7 @@
      ]
     },
     {
-     "id": "pr-83g1kp",
+     "id": "pr-czo4lm",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -6149,6 +6149,2699 @@
         },
         {
          "text": "以「×字級」計算，文字框與表格都可以設。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-shp-adj",
+   "name": "黃點微調",
+   "notes": "配圖代號：shp-adj\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "黃點微調",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Adjustment handles",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f213",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f202",
+     "type": "shape",
+     "shape": "rightArrow",
+     "x": 72,
+     "y": 152,
+     "w": 200,
+     "h": 100,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.25,
+     "rot": 0,
+     "adjs": [
+      70000,
+      50000
+     ]
+    },
+    {
+     "id": "ad-f203",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 67,
+     "y": 162,
+     "w": 10,
+     "h": 10,
+     "fill": "FFD43B",
+     "lineColor": "8A6A12",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f204",
+     "type": "text",
+     "x": 72,
+     "y": 122,
+     "w": 200,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "桿寬 70%",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f205",
+     "type": "shape",
+     "shape": "rightArrow",
+     "x": 336,
+     "y": 152,
+     "w": 200,
+     "h": 100,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.25,
+     "rot": 0,
+     "adjs": [
+      20000,
+      50000
+     ]
+    },
+    {
+     "id": "ad-f206",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 331,
+     "y": 187,
+     "w": 10,
+     "h": 10,
+     "fill": "FFD43B",
+     "lineColor": "8A6A12",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f207",
+     "type": "text",
+     "x": 336,
+     "y": 122,
+     "w": 200,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "黃點往下拖 → 桿寬 20%",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f208",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 352,
+     "y": 262,
+     "w": 120,
+     "h": 22,
+     "fill": "1A1A1A",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f209",
+     "type": "text",
+     "x": 352,
+     "y": 262,
+     "w": 120,
+     "h": 22,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "桿寬 20.0%",
+         "sizePt": 9,
+         "bold": false,
+         "color": "FFFFFF"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f210",
+     "type": "text",
+     "x": 64,
+     "y": 300,
+     "w": 480,
+     "h": 54,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "176 種形狀裡有 114 種有黃點，圖庫縮圖右上角有記號的就是。沒動過的黃點不寫進檔案，交給 PowerPoint 用它自己的預設值。",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f214",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "沒動過的黃點不寫進檔案，交給 PowerPoint 用預設值。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-vuu5ki",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "可調的形狀選取後，畫布上會出現",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "黃點",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，直接拖就能改圓角、斜度、箭深、桿寬、尾標、角度、肘形折點——跟 PowerPoint 同一套手感，拖曳時會顯示百分比。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "右欄的滑桿可以精修到小數。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "176 種裡有 114 種有黃點",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，圖庫縮圖右上角有黃點記號的就是。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "沒動過的黃點",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "不寫進檔案",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，交給 PowerPoint 用它自己的預設值。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-2pkskf",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "可調的形狀選取後，畫布上會出現",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "黃點",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，直接拖就能改圓角、斜度、箭深、桿寬、尾標、角度、肘形折點——跟 PowerPoint 同一套手感，拖曳時會顯示百分比。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "右欄的滑桿可以精修到小數。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "176 種裡有 114 種有黃點",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，圖庫縮圖右上角有黃點記號的就是。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "沒動過的黃點",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "不寫進檔案",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，交給 PowerPoint 用它自己的預設值。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-shp-text",
+   "name": "形狀裡的文字",
+   "notes": "配圖代號：shp-text\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "形狀裡的文字",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Text areas inside shapes",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f232",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f217",
+     "type": "text",
+     "x": 64,
+     "y": 126,
+     "w": 156,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "五角星",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f218",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 150,
+     "w": 156,
+     "h": 116,
+     "fill": null,
+     "lineColor": "D8DCE0",
+     "linePt": 1,
+     "rot": 0,
+     "dash": "sysDash"
+    },
+    {
+     "id": "sh-f219",
+     "type": "shape",
+     "shape": "star5",
+     "x": 72,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.25,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "文字",
+         "sizePt": 11,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f220",
+     "type": "text",
+     "x": 64,
+     "y": 274,
+     "w": 156,
+     "h": 34,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "字在星芯",
+         "sizePt": 10,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f221",
+     "type": "text",
+     "x": 232,
+     "y": 126,
+     "w": 156,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "右箭號",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f222",
+     "type": "shape",
+     "shape": "rect",
+     "x": 232,
+     "y": 150,
+     "w": 156,
+     "h": 116,
+     "fill": null,
+     "lineColor": "D8DCE0",
+     "linePt": 1,
+     "rot": 0,
+     "dash": "sysDash"
+    },
+    {
+     "id": "sh-f223",
+     "type": "shape",
+     "shape": "rightArrow",
+     "x": 240,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.25,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "文字",
+         "sizePt": 11,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f224",
+     "type": "text",
+     "x": 232,
+     "y": 274,
+     "w": 156,
+     "h": 34,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "字在箭桿",
+         "sizePt": 10,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f225",
+     "type": "text",
+     "x": 400,
+     "y": 126,
+     "w": 156,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "梯形",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f226",
+     "type": "shape",
+     "shape": "rect",
+     "x": 400,
+     "y": 150,
+     "w": 156,
+     "h": 116,
+     "fill": null,
+     "lineColor": "D8DCE0",
+     "linePt": 1,
+     "rot": 0,
+     "dash": "sysDash"
+    },
+    {
+     "id": "sh-f227",
+     "type": "shape",
+     "shape": "trapezoid",
+     "x": 408,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.25,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "文字",
+         "sizePt": 11,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f228",
+     "type": "text",
+     "x": 400,
+     "y": 274,
+     "w": 156,
+     "h": 34,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "字在上下底之間",
+         "sizePt": 10,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f229",
+     "type": "text",
+     "x": 64,
+     "y": 320,
+     "w": 492,
+     "h": 54,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "虛線是形狀的外框，實際的文字區比它小，而且會跟著黃點連動。187 種裡有 137 種的文字區不是整個框。",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f233",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "這是畫布預覽的修正，匯出結果一直都是照 preset 擺。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-clyzpr",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "形狀裡的文字",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "不是擺在整個外框裡",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，而是照 OOXML preset 各自定義的文字區——星形的字在星芯、箭號的字在箭桿、梯形的字在上下底之間，而且會",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "跟著黃點連動",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "187 種形狀裡有 ",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "137 種",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "的文字區不是整個框。文字太長時會照 PowerPoint 的行為溢出文字區，不會被裁掉。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "這是",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "畫布預覽的修正",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：匯出的 pptx 一直都是照 preset 擺，之前是畫布在騙人。所以既有簡報的匯出結果不會有任何改變。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-zok6f6",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "形狀裡的文字",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "不是擺在整個外框裡",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，而是照 OOXML preset 各自定義的文字區——星形的字在星芯、箭號的字在箭桿、梯形的字在上下底之間，而且會",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "跟著黃點連動",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "187 種形狀裡有 ",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "137 種",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "的文字區不是整個框。文字太長時會照 PowerPoint 的行為溢出文字區，不會被裁掉。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "這是",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "畫布預覽的修正",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：匯出的 pptx 一直都是照 preset 擺，之前是畫布在騙人。所以既有簡報的匯出結果不會有任何改變。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-shp-pen",
+   "name": "圖形編輯器",
+   "notes": "配圖代號：shp-pen\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "圖形編輯器",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "The path editor",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f252",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f236",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 122,
+     "w": 250,
+     "h": 200,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "pg-f237",
+     "type": "shape",
+     "shape": "custGeom",
+     "x": 88,
+     "y": 150,
+     "w": 200,
+     "h": 140,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.5,
+     "rot": 0,
+     "pathW": 200,
+     "pathH": 140,
+     "points": [
+      {
+       "x": 0,
+       "y": 120,
+       "moveTo": true
+      },
+      {
+       "x": 0,
+       "y": 40
+      },
+      {
+       "x": 170,
+       "y": 40,
+       "curve": {
+        "type": "cubic",
+        "x1": 40,
+        "y1": -20,
+        "x2": 130,
+        "y2": -20
+       }
+      },
+      {
+       "x": 200,
+       "y": 120
+      },
+      {
+       "close": true
+      }
+     ]
+    },
+    {
+     "id": "an-f238",
+     "type": "shape",
+     "shape": "rect",
+     "x": 84,
+     "y": 266,
+     "w": 8,
+     "h": 8,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "an-f239",
+     "type": "shape",
+     "shape": "rect",
+     "x": 84,
+     "y": 186,
+     "w": 8,
+     "h": 8,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "an-f240",
+     "type": "shape",
+     "shape": "rect",
+     "x": 254,
+     "y": 186,
+     "w": 8,
+     "h": 8,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "an-f241",
+     "type": "shape",
+     "shape": "rect",
+     "x": 284,
+     "y": 266,
+     "w": 8,
+     "h": 8,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "sh-f242",
+     "type": "shape",
+     "shape": "rect",
+     "x": 126,
+     "y": 166,
+     "w": 1,
+     "h": 26,
+     "fill": "E0A93E",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "ch-f243",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 122,
+     "y": 162,
+     "w": 8,
+     "h": 8,
+     "fill": "E0A93E",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f244",
+     "type": "text",
+     "x": 64,
+     "y": 100,
+     "w": 250,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "白點是錨點，橘點是控制柄",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f245",
+     "type": "text",
+     "x": 64,
+     "y": 328,
+     "w": 250,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "雙擊錨點切換直線與曲線；點線段會在正中插一個節點。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f246",
+     "type": "shape",
+     "shape": "rect",
+     "x": 346,
+     "y": 122,
+     "w": 254,
+     "h": 200,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "pg-f247",
+     "type": "shape",
+     "shape": "custGeom",
+     "x": 384,
+     "y": 150,
+     "w": 180,
+     "h": 140,
+     "fill": "DCE9F5",
+     "lineColor": "4A7FA8",
+     "linePt": 1.5,
+     "rot": 0,
+     "pathW": 180,
+     "pathH": 140,
+     "points": [
+      {
+       "x": 0,
+       "y": 0,
+       "moveTo": true
+      },
+      {
+       "x": 180,
+       "y": 0
+      },
+      {
+       "x": 180,
+       "y": 140
+      },
+      {
+       "x": 0,
+       "y": 140
+      },
+      {
+       "close": true
+      },
+      {
+       "x": 50,
+       "y": 40,
+       "moveTo": true
+      },
+      {
+       "x": 130,
+       "y": 40
+      },
+      {
+       "x": 130,
+       "y": 100
+      },
+      {
+       "x": 50,
+       "y": 100
+      },
+      {
+       "close": true
+      }
+     ]
+    },
+    {
+     "id": "tx-f248",
+     "type": "text",
+     "x": 346,
+     "y": 100,
+     "w": 254,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "在外圈裡面再畫一條，就空心",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f249",
+     "type": "text",
+     "x": 346,
+     "y": 300,
+     "w": 254,
+     "h": 68,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "繞行方向不影響結果——PowerPoint 用的是 even-odd 填充規則。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f253",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "繞行方向不影響挖洞的結果。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-mgu5jp",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "圖庫最後一組是",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "自訂幾何",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，給清單裡找不到的異形用——不規則色塊、自訂折線、資訊圖區塊。插入後",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "直接開圖形編輯器",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "已經存在的自訂幾何，選取後按右欄「形狀 → 幾何」的",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "開啟圖形編輯器",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只想改內建形狀的一兩個角",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，不必從零重畫：按「形狀 → 幾何」的",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "轉成可編輯端點",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，形狀會原地拆成端點並開啟編輯器，",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "外觀完全不變",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "（187 種全部驗過，最大偏差 0.04px）。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "這個轉換跟 PowerPoint 的「編輯端點」一樣是",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "單向的",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：黃點會消失，也換不回內建形狀。如果該形狀原本各部分的填色或外框設定不同（動作按鈕、圖說外框那類），轉換後只會剩一種填色，對話框會先告訴你。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-k08e64",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "圖庫最後一組是",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "自訂幾何",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，給清單裡找不到的異形用——不規則色塊、自訂折線、資訊圖區塊。插入後",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "直接開圖形編輯器",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "已經存在的自訂幾何，選取後按右欄「形狀 → 幾何」的",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "開啟圖形編輯器",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "只想改內建形狀的一兩個角",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，不必從零重畫：按「形狀 → 幾何」的",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "轉成可編輯端點",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，形狀會原地拆成端點並開啟編輯器，",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "外觀完全不變",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "（187 種全部驗過，最大偏差 0.04px）。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "這個轉換跟 PowerPoint 的「編輯端點」一樣是",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "單向的",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：黃點會消失，也換不回內建形狀。如果該形狀原本各部分的填色或外框設定不同（動作按鈕、圖說外框那類），轉換後只會剩一種填色，對話框會先告訴你。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-img-crop",
+   "name": "裁切",
+   "notes": "配圖代號：img-crop\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "裁切",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Cropping",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f272",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f256",
+     "type": "text",
+     "x": 64,
+     "y": 118,
+     "w": 220,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "完整：整張塞進框裡",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f257",
+     "type": "shape",
+     "shape": "rect",
+     "x": 94,
+     "y": 146,
+     "w": 160,
+     "h": 120,
+     "fill": "BFD3E6",
+     "lineColor": "8FA9C4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f258",
+     "type": "text",
+     "x": 94,
+     "y": 146,
+     "w": 160,
+     "h": 120,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "整張圖",
+         "sizePt": 12,
+         "bold": false,
+         "color": "3E5771"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f259",
+     "type": "text",
+     "x": 336,
+     "y": 118,
+     "w": 220,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "裁切中：捨棄的部分變暗",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f260",
+     "type": "shape",
+     "shape": "rect",
+     "x": 346,
+     "y": 134,
+     "w": 200,
+     "h": 148,
+     "fill": "8E9BA8",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f261",
+     "type": "text",
+     "x": 346,
+     "y": 134,
+     "w": 200,
+     "h": 148,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "被裁掉的還看得到",
+         "sizePt": 9,
+         "bold": false,
+         "color": "F2F4F6"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f262",
+     "type": "shape",
+     "shape": "rect",
+     "x": 376,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "fill": "BFD3E6",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f263",
+     "type": "text",
+     "x": 376,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "留下的",
+         "sizePt": 12,
+         "bold": false,
+         "color": "3E5771"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f264",
+     "type": "shape",
+     "shape": "rect",
+     "x": 376,
+     "y": 158,
+     "w": 140,
+     "h": 100,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f265",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 371,
+     "y": 153,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f266",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 511,
+     "y": 153,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f267",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 511,
+     "y": 253,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f268",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 371,
+     "y": 253,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f269",
+     "type": "text",
+     "x": 64,
+     "y": 296,
+     "w": 492,
+     "h": 74,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "拖曳移動構圖、滾輪縮放、Enter 完成。拉外框只動裁切窗，圖片釘住不動。被裁掉的只是不顯示，原圖完整留在檔案裡，隨時按「完整」還原。",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f273",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "被裁掉的部分只是不顯示，原圖完整留在檔案裡。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-5vh760",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "預設是",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "「完整」",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "——整張塞進框裡，強制等比不變形。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "雙擊圖片",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "（或按「裁切…」）進入裁切模式：",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "拖曳",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "移動構圖、",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "滾輪",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "縮放、",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Enter",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": " 完成。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "被裁掉的部分",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "會變暗而不是消失",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，你看得到自己捨棄了什麼。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "裁切模式下",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "拉外框只動裁切窗，圖片釘住不動",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，跟 PowerPoint 一致。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "圖片",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "可以拖出框外做留白",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，用來裁出單邊或四周的空白。至少會保留一成的重疊，不會整片空白到找不到圖。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "被裁掉的部分只是不顯示，原圖完整留在檔案裡",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，隨時可以按「完整」還原。另有",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "圓形裁切",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "構圖存成四邊的比例，匯出為原生 ",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "srcRect",
+         "sizePt": 10,
+         "color": "2E6DA4",
+         "fontFace": "Menlo"
+        },
+        {
+         "text": "，在 PowerPoint 裡還可以再調。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-dx0t42",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "預設是",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "「完整」",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "——整張塞進框裡，強制等比不變形。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "雙擊圖片",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "（或按「裁切…」）進入裁切模式：",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "拖曳",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "移動構圖、",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "滾輪",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "縮放、",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Enter",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": " 完成。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "被裁掉的部分",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "會變暗而不是消失",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，你看得到自己捨棄了什麼。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "裁切模式下",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "拉外框只動裁切窗，圖片釘住不動",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，跟 PowerPoint 一致。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "圖片",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "可以拖出框外做留白",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，用來裁出單邊或四周的空白。至少會保留一成的重疊，不會整片空白到找不到圖。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "被裁掉的部分只是不顯示，原圖完整留在檔案裡",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，隨時可以按「完整」還原。另有",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "圓形裁切",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "構圖存成四邊的比例，匯出為原生 ",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "srcRect",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "fontFace": "Menlo"
+        },
+        {
+         "text": "，在 PowerPoint 裡還可以再調。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -6716,7 +9409,7 @@
      ]
     },
     {
-     "id": "pr-um0meh",
+     "id": "pr-3i9sn2",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -6784,7 +9477,7 @@
      ]
     },
     {
-     "id": "pr-33brir",
+     "id": "pr-yxm9lj",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -6910,7 +9603,7 @@
      ]
     },
     {
-     "id": "sh-f210",
+     "id": "sh-f284",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -6923,7 +9616,7 @@
      "rot": 0
     },
     {
-     "id": "tb-f202",
+     "id": "tb-f276",
      "type": "table",
      "x": 88,
      "y": 123,
@@ -7068,7 +9761,7 @@
      }
     },
     {
-     "id": "sh-f203",
+     "id": "sh-f277",
      "type": "shape",
      "shape": "rect",
      "x": 88,
@@ -7081,7 +9774,7 @@
      "rot": 0
     },
     {
-     "id": "bt-f204",
+     "id": "bt-f278",
      "type": "shape",
      "shape": "roundRect",
      "x": 98,
@@ -7108,7 +9801,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f205",
+     "id": "tx-f279",
      "type": "text",
      "x": 150,
      "y": 232,
@@ -7134,7 +9827,7 @@
      "dash": "sysDash"
     },
     {
-     "id": "tb-f206",
+     "id": "tb-f280",
      "type": "table",
      "x": 88,
      "y": 277,
@@ -7279,7 +9972,7 @@
      }
     },
     {
-     "id": "sh-f207",
+     "id": "sh-f281",
      "type": "shape",
      "shape": "rect",
      "x": 88,
@@ -7292,7 +9985,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f211",
+     "id": "sh-f285",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -7353,7 +10046,7 @@
      ]
     },
     {
-     "id": "pr-rvyjxa",
+     "id": "pr-wnvct6",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -7454,7 +10147,7 @@
      ]
     },
     {
-     "id": "pr-9yq3ob",
+     "id": "pr-p579hi",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -7610,7 +10303,7 @@
      ]
     },
     {
-     "id": "sh-f235",
+     "id": "sh-f309",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -7623,7 +10316,7 @@
      "rot": 0
     },
     {
-     "id": "tb-f214",
+     "id": "tb-f288",
      "type": "table",
      "x": 56,
      "y": 160,
@@ -7768,7 +10461,7 @@
      }
     },
     {
-     "id": "sh-f215",
+     "id": "sh-f289",
      "type": "shape",
      "shape": "rect",
      "x": 56,
@@ -7781,7 +10474,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f216",
+     "id": "tx-f290",
      "type": "text",
      "x": 56,
      "y": 252,
@@ -7805,7 +10498,7 @@
      ]
     },
     {
-     "id": "ar-f217",
+     "id": "ar-f291",
      "type": "shape",
      "shape": "arrow",
      "x": 350,
@@ -7820,7 +10513,7 @@
      "flipV": false
     },
     {
-     "id": "sh-f218",
+     "id": "sh-f292",
      "type": "shape",
      "shape": "rect",
      "x": 392,
@@ -7833,7 +10526,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f219",
+     "id": "tx-f293",
      "type": "text",
      "x": 400,
      "y": 114,
@@ -7857,7 +10550,7 @@
      ]
     },
     {
-     "id": "tx-f220",
+     "id": "tx-f294",
      "type": "text",
      "x": 464,
      "y": 114,
@@ -7881,7 +10574,7 @@
      ]
     },
     {
-     "id": "tx-f221",
+     "id": "tx-f295",
      "type": "text",
      "x": 528,
      "y": 114,
@@ -7905,7 +10598,7 @@
      ]
     },
     {
-     "id": "sh-f222",
+     "id": "sh-f296",
      "type": "shape",
      "shape": "rect",
      "x": 528,
@@ -7918,7 +10611,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f223",
+     "id": "sh-f297",
      "type": "shape",
      "shape": "rect",
      "x": 400,
@@ -7931,7 +10624,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f224",
+     "id": "tx-f298",
      "type": "text",
      "x": 400,
      "y": 142,
@@ -7955,7 +10648,7 @@
      ]
     },
     {
-     "id": "sh-f225",
+     "id": "sh-f299",
      "type": "shape",
      "shape": "rect",
      "x": 400,
@@ -7968,7 +10661,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f226",
+     "id": "tx-f300",
      "type": "text",
      "x": 406,
      "y": 166,
@@ -7992,7 +10685,7 @@
      ]
     },
     {
-     "id": "bt-f227",
+     "id": "bt-f301",
      "type": "shape",
      "shape": "roundRect",
      "x": 400,
@@ -8019,7 +10712,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f228",
+     "id": "bt-f302",
      "type": "shape",
      "shape": "roundRect",
      "x": 465,
@@ -8046,7 +10739,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f229",
+     "id": "bt-f303",
      "type": "shape",
      "shape": "roundRect",
      "x": 530,
@@ -8073,7 +10766,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f230",
+     "id": "bt-f304",
      "type": "shape",
      "shape": "roundRect",
      "x": 400,
@@ -8100,7 +10793,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f231",
+     "id": "bt-f305",
      "type": "shape",
      "shape": "roundRect",
      "x": 465,
@@ -8127,7 +10820,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f232",
+     "id": "bt-f306",
      "type": "shape",
      "shape": "roundRect",
      "x": 530,
@@ -8154,7 +10847,7 @@
      "valign": "middle"
     },
     {
-     "id": "sh-f236",
+     "id": "sh-f310",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -8215,7 +10908,7 @@
      ]
     },
     {
-     "id": "pr-9zpvyt",
+     "id": "pr-9aew8o",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -8282,7 +10975,7 @@
      ]
     },
     {
-     "id": "pr-rqzzf3",
+     "id": "pr-f949zg",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -8404,7 +11097,7 @@
      ]
     },
     {
-     "id": "sh-f266",
+     "id": "sh-f340",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -8417,7 +11110,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f239",
+     "id": "sh-f313",
      "type": "shape",
      "shape": "rect",
      "x": 56,
@@ -8430,7 +11123,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f240",
+     "id": "tx-f314",
      "type": "text",
      "x": 68,
      "y": 118,
@@ -8454,7 +11147,7 @@
      ]
     },
     {
-     "id": "tx-f241",
+     "id": "tx-f315",
      "type": "text",
      "x": 145,
      "y": 118,
@@ -8478,7 +11171,7 @@
      ]
     },
     {
-     "id": "tx-f242",
+     "id": "tx-f316",
      "type": "text",
      "x": 223,
      "y": 118,
@@ -8502,7 +11195,7 @@
      ]
     },
     {
-     "id": "sh-f243",
+     "id": "sh-f317",
      "type": "shape",
      "shape": "rect",
      "x": 223,
@@ -8515,7 +11208,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f244",
+     "id": "sh-f318",
      "type": "shape",
      "shape": "rect",
      "x": 68,
@@ -8528,7 +11221,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f245",
+     "id": "tx-f319",
      "type": "text",
      "x": 68,
      "y": 146,
@@ -8552,7 +11245,7 @@
      ]
     },
     {
-     "id": "tx-f246",
+     "id": "tx-f320",
      "type": "text",
      "x": 68,
      "y": 168,
@@ -8576,7 +11269,7 @@
      ]
     },
     {
-     "id": "sh-f247",
+     "id": "sh-f321",
      "type": "shape",
      "shape": "rect",
      "x": 114,
@@ -8589,7 +11282,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f248",
+     "id": "tx-f322",
      "type": "text",
      "x": 114,
      "y": 168,
@@ -8613,7 +11306,7 @@
      ]
     },
     {
-     "id": "tx-f249",
+     "id": "tx-f323",
      "type": "text",
      "x": 158,
      "y": 168,
@@ -8637,7 +11330,7 @@
      ]
     },
     {
-     "id": "sh-f250",
+     "id": "sh-f324",
      "type": "shape",
      "shape": "rect",
      "x": 178,
@@ -8650,7 +11343,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f251",
+     "id": "sh-f325",
      "type": "shape",
      "shape": "rect",
      "x": 212,
@@ -8663,7 +11356,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f252",
+     "id": "tx-f326",
      "type": "text",
      "x": 228,
      "y": 168,
@@ -8687,7 +11380,7 @@
      ]
     },
     {
-     "id": "bt-f253",
+     "id": "bt-f327",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
@@ -8714,7 +11407,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f254",
+     "id": "bt-f328",
      "type": "shape",
      "shape": "roundRect",
      "x": 148,
@@ -8741,7 +11434,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f255",
+     "id": "bt-f329",
      "type": "shape",
      "shape": "roundRect",
      "x": 228,
@@ -8768,7 +11461,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f256",
+     "id": "bt-f330",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
@@ -8795,7 +11488,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f257",
+     "id": "bt-f331",
      "type": "shape",
      "shape": "roundRect",
      "x": 115,
@@ -8822,7 +11515,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f258",
+     "id": "bt-f332",
      "type": "shape",
      "shape": "roundRect",
      "x": 162,
@@ -8849,7 +11542,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f259",
+     "id": "bt-f333",
      "type": "shape",
      "shape": "roundRect",
      "x": 209,
@@ -8876,7 +11569,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f260",
+     "id": "bt-f334",
      "type": "shape",
      "shape": "roundRect",
      "x": 256,
@@ -8903,7 +11596,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f261",
+     "id": "tx-f335",
      "type": "text",
      "x": 68,
      "y": 254,
@@ -8927,7 +11620,7 @@
      ]
     },
     {
-     "id": "tb-f262",
+     "id": "tb-f336",
      "type": "table",
      "x": 344,
      "y": 150,
@@ -9258,7 +11951,7 @@
      }
     },
     {
-     "id": "tx-f263",
+     "id": "tx-f337",
      "type": "text",
      "x": 344,
      "y": 244,
@@ -9293,7 +11986,7 @@
      ]
     },
     {
-     "id": "sh-f267",
+     "id": "sh-f341",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -9354,7 +12047,7 @@
      ]
     },
     {
-     "id": "pr-7n321f",
+     "id": "pr-advz7c",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -9443,7 +12136,7 @@
      ]
     },
     {
-     "id": "pr-9lt50t",
+     "id": "pr-dzkdqd",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -9587,7 +12280,7 @@
      ]
     },
     {
-     "id": "sh-f294",
+     "id": "sh-f368",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -9600,7 +12293,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f270",
+     "id": "sh-f344",
      "type": "shape",
      "shape": "rect",
      "x": 72,
@@ -9613,7 +12306,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f271",
+     "id": "tx-f345",
      "type": "text",
      "x": 88,
      "y": 150,
@@ -9637,7 +12330,7 @@
      ]
     },
     {
-     "id": "sh-f272",
+     "id": "sh-f346",
      "type": "shape",
      "shape": "rect",
      "x": 126,
@@ -9650,7 +12343,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f273",
+     "id": "tx-f347",
      "type": "text",
      "x": 126,
      "y": 150,
@@ -9674,7 +12367,7 @@
      ]
     },
     {
-     "id": "tx-f274",
+     "id": "tx-f348",
      "type": "text",
      "x": 146,
      "y": 150,
@@ -9698,7 +12391,7 @@
      ]
     },
     {
-     "id": "tx-f275",
+     "id": "tx-f349",
      "type": "text",
      "x": 72,
      "y": 206,
@@ -9722,7 +12415,7 @@
      ]
     },
     {
-     "id": "ar-f276",
+     "id": "ar-f350",
      "type": "shape",
      "shape": "arrow",
      "x": 302,
@@ -9737,7 +12430,7 @@
      "flipV": false
     },
     {
-     "id": "sh-f277",
+     "id": "sh-f351",
      "type": "shape",
      "shape": "rect",
      "x": 348,
@@ -9750,7 +12443,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f278",
+     "id": "tx-f352",
      "type": "text",
      "x": 360,
      "y": 114,
@@ -9774,7 +12467,7 @@
      ]
     },
     {
-     "id": "tx-f279",
+     "id": "tx-f353",
      "type": "text",
      "x": 436,
      "y": 114,
@@ -9798,7 +12491,7 @@
      ]
     },
     {
-     "id": "tx-f280",
+     "id": "tx-f354",
      "type": "text",
      "x": 512,
      "y": 114,
@@ -9822,7 +12515,7 @@
      ]
     },
     {
-     "id": "sh-f281",
+     "id": "sh-f355",
      "type": "shape",
      "shape": "rect",
      "x": 512,
@@ -9835,7 +12528,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f282",
+     "id": "sh-f356",
      "type": "shape",
      "shape": "rect",
      "x": 360,
@@ -9848,7 +12541,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f283",
+     "id": "sh-f357",
      "type": "shape",
      "shape": "rect",
      "x": 360,
@@ -9861,7 +12554,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f284",
+     "id": "tx-f358",
      "type": "text",
      "x": 366,
      "y": 146,
@@ -9885,7 +12578,7 @@
      ]
     },
     {
-     "id": "tx-f285",
+     "id": "tx-f359",
      "type": "text",
      "x": 360,
      "y": 222,
@@ -9909,7 +12602,7 @@
      ]
     },
     {
-     "id": "bt-f286",
+     "id": "bt-f360",
      "type": "shape",
      "shape": "roundRect",
      "x": 360,
@@ -9936,7 +12629,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f287",
+     "id": "bt-f361",
      "type": "shape",
      "shape": "roundRect",
      "x": 418,
@@ -9963,7 +12656,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f288",
+     "id": "bt-f362",
      "type": "shape",
      "shape": "roundRect",
      "x": 476,
@@ -9990,7 +12683,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f289",
+     "id": "bt-f363",
      "type": "shape",
      "shape": "roundRect",
      "x": 534,
@@ -10017,7 +12710,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f290",
+     "id": "bt-f364",
      "type": "shape",
      "shape": "roundRect",
      "x": 360,
@@ -10044,7 +12737,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f291",
+     "id": "bt-f365",
      "type": "shape",
      "shape": "roundRect",
      "x": 434,
@@ -10071,7 +12764,7 @@
      "valign": "middle"
     },
     {
-     "id": "sh-f295",
+     "id": "sh-f369",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -10132,7 +12825,7 @@
      ]
     },
     {
-     "id": "pr-1iag1v",
+     "id": "pr-vka83h",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -10251,7 +12944,7 @@
      ]
     },
     {
-     "id": "pr-g2uvs3",
+     "id": "pr-1wifgg",
      "type": "text",
      "x": 660,
      "y": 452,
