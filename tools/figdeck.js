@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* 說明配圖 ⇄ 說明簡報
  *
- *   node tools/figdeck.js export   src/index.html docs/help-figures.deck
- *   node tools/figdeck.js import   docs/help-figures.deck src/index.html [--lang=zh|en]
+ *   node tools/figdeck.js export   src/index.html docs/使用說明配圖簡報.deck
+ *   node tools/figdeck.js import   docs/使用說明配圖簡報.deck src/index.html [--lang=zh|en]
  *
  * 為什麼要有這個：說明配圖的座標由人在畫布上調最準，不該由 AI 盲寫。
  * 簡報一頁一張圖，左半中文、右半英文，兩區用同一份幾何——校對時中英並排看得到。
@@ -20,6 +20,14 @@ const fs=require('fs'), vm=require('vm');
 const ZH={x:40,y:96,w:580,h:300}, EN={x:660,y:96,w:580,h:300};
 const PROSE={y:452,h:248};                       // 說明文字區（左右各 580 寬）
 const uid=p=>p+'-'+Math.random().toString(36).slice(2,8);
+
+/* 一頁對應哪張圖，看備忘稿裡的「配圖代號：」——不是看頁名。
+   頁名是給人看的（會被改成中文標題），備忘稿則會隨 pptx 一起匯出，
+   兩者之中只有後者適合當識別碼。 */
+function figKey(pg){
+  const m=/配圖代號[：:]\s*([A-Za-z0-9_-]+)/.exec(pg.notes||'');
+  return m? m[1] : pg.name;
+}
 
 /* ── 說明文字：HTML → 簡報段落 ────────────────────────────
    單向。說明本文的正本永遠是 src/index.html——它有 <code>、巢狀清單與
@@ -126,18 +134,18 @@ function toDeck(figs,helpHtml){
     }
     return out;
   };
-  const txt=(x,y,w,h,t,o)=>({id:uid('x'),type:'text',x,y,w,h,valign:(o&&o.valign)||'middle',
+  const txt=(x,y,w,h,t,o)=>({id:(o&&o.id)||uid('x'),type:'text',x,y,w,h,valign:(o&&o.valign)||'middle',
     fill:null,lineColor:null,paras:[{align:'left',
       runs:[{text:t,sizePt:(o&&o.sz)||11,bold:!!(o&&o.b),color:(o&&o.c)||'666666'}]}]});
   const pages=Object.keys(figs).map((name,i)=>({
     id:'p'+(i+1), name,
+    notes:'配圖代號：'+name+'\n（tools/figdeck.js import 以此對應到 HELP_FIGS）',
     elements:[
-      txt(40,28,1200,40,name,{sz:20,b:true,c:'1F3A5F'}),
-      txt(40,70,580,24,'中文',{sz:12,b:true,c:'8E9AAF'}),
-      txt(660,70,580,24,'English',{sz:12,b:true,c:'8E9AAF'}),
+      txt(40,34,580,40,'（中文標題）',{sz:20,b:true,c:'1F3A5F',id:'ti-zh'}),
+      txt(660,34,580,40,'(English title)',{sz:20,b:true,c:'1F3A5F',id:'ti-en'}),
       ...conv(figs[name],ZH), ...conv(figs[name],EN),
-      txt(40,406,580,40,(figs[name].cap||'').replace(/<[^>]+>/g,''),{valign:'top'}),
-      txt(660,406,580,40,'(caption — to translate)',{valign:'top',c:'AAAAAA'}),
+      txt(40,406,580,40,(figs[name].cap||'').replace(/<[^>]+>/g,''),{valign:'top',id:'cp-zh'}),
+      txt(660,406,580,40,'(caption — to translate)',{valign:'top',c:'AAAAAA',id:'cp-en'}),
       ...(()=>{ const items=proseFor(helpHtml,name);
         if(!items.length) return [];
         /* 英文那半先放同一份中文、字色壓灰——翻譯時直接覆蓋，
@@ -166,8 +174,8 @@ function fromDeck(deck,lang){
   };
   const figs={};
   for(const pg of deck.pages){
-    const els=pg.elements.filter(e=>inR(e)&&!isBg(e));
-    figs[pg.name]={view:[R.x,R.y,R.w,R.h], els, cap:capOf(pg)};
+    const els=pg.elements.filter(e=>inR(e)&&!isBg(e)&&!/^(ti|cp|pr)-/.test(e.id));
+    figs[figKey(pg)]={view:[R.x,R.y,R.w,R.h], els, cap:capOf(pg)};
   }
   return figs;
 }
@@ -182,7 +190,7 @@ function writeFigs(htmlPath,figs){
       +(f.cap?'cap:'+JSON.stringify(f.cap)+',':'')
       +'els:'+JSON.stringify(f.els)+'}';
   }).join(',\n');
-  const out='const HELP_FIGS={   /* 由 tools/figdeck.js 從 docs/help-figures.deck 產生，勿手改 */\n'
+  const out='const HELP_FIGS={   /* 由 tools/figdeck.js 從 docs/使用說明配圖簡報.deck 產生，勿手改 */\n'
     +body+'\n};';
   fs.writeFileSync(htmlPath, s.slice(0,a)+out+s.slice(b));
   return out.length;
@@ -197,8 +205,8 @@ function refreshProse(deckPath,htmlPath){
   let n=0, empty=[];
   for(const pg of deck.pages){
     pg.elements=pg.elements.filter(e=>!/^pr-/.test(e.id));
-    const items=proseFor(html,pg.name);
-    if(!items.length){ empty.push(pg.name); continue; }
+    const items=proseFor(html,figKey(pg));
+    if(!items.length){ empty.push(figKey(pg)); continue; }
     pg.elements.push(proseEl(40,items,false), proseEl(660,items,true));
     n+=items.length;
   }

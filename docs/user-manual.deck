@@ -1,7 +1,7 @@
 {
  "format": "deckjson",
  "version": 1,
- "title": "DeckJSON 說明配圖",
+ "title": "User Manual",
  "stage": {
   "w": 1280,
   "h": 720
@@ -12,11 +12,11 @@
    "name": "tbl-handles",
    "elements": [
     {
-     "id": "x-ip9ofc",
+     "id": "ti-zh",
      "type": "text",
      "x": 40,
-     "y": 28,
-     "w": 1200,
+     "y": 34,
+     "w": 580,
      "h": 40,
      "valign": "middle",
      "fill": null,
@@ -26,7 +26,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "tbl-handles",
+         "text": "調整欄寬列高、刪除整欄列",
          "sizePt": 20,
          "bold": true,
          "color": "1F3A5F"
@@ -36,36 +36,12 @@
      ]
     },
     {
-     "id": "x-u5pfst",
-     "type": "text",
-     "x": 40,
-     "y": 70,
-     "w": 580,
-     "h": 24,
-     "valign": "middle",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "中文",
-         "sizePt": 12,
-         "bold": true,
-         "color": "8E9AAF"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "x-lw2aw4",
+     "id": "ti-en",
      "type": "text",
      "x": 660,
-     "y": 70,
+     "y": 34,
      "w": 580,
-     "h": 24,
+     "h": 40,
      "valign": "middle",
      "fill": null,
      "lineColor": null,
@@ -74,10 +50,10 @@
        "align": "left",
        "runs": [
         {
-         "text": "English",
-         "sizePt": 12,
+         "text": "Resizing rows and columns, deleting them",
+         "sizePt": 20,
          "bold": true,
-         "color": "8E9AAF"
+         "color": "1F3A5F"
         }
        ]
       }
@@ -93,7 +69,8 @@
      "h": 300,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
-     "linePt": 1
+     "linePt": 1,
+     "rot": 0
     },
     {
      "id": "e-0dw60s",
@@ -241,28 +218,6 @@
      }
     },
     {
-     "id": "dt-rki0br",
-     "type": "shape",
-     "shape": "rect",
-     "x": 246,
-     "y": 191,
-     "w": 6,
-     "h": 6,
-     "fill": "4D9DE0",
-     "lineColor": null
-    },
-    {
-     "id": "dt-zbk64g",
-     "type": "shape",
-     "shape": "rect",
-     "x": 408,
-     "y": 191,
-     "w": 6,
-     "h": 6,
-     "fill": "4D9DE0",
-     "lineColor": null
-    },
-    {
      "id": "ar-9n38nb",
      "type": "shape",
      "shape": "arrow",
@@ -274,27 +229,29 @@
      "flipV": false,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-sdyfij",
      "type": "text",
-     "x": 270,
-     "y": 138,
+     "x": 190,
+     "y": 137,
      "w": 150,
      "h": 18,
-     "valign": "bottom",
+     "valign": "middle",
      "fill": null,
      "lineColor": null,
      "paras": [
       {
-       "align": "left",
+       "align": "center",
        "runs": [
         {
-         "text": "拖曳藍點：調欄寬",
-         "sizePt": 11,
          "bold": true,
-         "color": "8A6A12"
+         "italic": false,
+         "color": "8A6A12",
+         "sizePt": 11,
+         "text": "拖曳藍點：調欄寬"
         }
        ]
       }
@@ -304,61 +261,50 @@
      "id": "bx-epaa1u",
      "type": "shape",
      "shape": "rect",
-     "x": 414,
-     "y": 188,
+     "x": 413,
+     "y": 190,
      "w": 155,
-     "h": 11,
+     "h": 14,
      "fill": null,
      "lineColor": "4D9DE0",
      "linePt": 1,
-     "dash": "sysDash"
-    },
-    {
-     "id": "cu-59qk8x",
-     "type": "shape",
-     "shape": "rightArrow",
-     "x": 483,
-     "y": 202,
-     "w": 14,
-     "h": 10,
-     "rot": 35,
-     "fill": "FFFFFF",
-     "lineColor": "111111",
-     "linePt": 1
+     "rot": 0
     },
     {
      "id": "ar-v75to4",
      "type": "shape",
      "shape": "arrow",
-     "x": 506,
-     "y": 217,
-     "w": 33,
-     "h": 130,
-     "flipH": true,
+     "x": 414,
+     "y": 199,
+     "w": 35,
+     "h": 158,
+     "flipH": false,
      "flipV": true,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-3a10pn",
      "type": "text",
-     "x": 394,
-     "y": 357,
-     "w": 150,
+     "x": 324,
+     "y": 361,
+     "w": 180,
      "h": 18,
-     "valign": "bottom",
+     "valign": "middle",
      "fill": null,
      "lineColor": null,
      "paras": [
       {
-       "align": "right",
+       "align": "center",
        "runs": [
         {
-         "text": "點灰色區段：刪掉整欄",
-         "sizePt": 11,
          "bold": true,
-         "color": "8A6A12"
+         "italic": false,
+         "color": "8A6A12",
+         "sizePt": 11,
+         "text": "點擊灰色區段：刪掉整欄"
         }
        ]
       }
@@ -374,7 +320,8 @@
      "h": 300,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
-     "linePt": 1
+     "linePt": 1,
+     "rot": 0
     },
     {
      "id": "e-2d1q9j",
@@ -522,26 +469,360 @@
      }
     },
     {
-     "id": "dt-ioi291",
+     "id": "gcz0",
      "type": "shape",
      "shape": "rect",
-     "x": 866,
-     "y": 191,
-     "w": 6,
-     "h": 6,
-     "fill": "4D9DE0",
+     "x": 93,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
      "lineColor": null
     },
     {
-     "id": "dt-dddpem",
+     "id": "gcz1",
      "type": "shape",
      "shape": "rect",
-     "x": 1028,
-     "y": 191,
-     "w": 6,
-     "h": 6,
-     "fill": "4D9DE0",
+     "x": 254,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
      "lineColor": null
+    },
+    {
+     "id": "gcz2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 415,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "hcz0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 85,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hcz1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 246,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hcz2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 407,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hcz3",
+     "type": "shape",
+     "shape": "rect",
+     "x": 568,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "grz0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 209,
+     "w": 10,
+     "h": 25,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "grz1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 244,
+     "w": 10,
+     "h": 22,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "grz2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 276,
+     "w": 10,
+     "h": 22,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "hrz0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 201,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hrz1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 236,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hrz2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 268,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hrz3",
+     "type": "shape",
+     "shape": "rect",
+     "x": 76,
+     "y": 300,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "tipz",
+     "type": "text",
+     "x": 185,
+     "y": 211,
+     "w": 240,
+     "h": 19,
+     "valign": "middle",
+     "fill": "2B2B2B",
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "欄 1  寬 161px  120.8pt  4.26cm",
+         "sizePt": 9,
+         "color": "FFFFFF",
+         "fontFace": "Menlo"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "gce0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 713,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "gce1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 874,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "gce2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 1035,
+     "y": 192,
+     "w": 151,
+     "h": 10,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "hce0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 705,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hce1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 866,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hce2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 1027,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hce3",
+     "type": "shape",
+     "shape": "rect",
+     "x": 1188,
+     "y": 192,
+     "w": 7,
+     "h": 10,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "gre0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 209,
+     "w": 10,
+     "h": 25,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "gre1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 244,
+     "w": 10,
+     "h": 22,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "gre2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 276,
+     "w": 10,
+     "h": 22,
+     "fill": "EBECED",
+     "lineColor": null
+    },
+    {
+     "id": "hre0",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 201,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hre1",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 236,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hre2",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 268,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "hre3",
+     "type": "shape",
+     "shape": "rect",
+     "x": 696,
+     "y": 300,
+     "w": 10,
+     "h": 7,
+     "fill": "C0DDF4",
+     "lineColor": null
+    },
+    {
+     "id": "tipe",
+     "type": "text",
+     "x": 805,
+     "y": 211,
+     "w": 240,
+     "h": 19,
+     "valign": "middle",
+     "fill": "2B2B2B",
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "欄 1  寬 161px  120.8pt  4.26cm",
+         "sizePt": 9,
+         "color": "FFFFFF",
+         "fontFace": "Menlo"
+        }
+       ]
+      }
+     ]
     },
     {
      "id": "ar-xfi9ud",
@@ -555,7 +836,8 @@
      "flipV": false,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-rzpywn",
@@ -585,14 +867,14 @@
      "id": "bx-w0i100",
      "type": "shape",
      "shape": "rect",
-     "x": 1034,
-     "y": 188,
+     "x": 1033,
+     "y": 190,
      "w": 155,
-     "h": 11,
+     "h": 14,
      "fill": null,
      "lineColor": "4D9DE0",
      "linePt": 1,
-     "dash": "sysDash"
+     "rot": 0
     },
     {
      "id": "cu-qazod9",
@@ -619,7 +901,8 @@
      "flipV": true,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-uodw4j",
@@ -660,10 +943,11 @@
        "align": "left",
        "runs": [
         {
-         "text": "列高同理，把手在左緣。",
-         "sizePt": 11,
          "bold": false,
-         "color": "666666"
+         "italic": false,
+         "color": "666666",
+         "sizePt": 11,
+         "text": "欄在上緣、列在左緣，操作相同。"
         }
        ]
       }
@@ -694,7 +978,7 @@
      ]
     },
     {
-     "id": "pr-sf0174",
+     "id": "pr-50is2o",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -751,7 +1035,7 @@
      ]
     },
     {
-     "id": "pr-b92m4c",
+     "id": "pr-t4kdxb",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -807,18 +1091,21 @@
       }
      ]
     }
-   ]
+   ],
+   "notes": "配圖代號：tbl-handles\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "bg": "FFFFFF",
+   "transition": null
   },
   {
    "id": "p2",
    "name": "tbl-merge",
    "elements": [
     {
-     "id": "x-9vfhr0",
+     "id": "ti-zh",
      "type": "text",
      "x": 40,
-     "y": 28,
-     "w": 1200,
+     "y": 34,
+     "w": 580,
      "h": 40,
      "valign": "middle",
      "fill": null,
@@ -828,7 +1115,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "tbl-merge",
+         "text": "合併儲存格",
          "sizePt": 20,
          "bold": true,
          "color": "1F3A5F"
@@ -838,36 +1125,12 @@
      ]
     },
     {
-     "id": "x-i4bej4",
-     "type": "text",
-     "x": 40,
-     "y": 70,
-     "w": 580,
-     "h": 24,
-     "valign": "middle",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "中文",
-         "sizePt": 12,
-         "bold": true,
-         "color": "8E9AAF"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "x-ndw8ap",
+     "id": "ti-en",
      "type": "text",
      "x": 660,
-     "y": 70,
+     "y": 34,
      "w": 580,
-     "h": 24,
+     "h": 40,
      "valign": "middle",
      "fill": null,
      "lineColor": null,
@@ -876,10 +1139,10 @@
        "align": "left",
        "runs": [
         {
-         "text": "English",
-         "sizePt": 12,
+         "text": "Merging cells",
+         "sizePt": 20,
          "bold": true,
-         "color": "8E9AAF"
+         "color": "1F3A5F"
         }
        ]
       }
@@ -895,7 +1158,8 @@
      "h": 300,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
-     "linePt": 1
+     "linePt": 1,
+     "rot": 0
     },
     {
      "id": "e-4i1dy7",
@@ -1053,7 +1317,7 @@
      "fill": null,
      "lineColor": "4D9DE0",
      "linePt": 1,
-     "dash": "sysDash"
+     "rot": 0
     },
     {
      "id": "ar-y1upcg",
@@ -1067,7 +1331,8 @@
      "flipV": true,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-kxg33v",
@@ -1103,7 +1368,8 @@
      "h": 300,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
-     "linePt": 1
+     "linePt": 1,
+     "rot": 0
     },
     {
      "id": "e-t2i743",
@@ -1261,7 +1527,7 @@
      "fill": null,
      "lineColor": "4D9DE0",
      "linePt": 1,
-     "dash": "sysDash"
+     "rot": 0
     },
     {
      "id": "ar-19i228",
@@ -1275,7 +1541,8 @@
      "flipV": true,
      "fill": null,
      "lineColor": "E0A93E",
-     "linePt": 1.5
+     "linePt": 1.5,
+     "rot": 0
     },
     {
      "id": "lb-cy22pq",
@@ -1350,7 +1617,7 @@
      ]
     },
     {
-     "id": "pr-wt2fou",
+     "id": "pr-c9607n",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1500,7 +1767,7 @@
      ]
     },
     {
-     "id": "pr-5yz5co",
+     "id": "pr-2aibwu",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1649,7 +1916,19 @@
       }
      ]
     }
-   ]
+   ],
+   "notes": "配圖代號：tbl-merge\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "bg": "FFFFFF",
+   "transition": null
   }
- ]
+ ],
+ "fontMode": "locked",
+ "profileName": "預設",
+ "zones": [],
+ "fonts": {
+  "ea": "PingFang TC",
+  "latin": "Arial",
+  "tableLatin": "Arial"
+ },
+ "lang": "zh-TW"
 }
