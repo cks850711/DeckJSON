@@ -8,6 +8,3509 @@
  },
  "pages": [
   {
+   "id": "p-edit-select",
+   "name": "選取與搬移",
+   "notes": "配圖代號：edit-select\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "選取與搬移",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Selecting and moving",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f022",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f001",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 78,
+     "y": 148,
+     "w": 150,
+     "h": 86,
+     "fill": "DCE9F5",
+     "lineColor": "9BB8D4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f002",
+     "type": "text",
+     "x": 78,
+     "y": 148,
+     "w": 150,
+     "h": 86,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "一張圖",
+         "sizePt": 12,
+         "bold": false,
+         "color": "4A6178"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f003",
+     "type": "shape",
+     "shape": "rect",
+     "x": 78,
+     "y": 148,
+     "w": 150,
+     "h": 86,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f004",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 73,
+     "y": 143,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f005",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 148,
+     "y": 143,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f006",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 223,
+     "y": 143,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f007",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 223,
+     "y": 186,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f008",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 223,
+     "y": 229,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f009",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 148,
+     "y": 229,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f010",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 73,
+     "y": 229,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f011",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 73,
+     "y": 186,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f012",
+     "type": "text",
+     "x": 60,
+     "y": 118,
+     "w": 186,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "八個把手：拖了就縮放",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f013",
+     "type": "text",
+     "x": 60,
+     "y": 246,
+     "w": 186,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "方向鍵微調，Shift 一次 10px",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f014",
+     "type": "shape",
+     "shape": "rect",
+     "x": 318,
+     "y": 140,
+     "w": 196,
+     "h": 134,
+     "fill": "E9F3FB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f015",
+     "type": "shape",
+     "shape": "rect",
+     "x": 330,
+     "y": 152,
+     "w": 92,
+     "h": 46,
+     "fill": "E9ECEF",
+     "lineColor": "C0C6CC",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f016",
+     "type": "shape",
+     "shape": "rect",
+     "x": 392,
+     "y": 214,
+     "w": 108,
+     "h": 46,
+     "fill": "E9ECEF",
+     "lineColor": "C0C6CC",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f017",
+     "type": "shape",
+     "shape": "rect",
+     "x": 318,
+     "y": 140,
+     "w": 196,
+     "h": 134,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f018",
+     "type": "text",
+     "x": 318,
+     "y": 110,
+     "w": 196,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "空白處拖曳：框選",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f019",
+     "type": "text",
+     "x": 318,
+     "y": 284,
+     "w": 196,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "框到的都選起來",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f023",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "框選只要碰到就算，不必整個框進去。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-i5e1zw",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "選一個",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：點它就好。拖曳搬移（靠近投影片中線與邊界時會磁性吸附住），四角與四邊中點共八個把手縮放，方向鍵微調（按住 ",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Shift",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 一次走 10px），",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Delete",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 刪除，",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Cmd/Ctrl+D",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 複製一份。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "選很多個",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Shift",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 或 Cmd 點擊加選減選，或在空白處拖曳",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "框選",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "——框到的都選起來。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "多選之後，拖",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "四角",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "是整組等比縮放，位置、尺寸與字級一起跟著變；拖本體是整組搬移。右欄可以直接填縮放百分比，也可以對齊。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "物件拖到投影片外面不會消失，會",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "半透明留在那裡",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，隨時拖得回來。那塊只是暫放區，匯出時照座標輸出，並且會給你一則",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "超出投影片",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "的警告。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "除了表格，所有元素都有一圈",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "淡虛線",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "顯示框的實際大小——文字框沒填色時特別需要，不然你不知道它有多大。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "復原與重做：",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Cmd/Ctrl+Z",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 與 ",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Cmd/Ctrl+Shift+Z",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "，共 60 步。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-xn4oc9",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "選一個",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：點它就好。拖曳搬移（靠近投影片中線與邊界時會磁性吸附住），四角與四邊中點共八個把手縮放，方向鍵微調（按住 ",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Shift",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 一次走 10px），",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Delete",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 刪除，",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Cmd/Ctrl+D",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 複製一份。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "選很多個",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Shift",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 或 Cmd 點擊加選減選，或在空白處拖曳",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "框選",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "——框到的都選起來。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "多選之後，拖",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "四角",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "是整組等比縮放，位置、尺寸與字級一起跟著變；拖本體是整組搬移。右欄可以直接填縮放百分比，也可以對齊。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "物件拖到投影片外面不會消失，會",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "半透明留在那裡",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，隨時拖得回來。那塊只是暫放區，匯出時照座標輸出，並且會給你一則",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "超出投影片",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "的警告。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "除了表格，所有元素都有一圈",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "淡虛線",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "顯示框的實際大小——文字框沒填色時特別需要，不然你不知道它有多大。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "復原與重做：",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Cmd/Ctrl+Z",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 與 ",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Cmd/Ctrl+Shift+Z",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "，共 60 步。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-edit-snap",
+   "name": "格線與吸附",
+   "notes": "配圖代號：edit-snap\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "格線與吸附",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Grid and snapping",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f062",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f026",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 132,
+     "w": 400,
+     "h": 210,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f027",
+     "type": "shape",
+     "shape": "rect",
+     "x": 84,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f028",
+     "type": "shape",
+     "shape": "rect",
+     "x": 104,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f029",
+     "type": "shape",
+     "shape": "rect",
+     "x": 124,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f030",
+     "type": "shape",
+     "shape": "rect",
+     "x": 144,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f031",
+     "type": "shape",
+     "shape": "rect",
+     "x": 164,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "C4CAD0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f032",
+     "type": "shape",
+     "shape": "rect",
+     "x": 184,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f033",
+     "type": "shape",
+     "shape": "rect",
+     "x": 204,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f034",
+     "type": "shape",
+     "shape": "rect",
+     "x": 224,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f035",
+     "type": "shape",
+     "shape": "rect",
+     "x": 244,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f036",
+     "type": "shape",
+     "shape": "rect",
+     "x": 264,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "C4CAD0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f037",
+     "type": "shape",
+     "shape": "rect",
+     "x": 284,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f038",
+     "type": "shape",
+     "shape": "rect",
+     "x": 304,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f039",
+     "type": "shape",
+     "shape": "rect",
+     "x": 324,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f040",
+     "type": "shape",
+     "shape": "rect",
+     "x": 344,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f041",
+     "type": "shape",
+     "shape": "rect",
+     "x": 364,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "C4CAD0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f042",
+     "type": "shape",
+     "shape": "rect",
+     "x": 384,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f043",
+     "type": "shape",
+     "shape": "rect",
+     "x": 404,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f044",
+     "type": "shape",
+     "shape": "rect",
+     "x": 424,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f045",
+     "type": "shape",
+     "shape": "rect",
+     "x": 444,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f046",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 152,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f047",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 172,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f048",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 192,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f049",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 212,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f050",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 232,
+     "w": 400,
+     "h": 1,
+     "fill": "C4CAD0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f051",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 252,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f052",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 272,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f053",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 292,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f054",
+     "type": "shape",
+     "shape": "rect",
+     "x": 64,
+     "y": 312,
+     "w": 400,
+     "h": 1,
+     "fill": "E4E8EB",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f055",
+     "type": "shape",
+     "shape": "rect",
+     "x": 208,
+     "y": 192,
+     "w": 112,
+     "h": 60,
+     "fill": "DCE9F5",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f056",
+     "type": "text",
+     "x": 208,
+     "y": 192,
+     "w": 112,
+     "h": 60,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "對到中線",
+         "sizePt": 11,
+         "bold": false,
+         "color": "2C4A63"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f057",
+     "type": "shape",
+     "shape": "rect",
+     "x": 264,
+     "y": 132,
+     "w": 1,
+     "h": 210,
+     "fill": "4D9DE0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f058",
+     "type": "text",
+     "x": 64,
+     "y": 108,
+     "w": 400,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "輔助線（中線）贏過格線",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f059",
+     "type": "text",
+     "x": 64,
+     "y": 350,
+     "w": 400,
+     "h": 34,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "一格虛線、每 5 格細實線、每 10 格粗實線；",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      },
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "搬移只吸左緣與上緣，拖白點縮放才四邊都吸。",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f063",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "格線只活在畫布上，不會匯出。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-0mqyxp",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "對齊與分佈",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：多選後右欄有左／中／右與上／中／下對齊，還有水平與垂直等距——等距要選三個以上，頭尾不動，中間平均分。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格線",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：畫布右下角浮動列的「格線」鈕開關。三個層次看得出遠近——一格是虛線，每 5 格一條細實線，每 10 格一條粗實線，原點在投影片左上角，格距預設 5mm。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格距、細線與粗線的間隔格數、顏色（預設 ",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "#ADB5BD",
+         "sizePt": 10,
+         "color": "2E6DA4",
+         "fontFace": "Menlo"
+        },
+        {
+         "text": "），都在",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "格線鈕右半那個小箭頭",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "裡調。開關與細部設定放在一起，不在右欄。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "吸附",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：同一列的「吸附」打開後，",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "搬移只吸左緣與上緣",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "；拖白色方點縮放則四邊都吸，表格的欄寬列高把手與線條端點也一樣。整組搬移吸的是包圍盒的左上角，組內相對位置不會變。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "輔助線贏過格線",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：投影片中線、四邊、預留區外緣的吸附一直都在，而且優先於格線。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-64lxf5",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "對齊與分佈",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：多選後右欄有左／中／右與上／中／下對齊，還有水平與垂直等距——等距要選三個以上，頭尾不動，中間平均分。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格線",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：畫布右下角浮動列的「格線」鈕開關。三個層次看得出遠近——一格是虛線，每 5 格一條細實線，每 10 格一條粗實線，原點在投影片左上角，格距預設 5mm。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "格距、細線與粗線的間隔格數、顏色（預設 ",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "#ADB5BD",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "fontFace": "Menlo"
+        },
+        {
+         "text": "），都在",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "格線鈕右半那個小箭頭",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "裡調。開關與細部設定放在一起，不在右欄。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "吸附",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：同一列的「吸附」打開後，",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "搬移只吸左緣與上緣",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "；拖白色方點縮放則四邊都吸，表格的欄寬列高把手與線條端點也一樣。整組搬移吸的是包圍盒的左上角，組內相對位置不會變。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "輔助線贏過格線",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：投影片中線、四邊、預留區外緣的吸附一直都在，而且優先於格線。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-edit-group",
+   "name": "軟群組",
+   "notes": "配圖代號：edit-group\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "軟群組",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Soft groups",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f094",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f066",
+     "type": "shape",
+     "shape": "rect",
+     "x": 84,
+     "y": 156,
+     "w": 104,
+     "h": 56,
+     "fill": "DCE9F5",
+     "lineColor": "9BB8D4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f067",
+     "type": "text",
+     "x": 84,
+     "y": 156,
+     "w": 104,
+     "h": 56,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "標題",
+         "sizePt": 12,
+         "bold": false,
+         "color": "4A6178"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f068",
+     "type": "shape",
+     "shape": "rect",
+     "x": 146,
+     "y": 224,
+     "w": 132,
+     "h": 52,
+     "fill": "E9ECEF",
+     "lineColor": "C0C6CC",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f069",
+     "type": "text",
+     "x": 146,
+     "y": 224,
+     "w": 132,
+     "h": 52,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "說明文字",
+         "sizePt": 11,
+         "bold": false,
+         "color": "555B62"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f070",
+     "type": "shape",
+     "shape": "rect",
+     "x": 84,
+     "y": 156,
+     "w": 194,
+     "h": 120,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0,
+     "dash": "sysDash"
+    },
+    {
+     "id": "hd-f071",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 79,
+     "y": 151,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f072",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 273,
+     "y": 151,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f073",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 273,
+     "y": 271,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "hd-f074",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 79,
+     "y": 271,
+     "w": 10,
+     "h": 10,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f075",
+     "type": "text",
+     "x": 70,
+     "y": 126,
+     "w": 222,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "包圍盒：整組的外框",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f076",
+     "type": "text",
+     "x": 70,
+     "y": 286,
+     "w": 222,
+     "h": 34,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "點任一成員＝選全組；雙擊才進去改單一個",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f077",
+     "type": "shape",
+     "shape": "rect",
+     "x": 330,
+     "y": 140,
+     "w": 270,
+     "h": 152,
+     "fill": "F7F8FA",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f078",
+     "type": "text",
+     "x": 342,
+     "y": 150,
+     "w": 246,
+     "h": 16,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "位置尺寸（包圍盒）",
+         "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f079",
+     "type": "text",
+     "x": 342,
+     "y": 174,
+     "w": 20,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "X",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f080",
+     "type": "shape",
+     "shape": "rect",
+     "x": 364,
+     "y": 174,
+     "w": 96,
+     "h": 20,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f081",
+     "type": "text",
+     "x": 370,
+     "y": 174,
+     "w": 84,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "84",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f082",
+     "type": "text",
+     "x": 466,
+     "y": 174,
+     "w": 20,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Y",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f083",
+     "type": "shape",
+     "shape": "rect",
+     "x": 488,
+     "y": 174,
+     "w": 96,
+     "h": 20,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f084",
+     "type": "text",
+     "x": 494,
+     "y": 174,
+     "w": 84,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "156",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f085",
+     "type": "text",
+     "x": 342,
+     "y": 200,
+     "w": 20,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "寬",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f086",
+     "type": "shape",
+     "shape": "rect",
+     "x": 364,
+     "y": 200,
+     "w": 96,
+     "h": 20,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f087",
+     "type": "text",
+     "x": 370,
+     "y": 200,
+     "w": 84,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "194",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f088",
+     "type": "text",
+     "x": 466,
+     "y": 200,
+     "w": 20,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "高",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f089",
+     "type": "shape",
+     "shape": "rect",
+     "x": 488,
+     "y": 200,
+     "w": 96,
+     "h": 20,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f090",
+     "type": "text",
+     "x": 494,
+     "y": 200,
+     "w": 84,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "120",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f091",
+     "type": "text",
+     "x": 342,
+     "y": 230,
+     "w": 246,
+     "h": 52,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "群組本身沒有座標，這裡的四個數字講的是包圍盒：改 X／Y＝整組平移，改寬／高＝以左上角為不動點縮放整組。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f095",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "匯出時群組會攤平成獨立元素，位置大小不變。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-kq6gux",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "多選後按「群組」。之後點群組裡任何一個成員都會",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "選到整組",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，可以整組搬移與縮放；",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "雙擊可以進去",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "改單一成員。要拆開，在單選或多選面板按「解散」。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "群組本身沒有座標",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "，成員各自獨立。所以右欄那組 X／Y／寬／高指的是",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "包圍盒",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：改 X／Y 是整組平移，改寬／高是以包圍盒左上角為不動點縮放整組，可以鎖比例，也可以連字級一起縮。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "匯出時群組會攤平成各自獨立的元素——PowerPoint 那邊看不到群組，位置與大小則完全一致。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-o5ovv8",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "多選後按「群組」。之後點群組裡任何一個成員都會",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "選到整組",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，可以整組搬移與縮放；",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "雙擊可以進去",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "改單一成員。要拆開，在單選或多選面板按「解散」。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "群組本身沒有座標",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "，成員各自獨立。所以右欄那組 X／Y／寬／高指的是",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "包圍盒",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：改 X／Y 是整組平移，改寬／高是以包圍盒左上角為不動點縮放整組，可以鎖比例，也可以連字級一起縮。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "匯出時群組會攤平成各自獨立的元素——PowerPoint 那邊看不到群組，位置與大小則完全一致。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-edit-layers",
+   "name": "圖層",
+   "notes": "配圖代號：edit-layers\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "圖層",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Layers",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f125",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f098",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 196,
+     "y": 122,
+     "w": 264,
+     "h": 148,
+     "fill": "F7F8FA",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f099",
+     "type": "shape",
+     "shape": "rect",
+     "x": 196,
+     "y": 122,
+     "w": 264,
+     "h": 28,
+     "fill": "E7E9ED",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f100",
+     "type": "text",
+     "x": 206,
+     "y": 122,
+     "w": 120,
+     "h": 28,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "圖層",
+         "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f101",
+     "type": "text",
+     "x": 430,
+     "y": 122,
+     "w": 20,
+     "h": 28,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "×",
+         "sizePt": 11,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f102",
+     "type": "shape",
+     "shape": "rect",
+     "x": 197,
+     "y": 150,
+     "w": 262,
+     "h": 30,
+     "fill": "D2E4F4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f103",
+     "type": "text",
+     "x": 206,
+     "y": 150,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "◉",
+         "sizePt": 11,
+         "bold": false,
+         "color": "4A5057"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f104",
+     "type": "text",
+     "x": 228,
+     "y": 150,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f105",
+     "type": "text",
+     "x": 252,
+     "y": 150,
+     "w": 160,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "標題文字",
+         "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f106",
+     "type": "shape",
+     "shape": "rect",
+     "x": 196,
+     "y": 180,
+     "w": 264,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f107",
+     "type": "text",
+     "x": 206,
+     "y": 180,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "◉",
+         "sizePt": 11,
+         "bold": false,
+         "color": "4A5057"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f108",
+     "type": "text",
+     "x": 228,
+     "y": 180,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f109",
+     "type": "text",
+     "x": 252,
+     "y": 180,
+     "w": 160,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "照片",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f110",
+     "type": "shape",
+     "shape": "rect",
+     "x": 196,
+     "y": 210,
+     "w": 264,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f111",
+     "type": "text",
+     "x": 206,
+     "y": 210,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "◉",
+         "sizePt": 11,
+         "bold": false,
+         "color": "4A5057"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f112",
+     "type": "text",
+     "x": 228,
+     "y": 210,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "🔒",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f113",
+     "type": "text",
+     "x": 252,
+     "y": 210,
+     "w": 160,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "說明表格",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f114",
+     "type": "shape",
+     "shape": "rect",
+     "x": 196,
+     "y": 240,
+     "w": 264,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f115",
+     "type": "text",
+     "x": 206,
+     "y": 240,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "◌",
+         "sizePt": 11,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f116",
+     "type": "text",
+     "x": 228,
+     "y": 240,
+     "w": 16,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "",
+         "sizePt": 10,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f117",
+     "type": "text",
+     "x": 252,
+     "y": 240,
+     "w": 160,
+     "h": 30,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "背景色塊",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f118",
+     "type": "text",
+     "x": 48,
+     "y": 152,
+     "w": 140,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "right",
+       "runs": [
+        {
+         "text": "眼睛：顯示／隱藏",
+         "sizePt": 10,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f119",
+     "type": "text",
+     "x": 48,
+     "y": 212,
+     "w": 140,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "right",
+       "runs": [
+        {
+         "text": "鎖頭：鎖定",
+         "sizePt": 10,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f120",
+     "type": "text",
+     "x": 472,
+     "y": 146,
+     "w": 132,
+     "h": 54,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "最上面就是最上層，拖曳可以重排。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f121",
+     "type": "text",
+     "x": 472,
+     "y": 218,
+     "w": 132,
+     "h": 72,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "「說明表格」鎖住了：畫布上點不到，面板還是點得到。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f122",
+     "type": "text",
+     "x": 196,
+     "y": 282,
+     "w": 264,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "「背景色塊」被隱藏了：畫布上不畫，匯出也不會有它。",
+         "sizePt": 10,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f126",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "隱藏起來的元素不渲染，也不匯出。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-8mgq7w",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "工具列右側的",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "圖層",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "面板（可以拖著移動）列出這一頁的所有元素，",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "最上面就是最上層",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "。拖曳可以重排堆疊順序。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "眼睛鈕是顯示／隱藏，鎖頭鈕是鎖定。鎖住的元素在畫布上點不到也拖不動，但還是可以從面板點選——被別的東西壓住時就靠這個。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "隱藏起來的元素不會渲染，也不會匯出。",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "點一列就選取它；如果它在群組裡，會選到整組。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-yfxuby",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "工具列右側的",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "圖層",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "面板（可以拖著移動）列出這一頁的所有元素，",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "最上面就是最上層",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "。拖曳可以重排堆疊順序。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "眼睛鈕是顯示／隱藏，鎖頭鈕是鎖定。鎖住的元素在畫布上點不到也拖不動，但還是可以從面板點選——被別的東西壓住時就靠這個。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "隱藏起來的元素不會渲染，也不會匯出。",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "點一列就選取它；如果它在群組裡，會選到整組。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "p1",
    "name": "調整欄寬列高、刪除整欄列",
    "elements": [
@@ -565,7 +4068,7 @@
      ]
     },
     {
-     "id": "pr-yrsqdq",
+     "id": "pr-lvp9gx",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -633,7 +4136,7 @@
      ]
     },
     {
-     "id": "pr-yauxcq",
+     "id": "pr-c30hbf",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -759,7 +4262,7 @@
      ]
     },
     {
-     "id": "sh-f009",
+     "id": "sh-f137",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -772,7 +4275,7 @@
      "rot": 0
     },
     {
-     "id": "tb-f001",
+     "id": "tb-f129",
      "type": "table",
      "x": 88,
      "y": 123,
@@ -917,7 +4420,7 @@
      }
     },
     {
-     "id": "sh-f002",
+     "id": "sh-f130",
      "type": "shape",
      "shape": "rect",
      "x": 88,
@@ -930,7 +4433,7 @@
      "rot": 0
     },
     {
-     "id": "bt-f003",
+     "id": "bt-f131",
      "type": "shape",
      "shape": "roundRect",
      "x": 98,
@@ -957,7 +4460,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f004",
+     "id": "tx-f132",
      "type": "text",
      "x": 150,
      "y": 232,
@@ -983,7 +4486,7 @@
      "dash": "sysDash"
     },
     {
-     "id": "tb-f005",
+     "id": "tb-f133",
      "type": "table",
      "x": 88,
      "y": 277,
@@ -1128,7 +4631,7 @@
      }
     },
     {
-     "id": "sh-f006",
+     "id": "sh-f134",
      "type": "shape",
      "shape": "rect",
      "x": 88,
@@ -1141,7 +4644,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f010",
+     "id": "sh-f138",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -1202,7 +4705,7 @@
      ]
     },
     {
-     "id": "pr-fstjjw",
+     "id": "pr-1txfbl",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1303,7 +4806,7 @@
      ]
     },
     {
-     "id": "pr-e0ajpq",
+     "id": "pr-68ivon",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1459,7 +4962,7 @@
      ]
     },
     {
-     "id": "sh-f034",
+     "id": "sh-f162",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -1472,7 +4975,7 @@
      "rot": 0
     },
     {
-     "id": "tb-f013",
+     "id": "tb-f141",
      "type": "table",
      "x": 56,
      "y": 160,
@@ -1617,7 +5120,7 @@
      }
     },
     {
-     "id": "sh-f014",
+     "id": "sh-f142",
      "type": "shape",
      "shape": "rect",
      "x": 56,
@@ -1630,7 +5133,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f015",
+     "id": "tx-f143",
      "type": "text",
      "x": 56,
      "y": 252,
@@ -1654,7 +5157,7 @@
      ]
     },
     {
-     "id": "ar-f016",
+     "id": "ar-f144",
      "type": "shape",
      "shape": "arrow",
      "x": 350,
@@ -1669,7 +5172,7 @@
      "flipV": false
     },
     {
-     "id": "sh-f017",
+     "id": "sh-f145",
      "type": "shape",
      "shape": "rect",
      "x": 392,
@@ -1682,7 +5185,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f018",
+     "id": "tx-f146",
      "type": "text",
      "x": 400,
      "y": 114,
@@ -1706,7 +5209,7 @@
      ]
     },
     {
-     "id": "tx-f019",
+     "id": "tx-f147",
      "type": "text",
      "x": 464,
      "y": 114,
@@ -1730,7 +5233,7 @@
      ]
     },
     {
-     "id": "tx-f020",
+     "id": "tx-f148",
      "type": "text",
      "x": 528,
      "y": 114,
@@ -1754,7 +5257,7 @@
      ]
     },
     {
-     "id": "sh-f021",
+     "id": "sh-f149",
      "type": "shape",
      "shape": "rect",
      "x": 528,
@@ -1767,7 +5270,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f022",
+     "id": "sh-f150",
      "type": "shape",
      "shape": "rect",
      "x": 400,
@@ -1780,7 +5283,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f023",
+     "id": "tx-f151",
      "type": "text",
      "x": 400,
      "y": 142,
@@ -1804,7 +5307,7 @@
      ]
     },
     {
-     "id": "sh-f024",
+     "id": "sh-f152",
      "type": "shape",
      "shape": "rect",
      "x": 400,
@@ -1817,7 +5320,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f025",
+     "id": "tx-f153",
      "type": "text",
      "x": 406,
      "y": 166,
@@ -1841,7 +5344,7 @@
      ]
     },
     {
-     "id": "bt-f026",
+     "id": "bt-f154",
      "type": "shape",
      "shape": "roundRect",
      "x": 400,
@@ -1868,7 +5371,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f027",
+     "id": "bt-f155",
      "type": "shape",
      "shape": "roundRect",
      "x": 465,
@@ -1895,7 +5398,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f028",
+     "id": "bt-f156",
      "type": "shape",
      "shape": "roundRect",
      "x": 530,
@@ -1922,7 +5425,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f029",
+     "id": "bt-f157",
      "type": "shape",
      "shape": "roundRect",
      "x": 400,
@@ -1949,7 +5452,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f030",
+     "id": "bt-f158",
      "type": "shape",
      "shape": "roundRect",
      "x": 465,
@@ -1976,7 +5479,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f031",
+     "id": "bt-f159",
      "type": "shape",
      "shape": "roundRect",
      "x": 530,
@@ -2003,7 +5506,7 @@
      "valign": "middle"
     },
     {
-     "id": "sh-f035",
+     "id": "sh-f163",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -2064,7 +5567,7 @@
      ]
     },
     {
-     "id": "pr-46vjy9",
+     "id": "pr-pk3w2b",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -2131,7 +5634,7 @@
      ]
     },
     {
-     "id": "pr-zasov3",
+     "id": "pr-ze7ufq",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -2253,7 +5756,7 @@
      ]
     },
     {
-     "id": "sh-f065",
+     "id": "sh-f193",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -2266,7 +5769,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f038",
+     "id": "sh-f166",
      "type": "shape",
      "shape": "rect",
      "x": 56,
@@ -2279,7 +5782,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f039",
+     "id": "tx-f167",
      "type": "text",
      "x": 68,
      "y": 118,
@@ -2303,7 +5806,7 @@
      ]
     },
     {
-     "id": "tx-f040",
+     "id": "tx-f168",
      "type": "text",
      "x": 145,
      "y": 118,
@@ -2327,7 +5830,7 @@
      ]
     },
     {
-     "id": "tx-f041",
+     "id": "tx-f169",
      "type": "text",
      "x": 223,
      "y": 118,
@@ -2351,7 +5854,7 @@
      ]
     },
     {
-     "id": "sh-f042",
+     "id": "sh-f170",
      "type": "shape",
      "shape": "rect",
      "x": 223,
@@ -2364,7 +5867,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f043",
+     "id": "sh-f171",
      "type": "shape",
      "shape": "rect",
      "x": 68,
@@ -2377,7 +5880,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f044",
+     "id": "tx-f172",
      "type": "text",
      "x": 68,
      "y": 146,
@@ -2401,7 +5904,7 @@
      ]
     },
     {
-     "id": "tx-f045",
+     "id": "tx-f173",
      "type": "text",
      "x": 68,
      "y": 168,
@@ -2425,7 +5928,7 @@
      ]
     },
     {
-     "id": "sh-f046",
+     "id": "sh-f174",
      "type": "shape",
      "shape": "rect",
      "x": 114,
@@ -2438,7 +5941,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f047",
+     "id": "tx-f175",
      "type": "text",
      "x": 114,
      "y": 168,
@@ -2462,7 +5965,7 @@
      ]
     },
     {
-     "id": "tx-f048",
+     "id": "tx-f176",
      "type": "text",
      "x": 158,
      "y": 168,
@@ -2486,7 +5989,7 @@
      ]
     },
     {
-     "id": "sh-f049",
+     "id": "sh-f177",
      "type": "shape",
      "shape": "rect",
      "x": 178,
@@ -2499,7 +6002,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f050",
+     "id": "sh-f178",
      "type": "shape",
      "shape": "rect",
      "x": 212,
@@ -2512,7 +6015,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f051",
+     "id": "tx-f179",
      "type": "text",
      "x": 228,
      "y": 168,
@@ -2536,7 +6039,7 @@
      ]
     },
     {
-     "id": "bt-f052",
+     "id": "bt-f180",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
@@ -2563,7 +6066,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f053",
+     "id": "bt-f181",
      "type": "shape",
      "shape": "roundRect",
      "x": 148,
@@ -2590,7 +6093,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f054",
+     "id": "bt-f182",
      "type": "shape",
      "shape": "roundRect",
      "x": 228,
@@ -2617,7 +6120,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f055",
+     "id": "bt-f183",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
@@ -2644,7 +6147,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f056",
+     "id": "bt-f184",
      "type": "shape",
      "shape": "roundRect",
      "x": 115,
@@ -2671,7 +6174,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f057",
+     "id": "bt-f185",
      "type": "shape",
      "shape": "roundRect",
      "x": 162,
@@ -2698,7 +6201,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f058",
+     "id": "bt-f186",
      "type": "shape",
      "shape": "roundRect",
      "x": 209,
@@ -2725,7 +6228,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f059",
+     "id": "bt-f187",
      "type": "shape",
      "shape": "roundRect",
      "x": 256,
@@ -2752,7 +6255,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f060",
+     "id": "tx-f188",
      "type": "text",
      "x": 68,
      "y": 254,
@@ -2776,7 +6279,7 @@
      ]
     },
     {
-     "id": "tb-f061",
+     "id": "tb-f189",
      "type": "table",
      "x": 344,
      "y": 150,
@@ -3107,7 +6610,7 @@
      }
     },
     {
-     "id": "tx-f062",
+     "id": "tx-f190",
      "type": "text",
      "x": 344,
      "y": 244,
@@ -3142,7 +6645,7 @@
      ]
     },
     {
-     "id": "sh-f066",
+     "id": "sh-f194",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -3203,7 +6706,7 @@
      ]
     },
     {
-     "id": "pr-9ht1ra",
+     "id": "pr-fvpk4t",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -3292,7 +6795,7 @@
      ]
     },
     {
-     "id": "pr-lwq8c1",
+     "id": "pr-2u28wu",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -3436,7 +6939,7 @@
      ]
     },
     {
-     "id": "sh-f093",
+     "id": "sh-f221",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -3449,7 +6952,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f069",
+     "id": "sh-f197",
      "type": "shape",
      "shape": "rect",
      "x": 72,
@@ -3462,7 +6965,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f070",
+     "id": "tx-f198",
      "type": "text",
      "x": 88,
      "y": 150,
@@ -3486,7 +6989,7 @@
      ]
     },
     {
-     "id": "sh-f071",
+     "id": "sh-f199",
      "type": "shape",
      "shape": "rect",
      "x": 126,
@@ -3499,7 +7002,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f072",
+     "id": "tx-f200",
      "type": "text",
      "x": 126,
      "y": 150,
@@ -3523,7 +7026,7 @@
      ]
     },
     {
-     "id": "tx-f073",
+     "id": "tx-f201",
      "type": "text",
      "x": 146,
      "y": 150,
@@ -3547,7 +7050,7 @@
      ]
     },
     {
-     "id": "tx-f074",
+     "id": "tx-f202",
      "type": "text",
      "x": 72,
      "y": 206,
@@ -3571,7 +7074,7 @@
      ]
     },
     {
-     "id": "ar-f075",
+     "id": "ar-f203",
      "type": "shape",
      "shape": "arrow",
      "x": 302,
@@ -3586,7 +7089,7 @@
      "flipV": false
     },
     {
-     "id": "sh-f076",
+     "id": "sh-f204",
      "type": "shape",
      "shape": "rect",
      "x": 348,
@@ -3599,7 +7102,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f077",
+     "id": "tx-f205",
      "type": "text",
      "x": 360,
      "y": 114,
@@ -3623,7 +7126,7 @@
      ]
     },
     {
-     "id": "tx-f078",
+     "id": "tx-f206",
      "type": "text",
      "x": 436,
      "y": 114,
@@ -3647,7 +7150,7 @@
      ]
     },
     {
-     "id": "tx-f079",
+     "id": "tx-f207",
      "type": "text",
      "x": 512,
      "y": 114,
@@ -3671,7 +7174,7 @@
      ]
     },
     {
-     "id": "sh-f080",
+     "id": "sh-f208",
      "type": "shape",
      "shape": "rect",
      "x": 512,
@@ -3684,7 +7187,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f081",
+     "id": "sh-f209",
      "type": "shape",
      "shape": "rect",
      "x": 360,
@@ -3697,7 +7200,7 @@
      "rot": 0
     },
     {
-     "id": "sh-f082",
+     "id": "sh-f210",
      "type": "shape",
      "shape": "rect",
      "x": 360,
@@ -3710,7 +7213,7 @@
      "rot": 0
     },
     {
-     "id": "tx-f083",
+     "id": "tx-f211",
      "type": "text",
      "x": 366,
      "y": 146,
@@ -3734,7 +7237,7 @@
      ]
     },
     {
-     "id": "tx-f084",
+     "id": "tx-f212",
      "type": "text",
      "x": 360,
      "y": 222,
@@ -3758,7 +7261,7 @@
      ]
     },
     {
-     "id": "bt-f085",
+     "id": "bt-f213",
      "type": "shape",
      "shape": "roundRect",
      "x": 360,
@@ -3785,7 +7288,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f086",
+     "id": "bt-f214",
      "type": "shape",
      "shape": "roundRect",
      "x": 418,
@@ -3812,7 +7315,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f087",
+     "id": "bt-f215",
      "type": "shape",
      "shape": "roundRect",
      "x": 476,
@@ -3839,7 +7342,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f088",
+     "id": "bt-f216",
      "type": "shape",
      "shape": "roundRect",
      "x": 534,
@@ -3866,7 +7369,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f089",
+     "id": "bt-f217",
      "type": "shape",
      "shape": "roundRect",
      "x": 360,
@@ -3893,7 +7396,7 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f090",
+     "id": "bt-f218",
      "type": "shape",
      "shape": "roundRect",
      "x": 434,
@@ -3920,7 +7423,7 @@
      "valign": "middle"
     },
     {
-     "id": "sh-f094",
+     "id": "sh-f222",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -3981,7 +7484,7 @@
      ]
     },
     {
-     "id": "pr-jav865",
+     "id": "pr-ddx5a8",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -4100,7 +7603,7 @@
      ]
     },
     {
-     "id": "pr-w460zu",
+     "id": "pr-a0e3sy",
      "type": "text",
      "x": 660,
      "y": 452,
