@@ -491,6 +491,10 @@
   .gSegHit:hover{stroke:rgba(93,169,233,.35)}
   /* 分頁列釘在捲動容器頂端。負邊距是為了讓它橫跨 .mbody 的 16px 內距——
      否則捲動時內文會從分頁列兩側的縫隙透出來。 */
+  /* 說明面板高度固定，不隨分頁內容伸縮。彈窗是垂直置中的，高度一變上緣就跟著跳，
+     切分頁時分頁列會上下移動——而分頁列是導覽控制，必須待在原地。
+     用 85vh（＝ .mbox 原本的上限）而非固定像素：各分頁一樣大，且視窗大就顯示得多。 */
+  #helpModal .mbox{height:85vh}
   #helpBody .helpTabs{position:sticky;top:-16px;z-index:2;display:flex;gap:2px;flex-wrap:wrap;
     margin:-16px -16px 12px;padding:16px 16px 0;background:var(--panel);border-bottom:1px solid var(--line)}
   #helpBody .helpTabs .propTab{flex:none;padding:0 12px}
