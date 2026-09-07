@@ -9,7 +9,7 @@
  "pages": [
   {
    "id": "p1",
-   "name": "tbl-handles",
+   "name": "調整欄寬列高、刪除整欄列",
    "elements": [
     {
      "id": "ti-zh",
@@ -324,151 +324,6 @@
      "rot": 0
     },
     {
-     "id": "e-2d1q9j",
-     "type": "table",
-     "x": 708,
-     "y": 204,
-     "colW": [
-      161,
-      161,
-      161
-     ],
-     "rowH": [
-      35,
-      32,
-      32
-     ],
-     "cells": [
-      [
-       {
-        "text": "項目",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "數量",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "備註",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ],
-      [
-       {
-        "text": "外框",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "12",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ],
-      [
-       {
-        "text": "內襯",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "8",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ]
-     ],
-     "border": {
-      "pt": 0.75,
-      "color": "999999"
-     }
-    },
-    {
      "id": "gcz0",
      "type": "shape",
      "shape": "rect",
@@ -477,7 +332,8 @@
      "w": 151,
      "h": 10,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "gcz1",
@@ -488,7 +344,8 @@
      "w": 151,
      "h": 10,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "gcz2",
@@ -499,7 +356,8 @@
      "w": 151,
      "h": 10,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hcz0",
@@ -510,7 +368,8 @@
      "w": 7,
      "h": 10,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hcz1",
@@ -521,7 +380,8 @@
      "w": 7,
      "h": 10,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hcz2",
@@ -532,7 +392,8 @@
      "w": 7,
      "h": 10,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hcz3",
@@ -543,7 +404,8 @@
      "w": 7,
      "h": 10,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "grz0",
@@ -554,7 +416,8 @@
      "w": 10,
      "h": 25,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "grz1",
@@ -565,7 +428,8 @@
      "w": 10,
      "h": 22,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "grz2",
@@ -576,7 +440,8 @@
      "w": 10,
      "h": 22,
      "fill": "EBECED",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hrz0",
@@ -587,7 +452,8 @@
      "w": 10,
      "h": 7,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hrz1",
@@ -598,7 +464,8 @@
      "w": 10,
      "h": 7,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hrz2",
@@ -609,7 +476,8 @@
      "w": 10,
      "h": 7,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "hrz3",
@@ -620,7 +488,8 @@
      "w": 10,
      "h": 7,
      "fill": "C0DDF4",
-     "lineColor": null
+     "lineColor": null,
+     "rot": 0
     },
     {
      "id": "tipz",
@@ -641,288 +510,6 @@
          "sizePt": 9,
          "color": "FFFFFF",
          "fontFace": "Menlo"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "gce0",
-     "type": "shape",
-     "shape": "rect",
-     "x": 713,
-     "y": 192,
-     "w": 151,
-     "h": 10,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "gce1",
-     "type": "shape",
-     "shape": "rect",
-     "x": 874,
-     "y": 192,
-     "w": 151,
-     "h": 10,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "gce2",
-     "type": "shape",
-     "shape": "rect",
-     "x": 1035,
-     "y": 192,
-     "w": 151,
-     "h": 10,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "hce0",
-     "type": "shape",
-     "shape": "rect",
-     "x": 705,
-     "y": 192,
-     "w": 7,
-     "h": 10,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hce1",
-     "type": "shape",
-     "shape": "rect",
-     "x": 866,
-     "y": 192,
-     "w": 7,
-     "h": 10,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hce2",
-     "type": "shape",
-     "shape": "rect",
-     "x": 1027,
-     "y": 192,
-     "w": 7,
-     "h": 10,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hce3",
-     "type": "shape",
-     "shape": "rect",
-     "x": 1188,
-     "y": 192,
-     "w": 7,
-     "h": 10,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "gre0",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 209,
-     "w": 10,
-     "h": 25,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "gre1",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 244,
-     "w": 10,
-     "h": 22,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "gre2",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 276,
-     "w": 10,
-     "h": 22,
-     "fill": "EBECED",
-     "lineColor": null
-    },
-    {
-     "id": "hre0",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 201,
-     "w": 10,
-     "h": 7,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hre1",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 236,
-     "w": 10,
-     "h": 7,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hre2",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 268,
-     "w": 10,
-     "h": 7,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "hre3",
-     "type": "shape",
-     "shape": "rect",
-     "x": 696,
-     "y": 300,
-     "w": 10,
-     "h": 7,
-     "fill": "C0DDF4",
-     "lineColor": null
-    },
-    {
-     "id": "tipe",
-     "type": "text",
-     "x": 805,
-     "y": 211,
-     "w": 240,
-     "h": 19,
-     "valign": "middle",
-     "fill": "2B2B2B",
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "center",
-       "runs": [
-        {
-         "text": "欄 1  寬 161px  120.8pt  4.26cm",
-         "sizePt": 9,
-         "color": "FFFFFF",
-         "fontFace": "Menlo"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "ar-xfi9ud",
-     "type": "shape",
-     "shape": "arrow",
-     "x": 871,
-     "y": 159,
-     "w": 15,
-     "h": 29,
-     "flipH": true,
-     "flipV": false,
-     "fill": null,
-     "lineColor": "E0A93E",
-     "linePt": 1.5,
-     "rot": 0
-    },
-    {
-     "id": "lb-rzpywn",
-     "type": "text",
-     "x": 890,
-     "y": 138,
-     "w": 150,
-     "h": 18,
-     "valign": "bottom",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "拖曳藍點：調欄寬",
-         "sizePt": 11,
-         "bold": true,
-         "color": "8A6A12"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "bx-w0i100",
-     "type": "shape",
-     "shape": "rect",
-     "x": 1033,
-     "y": 190,
-     "w": 155,
-     "h": 14,
-     "fill": null,
-     "lineColor": "4D9DE0",
-     "linePt": 1,
-     "rot": 0
-    },
-    {
-     "id": "cu-qazod9",
-     "type": "shape",
-     "shape": "rightArrow",
-     "x": 1103,
-     "y": 202,
-     "w": 14,
-     "h": 10,
-     "rot": 35,
-     "fill": "FFFFFF",
-     "lineColor": "111111",
-     "linePt": 1
-    },
-    {
-     "id": "ar-fstyb5",
-     "type": "shape",
-     "shape": "arrow",
-     "x": 1126,
-     "y": 217,
-     "w": 33,
-     "h": 130,
-     "flipH": true,
-     "flipV": true,
-     "fill": null,
-     "lineColor": "E0A93E",
-     "linePt": 1.5,
-     "rot": 0
-    },
-    {
-     "id": "lb-uodw4j",
-     "type": "text",
-     "x": 1014,
-     "y": 357,
-     "w": 150,
-     "h": 18,
-     "valign": "bottom",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "right",
-       "runs": [
-        {
-         "text": "點灰色區段：刪掉整欄",
-         "sizePt": 11,
-         "bold": true,
-         "color": "8A6A12"
         }
        ]
       }
@@ -978,7 +565,7 @@
      ]
     },
     {
-     "id": "pr-50is2o",
+     "id": "pr-ic47fn",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1035,7 +622,7 @@
      ]
     },
     {
-     "id": "pr-t4kdxb",
+     "id": "pr-aew4m3",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1097,8 +684,9 @@
    "transition": null
   },
   {
-   "id": "p2",
-   "name": "tbl-merge",
+   "id": "p-tbl-merge",
+   "name": "合併儲存格",
+   "notes": "配圖代號：tbl-merge\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
    "elements": [
     {
      "id": "ti-zh",
@@ -1149,7 +737,7 @@
      ]
     },
     {
-     "id": "bg-xzf9oj",
+     "id": "sh-f009",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -1162,10 +750,221 @@
      "rot": 0
     },
     {
-     "id": "e-4i1dy7",
+     "id": "tb-f001",
      "type": "table",
      "x": 88,
      "y": 123,
+     "colW": [
+      161,
+      161,
+      161
+     ],
+     "rowH": [
+      35,
+      32,
+      32
+     ],
+     "cells": [
+      [
+       {
+        "text": "項目",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "數量",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "備註",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ],
+      [
+       {
+        "text": "外框",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "12",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ],
+      [
+       {
+        "text": "小計 20",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E2E0",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E9F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ]
+     ],
+     "border": {
+      "pt": 0.75,
+      "color": "999999"
+     }
+    },
+    {
+     "id": "sh-f002",
+     "type": "shape",
+     "shape": "rect",
+     "x": 88,
+     "y": 190,
+     "w": 322,
+     "h": 32,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "bt-f003",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 98,
+     "y": 168,
+     "w": 110,
+     "h": 22,
+     "fill": "4D9DE0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "⊠ 合併儲存格",
+         "sizePt": 9,
+         "bold": true,
+         "color": "FFFFFF"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f004",
+     "type": "text",
+     "x": 150,
+     "y": 232,
+     "w": 260,
+     "h": 26,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": "C9CDD4",
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "反白後，按「合併儲存格」",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ],
+     "linePt": 1,
+     "dash": "sysDash"
+    },
+    {
+     "id": "tb-f005",
+     "type": "table",
+     "x": 88,
+     "y": 277,
      "colW": [
       161,
       161,
@@ -1307,11 +1106,11 @@
      }
     },
     {
-     "id": "bx-qc2kwn",
+     "id": "sh-f006",
      "type": "shape",
      "shape": "rect",
      "x": 88,
-     "y": 191,
+     "y": 344,
      "w": 322,
      "h": 32,
      "fill": null,
@@ -1320,46 +1119,7 @@
      "rot": 0
     },
     {
-     "id": "ar-y1upcg",
-     "type": "shape",
-     "shape": "arrow",
-     "x": 153,
-     "y": 228,
-     "w": 40,
-     "h": 45,
-     "flipH": false,
-     "flipV": true,
-     "fill": null,
-     "lineColor": "E0A93E",
-     "linePt": 1.5,
-     "rot": 0
-    },
-    {
-     "id": "lb-kxg33v",
-     "type": "text",
-     "x": 148,
-     "y": 262,
-     "w": 240,
-     "h": 18,
-     "valign": "bottom",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "反白這兩格，按「合併儲存格」",
-         "sizePt": 11,
-         "bold": true,
-         "color": "8A6A12"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "bg-bm6sio",
+     "id": "sh-f010",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -1372,204 +1132,7 @@
      "rot": 0
     },
     {
-     "id": "e-t2i743",
-     "type": "table",
-     "x": 708,
-     "y": 123,
-     "colW": [
-      161,
-      161,
-      161
-     ],
-     "rowH": [
-      35,
-      32,
-      32
-     ],
-     "cells": [
-      [
-       {
-        "text": "項目",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "數量",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "備註",
-        "bold": true,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "EEF2F8",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ],
-      [
-       {
-        "text": "外框",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "12",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ],
-      [
-       {
-        "text": "小計 20",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": "FFF6E0",
-        "align": "center",
-        "valign": "middle",
-        "colspan": 2,
-        "rowspan": 1,
-        "covered": false
-       },
-       {
-        "text": "",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": true
-       },
-       {
-        "text": "",
-        "bold": false,
-        "italic": false,
-        "color": "1A1A1A",
-        "sizePt": 11,
-        "fill": null,
-        "align": "center",
-        "valign": "middle",
-        "colspan": 1,
-        "rowspan": 1,
-        "covered": false
-       }
-      ]
-     ],
-     "border": {
-      "pt": 0.75,
-      "color": "999999"
-     }
-    },
-    {
-     "id": "bx-13hxuv",
-     "type": "shape",
-     "shape": "rect",
-     "x": 708,
-     "y": 191,
-     "w": 322,
-     "h": 32,
-     "fill": null,
-     "lineColor": "4D9DE0",
-     "linePt": 1,
-     "rot": 0
-    },
-    {
-     "id": "ar-19i228",
-     "type": "shape",
-     "shape": "arrow",
-     "x": 773,
-     "y": 228,
-     "w": 40,
-     "h": 45,
-     "flipH": false,
-     "flipV": true,
-     "fill": null,
-     "lineColor": "E0A93E",
-     "linePt": 1.5,
-     "rot": 0
-    },
-    {
-     "id": "lb-cy22pq",
-     "type": "text",
-     "x": 768,
-     "y": 262,
-     "w": 150,
-     "h": 18,
-     "valign": "bottom",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "反白這兩格，按「合併儲存格」",
-         "sizePt": 11,
-         "bold": true,
-         "color": "8A6A12"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "x-nrugm2",
+     "id": "cp-zh",
      "type": "text",
      "x": 40,
      "y": 406,
@@ -1593,7 +1156,7 @@
      ]
     },
     {
-     "id": "x-26pxgo",
+     "id": "cp-en",
      "type": "text",
      "x": 660,
      "y": 406,
@@ -1617,7 +1180,7 @@
      ]
     },
     {
-     "id": "pr-c9607n",
+     "id": "pr-tmzt2s",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1637,13 +1200,13 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "合併儲存格",
+         "text": "怎麼合併",
          "sizePt": 10,
          "color": "1A1A1A",
          "bold": true
         },
         {
-         "text": "：在格子裡拖曳反白要合併的範圍，按反白框旁的「合併儲存格」。範圍會自動外擴，不會切穿既有的合併。反白單一已合併的格子，那顆鈕會變成「取消合併」。",
+         "text": "：在格子裡拖曳，反白要合併的那幾格，按反白框旁浮出來的「合併儲存格」。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -1659,18 +1222,13 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "合併模式下，格子內部改成拖曳反白，所以",
-         "sizePt": 10,
-         "color": "1A1A1A"
-        },
-        {
-         "text": "搬動整張表要改抓外圈那一圈邊框",
+         "text": "不會切壞既有的合併",
          "sizePt": 10,
          "color": "1A1A1A",
          "bold": true
         },
         {
-         "text": "（約 16px 寬）。想編輯某一格的文字，雙擊它。",
+         "text": "：反白範圍如果只蓋到某個合併格的一半，範圍會自動往外長，把它整塊包進來再合併。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -1684,15 +1242,775 @@
         "code": "2022"
        },
        "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "取消合併",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：反白單一一個已經合併的格子，那顆鈕會變成「取消合併」，按下去就拆回原本的格數。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "搬動整張表要抓外圈",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：格子內部已經讓給拖曳反白了，所以搬移整張表請抓最外圈那一圈邊框（約 16px 寬）。想改某一格的文字，雙擊它。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-m12n9e",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "怎麼合併",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：在格子裡拖曳，反白要合併的那幾格，按反白框旁浮出來的「合併儲存格」。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "不會切壞既有的合併",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：反白範圍如果只蓋到某個合併格的一半，範圍會自動往外長，把它整塊包進來再合併。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "取消合併",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：反白單一一個已經合併的格子，那顆鈕會變成「取消合併」，按下去就拆回原本的格數。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "搬動整張表要抓外圈",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：格子內部已經讓給拖曳反白了，所以搬移整張表請抓最外圈那一圈邊框（約 16px 寬）。想改某一格的文字，雙擊它。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-tbl-range",
+   "name": "只改某幾格的樣式",
+   "notes": "配圖代號：tbl-range\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
        "runs": [
         {
          "text": "只改某幾格的樣式",
-         "sizePt": 10,
-         "color": "1A1A1A",
-         "bold": true
-        },
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
         {
-         "text": "：拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色、框線就只作用在那幾格，面板頂端會顯示目前的套用範圍。沒反白就是整張表。",
+         "text": "Styling a range of cells",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f030",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tb-f013",
+     "type": "table",
+     "x": 56,
+     "y": 150,
+     "colW": [
+      96,
+      96,
+      96
+     ],
+     "rowH": [
+      30,
+      28,
+      28
+     ],
+     "cells": [
+      [
+       {
+        "text": "項目",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "數量",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "備註",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ],
+      [
+       {
+        "text": "外框",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E9F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "12",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E9F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ],
+      [
+       {
+        "text": "內板",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E9F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "8",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "D8E9F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false
+       }
+      ]
+     ],
+     "border": {
+      "pt": 0.75,
+      "color": "999999"
+     }
+    },
+    {
+     "id": "sh-f014",
+     "type": "shape",
+     "shape": "rect",
+     "x": 56,
+     "y": 180,
+     "w": 192,
+     "h": 56,
+     "fill": null,
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f015",
+     "type": "text",
+     "x": 56,
+     "y": 242,
+     "w": 192,
+     "h": 18,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "拖曳反白這 4 格",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ar-f016",
+     "type": "shape",
+     "shape": "arrow",
+     "x": 350,
+     "y": 185,
+     "w": 44,
+     "h": 22,
+     "fill": null,
+     "lineColor": "E0A93E",
+     "linePt": 1.5,
+     "rot": 0,
+     "flipH": false,
+     "flipV": false
+    },
+    {
+     "id": "sh-f017",
+     "type": "shape",
+     "shape": "rect",
+     "x": 400,
+     "y": 122,
+     "w": 200,
+     "h": 196,
+     "fill": "F7F8FA",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f018",
+     "type": "text",
+     "x": 412,
+     "y": 132,
+     "w": 176,
+     "h": 16,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "儲存格樣式",
+         "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f019",
+     "type": "shape",
+     "shape": "rect",
+     "x": 412,
+     "y": 154,
+     "w": 176,
+     "h": 46,
+     "fill": "E3EFFA",
+     "lineColor": "4D9DE0",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f020",
+     "type": "text",
+     "x": 418,
+     "y": 158,
+     "w": 164,
+     "h": 38,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "樣式套用範圍：選取 4 格",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "（R2C1–R3C2）",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "bt-f021",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 412,
+     "y": 210,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "字級",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f022",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 472,
+     "y": 210,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "B",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f023",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 532,
+     "y": 210,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "I",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f024",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 412,
+     "y": 238,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "對齊",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f025",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 472,
+     "y": 238,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "底色",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f026",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 532,
+     "y": 238,
+     "w": 56,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "框線",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f027",
+     "type": "text",
+     "x": 412,
+     "y": 268,
+     "w": 176,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "點別處取消反白",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "＝改回整張表",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f031",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "面板頂端隨時說明現在套用到哪裡。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-l3fi90",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -1706,15 +2024,1062 @@
         "code": "2022"
        },
        "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "面板頂端會寫現在套到哪裡——是整張表，還是選取的幾格（連是哪幾格都寫出來），不用自己猜。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "點畫布別的地方取消反白，就回到全表。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-24sxvc",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "面板頂端會寫現在套到哪裡——是整張表，還是選取的幾格（連是哪幾格都寫出來），不用自己猜。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "點畫布別的地方取消反白，就回到全表。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-tbl-border",
+   "name": "框線",
+   "notes": "配圖代號：tbl-border\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "框線",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Cell borders",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f056",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f034",
+     "type": "shape",
+     "shape": "rect",
+     "x": 56,
+     "y": 122,
+     "w": 256,
+     "h": 186,
+     "fill": "F7F8FA",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f035",
+     "type": "text",
+     "x": 68,
+     "y": 132,
+     "w": 232,
+     "h": 16,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
        "runs": [
         {
          "text": "框線",
          "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f036",
+     "type": "text",
+     "x": 68,
+     "y": 156,
+     "w": 44,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "框線筆",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f037",
+     "type": "shape",
+     "shape": "rect",
+     "x": 114,
+     "y": 156,
+     "w": 40,
+     "h": 20,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f038",
+     "type": "text",
+     "x": 114,
+     "y": 156,
+     "w": 40,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "0.75",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f039",
+     "type": "text",
+     "x": 158,
+     "y": 156,
+     "w": 16,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "pt",
+         "sizePt": 9,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f040",
+     "type": "shape",
+     "shape": "rect",
+     "x": 178,
+     "y": 156,
+     "w": 20,
+     "h": 20,
+     "fill": "999999",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "sh-f041",
+     "type": "shape",
+     "shape": "rect",
+     "x": 212,
+     "y": 160,
+     "w": 12,
+     "h": 12,
+     "fill": "FFFFFF",
+     "lineColor": "777777",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f042",
+     "type": "text",
+     "x": 228,
+     "y": 156,
+     "w": 40,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "虛線",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "bt-f043",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 68,
+     "y": 186,
+     "w": 72,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "全部",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f044",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 148,
+     "y": 186,
+     "w": 72,
+     "h": 22,
+     "fill": "E3EFFA",
+     "lineColor": "4D9DE0",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "外框",
+         "sizePt": 9,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f045",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 228,
+     "y": 186,
+     "w": 72,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "內部",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f046",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 68,
+     "y": 214,
+     "w": 42,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "上",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f047",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 115,
+     "y": 214,
+     "w": 42,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "下",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f048",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 162,
+     "y": 214,
+     "w": 42,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "左",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f049",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 209,
+     "y": 214,
+     "w": 42,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "右",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f050",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 256,
+     "y": 214,
+     "w": 42,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "無",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f051",
+     "type": "text",
+     "x": 68,
+     "y": 246,
+     "w": 232,
+     "h": 54,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "有反白＝只套那幾格，沒反白＝整張表。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "相鄰的共用邊自動同步，",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "所以畫布上看到的就是匯出結果。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tb-f052",
+     "type": "table",
+     "x": 344,
+     "y": 152,
+     "colW": [
+      80,
+      80,
+      80
+     ],
+     "rowH": [
+      28,
+      26,
+      26
+     ],
+     "cells": [
+      [
+       {
+        "text": "項目",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "數量",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "備註",
+        "bold": true,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": "EEF2F8",
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 1.5,
+          "color": "333333"
+         }
+        }
+       }
+      ],
+      [
+       {
+        "text": "外框",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "12",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 1.5,
+          "color": "333333"
+         }
+        }
+       }
+      ],
+      [
+       {
+        "text": "內板",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "l": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "8",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         }
+        }
+       },
+       {
+        "text": "",
+        "bold": false,
+        "italic": false,
+        "color": "1A1A1A",
+        "sizePt": 11,
+        "fill": null,
+        "align": "center",
+        "valign": "middle",
+        "colspan": 1,
+        "rowspan": 1,
+        "covered": false,
+        "border": {
+         "t": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "b": {
+          "pt": 1.5,
+          "color": "333333"
+         },
+         "l": {
+          "pt": 0.75,
+          "color": "999999",
+          "dash": true
+         },
+         "r": {
+          "pt": 1.5,
+          "color": "333333"
+         }
+        }
+       }
+      ]
+     ],
+     "border": {
+      "pt": 0.75,
+      "color": "999999"
+     }
+    },
+    {
+     "id": "tx-f053",
+     "type": "text",
+     "x": 344,
+     "y": 240,
+     "w": 240,
+     "h": 54,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "外框實線、內部虛線，",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "兩者可以逐格逐邊混用。",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f057",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "框線筆設好線寬與顏色，再選要套哪幾條邊。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-pnp8mx",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "先設筆，再選邊",
+         "sizePt": 10,
          "color": "1A1A1A",
          "bold": true
         },
         {
-         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊，套到反白範圍；沒反白一樣是整張表。旁邊勾「虛線」就畫虛線，實線虛線可以逐格逐邊混用。",
+         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊。「無」是清掉框線。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -1730,13 +3095,701 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "只改格子裡的幾個字",
+         "text": "套用範圍和樣式一樣：有反白就只套那幾格，沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "虛線",
          "sizePt": 10,
          "color": "1A1A1A",
          "bold": true
         },
         {
-         "text": "：雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體、文字色就只套在它們身上。這時會多出一排「格內文字（反白處）」，放上標、下標、底線、刪除線、高亮與清除格式。取消反白就回到整格。",
+         "text": "：筆旁邊勾「虛線」再按，畫出來就是虛線。實線虛線可以逐格逐邊混用。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "每一格的四邊各自獨立；相鄰兩格的共用邊會自動同步，所以畫布上看到的就是匯出結果。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-wvmymb",
+     "type": "text",
+     "x": 660,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "先設筆，再選邊",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊。「無」是清掉框線。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "套用範圍和樣式一樣：有反白就只套那幾格，沒反白就是整張表。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "虛線",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "：筆旁邊勾「虛線」再按，畫出來就是虛線。實線虛線可以逐格逐邊混用。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "每一格的四邊各自獨立；相鄰兩格的共用邊會自動同步，所以畫布上看到的就是匯出結果。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p-tbl-run",
+   "name": "只改格子裡的幾個字",
+   "notes": "配圖代號：tbl-run\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
+   "elements": [
+    {
+     "id": "ti-zh",
+     "type": "text",
+     "x": 40,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "只改格子裡的幾個字",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ti-en",
+     "type": "text",
+     "x": 660,
+     "y": 34,
+     "w": 580,
+     "h": 40,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "Styling a few characters",
+         "sizePt": 20,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f078",
+     "type": "shape",
+     "shape": "rect",
+     "x": 40,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f060",
+     "type": "shape",
+     "shape": "rect",
+     "x": 72,
+     "y": 140,
+     "w": 224,
+     "h": 48,
+     "fill": "FFFFFF",
+     "lineColor": "4D9DE0",
+     "linePt": 1.5,
+     "rot": 0
+    },
+    {
+     "id": "tx-f061",
+     "type": "text",
+     "x": 88,
+     "y": 140,
+     "w": 40,
+     "h": 48,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "CO",
+         "sizePt": 16,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f062",
+     "type": "shape",
+     "shape": "rect",
+     "x": 126,
+     "y": 148,
+     "w": 16,
+     "h": 32,
+     "fill": "D8E9F8",
+     "lineColor": "4D9DE0",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f063",
+     "type": "text",
+     "x": 126,
+     "y": 140,
+     "w": 16,
+     "h": 48,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "2",
+         "sizePt": 16,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f064",
+     "type": "text",
+     "x": 146,
+     "y": 140,
+     "w": 100,
+     "h": 48,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "排放量",
+         "sizePt": 16,
+         "bold": false,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f065",
+     "type": "text",
+     "x": 72,
+     "y": 196,
+     "w": 224,
+     "h": 36,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "雙擊進格，只反白那幾個字",
+         "sizePt": 11,
+         "bold": true,
+         "color": "8A6A12"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ar-f066",
+     "type": "shape",
+     "shape": "arrow",
+     "x": 302,
+     "y": 153,
+     "w": 48,
+     "h": 22,
+     "fill": null,
+     "lineColor": "E0A93E",
+     "linePt": 1.5,
+     "rot": 0,
+     "flipH": false,
+     "flipV": false
+    },
+    {
+     "id": "sh-f067",
+     "type": "shape",
+     "shape": "rect",
+     "x": 356,
+     "y": 122,
+     "w": 244,
+     "h": 186,
+     "fill": "F7F8FA",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f068",
+     "type": "text",
+     "x": 368,
+     "y": 132,
+     "w": 220,
+     "h": 16,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "格內文字（反白處）",
+         "sizePt": 10,
+         "bold": true,
+         "color": "1A1A1A"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "bt-f069",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 368,
+     "y": 158,
+     "w": 50,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "x²",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f070",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 424,
+     "y": 158,
+     "w": 50,
+     "h": 22,
+     "fill": "E3EFFA",
+     "lineColor": "4D9DE0",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "x₂",
+         "sizePt": 9,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f071",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 480,
+     "y": 158,
+     "w": 50,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "U",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f072",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 536,
+     "y": 158,
+     "w": 50,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "S",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f073",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 368,
+     "y": 188,
+     "w": 70,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "高亮",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "bt-f074",
+     "type": "shape",
+     "shape": "roundRect",
+     "x": 446,
+     "y": 188,
+     "w": 90,
+     "h": 22,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 0.75,
+     "rot": 0,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "清除格式",
+         "sizePt": 9,
+         "bold": false,
+         "color": "444444"
+        }
+       ]
+      }
+     ],
+     "valign": "middle"
+    },
+    {
+     "id": "tx-f075",
+     "type": "text",
+     "x": 368,
+     "y": 220,
+     "w": 220,
+     "h": 80,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "字級、粗體、斜體、文字色也只套在反白的那幾個字上；",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "取消反白就回到整格。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "888888"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f079",
+     "type": "shape",
+     "shape": "rect",
+     "x": 660,
+     "y": 96,
+     "w": 580,
+     "h": 300,
+     "fill": "FFFFFF",
+     "lineColor": "C9CDD4",
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "cp-zh",
+     "type": "text",
+     "x": 40,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "上下標沒有整格層級的對應，只能反白後從這排設。",
+         "sizePt": 11,
+         "bold": false,
+         "color": "666666"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cp-en",
+     "type": "text",
+     "x": 660,
+     "y": 406,
+     "w": 580,
+     "h": 40,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "(caption — to translate)",
+         "sizePt": 11,
+         "bold": false,
+         "color": "AAAAAA"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pr-4eaq1e",
+     "type": "text",
+     "x": 40,
+     "y": 452,
+     "w": 580,
+     "h": 248,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體與文字色就只套在它們身上。取消反白就回到整格。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "有反白時會多出一排「格內文字（反白處）」：上標、下標、底線、刪除線、高亮，還有把反白處退回整格樣式的「清除格式」。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        }
+       ]
+      },
+      {
+       "align": "left",
+       "bullet": {
+        "type": "char",
+        "level": 0,
+        "code": "2022"
+       },
+       "spaceAfter": 4,
+       "runs": [
+        {
+         "text": "上下標只有這條路",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "：整格層級沒有上下標這兩個開關，化學式與科學記號都得從這排設。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -1767,7 +3820,7 @@
      ]
     },
     {
-     "id": "pr-2aibwu",
+     "id": "pr-bt17ev",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1787,13 +3840,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "合併儲存格",
-         "sizePt": 10,
-         "color": "AAAAAA",
-         "bold": true
-        },
-        {
-         "text": "：在格子裡拖曳反白要合併的範圍，按反白框旁的「合併儲存格」。範圍會自動外擴，不會切穿既有的合併。反白單一已合併的格子，那顆鈕會變成「取消合併」。",
+         "text": "雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體與文字色就只套在它們身上。取消反白就回到整格。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -1809,18 +3856,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "合併模式下，格子內部改成拖曳反白，所以",
-         "sizePt": 10,
-         "color": "AAAAAA"
-        },
-        {
-         "text": "搬動整張表要改抓外圈那一圈邊框",
-         "sizePt": 10,
-         "color": "AAAAAA",
-         "bold": true
-        },
-        {
-         "text": "（約 16px 寬）。想編輯某一格的文字，雙擊它。",
+         "text": "有反白時會多出一排「格內文字（反白處）」：上標、下標、底線、刪除線、高亮，還有把反白處退回整格樣式的「清除格式」。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -1836,57 +3872,13 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "只改某幾格的樣式",
+         "text": "上下標只有這條路",
          "sizePt": 10,
          "color": "AAAAAA",
          "bold": true
         },
         {
-         "text": "：拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色、框線就只作用在那幾格，面板頂端會顯示目前的套用範圍。沒反白就是整張表。",
-         "sizePt": 10,
-         "color": "AAAAAA"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "bullet": {
-        "type": "char",
-        "level": 0,
-        "code": "2022"
-       },
-       "spaceAfter": 4,
-       "runs": [
-        {
-         "text": "框線",
-         "sizePt": 10,
-         "color": "AAAAAA",
-         "bold": true
-        },
-        {
-         "text": "：用右欄的「框線筆」設好線寬與顏色，再點全部、外框、內部，或上下左右單邊，套到反白範圍；沒反白一樣是整張表。旁邊勾「虛線」就畫虛線，實線虛線可以逐格逐邊混用。",
-         "sizePt": 10,
-         "color": "AAAAAA"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "bullet": {
-        "type": "char",
-        "level": 0,
-        "code": "2022"
-       },
-       "spaceAfter": 4,
-       "runs": [
-        {
-         "text": "只改格子裡的幾個字",
-         "sizePt": 10,
-         "color": "AAAAAA",
-         "bold": true
-        },
-        {
-         "text": "：雙擊進入儲存格，反白那幾個字，「儲存格樣式」的字級、粗體、斜體、文字色就只套在它們身上。這時會多出一排「格內文字（反白處）」，放上標、下標、底線、刪除線、高亮與清除格式。取消反白就回到整格。",
+         "text": "：整格層級沒有上下標這兩個開關，化學式與科學記號都得從這排設。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -1916,10 +3908,7 @@
       }
      ]
     }
-   ],
-   "notes": "配圖代號：tbl-merge\n（tools/figdeck.js import 以此對應到 HELP_FIGS）",
-   "bg": "FFFFFF",
-   "transition": null
+   ]
   }
  ],
  "fontMode": "locked",
