@@ -565,7 +565,7 @@
      ]
     },
     {
-     "id": "pr-ic47fn",
+     "id": "pr-yrsqdq",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -591,7 +591,18 @@
          "bold": true
         },
         {
-         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右側面板的「新增」。",
+         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右欄",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "「表格」分頁",
+         "sizePt": 10,
+         "color": "1A1A1A",
+         "bold": true
+        },
+        {
+         "text": "→「結構」的「＋欄」「＋列」。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -622,7 +633,7 @@
      ]
     },
     {
-     "id": "pr-aew4m3",
+     "id": "pr-yauxcq",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -648,7 +659,18 @@
          "bold": true
         },
         {
-         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右側面板的「新增」。",
+         "text": "：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右欄",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "「表格」分頁",
+         "sizePt": 10,
+         "color": "AAAAAA",
+         "bold": true
+        },
+        {
+         "text": "→「結構」的「＋欄」「＋列」。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -1180,7 +1202,7 @@
      ]
     },
     {
-     "id": "pr-tmzt2s",
+     "id": "pr-fstjjw",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -1281,7 +1303,7 @@
      ]
     },
     {
-     "id": "pr-m12n9e",
+     "id": "pr-e0ajpq",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -1437,7 +1459,7 @@
      ]
     },
     {
-     "id": "sh-f030",
+     "id": "sh-f034",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -1453,7 +1475,7 @@
      "id": "tb-f013",
      "type": "table",
      "x": 56,
-     "y": 150,
+     "y": 160,
      "colW": [
       96,
       96,
@@ -1599,7 +1621,7 @@
      "type": "shape",
      "shape": "rect",
      "x": 56,
-     "y": 180,
+     "y": 190,
      "w": 192,
      "h": 56,
      "fill": null,
@@ -1611,7 +1633,7 @@
      "id": "tx-f015",
      "type": "text",
      "x": 56,
-     "y": 242,
+     "y": 252,
      "w": 192,
      "h": 18,
      "valign": "middle",
@@ -1636,8 +1658,8 @@
      "type": "shape",
      "shape": "arrow",
      "x": 350,
-     "y": 185,
-     "w": 44,
+     "y": 189,
+     "w": 36,
      "h": 22,
      "fill": null,
      "lineColor": "E0A93E",
@@ -1650,10 +1672,10 @@
      "id": "sh-f017",
      "type": "shape",
      "shape": "rect",
-     "x": 400,
-     "y": 122,
-     "w": 200,
-     "h": 196,
+     "x": 392,
+     "y": 106,
+     "w": 208,
+     "h": 186,
      "fill": "F7F8FA",
      "lineColor": "C9CDD4",
      "linePt": 1,
@@ -1662,9 +1684,107 @@
     {
      "id": "tx-f018",
      "type": "text",
-     "x": 412,
-     "y": 132,
-     "w": 176,
+     "x": 400,
+     "y": 114,
+     "w": 64,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "版面",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f019",
+     "type": "text",
+     "x": 464,
+     "y": 114,
+     "w": 64,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "表格",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f020",
+     "type": "text",
+     "x": 528,
+     "y": 114,
+     "w": 64,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "儲存格",
+         "sizePt": 9,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f021",
+     "type": "shape",
+     "shape": "rect",
+     "x": 528,
+     "y": 134,
+     "w": 64,
+     "h": 2,
+     "fill": "4D9DE0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f022",
+     "type": "shape",
+     "shape": "rect",
+     "x": 400,
+     "y": 135,
+     "w": 192,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f023",
+     "type": "text",
+     "x": 400,
+     "y": 142,
+     "w": 192,
      "h": 16,
      "valign": "middle",
      "fill": null,
@@ -1684,26 +1804,26 @@
      ]
     },
     {
-     "id": "sh-f019",
+     "id": "sh-f024",
      "type": "shape",
      "shape": "rect",
-     "x": 412,
-     "y": 154,
-     "w": 176,
-     "h": 46,
+     "x": 400,
+     "y": 162,
+     "w": 192,
+     "h": 66,
      "fill": "E3EFFA",
      "lineColor": "4D9DE0",
      "linePt": 0.75,
      "rot": 0
     },
     {
-     "id": "tx-f020",
+     "id": "tx-f025",
      "type": "text",
-     "x": 418,
-     "y": 158,
-     "w": 164,
-     "h": 38,
-     "valign": "middle",
+     "x": 406,
+     "y": 166,
+     "w": 180,
+     "h": 58,
+     "valign": "top",
      "fill": null,
      "lineColor": null,
      "paras": [
@@ -1711,18 +1831,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "樣式套用範圍：選取 4 格",
-         "sizePt": 9,
-         "bold": false,
-         "color": "1F3A5F"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "（R2C1–R3C2）",
+         "text": "現在改的是反白的 4 格（R2C1 到 R3C2）。點畫布別的地方取消反白，就回到整張表。",
          "sizePt": 9,
          "bold": false,
          "color": "1F3A5F"
@@ -1732,12 +1841,12 @@
      ]
     },
     {
-     "id": "bt-f021",
+     "id": "bt-f026",
      "type": "shape",
      "shape": "roundRect",
-     "x": 412,
-     "y": 210,
-     "w": 56,
+     "x": 400,
+     "y": 236,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1759,12 +1868,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f022",
+     "id": "bt-f027",
      "type": "shape",
      "shape": "roundRect",
-     "x": 472,
-     "y": 210,
-     "w": 56,
+     "x": 465,
+     "y": 236,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1786,12 +1895,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f023",
+     "id": "bt-f028",
      "type": "shape",
      "shape": "roundRect",
-     "x": 532,
-     "y": 210,
-     "w": 56,
+     "x": 530,
+     "y": 236,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1813,12 +1922,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f024",
+     "id": "bt-f029",
      "type": "shape",
      "shape": "roundRect",
-     "x": 412,
-     "y": 238,
-     "w": 56,
+     "x": 400,
+     "y": 262,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1840,12 +1949,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f025",
+     "id": "bt-f030",
      "type": "shape",
      "shape": "roundRect",
-     "x": 472,
-     "y": 238,
-     "w": 56,
+     "x": 465,
+     "y": 262,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1867,12 +1976,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f026",
+     "id": "bt-f031",
      "type": "shape",
      "shape": "roundRect",
-     "x": 532,
-     "y": 238,
-     "w": 56,
+     "x": 530,
+     "y": 262,
+     "w": 62,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -1894,42 +2003,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f027",
-     "type": "text",
-     "x": 412,
-     "y": 268,
-     "w": 176,
-     "h": 40,
-     "valign": "top",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "點別處取消反白",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "＝改回整張表",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "sh-f031",
+     "id": "sh-f035",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -1956,7 +2030,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "面板頂端隨時說明現在套用到哪裡。",
+         "text": "「儲存格樣式」那一段的第一行，就寫著現在套到哪裡。",
          "sizePt": 11,
          "bold": false,
          "color": "666666"
@@ -1990,7 +2064,7 @@
      ]
     },
     {
-     "id": "pr-l3fi90",
+     "id": "pr-46vjy9",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -2010,7 +2084,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
+         "text": "拖曳反白幾格，「儲存格樣式」的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -2026,7 +2100,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "面板頂端會寫現在套到哪裡——是整張表，還是選取的幾格（連是哪幾格都寫出來），不用自己猜。",
+         "text": "那一段的第一行會寫現在套到哪裡——是整張表，還是反白的幾格（連是哪幾格都寫出來），不用自己猜。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -2057,7 +2131,7 @@
      ]
     },
     {
-     "id": "pr-24sxvc",
+     "id": "pr-zasov3",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -2077,7 +2151,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "拖曳反白幾格，右側面板的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
+         "text": "拖曳反白幾格，「儲存格樣式」的字級、行距、粗斜體、文字色、對齊、底色與框線，就只作用在那幾格。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -2093,7 +2167,7 @@
        "spaceAfter": 4,
        "runs": [
         {
-         "text": "面板頂端會寫現在套到哪裡——是整張表，還是選取的幾格（連是哪幾格都寫出來），不用自己猜。",
+         "text": "那一段的第一行會寫現在套到哪裡——是整張表，還是反白的幾格（連是哪幾格都寫出來），不用自己猜。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
@@ -2179,7 +2253,7 @@
      ]
     },
     {
-     "id": "sh-f056",
+     "id": "sh-f065",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -2192,23 +2266,121 @@
      "rot": 0
     },
     {
-     "id": "sh-f034",
+     "id": "sh-f038",
      "type": "shape",
      "shape": "rect",
      "x": 56,
-     "y": 122,
+     "y": 110,
      "w": 256,
-     "h": 186,
+     "h": 224,
      "fill": "F7F8FA",
      "lineColor": "C9CDD4",
      "linePt": 1,
      "rot": 0
     },
     {
-     "id": "tx-f035",
+     "id": "tx-f039",
      "type": "text",
      "x": 68,
-     "y": 132,
+     "y": 118,
+     "w": 77,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "版面",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f040",
+     "type": "text",
+     "x": 145,
+     "y": 118,
+     "w": 77,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "表格",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f041",
+     "type": "text",
+     "x": 223,
+     "y": 118,
+     "w": 77,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "儲存格",
+         "sizePt": 9,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f042",
+     "type": "shape",
+     "shape": "rect",
+     "x": 223,
+     "y": 138,
+     "w": 77,
+     "h": 2,
+     "fill": "4D9DE0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f043",
+     "type": "shape",
+     "shape": "rect",
+     "x": 68,
+     "y": 139,
+     "w": 232,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "tx-f044",
+     "type": "text",
+     "x": 68,
+     "y": 146,
      "w": 232,
      "h": 16,
      "valign": "middle",
@@ -2229,10 +2401,10 @@
      ]
     },
     {
-     "id": "tx-f036",
+     "id": "tx-f045",
      "type": "text",
      "x": 68,
-     "y": 156,
+     "y": 168,
      "w": 44,
      "h": 20,
      "valign": "middle",
@@ -2253,11 +2425,11 @@
      ]
     },
     {
-     "id": "sh-f037",
+     "id": "sh-f046",
      "type": "shape",
      "shape": "rect",
      "x": 114,
-     "y": 156,
+     "y": 168,
      "w": 40,
      "h": 20,
      "fill": "FFFFFF",
@@ -2266,10 +2438,10 @@
      "rot": 0
     },
     {
-     "id": "tx-f038",
+     "id": "tx-f047",
      "type": "text",
      "x": 114,
-     "y": 156,
+     "y": 168,
      "w": 40,
      "h": 20,
      "valign": "middle",
@@ -2290,10 +2462,10 @@
      ]
     },
     {
-     "id": "tx-f039",
+     "id": "tx-f048",
      "type": "text",
      "x": 158,
-     "y": 156,
+     "y": 168,
      "w": 16,
      "h": 20,
      "valign": "middle",
@@ -2314,11 +2486,11 @@
      ]
     },
     {
-     "id": "sh-f040",
+     "id": "sh-f049",
      "type": "shape",
      "shape": "rect",
      "x": 178,
-     "y": 156,
+     "y": 168,
      "w": 20,
      "h": 20,
      "fill": "999999",
@@ -2327,11 +2499,11 @@
      "rot": 0
     },
     {
-     "id": "sh-f041",
+     "id": "sh-f050",
      "type": "shape",
      "shape": "rect",
      "x": 212,
-     "y": 160,
+     "y": 172,
      "w": 12,
      "h": 12,
      "fill": "FFFFFF",
@@ -2340,10 +2512,10 @@
      "rot": 0
     },
     {
-     "id": "tx-f042",
+     "id": "tx-f051",
      "type": "text",
      "x": 228,
-     "y": 156,
+     "y": 168,
      "w": 40,
      "h": 20,
      "valign": "middle",
@@ -2364,11 +2536,11 @@
      ]
     },
     {
-     "id": "bt-f043",
+     "id": "bt-f052",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
-     "y": 186,
+     "y": 196,
      "w": 72,
      "h": 22,
      "fill": "FFFFFF",
@@ -2391,11 +2563,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f044",
+     "id": "bt-f053",
      "type": "shape",
      "shape": "roundRect",
      "x": 148,
-     "y": 186,
+     "y": 196,
      "w": 72,
      "h": 22,
      "fill": "E3EFFA",
@@ -2418,11 +2590,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f045",
+     "id": "bt-f054",
      "type": "shape",
      "shape": "roundRect",
      "x": 228,
-     "y": 186,
+     "y": 196,
      "w": 72,
      "h": 22,
      "fill": "FFFFFF",
@@ -2445,11 +2617,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f046",
+     "id": "bt-f055",
      "type": "shape",
      "shape": "roundRect",
      "x": 68,
-     "y": 214,
+     "y": 224,
      "w": 42,
      "h": 22,
      "fill": "FFFFFF",
@@ -2472,11 +2644,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f047",
+     "id": "bt-f056",
      "type": "shape",
      "shape": "roundRect",
      "x": 115,
-     "y": 214,
+     "y": 224,
      "w": 42,
      "h": 22,
      "fill": "FFFFFF",
@@ -2499,11 +2671,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f048",
+     "id": "bt-f057",
      "type": "shape",
      "shape": "roundRect",
      "x": 162,
-     "y": 214,
+     "y": 224,
      "w": 42,
      "h": 22,
      "fill": "FFFFFF",
@@ -2526,11 +2698,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f049",
+     "id": "bt-f058",
      "type": "shape",
      "shape": "roundRect",
      "x": 209,
-     "y": 214,
+     "y": 224,
      "w": 42,
      "h": 22,
      "fill": "FFFFFF",
@@ -2553,11 +2725,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f050",
+     "id": "bt-f059",
      "type": "shape",
      "shape": "roundRect",
      "x": 256,
-     "y": 214,
+     "y": 224,
      "w": 42,
      "h": 22,
      "fill": "FFFFFF",
@@ -2580,12 +2752,12 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f051",
+     "id": "tx-f060",
      "type": "text",
      "x": 68,
-     "y": 246,
+     "y": 254,
      "w": 232,
-     "h": 54,
+     "h": 72,
      "valign": "top",
      "fill": null,
      "lineColor": null,
@@ -2594,29 +2766,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "有反白＝只套那幾格，沒反白＝整張表。",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "相鄰的共用邊自動同步，",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "所以畫布上看到的就是匯出結果。",
+         "text": "每一格的四邊各自獨立，線寬與顏色也是；現在套在反白的 4 格。相鄰兩格的共用邊會自動同步，所以畫布上看到的就是匯出結果。",
          "sizePt": 9,
          "bold": false,
          "color": "888888"
@@ -2626,10 +2776,10 @@
      ]
     },
     {
-     "id": "tb-f052",
+     "id": "tb-f061",
      "type": "table",
      "x": 344,
-     "y": 152,
+     "y": 150,
      "colW": [
       80,
       80,
@@ -2957,10 +3107,10 @@
      }
     },
     {
-     "id": "tx-f053",
+     "id": "tx-f062",
      "type": "text",
      "x": 344,
-     "y": 240,
+     "y": 244,
      "w": 240,
      "h": 54,
      "valign": "top",
@@ -2992,7 +3142,7 @@
      ]
     },
     {
-     "id": "sh-f057",
+     "id": "sh-f066",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -3053,7 +3203,7 @@
      ]
     },
     {
-     "id": "pr-pnp8mx",
+     "id": "pr-9ht1ra",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -3142,7 +3292,7 @@
      ]
     },
     {
-     "id": "pr-wvmymb",
+     "id": "pr-lwq8c1",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -3286,7 +3436,7 @@
      ]
     },
     {
-     "id": "sh-f078",
+     "id": "sh-f093",
      "type": "shape",
      "shape": "rect",
      "x": 40,
@@ -3299,11 +3449,11 @@
      "rot": 0
     },
     {
-     "id": "sh-f060",
+     "id": "sh-f069",
      "type": "shape",
      "shape": "rect",
      "x": 72,
-     "y": 140,
+     "y": 150,
      "w": 224,
      "h": 48,
      "fill": "FFFFFF",
@@ -3312,10 +3462,10 @@
      "rot": 0
     },
     {
-     "id": "tx-f061",
+     "id": "tx-f070",
      "type": "text",
      "x": 88,
-     "y": 140,
+     "y": 150,
      "w": 40,
      "h": 48,
      "valign": "middle",
@@ -3336,11 +3486,11 @@
      ]
     },
     {
-     "id": "sh-f062",
+     "id": "sh-f071",
      "type": "shape",
      "shape": "rect",
      "x": 126,
-     "y": 148,
+     "y": 158,
      "w": 16,
      "h": 32,
      "fill": "D8E9F8",
@@ -3349,10 +3499,10 @@
      "rot": 0
     },
     {
-     "id": "tx-f063",
+     "id": "tx-f072",
      "type": "text",
      "x": 126,
-     "y": 140,
+     "y": 150,
      "w": 16,
      "h": 48,
      "valign": "middle",
@@ -3373,10 +3523,10 @@
      ]
     },
     {
-     "id": "tx-f064",
+     "id": "tx-f073",
      "type": "text",
      "x": 146,
-     "y": 140,
+     "y": 150,
      "w": 100,
      "h": 48,
      "valign": "middle",
@@ -3397,10 +3547,10 @@
      ]
     },
     {
-     "id": "tx-f065",
+     "id": "tx-f074",
      "type": "text",
      "x": 72,
-     "y": 196,
+     "y": 206,
      "w": 224,
      "h": 36,
      "valign": "top",
@@ -3421,12 +3571,12 @@
      ]
     },
     {
-     "id": "ar-f066",
+     "id": "ar-f075",
      "type": "shape",
      "shape": "arrow",
      "x": 302,
-     "y": 153,
-     "w": 48,
+     "y": 167,
+     "w": 40,
      "h": 22,
      "fill": null,
      "lineColor": "E0A93E",
@@ -3436,24 +3586,159 @@
      "flipV": false
     },
     {
-     "id": "sh-f067",
+     "id": "sh-f076",
      "type": "shape",
      "shape": "rect",
-     "x": 356,
-     "y": 122,
-     "w": 244,
-     "h": 186,
+     "x": 348,
+     "y": 106,
+     "w": 252,
+     "h": 194,
      "fill": "F7F8FA",
      "lineColor": "C9CDD4",
      "linePt": 1,
      "rot": 0
     },
     {
-     "id": "tx-f068",
+     "id": "tx-f077",
      "type": "text",
-     "x": 368,
-     "y": 132,
-     "w": 220,
+     "x": 360,
+     "y": 114,
+     "w": 76,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "版面",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f078",
+     "type": "text",
+     "x": 436,
+     "y": 114,
+     "w": 76,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "表格",
+         "sizePt": 9,
+         "bold": false,
+         "color": "8A8F98"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f079",
+     "type": "text",
+     "x": 512,
+     "y": 114,
+     "w": 76,
+     "h": 20,
+     "valign": "middle",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "center",
+       "runs": [
+        {
+         "text": "儲存格",
+         "sizePt": 9,
+         "bold": true,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sh-f080",
+     "type": "shape",
+     "shape": "rect",
+     "x": 512,
+     "y": 134,
+     "w": 76,
+     "h": 2,
+     "fill": "4D9DE0",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f081",
+     "type": "shape",
+     "shape": "rect",
+     "x": 360,
+     "y": 135,
+     "w": 228,
+     "h": 1,
+     "fill": "C9CDD4",
+     "lineColor": null,
+     "linePt": 1,
+     "rot": 0
+    },
+    {
+     "id": "sh-f082",
+     "type": "shape",
+     "shape": "rect",
+     "x": 360,
+     "y": 142,
+     "w": 228,
+     "h": 72,
+     "fill": "E3EFFA",
+     "lineColor": "4D9DE0",
+     "linePt": 0.75,
+     "rot": 0
+    },
+    {
+     "id": "tx-f083",
+     "type": "text",
+     "x": 366,
+     "y": 146,
+     "w": 216,
+     "h": 64,
+     "valign": "top",
+     "fill": null,
+     "lineColor": null,
+     "paras": [
+      {
+       "align": "left",
+       "runs": [
+        {
+         "text": "現在改的是格子裡反白的那幾個字（第 2 列第 1 欄）。字級、粗體、斜體、文字色，還有下面那排「格內文字」，都只套在它們身上；取消反白就回到整格。",
+         "sizePt": 9,
+         "bold": false,
+         "color": "1F3A5F"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tx-f084",
+     "type": "text",
+     "x": 360,
+     "y": 222,
+     "w": 228,
      "h": 16,
      "valign": "middle",
      "fill": null,
@@ -3473,12 +3758,12 @@
      ]
     },
     {
-     "id": "bt-f069",
+     "id": "bt-f085",
      "type": "shape",
      "shape": "roundRect",
-     "x": 368,
-     "y": 158,
-     "w": 50,
+     "x": 360,
+     "y": 242,
+     "w": 54,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -3500,12 +3785,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f070",
+     "id": "bt-f086",
      "type": "shape",
      "shape": "roundRect",
-     "x": 424,
-     "y": 158,
-     "w": 50,
+     "x": 418,
+     "y": 242,
+     "w": 54,
      "h": 22,
      "fill": "E3EFFA",
      "lineColor": "4D9DE0",
@@ -3527,12 +3812,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f071",
+     "id": "bt-f087",
      "type": "shape",
      "shape": "roundRect",
-     "x": 480,
-     "y": 158,
-     "w": 50,
+     "x": 476,
+     "y": 242,
+     "w": 54,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -3554,12 +3839,12 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f072",
+     "id": "bt-f088",
      "type": "shape",
      "shape": "roundRect",
-     "x": 536,
-     "y": 158,
-     "w": 50,
+     "x": 534,
+     "y": 242,
+     "w": 54,
      "h": 22,
      "fill": "FFFFFF",
      "lineColor": "C9CDD4",
@@ -3581,11 +3866,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f073",
+     "id": "bt-f089",
      "type": "shape",
      "shape": "roundRect",
-     "x": 368,
-     "y": 188,
+     "x": 360,
+     "y": 270,
      "w": 70,
      "h": 22,
      "fill": "FFFFFF",
@@ -3608,11 +3893,11 @@
      "valign": "middle"
     },
     {
-     "id": "bt-f074",
+     "id": "bt-f090",
      "type": "shape",
      "shape": "roundRect",
-     "x": 446,
-     "y": 188,
+     "x": 434,
+     "y": 270,
      "w": 90,
      "h": 22,
      "fill": "FFFFFF",
@@ -3635,42 +3920,7 @@
      "valign": "middle"
     },
     {
-     "id": "tx-f075",
-     "type": "text",
-     "x": 368,
-     "y": 220,
-     "w": 220,
-     "h": 80,
-     "valign": "top",
-     "fill": null,
-     "lineColor": null,
-     "paras": [
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "字級、粗體、斜體、文字色也只套在反白的那幾個字上；",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      },
-      {
-       "align": "left",
-       "runs": [
-        {
-         "text": "取消反白就回到整格。",
-         "sizePt": 9,
-         "bold": false,
-         "color": "888888"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "sh-f079",
+     "id": "sh-f094",
      "type": "shape",
      "shape": "rect",
      "x": 660,
@@ -3697,7 +3947,7 @@
        "align": "left",
        "runs": [
         {
-         "text": "上下標沒有整格層級的對應，只能反白後從這排設。",
+         "text": "「格內文字（反白處）」只在格內有反白時才出現。",
          "sizePt": 11,
          "bold": false,
          "color": "666666"
@@ -3731,7 +3981,7 @@
      ]
     },
     {
-     "id": "pr-4eaq1e",
+     "id": "pr-jav865",
      "type": "text",
      "x": 40,
      "y": 452,
@@ -3811,7 +4061,37 @@
          "bold": true
         },
         {
-         "text": "：Enter 是在格子裡換行，跟 PowerPoint 一樣；Esc 結束編輯。Tab 不跳格，要換格請直接雙擊目標格。",
+         "text": "：",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Enter",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 是在格子裡換行，跟 PowerPoint 一樣；",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Esc",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 結束編輯。",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": "Tab",
+         "sizePt": 10,
+         "color": "1A1A1A"
+        },
+        {
+         "text": " 不跳格，要換格請直接雙擊目標格。",
          "sizePt": 10,
          "color": "1A1A1A"
         }
@@ -3820,7 +4100,7 @@
      ]
     },
     {
-     "id": "pr-bt17ev",
+     "id": "pr-w460zu",
      "type": "text",
      "x": 660,
      "y": 452,
@@ -3900,7 +4180,37 @@
          "bold": true
         },
         {
-         "text": "：Enter 是在格子裡換行，跟 PowerPoint 一樣；Esc 結束編輯。Tab 不跳格，要換格請直接雙擊目標格。",
+         "text": "：",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Enter",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 是在格子裡換行，跟 PowerPoint 一樣；",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Esc",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 結束編輯。",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": "Tab",
+         "sizePt": 10,
+         "color": "AAAAAA"
+        },
+        {
+         "text": " 不跳格，要換格請直接雙擊目標格。",
          "sizePt": 10,
          "color": "AAAAAA"
         }
