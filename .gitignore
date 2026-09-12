@@ -1,5 +1,4 @@
-# macOS
 .DS_Store
-
-# internal
+.trash
 docs/internal
+tests/internal
