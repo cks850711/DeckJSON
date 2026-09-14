@@ -7430,6 +7430,9 @@ function normVideo(el){
       natW:Math.max(0,Math.round(+s.natW)||0),natH:Math.max(0,Math.round(+s.natH)||0)};
     delete el.embed;
   }
+  if(typeof el.cover==='string'&&looksLikeAssetRef(el.cover))
+    throw new Error(`影片 ${el.id} 的 cover 是資產引用「${el.cover}」，但這份 JSON 不在容器裡——`
+      +`從 .deck 容器裡單獨挖出來的 deck.json 要連同 assets/ 一起開，不能只貼 JSON。`);
   if(typeof el.cover!=='string'||!el.cover.startsWith('data:image/')) delete el.cover;
 }
 function normParaOpts(p){
@@ -7556,6 +7559,8 @@ function normalizeDeck(d){
     // 章節：有非空字串＝從本頁起一個新章節；空字串／缺鍵＝延續上一章
     if(typeof pg.section==='string'&&pg.section.trim()) pg.section=uniqTitle(pg.section.trim().slice(0,60),secSeen);
     else delete pg.section;
+    if(typeof pg.bgImage==='string'&&looksLikeAssetRef(pg.bgImage))
+      throw new Error(`頁面 ${pg.id} 的 bgImage 是資產引用「${pg.bgImage}」，但這份 JSON 不在容器裡。`);
     if(typeof pg.bgImage!=='string'||!pg.bgImage.startsWith('data:image/')) delete pg.bgImage;
     pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
@@ -7687,6 +7692,106 @@ function normMaster(m){
   if(!m||typeof m!=='object') return null;
   const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements)};
   return (o.on||o.elements.length)? o : null;
+}
+/* ================= .deck 容器（zip） =================
+   磁碟上的 .deck 是 zip：deck.json ＋ assets/<雜湊>.<副檔名>。
+   **記憶體模型完全不變**——el.dataUrl 在執行期仍是 data URL，所以畫布渲染、圖片
+   壓縮、匯出檢查那些讀取點一行都不用改。轉換只發生在存檔／載入這條邊界上。
+
+   舊的純 JSON 照開：deck.assetMode 缺鍵＝inline＝位元組內嵌，原樣放行。
+   xlsx2pptx 至今輸出的 .deck.json 也走這條，不必改它。 */
+const ASSET_DIR='assets/';
+const MIME2EXT={'image/png':'png','image/jpeg':'jpg','image/gif':'gif',
+                'image/webp':'webp','image/svg+xml':'svg','image/bmp':'bmp'};
+const EXT2MIME={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',
+                webp:'image/webp',svg:'image/svg+xml',bmp:'image/bmp'};
+
+/* 內容定址的雜湊刻意不用 crypto.subtle：那個 API 只在安全上下文存在，而本工具的
+   核心情境正是 file:// 雙擊開啟。內容定址不需要密碼學強度——同一份簡報幾十張圖，
+   64 位的碰撞機率可忽略，而且 dehydrate 真的撞到時會逐位元比對再換名，不覆蓋。 */
+function assetHash(b){
+  let h1=0x811c9dc5>>>0, h2=0x9e3779b9>>>0;
+  for(let i=0;i<b.length;i++){
+    h1=((h1^b[i])>>>0)*0x01000193>>>0;
+    h2=((h2+b[i])>>>0)*0x85ebca6b>>>0; h2=(h2^(h2>>>13))>>>0;
+  }
+  return h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
+}
+/* 靜默少一張圖是這套格式最陰的失敗方式，所以 normalizeDeck 看到像引用的值就報錯。
+   正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
+const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
+function sameBytes(a,b){ if(a.length!==b.length) return false;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false; return true; }
+
+/* 帶位元組的欄位只有三個（圖片 dataUrl／頁面 bgImage／影片 cover），但**母版元素
+   不在 deck.pages 底下**——只走 pages 的話會把母版上的 Logo 整個弄丟，而且無聲。 */
+function assetSlots(deck){
+  const out=[], take=(o,k)=>{ if(typeof o[k]==='string'&&o[k]) out.push({o,k}); };
+  for(const p of deck.pages||[]){
+    take(p,'bgImage');
+    for(const el of p.elements||[]){ take(el,'dataUrl'); take(el,'cover'); }
+  }
+  for(const el of (deck.master&&deck.master.elements)||[]){ take(el,'dataUrl'); take(el,'cover'); }
+  return out;
+}
+function dataUrlDecode(u){
+  const i=u.indexOf(',');
+  const mime=(u.slice(0,i).match(/^data:([^;,]+)/)||[])[1]||'application/octet-stream';
+  const bin=atob(u.slice(i+1)), a=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++) a[k]=bin.charCodeAt(k);
+  return {bytes:a, ext:MIME2EXT[mime]||'bin'};
+}
+/* 位元組抽出來 → 欄位換成檔名。只收被引用到的資產，刪掉的元素不留孤兒檔。 */
+function dehydrate(deck){
+  const d=structuredClone(deck), assets=new Map();
+  for(const s of assetSlots(d)){
+    const v=s.o[s.k];
+    if(!v.startsWith('data:')) continue;   // 已是引用，或不是位元組
+    const {bytes,ext}=dataUrlDecode(v);
+    const base=assetHash(bytes);
+    let name=base+'.'+ext, n=1, prev;
+    while((prev=assets.get(name))&&!sameBytes(prev,bytes)) name=base+'-'+(n++)+'.'+ext;
+    assets.set(name,bytes); s.o[s.k]=name;
+  }
+  d.assetMode='ref';
+  return {deck:d, assets};
+}
+/* 檔名 → 還原成 data URL。缺檔一律拋錯：無聲少一張圖比開不了檔更糟。 */
+async function hydrate(deck,zip){
+  if(deck.assetMode!=='ref') return deck;   // 舊檔，位元組已內嵌
+  const cache=new Map();
+  for(const s of assetSlots(deck)){
+    const name=s.o[s.k];
+    if(!name||name.startsWith('data:')) continue;
+    if(!cache.has(name)){
+      const f=zip.file(ASSET_DIR+name);
+      if(!f) throw new Error('容器內缺少資產檔：'+ASSET_DIR+name);
+      const ext=(name.split('.').pop()||'').toLowerCase();
+      cache.set(name,'data:'+(EXT2MIME[ext]||'application/octet-stream')+';base64,'+await f.async('base64'));
+    }
+    s.o[s.k]=cache.get(name);
+  }
+  delete deck.assetMode;
+  return deck;
+}
+/* deck.json 用 DEFLATE（文字壓得掉六七成）；資產用 STORE——PNG／JPEG 本來就是
+   壓縮格式，再 deflate 是燒 CPU 換不到 1%。 */
+async function deckToBlob(){
+  const {deck,assets}=dehydrate(APP.deck);
+  const zip=new JSZip();
+  zip.file('deck.json',JSON.stringify(deck,null,1),{compression:'DEFLATE'});
+  for(const [name,bytes] of assets) zip.file(ASSET_DIR+name,bytes,{compression:'STORE'});
+  return await zip.generateAsync({type:'blob',mimeType:'application/zip'});
+}
+/* 開檔的唯一解析點：靠 magic byte 分流，不靠副檔名——.deck 與 .deck.json 兩種
+   命名都發過，副檔名不可靠。 */
+async function deckFromFile(f){
+  const buf=await f.arrayBuffer(), head=new Uint8Array(buf,0,Math.min(4,buf.byteLength));
+  if(!(head[0]===0x50&&head[1]===0x4b))           // 不是 PK＝舊的純 JSON
+    return JSON.parse(new TextDecoder().decode(buf));
+  const zip=await JSZip.loadAsync(buf), dj=zip.file('deck.json');
+  if(!dj) throw new Error('這是一個 zip，但不是 DeckJSON 容器（缺 deck.json）');
+  return await hydrate(JSON.parse(await dj.async('string')),zip);
 }
 function deckJson(){ return JSON.stringify(APP.deck,null,1); }
 /* ---- JSON 顯示層圖片佔位：base64 太長會塞爆協作視窗 ----
@@ -8049,7 +8154,7 @@ async function asRestore(){
    權限不跨頁面重載：重整後 queryPermission 會回到 'prompt'，且 requestPermission 只能在
    user gesture 裡叫——所以底下每個要權限的動作都由按鍵／點擊直接觸發，不從計時器或還原流程呼叫。 */
 const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.showOpenFilePicker==='function';
-const DECK_TYPES=[{description:'DeckJSON 簡報',accept:{'application/json':['.deck','.deck.json']}}];
+const DECK_TYPES=[{description:'DeckJSON 簡報',accept:{'application/zip':['.deck','.deck.json']}}];
 /* handle 跟著自動存檔寫在**同一筆記錄**裡，不另立鍵。
    理由是多分頁：IndexedDB 是整個 origin 共用的，分開存就會出現「內容來自這個分頁、
    handle 來自另一個分頁」的錯配——重載後按一次 Cmd/Ctrl+S，就把甲的內容寫進乙的檔案。
@@ -8080,8 +8185,9 @@ async function externallyChanged(){
   try{ return (await f.handle.getFile()).lastModified>f.stamp; }catch(e){ return false; }
 }
 async function writeDeckTo(h){
+  const blob=await deckToBlob();      // 先把容器做好再開檔：打包失敗就不要動到原檔
   const w=await h.createWritable();   // 寫進暫存檔，close() 才原子換掉原檔：寫到一半當掉不會留半截檔
-  await w.write(deckJson());
+  await w.write(blob);
   await w.close();
   let stamp=0; try{ stamp=(await h.getFile()).lastModified; }catch(e){}
   APP.file={handle:h,name:h.name,stamp,stale:false}; APP.dirty=false; fileHint();
@@ -8107,11 +8213,14 @@ async function saveDeckAs(){        // Cmd/Ctrl+Shift+S
     await writeDeckTo(h);
   }catch(err){ if(err.name!=='AbortError') asHint('⚠ 另存失敗：'+(err.message||err),true); }   // AbortError＝按了取消，不是錯誤
 }
-function saveDeckDownload(){        // 沒有 FSA 時的退路（Safari／Firefox／file:// 開啟）
+async function saveDeckDownload(){  // 沒有 FSA 時的退路（Safari／Firefox／file:// 開啟）
+  const url=URL.createObjectURL(await deckToBlob());
   const a=document.createElement('a');
-  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(deckJson());
+  a.href=url;
   a.download=(APP.deck.title||'deckjson')+'.deck';
   a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);   // 立刻 revoke 會讓下載中斷，給它一段時間
+
   APP.dirty=false; fileHint();
   asHint('已下載一份副本到下載資料夾（此環境無法就地覆寫，見「?」說明）');
 }
@@ -8131,8 +8240,8 @@ async function openDeckPicker(){
    沒有 h 時必須把 APP.file 清成 null：否則接下來的 Cmd/Ctrl+S 會覆寫到「上一個」檔案。 */
 async function openDeckFile(f,ask,h){
   let obj;
-  try{ obj=JSON.parse(await f.text()); }
-  catch(err){ alert('載入失敗：「'+f.name+'」不是有效的 JSON\n\n'+err.message); return false; }
+  try{ obj=await deckFromFile(f); }   // 容器與舊的純 JSON 都吃，靠 magic byte 分流
+  catch(err){ alert('載入失敗：「'+f.name+'」讀不開\n\n'+err.message); return false; }
   // 先輕量認一下是不是簡報檔，才不會為了一個不相干的 .json 也去問「要不要取代」
   if(!obj||typeof obj!=='object'||!Array.isArray(obj.pages)||!obj.pages.length){
     alert('載入失敗：「'+f.name+'」不是 DeckJSON 簡報檔（缺 pages）'); return false; }
@@ -8187,7 +8296,7 @@ $('#profileInput').addEventListener('change',async e=>{
 $('#mergeInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{
-    const inc=normalizeDeck(structuredClone(JSON.parse(await f.text())));   // .json 檔自足含完整圖片
+    const inc=normalizeDeck(await deckFromFile(f));   // deckFromFile 已回傳新物件，不必再 clone
     commitUndo();
     const at=APP.deck.pages.indexOf(curPage())+1;
     inc.pages.forEach((pg,k)=>{ pg.id=uid('p'); APP.deck.pages.splice(at+k,0,pg); });  // 換新頁 id 免撞
