@@ -727,7 +727,7 @@
   <div class="pjBtns">
     <button id="btnPageJsonRefresh" class="icBtn"><svg class="ic"><use href="#ic-refresh"/></svg>重新讀取</button>
     <button id="btnPageJsonCopy">複製</button>
-    <button id="btnPageJsonCopyRaw" title="不遮罩圖片，複製含完整 base64 的本頁 JSON。給外部工具用（例如 Obsidian 的 deckjson codeblock）——@asset 佔位只有本簡報自己還原得回來">複製（含 base64）</button>
+    <button id="btnPageJsonCopyRaw" title="不遮罩圖片，複製含完整 base64 的本頁 JSON。給能讀 deck JSON 的外部工具用——@asset 佔位只有本簡報自己還原得回來">複製（含 base64）</button>
     <button id="btnPageJsonApply" class="primary">套用本頁</button>
   </div>
   </div><!-- #palCopyWin 由 buildCopyPalWin() 掛在這裡，與 .pjMain 並排 --></div>
@@ -1090,7 +1090,7 @@
         <summary>進階：來源差異與匯出對應</summary>
         <ul>
           <li>Office 複製時會順便附一份圖像版本，本工具刻意讓表格優先。真的想要圖片版，先貼到別處再截圖。</li>
-          <li>Obsidian 的 Markdown 表格請走 md-table-converter（姊妹專案）轉一手——它的「複製到剪貼簿」輸出的就是這裡吃的格式。圖片要先在那邊掛載圖片資料夾才帶得過來。</li>
+          <li>Markdown 表格要先轉成 HTML 表格再貼——任何能把 Markdown 表格以 <code>text/html</code> 放進剪貼簿的工具都吃得到。圖片必須是內嵌的 <code>data:</code> URI 才帶得過來，遠端網址的圖會被略過。</li>
           <li>框線不從來源反推，因為 Excel 會把網格線也寫成 border。一律套整表細線，需要再自行調整。</li>
           <li>只收內嵌位元組（<code>data:</code>）的圖片。網頁上那種遠端網址的圖沒辦法隨簡報帶走，會略過並告訴你略過幾張。</li>
           <li>每一格的四邊、顏色與線寬各自獨立，與 PowerPoint 的儲存格框線相同。相鄰的共用邊會自動雙寫同步，所以畫布上看到的就是匯出結果。</li>
@@ -1286,7 +1286,7 @@
         <summary>進階：主題槽與 lang</summary>
         <ul>
           <li>母版繼承的字體寫成 <code>+mn-lt</code>／<code>+mn-ea</code> 主題槽引用。</li>
-          <li>兩種模式都不按語言切 run、全文件同一個 <code>lang</code>——姊妹專案 xlsx2pptx 的中英交界異常換行病灶已經拔除。</li>
+          <li>兩種模式都不按語言切 run、全文件同一個 <code>lang</code>——中英交界不會出現異常換行（那是人為切 run 躲過避頭尾造成的）。</li>
         </ul>
       </details>
       <h4 data-tab="AI 協作">兩個 JSON 入口</h4>
@@ -1302,7 +1302,7 @@
       </ul>
       <h4>要貼給外部工具的時候</h4>
       <ul>
-        <li>本頁 JSON 面板的<b>「複製（含 base64）」</b>是不遮罩圖片的複製，給<b>外部工具</b>用，例如 Obsidian 的 <code>deckjson</code> codeblock。</li>
+        <li>本頁 JSON 面板的<b>「複製（含 base64）」</b>是不遮罩圖片的複製，給能讀 deck JSON 的<b>外部工具</b>用。</li>
         <li><code>@asset</code> 佔位<b>只有本簡報自己還原得回位元組</b>，貼到外面會變破圖，所以外部工具要用這一顆。</li>
         <li>注意它仍然是<b>單頁片段</b>：不含 <code>stage</code>、<code>fonts</code>、<code>master</code>，外部工具會套自己的預設值。</li>
       </ul>
@@ -7200,7 +7200,7 @@ document.addEventListener('paste',e=>{
       insertPasted(res.els,true);   // 已算好置中座標，不要再套防重疊偏移
       if(res.skipped) alert(`有 ${res.skipped} 張格內圖片未收進來。\n本工具只接受內嵌位元組（data: URI）的圖片——`
         +`遠端網址的圖既不能隨簡報帶走，也無法轉成位元組（跨來源 canvas 會被污染）。\n`
-        +`若來源是 md-table-converter，請確認已掛載圖片資料夾後再複製。`);
+        +`若來源工具有「嵌入圖片」之類的選項，請先開啟再複製。`);
     });
     return;
   }
@@ -7954,7 +7954,7 @@ $('#btnPageJsonCopy').onclick=async()=>{
   catch(err){ $('#pageJsonArea').select(); document.execCommand('copy'); $('#btnPageJsonCopy').textContent='已複製 ✓'; }
   setTimeout(()=>$('#btnPageJsonCopy').textContent='複製',1200);
 };
-/* 含 base64 的複製：給外部工具（如 Obsidian 的 deckjson codeblock）用。
+/* 含 base64 的複製：給能讀 deck JSON 的外部工具用。
    面板裡顯示的是 maskedJson，圖片被換成 @asset 佔位——那個佔位只有本簡報自己按 id
    還原得回位元組，貼到別的地方就是一張破圖。這裡直接取未遮罩的原始物件。
    ⚠ 目前只解遮罩，仍是「單頁片段」：不含 stage／fonts／master，外部工具得自己套預設。 */
