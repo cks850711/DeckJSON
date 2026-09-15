@@ -9430,6 +9430,34 @@ function gradXml(g){
   return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${dir}</a:gradFill>`;
 }
 const xmlAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* 匯出期的媒體去重鍵。
+   PptxGenJS 其實有去重，但它比的是 options.path，而本工具一直只給 data、沒給 path，
+   所以 `t.path===c` 那條永遠不成立——同一張圖被重複寫進 ppt/media/ 好幾份。驗收測試簿
+   實測：26 個媒體檔裡只有 7 種相異內容，改完剩 11 個、檔案小 12.4%。
+   作法是把內容雜湊當成假的 path：內容相同 → path 相同 → 共用同一個 Target → zip 內
+   只留一份。位元組仍由 data 帶走，不會因為多了 path 就跑去抓檔案——PptxGenJS 的
+   抓檔清單是 `!t.data` 過濾的，我們永遠有 data（2026-09-15 實測 network 零請求）。
+
+   ⚠ 去重只在「同一頁內」生效：_relsMedia 是每頁一份的陣列，去重濾鏡只掃自己那頁，
+     而 Target 又寫死了 _slideNum。跨頁重複吃不到，要吃得動 vendor，見功能缺口總表。
+   ⚠ cNvPr 的 descr 是 `altText || options.path`，所以一給 path，沒有替代文字的圖片
+     descr 就會從 "preencoded.png" 變成雜湊檔名——PowerPoint 的「編輯替代文字」會直接
+     顯示它，而 TC-27 明訂該欄位必須空白。既有的清除寫死比對 "preencoded.png"，攔不到
+     雜湊；故改為比對「本次真的餵出去過的 path」（見 isInternalMediaPath），精確，且
+     不會誤傷剛好長得像檔名的使用者替代文字。
+   SVG 走另一條分支（先轉 PNG、本來就不去重），不套用。 */
+const _expMediaPath=new Map();
+function exportMediaPath(dataUrl){
+  if(typeof dataUrl!=='string'||!dataUrl.startsWith('data:')) return null;
+  const mime=(dataUrl.slice(0,dataUrl.indexOf(',')).match(/^data:([^;,]+)/)||[])[1]||'';
+  const ext=MIME2EXT[mime];
+  if(!ext||ext==='svg') return null;
+  let v=_expMediaPath.get(dataUrl);
+  if(!v){ v=assetHash(dataUrlDecode(dataUrl).bytes)+'.'+ext; _expMediaPath.set(dataUrl,v); }
+  return v;
+}
+/* 餵出去過的 path 一覽，給 descr 清除用——不靠字串樣式猜，只清自己放進去的。 */
+const isInternalMediaPath=v=>v==='preencoded.png'||[..._expMediaPath.values()].includes(v);
 async function addElToSlide(slide,el,pend){
   const common={x:px2in(el.x),y:px2in(el.y),w:px2in(el.w),h:px2in(el.h),objectName:el.id};
   const tr=(el.opacity!=null&&el.opacity<100)? 100-el.opacity : 0;   // pptx transparency：0=不透明
@@ -9454,6 +9482,7 @@ async function addElToSlide(slide,el,pend){
   }
   if(el.type==='image'){
     const o={...common,data:el.dataUrl};
+    const mp=exportMediaPath(el.dataUrl); if(mp) o.path=mp;   // 媒體去重鍵，見 exportMediaPath
     /* 裁切：PptxGenJS 的 sizing:'crop' 算 srcRect 的公式是
          l=x/w、r=(w-(x+w_))/w（t/b 同理），而最終 ext 取的是 sizing.w/h。
        所以餵進去的 o.w/o.h 必須是「裁切後恰好等於框」的虛擬原圖尺寸 vw/vh，
@@ -9858,9 +9887,10 @@ async function exportPptx(download=true){
       return blk.replace(/<a:pPr\b[^>]*>[\s\S]*?<\/a:pPr>|<a:pPr\b[^>]*\/>/g,m=>{
         if(first){ first=false; return m; } return ''; });
     });
-    // (6) 圖片 descr：未填替代文字時 PptxGenJS 會塞內部佔位檔名（descr="preencoded.png"），清成空字串；
+    // (6) 圖片 descr：未填替代文字時 PptxGenJS 會把它的內部 path 塞進去（沒給 path 時是
+    //     "preencoded.png"，給了去重鍵之後是雜湊檔名），一律清成空字串——TC-27 驗這條；
     //     文字／形狀／表格的 cNvPr 本來就沒有 descr 屬性（套件只支援圖片），有 alt 的補寫上去
-    s=s.replace(/ descr="preencoded\.png"/g,' descr=""');
+    s=s.replace(/ descr="([^"]*)"/g,(m,v)=>isInternalMediaPath(v)?' descr=""':m);
     if(pgA) for(const el of pgA.elements){
       // 圖片／圖表／本機影片走 addImage，descr 已由 altText 寫好；線上影片的 cNvPr 沒有 descr，需在此補
       if(el.hidden||!el.alt||el.type==='image'||el.type==='chart'||(el.type==='video'&&el.mode==='local')) continue;
