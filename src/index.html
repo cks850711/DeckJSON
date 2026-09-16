@@ -8189,8 +8189,25 @@ async function writeDeckTo(h){
   const w=await h.createWritable();   // 寫進暫存檔，close() 才原子換掉原檔：寫到一半當掉不會留半截檔
   await w.write(blob);
   await w.close();
-  let stamp=0; try{ stamp=(await h.getFile()).lastModified; }catch(e){}
-  APP.file={handle:h,name:h.name,stamp,stale:false}; APP.dirty=false; fileHint();
+  /* 存檔後回讀驗證。2026-09-07 真的因此遺失過一次資料：createWritable() 開了暫存檔，close() 卻沒把
+     資料帶完成，檔案變成 0 位元組——而且全程沒有任何徵兆，因為底下那三行照跑：APP.dirty 被清掉、
+     自動存檔被那份「已存好」的狀態覆寫，兩層防線同時失效，殘留的 .crswap 是唯一線索。
+     這裡不猜原因，只問一句「硬碟上的大小對不對」。getFile() 本來就要呼叫（取 lastModified），
+     所以這條檢查幾乎不花成本。
+     失敗時刻意什麼都不做：不清 APP.dirty（檔名前的 ● 留著）、不更新 APP.file（下次存檔不會沿用
+     這次的時間戳去比對）、不呼叫 asSaveNow（自動存檔保留上一份完好的），再往外丟給
+     saveDeck／saveDeckAs 的 catch 印紅字。alert 是刻意的——這是資料遺失，不該只留一行提示。 */
+  let f=null; try{ f=await h.getFile(); }catch(e){}
+  if(!f||f.size!==blob.size){
+    const got=f? f.size+' 位元組' : '讀不回來';
+    alert('⚠ 存檔沒有成功：「'+h.name+'」\n\n'+
+          '寫完之後回讀，硬碟上是 '+got+'，應該是 '+blob.size+' 位元組。\n'+
+          '這個檔案可能已經損毀，請不要用它。\n\n'+
+          '目前的內容還在，請改用「另存新檔」存到別的位置；\n'+
+          '就算關掉頁面，自動存檔也還留著這一份（重新開啟時會問要不要還原）。');
+    throw new Error('寫入後回讀對不上：'+got+'，應為 '+blob.size+' 位元組');
+  }
+  APP.file={handle:h,name:h.name,stamp:f.lastModified,stale:false}; APP.dirty=false; fileHint();
   await asSaveNow().catch(()=>{});   // 立刻落一筆「內容＋檔案」成對的記錄，不等 1.2 秒排程
   asHint('已存檔 '+h.name+'　'+asStamp(Date.now()));   // 蓋掉 asSaveNow 的提示：這裡要講的是檔案存好了
 }
