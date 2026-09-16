@@ -8240,13 +8240,29 @@ async function asRestore(){
    瀏覽器預設碰不到硬碟。File System Access API 給的是「使用者在對話框裡親自挑過的那一個檔」
    的寫入權，回傳的 handle 就是那張門票——有票就直接覆寫，沒票才跳對話框。
 
-   票只在 secure context 發（https 或 http://localhost）。雙擊開啟的 file:// 頁面拿不到，
-   那時整條退回原本的下載行為，並且在提示列講明白：靜默降級成「以為覆寫了、其實掉進下載
-   資料夾」比沒有這個功能更糟。專案根的 start-localhost.command 就是為了讓日常使用走 localhost。
+   票只在 secure context 發，而 file:// 也算 secure context——2026-09-16 實測：雙擊開啟的頁面
+   按 Cmd/Ctrl+S，Chrome 會跳「file:/// 將可編輯 xxx.deck」的授權提示，允許後就地覆寫成功
+   （21,579 位元組落地驗證）。**本註解原本宣稱 file:// 拿不到寫入權，那是錯的，已更正。**
+   拿不到票的是 Safari／Firefox（沒有選檔器 API），那時整條退回下載行為，並在提示列講明白：
+   靜默降級成「以為覆寫了、其實掉進下載資料夾」比沒有這個功能更糟。
+   專案根的 start-localhost.command 仍然有用，但理由是**固定 origin ＝ 固定儲存空間**
+   （換 port 等於換一個 IndexedDB 與 localStorage），不是為了取得寫入權。
 
    權限不跨頁面重載：重整後 queryPermission 會回到 'prompt'，且 requestPermission 只能在
    user gesture 裡叫——所以底下每個要權限的動作都由按鍵／點擊直接觸發，不從計時器或還原流程呼叫。 */
 const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.showOpenFilePicker==='function';
+/* 「函式存在」不等於「用得出來」。Claude 桌面版的內建瀏覽器正好落在中間：選檔器會開、讀取權限給得出來，
+   但 requestPermission({mode:'readwrite'}) 直接回 denied、不詢問，createWritable() 丟 NotAllowedError。
+   於是 FS_OK 為 true → 走 FSA → 退到另存 → 選檔器又截斷一個檔，形成毀檔迴圈。
+   在真正嘗試寫入之前無從得知會被拒（要查權限得先有 handle，要 handle 得先過選檔器，而選檔器已經截斷了），
+   所以只能「撞過一次就記住」，把代價從每次一個檔壓到總共一個檔。 */
+let fsaDenied=false; try{ fsaDenied=localStorage.getItem('dj.fsaDenied')==='1'; }catch(e){}
+const fsUsable=()=>FS_OK&&!fsaDenied;
+function fsaGiveUp(){
+  fsaDenied=true; try{ localStorage.setItem('dj.fsaDenied','1'); }catch(e){}
+  $('#btnSave').title='存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾';
+  $('#btnSaveAs').title='另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾';
+}
 const DECK_TYPES=[{description:'DeckJSON 簡報',accept:{'application/zip':['.deck','.deck.json']}}];
 /* handle 跟著自動存檔寫在**同一筆記錄**裡，不另立鍵。
    理由是多分頁：IndexedDB 是整個 origin 共用的，分開存就會出現「內容來自這個分頁、
@@ -8277,8 +8293,14 @@ async function externallyChanged(){
   const f=APP.file; if(!f||f.stale||!f.stamp) return false;
   try{ return (await f.handle.getFile()).lastModified>f.stamp; }catch(e){ return false; }
 }
-async function writeDeckTo(h){
-  const blob=await deckToBlob();      // 先把容器做好再開檔：打包失敗就不要動到原檔
+/* 為什麼拆成兩半：「另存新檔」必須在**開選檔器之前**就把 blob 準備好。
+   showSaveFilePicker() 在使用者按下確認的那一刻就把目標檔截成 0 位元組，早於網頁拿到 handle
+   ——這是 Chromium 的通用行為（2026-09-16 於 Chrome 實測：1,048,576 → 0，程式一個位元組都沒寫）。
+   所以「打包失敗就不會動到原檔」這個保護，只有在打包排在選檔器之前時才成立；
+   排在後面的話，deckToBlob() 丟出例外時檔案早就空了。Cmd/Ctrl+S 沿用既有 handle、不經選檔器，
+   不受這條影響，所以 writeDeckTo() 保留原本的一次到底。 */
+async function writeDeckTo(h){ return writeBlobTo(h, await deckToBlob()); }
+async function writeBlobTo(h,blob){
   const w=await h.createWritable();   // 寫進暫存檔，close() 才原子換掉原檔：寫到一半當掉不會留半截檔
   await w.write(blob);
   await w.close();
@@ -8305,23 +8327,39 @@ async function writeDeckTo(h){
   asHint('已存檔 '+h.name+'　'+asStamp(Date.now()));   // 蓋掉 asSaveNow 的提示：這裡要講的是檔案存好了
 }
 async function saveDeck(){          // Cmd/Ctrl+S
-  if(!FS_OK) return saveDeckDownload();
+  if(!fsUsable()) return saveDeckDownload();
   if(!APP.file) return saveDeckAs();
   try{
-    if(!await ensureRW(APP.file.handle)){ asHint('⚠ 沒拿到寫入權限，改用另存新檔',true); return saveDeckAs(); }
+    /* 拿不到寫入權限時**不要退到另存**——另存會開選檔器，而選檔器一按確認就截斷目標檔，
+       等於「因為存不進去，所以先把它毀掉」。下載一份副本是無損的退路。 */
+    if(!await ensureRW(APP.file.handle)){ asHint('⚠ 沒拿到寫入權限，改為下載一份副本',true); return saveDeckDownload(); }
     if(await externallyChanged() &&
        !confirm('「'+APP.file.name+'」在硬碟上被改過（可能是別的分頁或其他程式）。\n\n繼續存檔會蓋掉那些變更。要繼續嗎？')) return;
     await writeDeckTo(APP.file.handle);
   }catch(err){ if(err.name!=='AbortError') asHint('⚠ 存檔失敗：'+(err.message||err),true); }
 }
 async function saveDeckAs(){        // Cmd/Ctrl+Shift+S
-  if(!FS_OK) return saveDeckDownload();
+  if(!fsUsable()) return saveDeckDownload();
+  let blob;
+  // 打包排在選檔器之前：失敗就連對話框都不開，使用者的檔案毫髮無傷。見 writeBlobTo 上方說明
+  try{ blob=await deckToBlob(); }
+  catch(err){ asHint('⚠ 打包失敗，沒有動到任何檔案：'+(err.message||err),true); return; }
   try{
     const h=await showSaveFilePicker({
       suggestedName: APP.file? APP.file.name : (APP.deck.title||'deckjson')+'.deck',
       types:DECK_TYPES});
-    await writeDeckTo(h);
-  }catch(err){ if(err.name!=='AbortError') asHint('⚠ 另存失敗：'+(err.message||err),true); }   // AbortError＝按了取消，不是錯誤
+    await writeBlobTo(h,blob);
+  }catch(err){
+    if(err.name==='AbortError') return;   // 按了取消，不是錯誤
+    if(err.name==='NotAllowedError'){     // 平台不給寫。檔案已被選檔器清空，只能明講
+      fsaGiveUp();
+      alert('⚠ 這個瀏覽器不允許網頁寫入磁碟檔案。\n\n'+
+            '你剛才選的那個檔已經被選檔器清空（這發生在本程式收到它之前，擋不住），請自行刪除。\n\n'+
+            '接下來會改為下載一份副本；之後的存檔也一律走下載，不會再開這個對話框。');
+      return saveDeckDownload();
+    }
+    asHint('⚠ 另存失敗：'+(err.message||err),true);
+  }
 }
 async function saveDeckDownload(){  // 沒有 FSA 時的退路（Safari／Firefox／file:// 開啟）
   const url=URL.createObjectURL(await deckToBlob());
@@ -8363,7 +8401,7 @@ async function openDeckFile(f,ask,h){
 $('#btnSave').onclick=saveDeck;
 $('#btnSaveAs').onclick=saveDeckAs;
 $('#btnOpen').onclick=openDeckPicker;
-if(!FS_OK){   // 講明白比靜默降級重要：按鈕上就要看得出這個環境存出去的是副本
+if(!fsUsable()){   // 講明白比靜默降級重要：按鈕上就要看得出這個環境存出去的是副本
   $('#btnSave').title='存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾';
   $('#btnSaveAs').title='另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾';
 }
