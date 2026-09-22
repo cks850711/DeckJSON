@@ -894,7 +894,7 @@
 
 <div id="helpModal" class="modal" hidden>
   <div class="mbox mL">
-    <div class="mhead"><b>使用說明</b><button id="btnHelpClose" class="mclose" title="關閉">×</button></div>
+    <div class="mhead"><b>使用說明</b><span id="verTag" class="dim" style="font-weight:400;margin-left:.6em"></span><button id="btnHelpClose" class="mclose" title="關閉">×</button></div>
     <div class="mbody" id="helpBody">
       <h4 data-tab="入門">這是什麼</h4>
       <p>人與 AI 協作設計簡報的<b>單檔工具</b>：在畫布上擺文字、表格、圖片、形狀、ECharts 圖表與影片，匯出<b>原生 PPTX</b>，位置、大小與格式如實呈現。<b>全程在你自己的電腦上跑，不連任何外部網站</b>——字體用的是你電腦上已經安裝的，不下載網路字體。</p>
@@ -1383,6 +1383,14 @@
 <script>
 'use strict';
 /* ================= 常數 ================= */
+/* 版本號只在這裡定義一次：說明面板的標頭顯示它，存檔時 deck.json 的 generator 欄位也寫它。
+   單檔成品是離線傳播的——使用者手上那份沒有自動更新，回報問題時「哪一版」只能靠檔案自己講。 */
+const APP_VERSION='0.1.0';
+/* 容器的自我識別。`.deck` 這個副檔名至少有三套互不相容的格式在用（本專案、deckyard 的
+   application/vnd.deckyard.deck、OpenDeck 的 application/x-deck），單看副檔名分不出誰是誰。
+   仿 OCF／EPUB 的作法：zip 的第一個 entry 是未壓縮的 mimetype，於是不解壓也認得出來。
+   尚未向 IANA 註冊，vnd. 樹先佔著自己的名字，日後真要註冊時字串不用改。 */
+const DECK_MIME='application/vnd.deckjson.deck';
 /* 投影片尺寸不是常數，而是資料（deck.stage）：STAGE_W/H 由 applyStage() 依 deck 設定改寫，
    全檔所有讀取點（畫布、吸附、頁碼座標、defineLayout、sldSz）都跟著同一份來源。1px = 9525 EMU。 */
 let STAGE_W=1280, STAGE_H=720;
@@ -7777,11 +7785,17 @@ async function hydrate(deck,zip){
 /* deck.json 用 DEFLATE（文字壓得掉六七成）；資產用 STORE——PNG／JPEG 本來就是
    壓縮格式，再 deflate 是燒 CPU 換不到 1%。 */
 async function deckToBlob(){
-  const {deck,assets}=dehydrate(APP.deck);
+  const {deck,assets}=dehydrate(APP.deck);   // structuredClone 過，改它不動 APP.deck
+  /* 產生器戳記。存檔路徑改過好幾輪（就地覆寫、另存退路、回讀驗證），日後拿到一個
+     打不開的檔，這一行直接回答「哪一版寫的」，不必從行為反推。 */
+  deck.generator='DeckJSON '+APP_VERSION;
   const zip=new JSZip();
+  /* mimetype 必須是第一個 entry 且不壓縮——JSZip 依加入順序寫檔，所以這行要排在最前面。
+     STORE 之下，內容就躺在 local file header 之後的固定位移，解壓前用 magic byte 就讀得到。 */
+  zip.file('mimetype',DECK_MIME,{compression:'STORE'});
   zip.file('deck.json',JSON.stringify(deck,null,1),{compression:'DEFLATE'});
   for(const [name,bytes] of assets) zip.file(ASSET_DIR+name,bytes,{compression:'STORE'});
-  return await zip.generateAsync({type:'blob',mimeType:'application/zip'});
+  return await zip.generateAsync({type:'blob',mimeType:DECK_MIME});
 }
 /* 開檔的唯一解析點：靠 magic byte 分流，不靠副檔名——.deck 與 .deck.json 兩種
    命名都發過，副檔名不可靠。 */
@@ -7789,9 +7803,27 @@ async function deckFromFile(f){
   const buf=await f.arrayBuffer(), head=new Uint8Array(buf,0,Math.min(4,buf.byteLength));
   if(!(head[0]===0x50&&head[1]===0x4b))           // 不是 PK＝舊的純 JSON
     return JSON.parse(new TextDecoder().decode(buf));
-  const zip=await JSZip.loadAsync(buf), dj=zip.file('deck.json');
-  if(!dj) throw new Error('這是一個 zip，但不是 DeckJSON 容器（缺 deck.json）');
-  return await hydrate(JSON.parse(await dj.async('string')),zip);
+  const zip=await JSZip.loadAsync(buf);
+  /* 別家的 .deck 要當場講清楚，不能讓它一路走到「缺 pages」——那句話會讓人以為自己的檔壞了，
+     實際上是拿錯工具開對的檔。共用這個副檔名的另兩套格式見 README〈檔案格式〉。 */
+  const mt=zip.file('mimetype');
+  if(mt){
+    const s=(await mt.async('string')).trim();
+    if(s&&s!==DECK_MIME) throw new Error(
+      '這是「'+s+'」格式的 .deck，不是 DeckJSON 的。\n'
+      +'副檔名相同但內容規格不同，請用產生它的工具開啟。');
+  }
+  const dj=zip.file('deck.json');
+  if(!dj) throw new Error(zip.file('manifest.json')
+    ? '這個 .deck 的 manifest 叫 manifest.json，不是 DeckJSON 的格式（DeckJSON 讀 deck.json）。'
+    : '這是一個 zip，但不是 DeckJSON 容器（缺 deck.json）');
+  const obj=JSON.parse(await dj.async('string'));
+  /* OpenDeck 的 manifest 也叫 deck.json，但它只有 entry 指向一份 index.html，沒有 pages。
+     不擋的話會落到 normalizeDeck 的「缺 pages」，訊息對不上真正的原因。 */
+  if(!Array.isArray(obj.pages)&&typeof obj.entry==='string') throw new Error(
+    '這是 OpenDeck 格式的 .deck（manifest 只有 entry，指向 '+obj.entry+'）。\n'
+    +'DeckJSON 讀的是 pages 陣列，兩者不相容。');
+  return await hydrate(obj,zip);
 }
 function deckJson(){ return JSON.stringify(APP.deck,null,1); }
 /* ---- JSON 顯示層圖片佔位：base64 太長會塞爆協作視窗 ----
@@ -9053,6 +9085,8 @@ function applyHelpTabs(){
   }
   hb.dataset.tabbed='1';
 }
+/* 版本號寫在標頭而非硬編在 HTML 裡：常數只有一份，改版時不會漏改這裡。 */
+$('#verTag').textContent='v'+APP_VERSION;
 $('#btnHelp').onclick=()=>{ $('#helpModal').hidden=false; applyHelpTabs(); };
 $('#btnHelpClose').onclick=()=>{ $('#helpModal').hidden=true; };
 $('#btnPendClose').onclick=()=>{ $('#pendModal').hidden=true; };
