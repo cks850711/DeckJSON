@@ -39,7 +39,6 @@
     "model/normalize → SHADOW_DEF",
     "model/normalize → TRANSITIONS",
     "model/normalize → looksLikeAssetRef",
-    "model/normalize → nativeMap",
     "model/normalize → normCrop",
     "model/normalize → ytEmbed",
     "model/table → APP",
