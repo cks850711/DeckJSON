@@ -182,9 +182,9 @@ def js_keys_and_leaks(html):
                             if d == 0:
                                 console_spans.append((sig[k].pos, sig[m].end))
                                 break
-            # HELP_FIGS／HELP_FIGS_EN 是 tools/figdeck.js 從說明簡報產生的資料，中英各一份，不走字典
-            # SHAPE_META 的形狀名同理：英文走 SHAPE_NAMES_EN（以 preset 名為鍵），另由 shape_keys() 核對
-            for m in re.finditer(r'const (HELP_FIGS(_EN)?|SHAPE_META)=', js):
+            # SHAPE_META 的形狀名不走字典：各語言走語言包的 shapes（以 preset 名為鍵），另由 shape_keys() 核對。
+            # （說明配圖是語言包 i18n/*.figs.js 的資料，本來就不在這裡掃的 app/ 範圍內）
+            for m in re.finditer(r'const (SHAPE_META)=', js):
                 console_spans.append((m.start(), js.find('\n};', m.start()) + 3))
             in_console = lambda p: any(a <= p < b for a, b in console_spans)
             # /*zh*/ 標記：刻意保留的中文資料
