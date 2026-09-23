@@ -1,6 +1,12 @@
 #!/bin/bash
-# 將「src/」的 index.html 與 vendor/*.js 打包成單一成品 HTML
+# 將「src/」的 index.html 與 app/、vendor/、i18n/ 打包成單一成品 HTML
 # 輸出到專案根目錄的 deckjson.html（＝平常使用的那個檔），直接覆蓋更新
+#
+# 分兩步：
+#   1. 組合：index.html 裡連續的 <script src="app/…"> 清單組回單一 <script>
+#      （第 2 個檔以後開頭的 'use strict'; 去掉），寫出 build/index.assembled.html。
+#      這份與拆檔前的 src/index.html 逐位元相同——外掛的抽取腳本讀的是它。
+#   2. 內聯：vendor/、i18n/ 的 <script src> 換成檔案內容，寫出成品。
 #
 # 用法：
 #   bash build.sh                          # 中性通用版（無任何個人／公司母版設定）
@@ -23,6 +29,27 @@ if [ -n "$PROFILE" ] && [ ! -f "$PROFILE" ]; then echo "找不到 profile 檔：
 PROFILE="$PROFILE" OUT="$OUT" python3 - <<'EOF'
 import re, json, os, pathlib
 src = pathlib.Path('index.html').read_text(encoding='utf-8')
+
+STRICT = "'use strict';\n"
+def assemble(src):
+    tags = list(re.finditer(r'^<script src="(app/[^"]+)"></script>$', src, re.M))
+    if not tags:
+        return src
+    for a, b in zip(tags, tags[1:]):
+        if src[a.end():b.start()] != '\n':
+            raise SystemExit(f'app/ 的 <script src> 必須連續：{a.group(1)} 與 {b.group(1)} 之間夾了別的東西')
+    parts = []
+    for i, m in enumerate(tags):
+        js = pathlib.Path(m.group(1)).read_text(encoding='utf-8')
+        if not js.startswith(STRICT):
+            raise SystemExit(f'{m.group(1)} 第一行必須是 {STRICT.strip()}（每個檔各自是一個 script，strict 不會跨檔延續）')
+        parts.append(js if i == 0 else js[len(STRICT):])
+    return src[:tags[0].start()] + '<script>\n' + ''.join(parts) + '</script>' + src[tags[-1].end():]
+
+src = assemble(src)
+asm = pathlib.Path('../build/index.assembled.html')
+asm.parent.mkdir(exist_ok=True)
+asm.write_text(src, encoding='utf-8')
 
 def inline(m):
     path = pathlib.Path(m.group(1))

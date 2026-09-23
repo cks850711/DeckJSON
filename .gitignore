@@ -2,3 +2,4 @@
 .trash
 docs/internal
 tests/internal
+build/

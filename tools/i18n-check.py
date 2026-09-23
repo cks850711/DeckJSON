@@ -139,78 +139,90 @@ def tokenize(s, i=0, stop_at_brace=False):
 
 
 def line_of(s, pos, _cache={}):
-    key = id(s)
-    if key not in _cache:
-        _cache[key] = [m.start() for m in re.finditer('\n', s)]
+    # 以字串本身為鍵：多個檔輪流掃時，前一個字串被回收後 id() 可能被重用
+    if s not in _cache:
+        _cache[s] = [m.start() for m in re.finditer('\n', s)]
     import bisect
-    return bisect.bisect_right(_cache[key], pos) + 1
+    return bisect.bisect_right(_cache[s], pos) + 1
 
 
-def script_ranges(html):
-    """主程式的 inline <script>（不含 src= 的 vendor）。"""
-    for m in re.finditer(r'<script>(.*?)</script>', html, re.S):
-        yield m.start(1), m.group(1)
+def js_units(html):
+    """主程式，依瀏覽器的載入順序：(標示, 全文, [(起點, js)])。
+    已拆檔時是 index.html 的 <script src="app/…"> 清單；未拆檔時是 index.html 的 inline <script>。"""
+    srcs = re.findall(r'<script src="(app/[^"]+)"></script>', html)
+    if srcs:
+        for s in srcs:
+            t = (SRC.parent / s).read_text(encoding='utf-8')
+            yield 'src/' + s, t, [(0, t)]
+    else:
+        yield 'src/index.html', html, [(m.start(1), m.group(1))
+                                       for m in re.finditer(r'<script>(.*?)</script>', html, re.S)]
+
+
+def js_text(html):
+    return '\n'.join(t for _, t, _ in js_units(html))
 
 
 def js_keys_and_leaks(html):
     keys, leaks = [], []
-    for base, js in script_ranges(html):
-        toks, _ = tokenize(js)
-        sig = [t for t in toks if t.kind != 'comment']
-        # console.*( … ) 的範圍：L2，不報
-        console_spans = []
-        for k, t in enumerate(sig):
-            if (t.kind == 'ident' and t.val == 'console' and k + 3 < len(sig)
-                    and sig[k + 1].val == '.' and sig[k + 3].val == '('):
-                d = 0
-                for m in range(k + 3, len(sig)):
-                    if sig[m].val == '(' and sig[m].kind == 'punct':
-                        d += 1
-                    elif sig[m].val == ')' and sig[m].kind == 'punct':
-                        d -= 1
-                        if d == 0:
-                            console_spans.append((sig[k].pos, sig[m].end))
-                            break
-        # HELP_FIGS／HELP_FIGS_EN 是 tools/figdeck.js 從說明簡報產生的資料，中英各一份，不走字典
-        # SHAPE_META 的形狀名同理：英文走 SHAPE_NAMES_EN（以 preset 名為鍵），另由 shape_keys() 核對
-        for m in re.finditer(r'const (HELP_FIGS(_EN)?|SHAPE_META)=', js):
-            console_spans.append((m.start(), js.find('\n};', m.start()) + 3))
-        in_console = lambda p: any(a <= p < b for a, b in console_spans)
-        # /*zh*/ 標記：刻意保留的中文資料
-        keep_at = set()
-        for k, t in enumerate(toks):
-            if t.kind == 'comment' and t.val == '/*zh*/' and k + 1 < len(toks):
-                keep_at.add(toks[k + 1].pos)
-        consumed = set()
-        for k, t in enumerate(sig):
-            if k in consumed:
-                continue
-            is_arg0 = (k >= 2 and sig[k - 1].val == '(' and sig[k - 2].kind == 'ident'
-                       and sig[k - 2].val == '_t'
-                       and (k < 3 or sig[k - 3].val != '.'))
-            if t.kind == 'str':
-                if is_arg0:
-                    # 長句跨行寫成 _t('…'+'…') 時，整串相加的字面值才是鍵
-                    key, m = t.val, k + 1
-                    while m + 1 < len(sig) and sig[m].val == '+' and sig[m + 1].kind == 'str':
-                        key += sig[m + 1].val
-                        consumed.add(m + 1)
-                        m += 2
-                    keys.append((line_of(html, base + t.pos), key))
+    for label, full, pieces in js_units(html):
+        for base, js in pieces:
+            toks, _ = tokenize(js)
+            sig = [t for t in toks if t.kind != 'comment']
+            # console.*( … ) 的範圍：L2，不報
+            console_spans = []
+            for k, t in enumerate(sig):
+                if (t.kind == 'ident' and t.val == 'console' and k + 3 < len(sig)
+                        and sig[k + 1].val == '.' and sig[k + 3].val == '('):
+                    d = 0
+                    for m in range(k + 3, len(sig)):
+                        if sig[m].val == '(' and sig[m].kind == 'punct':
+                            d += 1
+                        elif sig[m].val == ')' and sig[m].kind == 'punct':
+                            d -= 1
+                            if d == 0:
+                                console_spans.append((sig[k].pos, sig[m].end))
+                                break
+            # HELP_FIGS／HELP_FIGS_EN 是 tools/figdeck.js 從說明簡報產生的資料，中英各一份，不走字典
+            # SHAPE_META 的形狀名同理：英文走 SHAPE_NAMES_EN（以 preset 名為鍵），另由 shape_keys() 核對
+            for m in re.finditer(r'const (HELP_FIGS(_EN)?|SHAPE_META)=', js):
+                console_spans.append((m.start(), js.find('\n};', m.start()) + 3))
+            in_console = lambda p: any(a <= p < b for a, b in console_spans)
+            # /*zh*/ 標記：刻意保留的中文資料
+            keep_at = set()
+            for k, t in enumerate(toks):
+                if t.kind == 'comment' and t.val == '/*zh*/' and k + 1 < len(toks):
+                    keep_at.add(toks[k + 1].pos)
+            consumed = set()
+            for k, t in enumerate(sig):
+                if k in consumed:
                     continue
-                if CJK.search(t.val) and not in_console(t.pos) and t.pos not in keep_at:
-                    leaks.append((line_of(html, base + t.pos), 'str', t.val))
-            elif t.kind == 'tplstart':
-                if is_arg0:
-                    leaks.append((line_of(html, base + t.pos), '_t(`…`)',
-                                  '模板字面值不能當鍵，改用 {0} 參數'))
-            elif t.kind == 'tplchunk':
-                if CJK.search(t.val) and not in_console(t.pos):
-                    # 模板的開頭 token 帶 /*zh*/ 標記時整個模板豁免
-                    st = next((x for x in reversed(toks[:toks.index(t)]) if x.kind == 'tplstart'), None)
-                    if st is not None and st.pos in keep_at:
+                is_arg0 = (k >= 2 and sig[k - 1].val == '(' and sig[k - 2].kind == 'ident'
+                           and sig[k - 2].val == '_t'
+                           and (k < 3 or sig[k - 3].val != '.'))
+                if t.kind == 'str':
+                    if is_arg0:
+                        # 長句跨行寫成 _t('…'+'…') 時，整串相加的字面值才是鍵
+                        key, m = t.val, k + 1
+                        while m + 1 < len(sig) and sig[m].val == '+' and sig[m + 1].kind == 'str':
+                            key += sig[m + 1].val
+                            consumed.add(m + 1)
+                            m += 2
+                        keys.append(('%s:%d' % (label, line_of(full, base + t.pos)), key))
                         continue
-                    leaks.append((line_of(html, base + t.pos), 'tpl', t.val.strip()))
+                    if CJK.search(t.val) and not in_console(t.pos) and t.pos not in keep_at:
+                        leaks.append(('%s:%d' % (label, line_of(full, base + t.pos)), 'str', t.val))
+                elif t.kind == 'tplstart':
+                    if is_arg0:
+                        leaks.append(('%s:%d' % (label, line_of(full, base + t.pos)), '_t(`…`)',
+                                      '模板字面值不能當鍵，改用 {0} 參數'))
+                elif t.kind == 'tplchunk':
+                    if CJK.search(t.val) and not in_console(t.pos):
+                        # 模板的開頭 token 帶 /*zh*/ 標記時整個模板豁免
+                        st = next((x for x in reversed(toks[:toks.index(t)]) if x.kind == 'tplstart'), None)
+                        if st is not None and st.pos in keep_at:
+                            continue
+                        leaks.append(('%s:%d' % (label, line_of(full, base + t.pos)), 'tpl', t.val.strip()))
     return keys, leaks
 
 
@@ -299,7 +311,7 @@ def main():
     if leaks:
         print('■ 含中文但沒包 _t() 的字面值（%d）' % len(leaks))
         for ln, kind, v in leaks:
-            print('  %5d  %-8s %s' % (ln, kind, v[:90].replace('\n', '⏎')))
+            print('  %s  %-8s %s' % (ln, kind, v[:90].replace('\n', '⏎')))
         bad += len(leaks)
     missing = sorted({unescape_js(k) for _, k in keys} - en, key=lambda k: k)
     if missing:
@@ -308,7 +320,7 @@ def main():
         for ln, k in keys:
             where.setdefault(unescape_js(k), ln)
         for k in missing:
-            print('  %5d  %s' % (where[k], k[:90].replace('\n', '⏎')))
+            print('  %s  %s' % (where[k], k[:90].replace('\n', '⏎')))
         bad += len(missing)
     st = [(ln, kd, v) for ln, kd, v in html_static(html) if v not in en]
     if st:
@@ -316,7 +328,7 @@ def main():
         for ln, kd, v in st:
             print('  %5d  %-11s %s' % (ln, kd, v[:90]))
         bad += len(st)
-    sm = sorted(shape_keys(html) - shape_en)
+    sm = sorted(shape_keys(js_text(html)) - shape_en)
     if sm:
         print('■ SHAPE_NAMES_EN 缺形狀英文名（%d）' % len(sm))
         print('  ' + ' '.join(sm))
@@ -336,7 +348,7 @@ def main():
             print('         ' + k[:90].replace('\n', '⏎'))
     if '--keys' in sys.argv:
         for ln, k in keys:
-            print('%5d  %s' % (ln, k))
+            print('%s  %s' % (ln, k))
     print('OK' if not bad else '共 %d 項待處理' % bad)
     sys.exit(1 if bad else 0)
 

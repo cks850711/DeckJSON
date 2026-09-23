@@ -107,8 +107,20 @@ function proseEl(x,items,muted){
       runs:htmlToRuns(h,10).map(r=>muted?Object.assign({},r,{color:'AAAAAA'}):r)}))};
 }
 
+/* HELP_FIGS 住在哪個檔。說明本文在 index.html，配圖資料則在主程式裡：
+   主程式拆成 <script src="app/…"> 清單後，照清單找宣告 HELP_FIGS 的那個檔；
+   沒拆檔（舊版）時就是 index.html 本身。 */
+function figsFile(htmlPath){
+  const html=fs.readFileSync(htmlPath,'utf8');
+  const srcs=[...html.matchAll(/<script src="(app\/[^"]+)"><\/script>/g)].map(m=>path.join(path.dirname(htmlPath),m[1]));
+  if(!srcs.length) return htmlPath;
+  const f=srcs.find(p=>fs.readFileSync(p,'utf8').includes('const HELP_FIGS='));
+  if(!f) throw new Error(htmlPath+' 的 <script src> 清單裡沒有宣告 HELP_FIGS 的檔');
+  return f;
+}
+
 function readFigs(htmlPath){
-  const s=fs.readFileSync(htmlPath,'utf8');
+  const s=fs.readFileSync(figsFile(htmlPath),'utf8');
   let a=s.indexOf('const _hc=(t,o)=>');                 // bootstrap 期的手寫版帶輔助函式
   if(a<0) a=s.indexOf('const HELP_FIGS=');               // 產生版是純資料
   const b=s.indexOf('\n};', s.indexOf('const HELP_FIGS='))+3;
@@ -204,7 +216,7 @@ function fromDeck(deck,lang){
   return figs;
 }
 function writeFigs(htmlPath,figs,lang){
-  const s=fs.readFileSync(htmlPath,'utf8');
+  const file=figsFile(htmlPath), s=fs.readFileSync(file,'utf8');
   const name= lang==='en'? 'HELP_FIGS_EN' : 'HELP_FIGS';
   let a=s.indexOf('const '+name+'=');
   let b=a<0? -1 : s.indexOf('\n};',a)+3;
@@ -222,8 +234,8 @@ function writeFigs(htmlPath,figs,lang){
   }).join(',\n');
   const out=(a===b?'\n':'')+'const '+name+'={   /* 由 tools/figdeck.js 從 docs/user-manual.deck 產生，勿手改 */\n'
     +body+'\n};';
-  fs.writeFileSync(htmlPath, s.slice(0,a)+out+s.slice(b));
-  return out.length;
+  fs.writeFileSync(file, s.slice(0,a)+out+s.slice(b));
+  return {bytes:out.length,file};
 }
 
 /* ── prose：只更新簡報下半的說明文字，圖完全不動 ──────────
@@ -254,8 +266,8 @@ if(cmd==='prose'){
 }else if(cmd==='import'){
   const deck=await readDeck(inp);
   const figs=fromDeck(deck,lang);
-  const n=writeFigs(outp,figs,lang);
-  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+outp+'（'+(lang==='en'?'HELP_FIGS_EN':'HELP_FIGS')+' '+n+' 位元組）');
+  const w=writeFigs(outp,figs,lang);
+  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+path.relative(process.cwd(),w.file)+'（'+(lang==='en'?'HELP_FIGS_EN':'HELP_FIGS')+' '+w.bytes+' 位元組）');
   for(const k in figs) console.log('  '+k.padEnd(16)+String(figs[k].els.length).padStart(3)+' 個元素');
 }else if(cmd==='export'){
   const figs=readFigs(inp);
