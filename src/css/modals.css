@@ -1,0 +1,160 @@
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);
+    display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal[hidden]{display:none}
+  /* 三段式：標題列與 footer 固定，只有 .mbody 捲動。舊版是整個 .mbox 捲，
+     所以按鈕會跟著內容跑掉，各彈窗只好各自把按鈕塞在內容中間某處。 */
+  .mbox{background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-lg);
+    box-shadow:0 18px 48px rgba(0,0,0,.55);
+    width:min(720px,92vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column}
+  /* 寬度三級。級距是量出來的：把每個彈窗設成 440/560/680/800/920 量內容高度，
+     高度不再下降的那一點就是它真正需要的寬度（見 2026-09-03 開發紀錄）。 */
+  .mbox.mS{width:min(560px,92vw)}
+  .mbox.mL{width:min(920px,95vw)}
+  .mhead{display:flex;align-items:center;gap:10px;padding:13px 16px;flex:none;
+    border-bottom:1px solid var(--line)}
+  /* 標題與副標要並排靠左，撐開的責任交給 .mclose 的 margin-left:auto——
+     把 flex:1 放在 <b> 上會把副標一路推到關閉鈕旁邊，看起來像另一組東西 */
+  .mhead>b{min-width:0;font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mhead .sub{color:var(--fg-mute);font-size:12px;font-weight:400;white-space:nowrap}
+  .mhead .mclose{margin-left:auto}
+  .mbody{padding:16px;overflow-y:auto;flex:1;min-height:0}
+  .mbody>*:first-child{margin-top:0}
+  .mbody>*:last-child{margin-bottom:0}
+  /* footer：位置代表分級——主要動作永遠最右，破壞性動作在最左（離主要動作最遠，
+     誤點的代價不對等），中間用 .spring 撐開。 */
+  .mfoot{display:flex;align-items:center;gap:8px;padding:12px 16px;flex:none;
+    border-top:1px solid var(--line);background:var(--bg-sunken)}
+  .mfoot .spring{flex:1}
+  .mfoot .mnote{margin:0}
+  /* 關閉鈕：幽靈樣式，與工具列的 .tb 同級，不該長得像一顆實體按鈕 */
+  .mclose{width:26px;height:26px;flex:none;padding:0;display:grid;place-content:center;
+    background:none;border:0;border-radius:var(--r-sm);color:var(--fg-mute);font-size:17px;line-height:1}
+  .mclose:hover{background:var(--bg-hover);border-color:transparent;color:var(--fg)}
+  .mbody textarea{width:100%;height:320px;background:#17181c;color:var(--fg);border:1px solid var(--line);border-radius:6px;font:12px/1.5 ui-monospace,Menlo,monospace;padding:8px;resize:vertical}
+  .mnote{font-size:12px;color:var(--fg-dim);margin-top:6px}
+  /* 圖表視覺編輯面板：資料格子編輯器 ＋ 設定列。改動一律定點寫回 option，
+     不重生整份 option，否則使用者手寫的 markLine／grid／tooltip 會被沖掉。 */
+  /* ── 圖表編輯：無遮罩、可拖放的工作面板（不是 .modal）。畫布要看得見，
+       因為視覺編輯的每個控件本來就即時 renderAll，真圖表就在後面。 ── */
+  #chartModal{position:fixed;z-index:50;width:400px;max-width:calc(100vw - 24px)}
+  #chartModal[hidden]{display:none}
+  /* 圖形編輯器：比圖表面板寬（要放得下編輯畫布），但刻意不到彈窗的 L 級——
+     920px 浮在畫布上等於擋滿，可拖放就失去意義了 */
+  #geomModal{position:fixed;z-index:50;width:640px;max-width:calc(100vw - 24px)}
+  #geomModal[hidden]{display:none}
+  /* ⚠ width:100% 不可省：.mbox 自己帶 width:min(720px,92vw)（彈窗的 M 級），
+     不覆寫的話浮動面板會長成 720px，而不是外層容器指定的寬度 */
+  .mbox.float{width:100%;max-height:calc(100vh - 96px);box-shadow:0 22px 60px rgba(0,0,0,.62)}
+  .mbox.float .mhead{cursor:move;background:var(--bg-raised);border-bottom-color:var(--line-strong);
+    user-select:none}
+  .mbox.float .mhead .mclose{cursor:pointer}
+  /* 拖曳把手：標題列整條都能拖，這三條線只是告訴人它拖得動 */
+  .grip{display:inline-flex;flex-direction:column;gap:2.5px;flex:none}
+  .grip i{display:block;width:12px;height:1.5px;background:var(--fg-mute);border-radius:1px}
+  #chartModal textarea{height:200px}
+  #chartVisPane{display:flex;flex-direction:column;gap:10px}
+  #cvControls{display:flex;flex-direction:column;gap:10px}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .cvPng{font-size:10px;color:#e8b339;border:1px solid currentColor;border-radius:3px;padding:0 3px;margin-left:2px}
+  .cvSec{font-size:11px;color:var(--fg-dim);letter-spacing:.5px;margin-top:2px}
+  .cvRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cvRow>label{min-width:auto;color:var(--fg-dim);font-size:12px}
+  .cvGridWrap{overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:6px;background:#17181c}
+  table.cvGrid{border-collapse:collapse;font-size:12px}
+  table.cvGrid th,table.cvGrid td{border:1px solid var(--line);padding:0;min-width:78px}
+  table.cvGrid th{background:#1f2126;font-weight:normal;color:var(--fg-dim);padding:3px 6px;
+        position:sticky;top:0;z-index:1;white-space:nowrap}
+  table.cvGrid th.cvCorner{left:0;z-index:2}
+  table.cvGrid td.cvHead{background:#1f2126;position:sticky;left:0;z-index:1}
+  table.cvGrid input{width:100%;min-width:78px;background:transparent;border:0;color:var(--fg);
+        font:12px/1.5 ui-monospace,Menlo,monospace;padding:3px 6px;border-radius:0}
+  table.cvGrid input:focus{outline:1.5px solid var(--accent);outline-offset:-1.5px}
+  table.cvGrid input.cvNum{text-align:right}
+  .cvSwatch{width:22px;height:18px;border:1px solid var(--line);border-radius:3px;padding:0;cursor:pointer}
+  .cvLock{font-size:12px;color:#e8b339;line-height:1.5}
+  /* 圖形編輯器（自訂幾何）：錨點、控制柄、線段命中區 */
+  #geomWrap{margin-top:8px;background:#17181c;border:1px solid var(--line);border-radius:8px;
+            padding:8px;display:flex;justify-content:center;overflow:auto}
+  #geomWrap svg{touch-action:none;cursor:crosshair;user-select:none}
+  #geomWrap svg.editMode{cursor:default}
+  .mbox button.on{background:var(--accent-soft);border-color:rgba(77,157,224,.35);
+    color:var(--accent-hi);font-weight:600}
+  .gAnchor{fill:#fff;stroke:#1f2126;stroke-width:1.5;cursor:move}
+  .gAnchor.on{fill:var(--accent);stroke:#fff}
+  .gAnchor.first{fill:#ffd23f}
+  .gHandle{fill:#7fd1ff;stroke:#1f2126;stroke-width:1;cursor:move}
+  .gHStem{stroke:#7fd1ff;stroke-width:1;stroke-dasharray:2 2;pointer-events:none}
+  .gSegHit{stroke:transparent;stroke-width:12;fill:none;cursor:copy}
+  .gSegHit:hover{stroke:rgba(93,169,233,.35)}
+  /* 分頁列釘在捲動容器頂端。負邊距是為了讓它橫跨 .mbody 的 16px 內距——
+     否則捲動時內文會從分頁列兩側的縫隙透出來。 */
+  /* 說明配圖。底層是縮小的真實舞台（renderEl 的產物），上層是標註 SVG。
+     標註層刻意放在 scale 之外——若畫進被 scale(0.25) 的容器裡，stroke-width
+     會一起縮成 0.375px 的髮絲。 */
+  .helpFig{position:relative;overflow:hidden;border:1px solid var(--line-strong);
+    border-radius:6px;margin:8px 0 10px;background:#fff}
+  .helpFigStage{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+  /* 畫布上那圈「淡虛線框顯示框尺寸」是編輯用的 affordance，配圖裡不該出現——
+     renderEl() 產出的節點帶著 .el，樣式會一起跟過來。 */
+  .helpFigStage .el{outline:none!important}
+  .helpFigNote{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .helpFigLbs{position:absolute;inset:0;pointer-events:none}
+  /* 標註文字用 HTML 不用 SVG <text>：SVG 的文字不會換行，字一長就直接溢出圖外。
+     翻成英文時同一句通常長 1.5～2 倍，用 <text> 撐爆是遲早的事。 */
+  .helpFigLb{position:absolute;font-size:11px;font-weight:600;line-height:1.35;
+    color:#8a6a12;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;
+    max-width:190px;word-break:break-word}
+  .helpFigCap{font-size:12px;color:var(--fg-mute);margin:-4px 0 10px}
+  /* 說明面板高度固定，不隨分頁內容伸縮。彈窗是垂直置中的，高度一變上緣就跟著跳，
+     切分頁時分頁列會上下移動——而分頁列是導覽控制，必須待在原地。
+     用 85vh（＝ .mbox 原本的上限）而非固定像素：各分頁一樣大，且視窗大就顯示得多。 */
+  #helpModal .mbox{height:85vh}
+  #helpBody .helpTabs{position:sticky;top:-16px;z-index:2;display:flex;gap:2px;flex-wrap:wrap;
+    margin:-16px -16px 12px;padding:16px 16px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+  #helpBody .helpTabs .propTab{flex:none;padding:0 12px}
+  #helpBody .helpPane[hidden]{display:none}
+  /* 按鍵畫成鍵帽。夾在中文句子裡的 Enter／Esc／Cmd+S 用一般字重根本掃不到，
+     讀的人得逐字讀才會發現那是要按的鍵。 */
+  #helpBody kbd{display:inline-block;min-width:1.1em;padding:1px 6px;margin:0 2px;
+    font:600 11px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg);
+    background:var(--bg-raised);border:1px solid var(--line-strong);border-bottom-width:2px;
+    border-radius:4px;text-align:center;white-space:nowrap}
+  #helpBody .helpPane>h4:first-child{margin-top:0}
+  /* 「這個設定在哪個分頁底下」——擺在標題與配圖之間，讀的人才不用自己去右欄翻。 */
+  #helpBody .hWhere{margin:-4px 0 8px;padding:6px 10px;border-left:2px solid var(--accent);
+    background:var(--accent-soft);border-radius:0 4px 4px 0;color:var(--fg-dim);font-size:12px}
+  #helpBody .tblWrap{overflow-x:auto;margin:8px 0 12px}
+  #helpBody table{border-collapse:collapse;font-size:12px}
+  #helpBody th,#helpBody td{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap}
+  #helpBody th{background:var(--bg-raised);font-weight:600;color:var(--fg-dim)}
+  /* 「進階」摺疊區：技術細節（OOXML 對應、識別符）收在這裡。不刪是因為
+     說明面板有兩個讀者——人看主線，AI 要抄得出規格。摺起來只是讓人先看見操作。 */
+  #helpBody details.hAdv{margin:6px 0 10px;border-left:2px solid var(--line-strong);padding-left:10px}
+  #helpBody details.hAdv>summary{cursor:pointer;color:var(--fg-mute);font-size:12px;list-style:none}
+  #helpBody details.hAdv>summary::-webkit-details-marker{display:none}
+  #helpBody details.hAdv>summary::before{content:'▸ ';color:var(--fg-mute)}
+  #helpBody details.hAdv[open]>summary::before{content:'▾ '}
+  #helpBody details.hAdv>summary:hover{color:var(--fg-dim)}
+  #helpBody details.hAdv li{color:var(--fg-dim)}
+  #helpBody h4{margin:14px 0 4px;color:var(--accent)}
+  #helpBody p,#helpBody li{font-size:13px;line-height:1.7;margin:2px 0;max-width:76ch}
+  #helpBody ul{margin:2px 0;padding-left:20px}
+  #helpBody .dim{color:var(--fg-dim)}
+  #helpBody code{background:#17181c;border-radius:4px;padding:1px 5px;font-size:12px}
+  .swatchBtn{width:30px;height:26px;border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0;background-clip:padding-box}
+  #palettePop{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);width:288px;padding:8px;font-size:12px}
+  #palettePop[hidden]{display:none}
+  #palettePop .ptabs{display:flex;gap:4px;margin-bottom:8px}
+  #palettePop .ptab{flex:1;padding:5px 4px;font-size:11px;text-align:center;border-radius:6px;cursor:pointer;background:var(--bg-raised);border:1px solid var(--line)}
+  #palettePop .ptab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  #palettePop .pbody{max-height:280px;overflow-y:auto}
+  /* 色票欄是「本頁 JSON」面板的右半邊，不是獨立浮窗——跟著面板一起拖、一起關。 */
+  #palCopyWin{width:280px;flex:none;padding:8px;overflow:auto;border-left:1px solid var(--line);background:var(--bg-sunken,#1c1e23)}
+  #palCopyWin[hidden]{display:none}
+  .palRow{display:flex;align-items:center;gap:5px;margin:4px 0}
+  .palRow .palName{width:64px;flex-shrink:0;color:var(--fg-dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .palSw{width:22px;height:22px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,.25)}
+  .palSw:hover{outline:2px solid var(--accent);outline-offset:1px}
+  .ocGrid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+  .ocGrid .palSw{width:100%;height:16px;border-radius:2px}
+  #palettePop .pfull{display:flex;align-items:center;gap:8px;padding:6px 2px}

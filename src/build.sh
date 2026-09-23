@@ -3,7 +3,8 @@
 # 輸出到專案根目錄的 deckjson.html（＝平常使用的那個檔），直接覆蓋更新
 #
 # 分兩步：
-#   1. 組合：index.html 裡連續的 <script src="app/…"> 清單組回單一 <script>
+#   1. 組合：index.html 裡連續的 <link rel="stylesheet" href="css/…"> 組回單一 <style>，
+#      連續的 <script src="app/…"> 清單組回單一 <script>
 #      （第 2 個檔以後開頭的 'use strict'; 去掉），寫出 build/index.assembled.html。
 #      這份與拆檔前的 src/index.html 逐位元相同——外掛的抽取腳本讀的是它。
 #   2. 內聯：vendor/、i18n/ 的 <script src> 換成檔案內容，寫出成品。
@@ -46,7 +47,32 @@ def assemble(src):
         parts.append(js if i == 0 else js[len(STRICT):])
     return src[:tags[0].start()] + '<script>\n' + ''.join(parts) + '</script>' + src[tags[-1].end():]
 
-src = assemble(src)
+def assemble_css(src):
+    links = list(re.finditer(r'^<link rel="stylesheet" href="(css/[^"]+)">$', src, re.M))
+    if not links:
+        return src
+    for a, b in zip(links, links[1:]):
+        if src[a.end():b.start()] != '\n':
+            raise SystemExit(f'css/ 的 <link> 必須連續：{a.group(1)} 與 {b.group(1)} 之間夾了別的東西')
+    parts = []
+    for m in links:
+        t = pathlib.Path(m.group(1)).read_text(encoding='utf-8')
+        # 每個 css/ 檔在開發版是各自獨立的樣式表：切點落在規則中間時，瀏覽器會把前半自動收尾、
+        # 丟掉後半，組回單一 <style> 後卻又完整——逐位元相同的檢查看不出來（實際踩到：.modal 被切開，
+        # 開發版所有彈窗失去置中）。所以每個檔的大括號必須自己平衡。
+        bare = re.sub(r'/\*.*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', '', t, flags=re.S)
+        depth = 0
+        for ch in bare:
+            depth += (ch == '{') - (ch == '}')
+            if depth < 0:
+                break
+        if depth:
+            raise SystemExit(f'{m.group(1)} 的大括號不平衡（{depth:+d}）：切點落在某條規則中間？')
+        parts.append(t)
+    css = ''.join(parts)
+    return src[:links[0].start()] + '<style>\n' + css + '</style>' + src[links[-1].end():]
+
+src = assemble(assemble_css(src))
 asm = pathlib.Path('../build/index.assembled.html')
 asm.parent.mkdir(exist_ok=True)
 asm.write_text(src, encoding='utf-8')

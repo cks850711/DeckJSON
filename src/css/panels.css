@@ -1,0 +1,122 @@
+  /* 寬度不寫死：色票欄掛進來時整個面板一起變寬，收起時自動縮回 .pjMain 的 380px。 */
+  #pageJsonPanel{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
+  #pageJsonPanel .pjBody{display:flex;align-items:stretch;min-height:0}
+  #pageJsonPanel .pjMain{width:380px;flex:none;display:flex;flex-direction:column;min-width:0}
+  #pageJsonPanel[hidden]{display:none}
+  #pageJsonPanel .pjHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#23252b;cursor:move;font-size:12px;font-weight:600;user-select:none}
+  #pageJsonPanel .pjHead .pjClose{margin-left:auto;cursor:pointer;color:var(--fg-dim);font-weight:700}
+  #pageJsonPanel textarea{border:0;border-radius:0;height:280px;background:#17181c;color:var(--fg);font:12px/1.5 ui-monospace,Menlo,monospace;padding:8px;resize:none;width:100%}
+  #pageJsonPanel .pjBtns{display:flex;gap:6px;padding:8px;flex-wrap:wrap}
+  #pageJsonPanel .pjBtns button{font-size:12px;padding:3px 8px}
+  #layerPanel{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,.5);width:264px;display:flex;flex-direction:column;overflow:hidden}
+  #layerPanel[hidden]{display:none}
+  #layerPanel .pjHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#23252b;cursor:move;font-size:12px;font-weight:600;user-select:none}
+  #layerPanel .pjHead .pjClose{margin-left:auto;cursor:pointer;color:var(--fg-dim);font-weight:700}
+  #layerPanel .pjBtns{padding:6px 10px;border-top:1px solid var(--line)}
+  #layerList{max-height:54vh;overflow-y:auto}
+  .layerRow{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;user-select:none}
+  .layerRow:hover{background:#30333b}
+  .layerRow.sel{background:rgba(77,157,224,.22)}
+  .layerRow.hid .lname,.layerRow.hid .licon{opacity:.45}
+  .layerRow .licon{width:16px;display:grid;place-content:center;flex-shrink:0;color:var(--fg-dim)}
+  .layerRow.sel .licon{color:var(--accent-hi)}
+  .layerRow .licon svg.ic,.layerRow .ltog svg.ic{width:14px;height:14px}
+  /* 面板按鈕內的圖示：比工具列小一號，與文字基線對齊 */
+  button.icBtn{display:inline-flex;align-items:center;gap:5px}
+  button.icBtn svg.ic{width:14px;height:14px}
+  #painterHint svg.ic{width:13px;height:13px;vertical-align:-2px;margin-right:4px}
+  #layerPanel .pjBtns svg.ic{width:13px;height:13px;vertical-align:-2px}
+  .layerRow .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
+  .layerRow .ltog{cursor:pointer;flex-shrink:0;background:none;border:0;padding:0 2px;line-height:0;
+    display:grid;place-content:center;color:var(--fg-mute)}
+  .layerRow .ltog.on{color:var(--accent)}
+  /* 眼睛與鎖的 .on 語意相反：可見是常態（低調），隱藏才要醒目；鎖定則沿用 .on 的強調色。
+     兩者共用 .ltog，靠 .eyeTog 把眼睛那組的規則抽出來壓過上面那條 */
+  .layerRow .eyeTog.on{color:var(--fg-mute)}
+  .layerRow .eyeTog:not(.on){color:var(--warn)}
+  .layerRow.dragover{box-shadow:inset 0 2px 0 0 var(--accent)}
+  #shapeGrid{max-height:56vh;overflow:auto;padding-right:4px}
+  #shapeGrid h5{margin:12px 0 6px;color:var(--accent);font-size:12px;font-weight:600}
+  #shapeGrid .empty{color:var(--dim);font-size:12px;padding:16px 2px}
+  .shapeCat{display:flex;flex-wrap:wrap;gap:6px}
+  .shapeBtn{position:relative;width:44px;height:44px;background:var(--bg-raised);border:1px solid var(--line);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .shapeBtn:hover{border-color:var(--accent)}
+  /* 支援畫布 adj 黃點的形狀，在縮圖右上角標一顆黃點 */
+  .shapeBtn.hasAdj::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#ffc72c;border:1px solid #a97e00}
+  #propPanel textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:var(--r-sm);font:12px/1.5 inherit;padding:7px;resize:vertical}
+  .scopeBtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* 分頁化後 propPanel 只當容器：捲動下放到 .propPane，標題與分頁列固定不捲。
+     內距也一併下放，否則分頁列會被 12px 推離邊緣。 */
+  #propPanel{width:var(--props-w);flex-shrink:0;overflow:hidden;background:var(--panel);
+    border-left:1px solid var(--line);font-size:12px;display:flex;flex-direction:column}
+  #propHead{flex:none;padding:10px 12px 6px}
+  #propTabs{flex:none;display:flex;gap:2px;padding:0 8px;border-bottom:1px solid var(--line)}
+  .propTab{flex:1;height:28px;padding:0;background:none;border:none;border-bottom:2px solid transparent;
+    border-radius:var(--r-sm) var(--r-sm) 0 0;color:var(--fg-mute);font:inherit;font-size:12px;cursor:pointer;
+    transition:color .12s,background .12s}
+  :is(#propPanel,#helpBody) .propTab:hover{color:var(--fg-dim);background:var(--bg-raised)}
+  /* 要壓過既有的 #propPanel button.on（實心藍）——那條是給面板內的開關鈕用的，頁籤不該長那樣 */
+  :is(#propPanel,#helpBody) .propTab.on{background:none;border-color:transparent;border-bottom-color:var(--accent);
+    color:var(--fg);font-weight:600}
+  .propPane{flex:1;overflow-y:auto;padding:12px}
+  /* 動作（格式刷／複製／刪除／本頁 JSON）不隨分頁切換：任何時候都可能想按，
+     關在某一頁裡等於要先猜它在哪。抽到面板底部釘住，順帶讓各分頁矮一截。 */
+  #propFoot{flex:none;padding:8px 12px 10px;border-top:1px solid var(--line);background:var(--bg-sunken)}
+  #propFoot .secTitle{display:none}   /* 位置本身就說明它是動作列，標題純佔高度 */
+  /* 全簡報設定：九個區塊多半只有一兩列，單欄排會是一條長條加大片留白。
+     兩欄後總高減半，920px 寬每欄約 440px，右欄控件（為 220px 設計）綽綽有餘。 */
+  #deckBody{column-count:2;column-gap:24px}
+  #deckBody .dsec{break-inside:avoid;-webkit-column-break-inside:avoid}
+  #deckBody .dsec:first-child .secTitle{margin-top:0;padding-top:0;border-top:none}
+  #deckBody .row .unit{line-height:1.55}
+  @media (max-width:900px){ #deckBody{column-count:1} }
+  #propFoot .row{margin:0;gap:6px}
+  #propFoot button{flex:1}
+  #propFoot button.danger{flex:none;color:var(--warn);border-color:rgba(224,93,93,.35)}
+  .propPane[hidden]{display:none}
+  #propPanel h4{margin:0;color:var(--fg);font-size:13px;font-weight:650}
+  /* ── 面板控件：一律 26px 高、圓角 var(--r-sm)，標籤欄固定 40px 讓各列數值對齊同一條軸 ── */
+  :is(#propPanel,.ppctl) .row{display:flex;align-items:center;gap:6px;margin:7px 0;flex-wrap:wrap}
+  :is(#propPanel,.ppctl) .row label{color:var(--fg-mute);min-width:40px;white-space:nowrap}
+  :is(#propPanel,.ppctl) input[type=number],:is(#propPanel,.ppctl) input[type=text]{height:26px;padding:0 7px;
+    background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);
+    font-family:var(--font-mono);font-size:12px}   /* 等寬：數值跳動時左右不晃 */
+  :is(#propPanel,.ppctl) input[type=number]{width:64px}   /* 要放得下「0.75」：spinner 佔約 15px */
+  :is(#propPanel,.ppctl) input[type=number]:focus,:is(#propPanel,.ppctl) input[type=text]:focus,
+  :is(#propPanel,.ppctl) select:focus,:is(#propPanel,.ppctl) textarea:focus{outline:none;border-color:var(--accent)}
+  :is(#propPanel,.ppctl) select{height:26px;padding:0 6px;border-radius:var(--r-sm);background:var(--bg-raised)}
+  :is(#propPanel,.ppctl) button{height:26px;padding:0 9px;font-size:12px;border-radius:var(--r-sm);
+    background:var(--bg-raised);border-color:var(--line);color:var(--fg-dim)}
+  :is(#propPanel,.ppctl) button:hover{background:var(--bg-hover);border-color:var(--fg-mute);color:var(--fg)}
+  /* 選中態改用淡底＋亮字。舊版是整顆實心藍，在深色面板裡比「匯出」主行動還搶眼，
+     一排開關全開時整片藍，反而看不出哪個才是重點 */
+  :is(#propPanel,.ppctl) button.on,.scopeBtn.on{background:var(--accent-soft);border-color:rgba(77,157,224,.35);
+    color:var(--accent-hi);font-weight:600}
+  :is(#propPanel,.ppctl) .swatchBtn{width:28px;height:26px;padding:0;border-radius:var(--r-sm)}
+  :is(#propPanel,.ppctl) input[type=color]{width:28px;height:26px;border-radius:var(--r-sm)}
+  /* 滑桿：舊版是瀏覽器預設樣式，在深色底上是一條亮灰粗槽，比它旁邊的數值還搶眼 */
+  :is(#propPanel,.ppctl) input[type=range]{appearance:none;height:3px;padding:0;border:none;border-radius:2px;
+    background:var(--line-strong);cursor:pointer}
+  :is(#propPanel,.ppctl) input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:12px;
+    border-radius:50%;background:var(--fg);border:2px solid var(--panel);cursor:pointer}
+  :is(#propPanel,.ppctl) input[type=range]:hover::-webkit-slider-thumb{background:var(--accent-hi)}
+  /* 核取：原生 checkbox 在深色底上是白框白底，跟面板完全不搭 */
+  :is(#propPanel,.ppctl) .chk{display:flex;align-items:center;gap:5px;min-width:auto;cursor:pointer;color:var(--fg-dim)}
+  :is(#propPanel,.ppctl) .chk input[type=checkbox]{appearance:none;width:14px;height:14px;flex:none;margin:0;
+    border:1px solid var(--line-strong);border-radius:3px;background:var(--bg);cursor:pointer;position:relative}
+  :is(#propPanel,.ppctl) .chk input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+  :is(#propPanel,.ppctl) .chk input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1px;
+    width:4px;height:8px;border:solid #0b1a26;border-width:0 2px 2px 0;transform:rotate(42deg)}
+  :is(#propPanel,.ppctl) .sep{border-top:1px solid var(--line);margin:10px 0}
+  /* 面板裡的說明文字是 renderProps 直接 append 的裸 div（沒有 class）。
+     弱化顏色並給行高，否則它跟控件同色同密度，會把整頁的視覺重量壓平。 */
+  .propPane>div:not(.row):not(.secTitle):not(.subTitle):not(.sep){
+    color:var(--fg-mute);line-height:1.65;margin:7px 0}
+  :is(#propPanel,.ppctl) .secTitle{font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--fg-mute);
+    text-transform:uppercase;margin:16px 0 8px;padding-top:13px;border-top:1px solid var(--line)}
+  :is(#propPanel,.ppctl) .secTitle.first{margin-top:0;padding-top:0;border-top:none}
+  /* 段落之間要有實體分隔線。原本只靠 12px 上邊距與稍粗的字，
+     連續幾段控件排下來就糊成一片，看不出哪幾排屬於同一件事。 */
+  :is(#propPanel,.ppctl) .subTitle{font-size:11px;font-weight:600;color:var(--fg-dim);
+    margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
+  :is(#propPanel,.ppctl) .subTitle:first-child{margin-top:0;padding-top:0;border-top:none}

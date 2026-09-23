@@ -1,0 +1,118 @@
+  #stageScroll{flex:1;overflow:auto;padding:0;background:var(--bg-sunken)}   /* 留白全由 stage margin 控制，避免 padding 重複計入置中 */
+  #stageOuter{margin:0 auto;display:flow-root}   /* flow-root：擋 margin collapse，stage 的置中邊距才留在 outer 內 */
+  /* overflow 刻意可見：物件拖出投影片仍看得到、救得回（外圍由 .outmask 壓半灰） */
+  /* 寬高由 applyStage() 依 deck.stage 設定（此處僅為首次繪製前的預設 16:9） */
+  #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:var(--font-latin),var(--font-ea),sans-serif}
+  .outmask{position:absolute;background:rgba(30,31,36,.55);pointer-events:none;z-index:20}
+  /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
+  #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+  /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
+  #stage.capturing{box-shadow:none!important}
+  #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
+  #stage.capturing :is(.el,.mel){outline:none!important}
+  .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
+  .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
+  .el{position:absolute;cursor:move}
+  /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
+  /* ⚠ .mel 只是「不可互動」的標記，排版一律沿用 .el 的規則——
+     下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
+     圖片改用原始像素大小、SVG 被裁掉溢出、文字塊失去 flex 版面（valign 失效）。*/
+  .mel{position:absolute;pointer-events:none;z-index:0}
+  /* 母版元素在一般頁上點不到，外觀又和一般元素一模一樣 → 只會覺得「這東西怎麼選不起來」。
+     給一圈淡虛線當身分標記：看得到框的就是母版的，要改請進「編輯母版」。
+     ⚠ 用 outline 不用 border：border 會參與排版，母版元素的位置會整個偏掉。
+     開關存 localStorage（同格線，屬「怎麼看」不屬簡報內容），預設開。*/
+  /* ⚠ 1px 在這裡不夠：畫布本身帶 transform:scale（常態 0.67），outline 會跟著縮到不足 1px，
+     淡到看不見。1.5px 縮完約當一條實線的份量，才真的看得出來 */
+  body.melMark .mel{outline:1.5px dashed var(--master-soft);outline-offset:0}
+  /* 編輯母版時整個畫布加一圈提示邊，避免改了一堆才發現改錯地方 */
+  #stage.masterEdit{outline:3px solid var(--master);outline-offset:0}
+  /* 母版是空的時候畫布會全白（本頁內容已隱藏），什麼都沒有反而像出錯——補一段引導 */
+  #stage.masterEdit.melEmpty::after{content:"母版目前是空的　·　在這裡放的元素會出現在每一頁";
+    position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;
+    color:var(--master-dark);font-size:15px;pointer-events:none;z-index:1}
+  /* 工具列跟著換色：只有畫布外框變色的話，視線在右欄時完全感覺不到自己還在母版模式 */
+  body.masterEdit header{box-shadow:inset 0 -2px 0 var(--master)}
+  /* 放畫布底部而非頂部：頂部是工具列，蓋上去會擋住按鈕 */
+  #masterBar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;display:none;
+    align-items:center;gap:12px;background:var(--master);color:#fff;padding:7px 8px 7px 14px;border-radius:7px;
+    font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3);max-width:calc(100vw - 40px)}
+  /* 兩行排版：第一行說「你在哪」，第二行說「你的東西沒有不見」。
+     擠成一行會撞到右下的浮動檢視列，也會把按鈕的字折斷 */
+  #masterBar .mbText{display:flex;flex-direction:column;gap:1px;line-height:1.35;min-width:0}
+  #masterBar .mbText small{font-size:11.5px;opacity:.88}
+  #masterBar button{background:#fff;color:var(--master-dark);border:0;border-radius:4px;padding:4px 10px;
+    cursor:pointer;font-size:13px;white-space:nowrap;flex:none}
+  body.masterEdit #masterBar{display:flex}
+  /* 自動頁碼預覽：不是元素（不可選取、不可拖曳），快照與匯出都會有；垂直置中對齊匯出的 anchor="ctr" */
+  .pgnum{position:absolute;pointer-events:none;display:grid;align-content:center;
+         line-height:1.2;font-family:var(--font-latin),var(--font-ea),sans-serif;z-index:5}
+  /* 影片元素：封面圖＋播放徽章／角標。徽章與角標只存在畫布（.vbadge/.vtag），
+     快照與匯出都不含（比照 .pgnum 的預覽層做法），否則使用者在 PPT 換上真影片後還要手動清掉 */
+  :is(.el,.mel) .vcover{width:100%;height:100%;object-fit:cover;display:block}
+  :is(.el,.mel) .vph{width:100%;height:100%;display:grid;place-content:center;background:#20242c;color:#8d94a0;font-size:12px;gap:4px;text-align:center}
+  :is(.el,.mel) .vbadge{position:absolute;inset:0;display:grid;place-content:center;pointer-events:none}
+  :is(.el,.mel) .vbadge span{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;
+        display:grid;place-content:center;font-size:17px;padding-left:3px}
+  :is(.el,.mel) .vtag{position:absolute;left:0;bottom:0;max-width:100%;padding:1px 5px;background:rgba(0,0,0,.55);
+        color:#fff;font-size:10px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 角標放左上：圖例預設多在上方或右側，放右上會蓋住它，妨礙預覽判讀 */
+  :is(.el,.mel) .ctag{position:absolute;left:0;top:0;padding:1px 5px;background:rgba(77,157,224,.85);
+        color:#fff;font-size:10px;pointer-events:none;z-index:3;border-radius:0 0 3px 0}
+  #stage.capturing .vbadge,#stage.capturing .vtag,#stage.capturing .ctag{display:none!important}
+  /* 非表格元素給淡虛線框，方便看出框的尺寸（尤其文字框）；.overflow 紅框在下方規則，優先權相同、後者勝 */
+  .el[data-type=text],.el[data-type=image],.el[data-type=shape],.el[data-type=chart]{outline:1px dashed rgba(150,152,160,.4)}
+  :is(.el,.mel) .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
+  :is(.el,.mel) .txt>div{white-space:pre-wrap}
+  .el.overflow{outline:1px dashed var(--danger)}
+  :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
+  :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+  :is(.el,.mel) svg{display:block;overflow:visible}
+  :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+  /* 圖片裁切：外層開視窗（overflow:hidden），內層 img 被放大並偏移，只露出 crop 指定的區域。
+     這與 OOXML srcRect 的語義一模一樣（裁切後的區域 stretch 填滿整個框），畫布與 pptx 因此
+     不需要各算一套。.el 本身不能設 overflow:hidden——形狀的陰影／端點箭頭要溢出。 */
+  :is(.el,.mel) .imgc{position:absolute;inset:0;overflow:hidden}
+  :is(.el,.mel) .imgc img{position:absolute;width:auto;height:auto;max-width:none;max-height:none}
+  /* 裁切模式：被裁掉的部分不隱藏而是變暗，使用者才看得到自己正在捨棄什麼（PowerPoint／Keynote 同款）*/
+  /* z-index 必須低於 #selBox(30) 與把手(31)：裁切時圖片會溢出框外，若壓在把手上面
+     就再也點不到裁切框的角點。28 仍高於一般元素（它們是 z-index:auto），遮擋效果不變。 */
+  .el.cropping{outline:1.5px solid var(--accent)!important;z-index:28}
+  /* 溢出的暗圖只做視覺、不吃事件——否則拖到框外的圖片會蓋住把手與空白處的命中區。
+     真正可拖曳平移的只有框內（.cropwin），這也與 PowerPoint 一致。 */
+  .el.cropping .imgc{overflow:visible;pointer-events:none}
+  .el.cropping .imgc img{opacity:.35}
+  .el.cropping .cropwin{position:absolute;inset:0;overflow:hidden;pointer-events:auto;cursor:move}
+  .el.cropping .cropwin img{position:absolute;opacity:1;width:auto;height:auto;max-width:none;max-height:none}
+  .el.cropping .cropfrm{position:absolute;inset:0;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none}
+  .el.cropping .cropfrm::before,.el.cropping .cropfrm::after{content:'';position:absolute;background:rgba(255,255,255,.55)}
+  .el.cropping .cropfrm::before{left:33.33%;right:33.33%;top:0;bottom:0;border-left:1px solid;border-right:1px solid;background:none;border-color:rgba(255,255,255,.45)}
+  .el.cropping .cropfrm::after{top:33.33%;bottom:33.33%;left:0;right:0;border-top:1px solid;border-bottom:1px solid;background:none;border-color:rgba(255,255,255,.45)}
+  :is(.el,.mel) .chartCover{position:absolute;inset:0;z-index:2}
+  .el [contenteditable]{outline:1.5px solid var(--accent);cursor:text;min-height:1em}
+  #selBox{position:absolute;pointer-events:none;outline:1.5px solid var(--accent);z-index:30}
+  .rh{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;pointer-events:auto;z-index:31}
+  .rh[data-dir=nw]{left:-6px;top:-6px;cursor:nwse-resize}
+  .rh[data-dir=n]{left:calc(50% - 5px);top:-6px;cursor:ns-resize}
+  .rh[data-dir=ne]{right:-6px;top:-6px;cursor:nesw-resize}
+  .rh[data-dir=e]{right:-6px;top:calc(50% - 5px);cursor:ew-resize}
+  .rh[data-dir=se]{right:-6px;bottom:-6px;cursor:nwse-resize}
+  .rh[data-dir=s]{left:calc(50% - 5px);bottom:-6px;cursor:ns-resize}
+  .rh[data-dir=sw]{left:-6px;bottom:-6px;cursor:nesw-resize}
+  .rh[data-dir=w]{left:-6px;top:calc(50% - 5px);cursor:ew-resize}
+  .tch{position:absolute;top:-15px;height:13px;width:9px;margin-left:-4px;background:rgba(77,157,224,.35);border-radius:2px;cursor:col-resize;pointer-events:auto;z-index:31}
+  .trh{position:absolute;left:-15px;width:13px;height:9px;margin-top:-4px;background:rgba(77,157,224,.35);border-radius:2px;cursor:row-resize;pointer-events:auto;z-index:31}
+  .tch:hover,.trh:hover{background:rgba(77,157,224,.85)}
+  .tcd{position:absolute;top:-15px;height:13px;background:rgba(120,125,135,.15);border-radius:2px;cursor:pointer;pointer-events:auto;color:transparent;font-size:9px;line-height:13px;text-align:center;user-select:none;z-index:30}
+  .trd{position:absolute;left:-15px;width:13px;background:rgba(120,125,135,.15);border-radius:2px;cursor:pointer;pointer-events:auto;color:transparent;font-size:9px;display:flex;align-items:center;justify-content:center;user-select:none;z-index:30}
+  .tcd:hover,.trd:hover{background:rgba(224,93,93,.85);color:#fff}
+  /* 表格儲存格反白（拖曳選格）與就近的合併鈕 */
+  .csel{position:absolute;background:rgba(77,157,224,.22);border:1.5px solid var(--accent);pointer-events:none;z-index:29}
+  .cselBtn{position:absolute;pointer-events:auto;cursor:pointer;z-index:32;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+  .cselBtn.unmerge{background:#7a828e}
+  .lh{position:absolute;width:12px;height:12px;margin:-6px;background:#fff;border:2px solid var(--accent);border-radius:50%;pointer-events:auto;cursor:crosshair;z-index:31}
+  /* 形狀 adj 黃點（同 PPT）：畫布上直接拖，蓋過縮放把手 */
+  .ah{position:absolute;width:12px;height:12px;margin:-6px;background:#ffc72c;border:1.5px solid #a97e00;border-radius:50%;pointer-events:auto;cursor:grab;z-index:33;box-shadow:0 0 3px rgba(0,0,0,.4)}
+  .ah:active{cursor:grabbing}
+  .el.multisel{outline:1.5px solid rgba(77,157,224,.7)}
+  #marquee{position:absolute;border:1px solid var(--accent);background:rgba(77,157,224,.12);z-index:35;pointer-events:none}

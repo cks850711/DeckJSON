@@ -1,0 +1,42 @@
+  :root{
+    /* ── 底色五階。舊版只有 --bg／--panel 兩階，控件與面板同色，整片糊在一起；拉開成
+         「最外層／畫布外圍／面板／控件／控件 hover」後，層次不必靠框線就分得出來。
+         變數名一律沿用舊的（--bg／--panel／--line…），全庫 113 處引用因此不動一行。 ── */
+    --bg:#131418; --bg-sunken:#0e0f12; --panel:#1c1e24; --bg-raised:#262a33; --bg-hover:#31353f;
+    --line:#2b2e37; --line-strong:#3c414d;
+    --fg:#e6e8ec; --fg-dim:#8b909c; --fg-mute:#5d626d;
+    --accent:#4d9de0; --accent-hi:#63aee8; --accent-soft:rgba(77,157,224,.14);
+    --danger:#e0625d; --warn:#e0b34d; --ok:#5fbf7f;
+    /* 母版模式專用色：與 --warn 刻意分開，warn 是「出事了」，master 是「你在另一個模式裡」 */
+    --master:#c08a33; --master-dark:#8a6120; --master-soft:rgba(192,138,51,.72);
+    --r-sm:4px; --r:6px; --r-lg:9px;   /* 圓角三級：小控件／按鈕／面板 */
+    --props-w:220px;                   /* 右欄寬。浮動檢視列靠它算避讓距離，改寬度只要改這裡 */
+    /* 三字體槽（deck.fonts）：JS 於 applyFontVars() 覆寫；此處為中性預設 */
+    --font-latin:Arial; --font-ea:sans-serif; --font-table:Arial;
+    --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--font-ui);display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .grp{display:flex;align-items:center;gap:6px}
+  header label{color:var(--fg-dim);font-size:12px}
+  button,select{background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  header button.on,#viewBar button.on{background:var(--accent-soft);border-color:rgba(77,157,224,.35);color:var(--accent-hi)}   /* 工具列的開關型按鈕（格線／吸附），與面板的 button.on 同一套視覺 */
+  input[type=number]{width:58px;background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 5px;font:inherit}
+  input[type=text]{background:var(--bg-raised);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+  input[type=color]{width:30px;height:26px;padding:1px;background:var(--bg-raised);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+  .unit{color:var(--fg-dim);font-size:12px}
+  .grp.right{margin-left:auto}
+  #btnHelp{border-radius:50%;width:30px;height:30px;padding:0;font-weight:700;color:var(--fg-dim)}
+  #warn{color:var(--danger);font-size:12px;font-weight:600}
+  /* 自動存檔狀態：平時灰字報時間，存檔失敗時轉紅字（容量超限必須看得見，不能靜默） */
+  #fileHint{font-size:11px;color:var(--fg-dim);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+  #fileHint.dirty{color:var(--fg);font-weight:600}
+  #fileHint.stale{color:var(--danger)}
+  #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
+  #saveHint.bad{color:var(--danger);font-weight:600}
+  #fontWarn{color:#e0b34d;font-size:11px}

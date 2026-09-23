@@ -1,0 +1,67 @@
+  /* ── 工具列：單排 46px。舊版靠 flex-wrap 疊成四排（實測 179px，佔視窗高 18%），
+       且命令／工具／檢視設定／狀態顯示四類東西長得一模一樣。現在只留命令與工具，
+       檢視設定下放畫布浮動列、狀態顯示下放底部狀態列。 ── */
+  header{height:46px;flex-wrap:nowrap;padding:0 10px;gap:3px;overflow:hidden}
+  svg.ic{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none;pointer-events:none}
+  /* 幽靈按鈕：工具列與浮動列用。面板內仍走 button 的預設（灰底描邊），兩者刻意不同級 */
+  .tb{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 9px;
+    background:transparent;border:1px solid transparent;border-radius:var(--r);color:var(--fg-dim);
+    white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+  .tb:hover{background:var(--bg-raised);color:var(--fg);border-color:transparent}
+  .tb.ico{width:30px;padding:0}
+  .tb:disabled{opacity:.32;pointer-events:none}
+  .vr{width:1px;height:20px;background:var(--line-strong);flex:none;margin:0 5px}
+  .spring{flex:1;min-width:6px}
+  /* 插入工具自成一框：視覺上宣告「這是工具，不是命令」 */
+  .tools{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;flex:none}
+  .tools .tb{height:26px;border-radius:var(--r-sm)}
+  #deckTitle{width:190px;flex:none;height:28px;background:transparent;border:1px solid transparent;
+    color:var(--fg);font-weight:600;text-align:center;padding:0 9px}
+  #deckTitle:hover{background:var(--bg-raised)}
+  #deckTitle:focus{background:var(--bg);border-color:var(--accent);outline:none}
+  #btnExport{height:30px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;color:#0b1a26}
+  /* 偏好：低頻但不能沒有的兩個設定（母版模式、貼上白底），收進齒輪 */
+  .popwrap{position:relative;flex:none}
+  /* ⚠ 必須是 fixed 不能是 absolute：header 帶 overflow:hidden（防工具列在窄視窗下溢出），
+     彈窗高 142px 而 header 只有 46px，absolute 會被裁掉 139.5px，等於整個看不見。
+     座標由 JS 依按鈕位置在開啟當下算，見 #btnPrefs 的 onclick。 */
+  #prefsPop{position:fixed;z-index:150;width:236px;padding:11px 13px;
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-lg);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+  /* ⚠ 這條不可省：#prefsPop 是 id 選擇器，它的 display:flex 優先度壓過 [hidden] 的
+     display:none，少了它 hidden 屬性完全不生效，彈窗會一直開著。 */
+  #prefsPop[hidden]{display:none}
+  #prefsPop .pr{display:flex;flex-direction:column;gap:5px}
+  #prefsPop .pr>span{font-size:11px;color:var(--fg-mute)}
+  #prefsPop select{width:100%}
+  #uiLangSeg{display:flex;gap:4px}
+  #uiLangSeg button{flex:1}
+  /* ── 畫布浮動檢視列：縮放／適合／格線／吸附。這幾個改的是「怎麼看」不是「內容」，
+       擺在畫布上比擺在工具列更近手。right 靠 --props-w 避開右欄。 ── */
+  #viewBar{position:absolute;right:calc(var(--props-w) + 14px);bottom:20px;z-index:110;
+    display:flex;align-items:center;gap:2px;padding:3px;
+    background:rgba(28,30,36,.93);backdrop-filter:blur(8px);
+    border:1px solid var(--line-strong);border-radius:var(--r-lg);box-shadow:0 6px 20px rgba(0,0,0,.45)}
+  #viewBar .tb{height:26px;border-radius:var(--r-sm);font-size:12px}
+  /* 分離式按鈕：左半切換格線、右半開設定。兩顆之間只留一條細線，看起來仍是一顆 */
+  .splitBtn{display:inline-flex;align-items:center}
+  .splitBtn .tb{border-radius:0}
+  .splitBtn>.tb:first-child{border-top-left-radius:var(--r-sm);border-bottom-left-radius:var(--r-sm)}
+  .splitBtn>.tb:last-child{border-top-right-radius:var(--r-sm);border-bottom-right-radius:var(--r-sm);
+    padding:0 3px;box-shadow:inset 1px 0 0 var(--line)}
+  .splitBtn .caret svg.ic{width:13px;height:13px}
+  /* 格線設定 popover。定位靠 JS：它掛在畫布右下的浮動列上方，往上開。
+     ⚠ 同 #prefsPop 的教訓——id 選擇器的 display 會壓過 [hidden]，所以下面那條不可省 */
+  #gridPop{position:fixed;z-index:150;width:246px;padding:12px 13px;
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-lg);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:12px}
+  #gridPop[hidden]{display:none}
+  #gridPop .secTitle{margin-top:0;padding-top:0;border-top:none}
+  /* 說明文字弱化，比照右欄 .propPane 的作法 */
+  #gridPop .row .unit{line-height:1.6}
+  /* 母版提示列置中在 bottom:18，寬度足以壓到右下的浮動檢視列上——編輯母版時把檢視列讓上去 */
+  body.masterEdit #viewBar{bottom:76px}
+  #viewBar .tb.ico{width:26px}
+  #viewBar input[type=number]{width:52px;height:24px;text-align:center;font-family:var(--font-mono);font-size:11px}
+  #viewBar .vr{height:16px;margin:0 3px}
