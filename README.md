@@ -2,7 +2,7 @@
 
 **English** | [繁體中文](README.zh-TW.md)
 
-**v0.1.0**
+**v0.2.0**
 
 Build slides in your browser and export **real PowerPoint files** — shapes, tables and text boxes are native OOXML objects, and every one of them stays editable in PowerPoint.
 
