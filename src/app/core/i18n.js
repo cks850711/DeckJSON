@@ -30,7 +30,7 @@ function _t(zh,...a){
 }
 /* 靜態 HTML 的中文：開機時照字典換掉文字節點與 title／placeholder。
    比對前把空白壓成單一空格（HTML 原始碼裡的長句會跨行）。說明面板不走這條，
-   它中英各有一份完整 HTML（見 applyHelpLang）。 */
+   每個語言各有一份完整 HTML（見 applyHelpTabs）。 */
 function i18nStatic(root){
   if(!UI_DICT) return;
   const tr=s=>{ const k=s.replace(/\s+/g,' ').trim();

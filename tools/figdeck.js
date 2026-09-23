@@ -5,16 +5,18 @@
  *   node tools/figdeck.js import   docs/user-manual.deck src/index.html [--lang=zh|en]
  *   node tools/figdeck.js prose    docs/user-manual.deck src/index.html
  *
- * import --lang=zh 寫 HELP_FIGS（中文說明面板用），--lang=en 寫 HELP_FIGS_EN（英文說明面板用）。
+ * import --lang=xx 整份重寫 src/i18n/xx.figs.js（該語言包的 figs）；說明本文讀 src/i18n/xx.help.js。
+ * 語言包照 index.html 的 <script src="i18n/…"> 載入，結構見 src/i18n/zh.js。
  * 簡報是 .deck zip 容器（deck.json ＋ mimetype）；舊的純 JSON 也讀得進來。
  *
  * 為什麼要有這個：說明配圖的座標由人在畫布上調最準，不該由 AI 盲寫。
  * 簡報一頁一張圖，左半中文、右半英文，兩區用同一份幾何——校對時中英並排看得到。
- * export 是一次性的 bootstrap（把手寫的 HELP_FIGS 倒進簡報）；此後簡報是源頭，
- * 用 import 把它變回 HELP_FIGS。
+ * export 是一次性的 bootstrap（把中文配圖倒進簡報）；此後簡報是源頭，
+ * 用 import 把它變回各語言包的 figs。
+ * 簡報只有左右兩半，所以目前只裝得下兩種語言（左 zh、右 en）；第三種語言要先決定簡報怎麼擺。
  *
  * 版面約定（舞台 1280×720）：
- *   標題      y  28..68     圖名，就是 HELP_FIGS 的鍵
+ *   標題      y  28..68     圖名，就是 figs 的鍵
  *   欄標      y  70..94     「中文」/「English」
  *   圖區      y  96..396    左 x 40..620、右 x 660..1240，各 580×300
  *   圖說      y 406..446    同上分左右
@@ -81,14 +83,18 @@ function decode(t){
   return t.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
           .replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
 }
-/* 圖與文字的對應：<div data-fig="X"> 後面緊接的那個 <ul> 就是它在講的東西。 */
-function helpSeg(html,lang){
-  const id= lang==='en'? 'helpBodyEn' : 'helpBody';
-  const a=html.indexOf('id="'+id+'"'), b=html.indexOf('<!--/'+id+'-->',a);
-  return a<0||b<0? '' : html.slice(a,b);
+/* 語言包：照 index.html 的 <script src="i18n/…"> 依序在 vm 裡執行，回傳 I18N_PACKS。 */
+function loadPacks(htmlPath){
+  const html=fs.readFileSync(htmlPath,'utf8');
+  const ctx={}; vm.createContext(ctx);
+  for(const [,f] of html.matchAll(/<script src="(i18n\/[^"]+)"><\/script>/g))
+    new vm.Script(fs.readFileSync(path.join(path.dirname(htmlPath),f),'utf8'),{filename:f}).runInContext(ctx);
+  if(!ctx.I18N_PACKS) throw new Error(htmlPath+' 沒有載入任何語言包（<script src="i18n/…">）');
+  return ctx.I18N_PACKS;
 }
-function proseFor(html,figName,lang){
-  html=helpSeg(html,lang||'zh');
+/* 圖與文字的對應：<div data-fig="X"> 後面緊接的那個 <ul> 就是它在講的東西。 */
+function proseFor(packs,figName,lang){
+  const html=(packs[lang||'zh']||{}).help||'';
   const ph='data-fig="'+figName+'"';
   const a=html.indexOf(ph); if(a<0) return [];
   const us=html.indexOf('<ul',a); if(us<0) return [];
@@ -107,29 +113,13 @@ function proseEl(x,items,muted){
       runs:htmlToRuns(h,10).map(r=>muted?Object.assign({},r,{color:'AAAAAA'}):r)}))};
 }
 
-/* HELP_FIGS 住在哪個檔。說明本文在 index.html，配圖資料則在主程式裡：
-   照 index.html 的 <script src="app/…"> 清單找宣告 HELP_FIGS 的那個檔（現為 app/help/help.js）。 */
-function figsFile(htmlPath){
-  const html=fs.readFileSync(htmlPath,'utf8');
-  const srcs=[...html.matchAll(/<script src="(app\/[^"]+)"><\/script>/g)].map(m=>path.join(path.dirname(htmlPath),m[1]));
-  const f=srcs.find(p=>fs.readFileSync(p,'utf8').includes('const HELP_FIGS='));
-  if(!f) throw new Error(htmlPath+' 的 <script src> 清單裡沒有宣告 HELP_FIGS 的檔');
-  return f;
-}
-
 function readFigs(htmlPath){
-  const s=fs.readFileSync(figsFile(htmlPath),'utf8');
-  let a=s.indexOf('const _hc=(t,o)=>');                 // bootstrap 期的手寫版帶輔助函式
-  if(a<0) a=s.indexOf('const HELP_FIGS=');               // 產生版是純資料
-  const b=s.indexOf('\n};', s.indexOf('const HELP_FIGS='))+3;
-  if(a<0||b<3) throw new Error('在 '+htmlPath+' 找不到 HELP_FIGS 區塊');
-  const ctx={};
-  vm.createContext(ctx);
-  new vm.Script(s.slice(a,b)+'\n;__out=HELP_FIGS;').runInContext(ctx);
-  return ctx.__out;
+  const figs=(loadPacks(htmlPath).zh||{}).figs;
+  if(!figs) throw new Error('中文語言包沒有 figs（src/i18n/zh.figs.js）');
+  return figs;
 }
 
-function toDeck(figs,helpHtml){
+function toDeck(figs,packs){
   const conv=(fig,R)=>{
     const v=fig.view||[0,0,1280,720];
     const k=Math.min(R.w/v[2], R.h/v[3]);
@@ -174,14 +164,14 @@ function toDeck(figs,helpHtml){
       runs:[{text:t,sizePt:(o&&o.sz)||11,bold:!!(o&&o.b),color:(o&&o.c)||'666666'}]}]});
   const pages=Object.keys(figs).map((name,i)=>({
     id:'p'+(i+1), name,
-    notes:'配圖代號：'+name+'\n（tools/figdeck.js import 以此對應到 HELP_FIGS）',
+    notes:'配圖代號：'+name+'\n（tools/figdeck.js import 以此對應到語言包 figs 的鍵）',
     elements:[
       txt(40,34,580,40,'（中文標題）',{sz:20,b:true,c:'1F3A5F',id:'ti-zh'}),
       txt(660,34,580,40,'(English title)',{sz:20,b:true,c:'1F3A5F',id:'ti-en'}),
       ...conv(figs[name],ZH), ...conv(figs[name],EN),
       txt(40,406,580,40,(figs[name].cap||'').replace(/<[^>]+>/g,''),{valign:'top',id:'cp-zh'}),
       txt(660,406,580,40,'(caption — to translate)',{valign:'top',c:'AAAAAA',id:'cp-en'}),
-      ...(()=>{ const items=proseFor(helpHtml,name,'zh'), en=proseFor(helpHtml,name,'en');
+      ...(()=>{ const items=proseFor(packs,name,'zh'), en=proseFor(packs,name,'en');
         if(!items.length) return [];
         /* 英文說明本文還沒有時，英文那半先放同一份中文、字色壓灰當翻譯骨架 */
         return [proseEl(40,items,false), en.length? proseEl(660,en,false) : proseEl(660,items,true)]; })(),
@@ -189,7 +179,7 @@ function toDeck(figs,helpHtml){
   return {format:'deckjson',version:1,title:'DeckJSON 說明配圖',stage:{w:1280,h:720},pages};
 }
 
-/* ── import：簡報 → HELP_FIGS ──────────────────────────────
+/* ── import：簡報 → 語言包的 figs ──────────────────────────────
    圖區內的元素原樣取出，view 就是圖區矩形本身（座標系不變，不必換算）。
    底圖白矩形排除掉——說明面板那邊的 .helpFig 已經有白底與外框。 */
 function fromDeck(deck,lang){
@@ -214,38 +204,31 @@ function fromDeck(deck,lang){
   return figs;
 }
 function writeFigs(htmlPath,figs,lang){
-  const file=figsFile(htmlPath), s=fs.readFileSync(file,'utf8');
-  const name= lang==='en'? 'HELP_FIGS_EN' : 'HELP_FIGS';
-  let a=s.indexOf('const '+name+'=');
-  let b=a<0? -1 : s.indexOf('\n};',a)+3;
-  if(a<0&&lang==='en'){                        // 第一次產英文版：接在中文版後面
-    const z=s.indexOf('const HELP_FIGS=');
-    if(z<0) throw new Error('找不到 HELP_FIGS');
-    a=b=s.indexOf('\n};',z)+3;
-  }
-  if(a<0) throw new Error('找不到 '+name);
+  const rel='i18n/'+lang+'.figs.js', file=path.join(path.dirname(htmlPath),rel);
   const body=Object.keys(figs).map(k=>{
     const f=figs[k];
     return '  '+JSON.stringify(k)+':{view:'+JSON.stringify(f.view)+','
       +(f.cap?'cap:'+JSON.stringify(f.cap)+',':'')
       +'els:'+JSON.stringify(f.els)+'}';
   }).join(',\n');
-  const out=(a===b?'\n':'')+'const '+name+'={   /* 由 tools/figdeck.js 從 docs/user-manual.deck 產生，勿手改 */\n'
-    +body+'\n};';
-  fs.writeFileSync(file, s.slice(0,a)+out+s.slice(b));
-  return {bytes:out.length,file};
+  const out='/* 說明配圖（'+lang+'）。由 tools/figdeck.js 從 docs/user-manual.deck 產生，勿手改。 */\n'
+    +'var I18N_PACKS=I18N_PACKS||{};\n'
+    +'(I18N_PACKS.'+lang+'=I18N_PACKS.'+lang+'||{}).figs={\n'+body+'\n};\n';
+  fs.writeFileSync(file,out);
+  const listed=fs.readFileSync(htmlPath,'utf8').includes('<script src="'+rel+'"></script>');
+  return {bytes:out.length,file,listed,rel};
 }
 
 /* ── prose：只更新簡報下半的說明文字，圖完全不動 ──────────
-   圖歸簡報（人調），文字歸 HTML（正本）。這支就是把後者印進前者。
+   圖歸簡報（人調），文字歸語言包的 help（正本）。這支就是把後者印進前者。
    舊的文字元素靠 id 前綴 pr- 辨識後整批換掉，不會累積。 */
 async function refreshProse(deckPath,htmlPath){
   const deck=await readDeck(deckPath);
-  const html=fs.readFileSync(htmlPath,'utf8');
+  const packs=loadPacks(htmlPath);
   let n=0, empty=[];
   for(const pg of deck.pages){
     pg.elements=pg.elements.filter(e=>!/^pr-/.test(e.id));
-    const items=proseFor(html,figKey(pg),'zh'), en=proseFor(html,figKey(pg),'en');
+    const items=proseFor(packs,figKey(pg),'zh'), en=proseFor(packs,figKey(pg),'en');
     if(!items.length){ empty.push(figKey(pg)); continue; }
     pg.elements.push(proseEl(40,items,false), en.length? proseEl(660,en,false) : proseEl(660,items,true));
     n+=items.length+en.length;
@@ -265,18 +248,19 @@ if(cmd==='prose'){
   const deck=await readDeck(inp);
   const figs=fromDeck(deck,lang);
   const w=writeFigs(outp,figs,lang);
-  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+path.relative(process.cwd(),w.file)+'（'+(lang==='en'?'HELP_FIGS_EN':'HELP_FIGS')+' '+w.bytes+' 位元組）');
+  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+path.relative(process.cwd(),w.file)+'（'+w.bytes+' 位元組）');
+  if(!w.listed) console.log('  ⚠ index.html 還沒有 <script src="'+w.rel+'"></script>，介面讀不到這份配圖');
   for(const k in figs) console.log('  '+k.padEnd(16)+String(figs[k].els.length).padStart(3)+' 個元素');
 }else if(cmd==='export'){
   const figs=readFigs(inp);
-  const deck=toDeck(figs, fs.readFileSync(inp,'utf8'));
+  const deck=toDeck(figs, loadPacks(inp));
   await writeDeck(outp,deck);
   console.log('匯出 %d 頁 → %s（%d 位元組）',deck.pages.length,outp,fs.statSync(outp).size);
   for(const p of deck.pages) console.log('  '+p.name.padEnd(16)+String(p.elements.length).padStart(3)+' 個元素');
 }else{
   console.log('用法：\n'
     +'  node tools/figdeck.js prose  <deck> <index.html>      只更新簡報內的說明文字\n'
-    +'  node tools/figdeck.js import <deck> <index.html> [--lang=zh|en]   簡報 → HELP_FIGS\n'
+    +'  node tools/figdeck.js import <deck> <index.html> [--lang=zh|en]   簡報 → src/i18n/<語言>.figs.js\n'
     +'  node tools/figdeck.js export <index.html> <deck>      一次性 bootstrap（會蓋掉人工調過的圖）');
   process.exit(1);
 }

@@ -284,16 +284,22 @@ def html_static(html):
     return found
 
 
-def help_of(lang, pack, html):
-    """該語言的說明本文。語言包沒有 help 時，暫時退回 index.html 裡的舊位置。"""
-    if pack['help'] is not None:
-        return pack['help']
-    tag = 'helpBody' if lang == 'zh' else 'helpBody' + lang.capitalize()
-    a = html.find('id="' + tag + '"')
-    if a < 0:
-        return None
-    b = html.find('<!--/' + tag + '-->', a)
-    return html[a:b] if b > a else None
+def help_literal_problems():
+    """說明本文用 String.raw`…` 包住：反引號會提早結束字串，「${」會被當成程式碼執行並悄悄
+    換掉內容。兩者都不會在語言包載入時報錯（後者甚至完全正常執行），所以要照原始檔文字檢查。"""
+    html = SRC.read_text(encoding='utf-8')
+    probs = []
+    for f in re.findall(r'<script src="(i18n/[^"]+\.help\.js)"></script>', html):
+        t = (SRC.parent / f).read_text(encoding='utf-8')
+        a, b = t.find('String.raw`'), t.rfind('`;')
+        if a < 0 or b < a:
+            probs.append('%s：找不到 String.raw`…`; 的說明本文' % f)
+            continue
+        body = t[a + len('String.raw`'):b]
+        for bad, why in (('`', '反引號'), ('${', '「${」')):
+            if bad in body:
+                probs.append('%s：說明本文含%s（第 %d 行）' % (f, why, t[:a + len('String.raw`') + body.index(bad)].count('\n') + 1))
+    return probs
 
 
 def help_parity(zh, other, name):
@@ -315,8 +321,14 @@ def main():
     keys, leaks = js_keys_and_leaks(html)
     static = html_static(html)
     shapes = shape_keys(js_text(html))
-    zh_help = help_of('zh', packs.get('zh', {'help': None}), html)
+    zh_help = packs.get('zh', {}).get('help') or ''
     bad = 0
+    lit = help_literal_problems()
+    if lit:
+        print('■ 說明本文的字面值問題')
+        for p in lit:
+            print('  ' + p)
+        bad += len(lit)
     if leaks:
         print('■ 含中文但沒包 _t() 的字面值（%d）' % len(leaks))
         for ln, kind, v in leaks:
@@ -346,7 +358,7 @@ def main():
             print('■ %s：語言包的 shapes 缺形狀名（%d）' % (name, len(sm)))
             print('  ' + ' '.join(sm))
             bad += len(sm)
-        hp = help_parity(zh_help, help_of(lang, pack, html), name)
+        hp = help_parity(zh_help, pack['help'], name)
         if hp:
             print('■ 說明面板與中文不對稱')
             for p in hp:
