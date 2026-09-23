@@ -83,6 +83,12 @@ function groupBBox(els){
   return {x:x0,y:y0,w:x1-x0,h:y1-y0};
 }
 
+/* 進行中的畫布拖曳（移動、縮放、框選、黃點、裁切、表格欄寬列高、儲存格框選等，見 drag.type），
+   null＝沒在拖。edit/canvas.js 寫入；
+   render/selection.js 讀它，拖曳中跳過圖層面板的重建。放這裡而不是 edit/canvas.js，
+   是因為渲染層不該往上引用互動層的變數。 */
+let drag=null;
+
 /* ================= 復原／重做 ================= */
 const UNDO=[],REDO=[];
 function snapshot(){ return {deck:structuredClone(APP.deck),page:APP.page,selIds:[...APP.selIds]}; }

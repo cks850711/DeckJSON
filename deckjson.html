@@ -4088,6 +4088,12 @@ function groupBBox(els){
   return {x:x0,y:y0,w:x1-x0,h:y1-y0};
 }
 
+/* 進行中的畫布拖曳（移動、縮放、框選、黃點、裁切、表格欄寬列高、儲存格框選等，見 drag.type），
+   null＝沒在拖。edit/canvas.js 寫入；
+   render/selection.js 讀它，拖曳中跳過圖層面板的重建。放這裡而不是 edit/canvas.js，
+   是因為渲染層不該往上引用互動層的變數。 */
+let drag=null;
+
 /* ================= 復原／重做 ================= */
 const UNDO=[],REDO=[];
 function snapshot(){ return {deck:structuredClone(APP.deck),page:APP.page,selIds:[...APP.selIds]}; }
@@ -7472,6 +7478,11 @@ function videoFrame(natW,natH){   // 插入時的預設框：置中、寬約半�
     const h=Math.round(w*((natW&&natH)? natH/natW : 9/16));
     return {x:Math.round((STAGE_W-w)/2),y:Math.round((STAGE_H-h)/2),w,h};
 }
+/* ================= 插入影片、拖放與貼上圖片 =================
+   從 media/video.js 分出來的介面接線：影片對話框的按鈕、換封面，以及整頁的拖放與圖片貼上。
+   它們會新增元素、重畫畫面，屬互動層；media/video.js 只留影片本身的資料與封面產生。
+   ⚠ 載入順序必須緊接在 media/video.js 之後、edit/clipboard.js 之前：document 的 paste
+   監聽器依註冊順序執行，圖片貼上要先看到剪貼簿有沒有表格再讓位（見下方說明）。 */
 $('#btnAddVideo').onclick=()=>{ $('#vidUrl').value=''; $('#videoModal').hidden=false; };
 $('#btnVideoClose').onclick=()=>{ $('#videoModal').hidden=true; };
 $('#btnVideoOnline').onclick=()=>{
@@ -7544,7 +7555,7 @@ document.addEventListener('paste',async e=>{
 });
 
 /* ================= 畫布互動 ================= */
-let drag=null,pendingUndo=null;
+let pendingUndo=null;
 let DBL={id:null,t:0,x:0,y:0};   // 手動雙擊偵測：pointerdown 的 preventDefault 會吃掉原生 dblclick
 function openEditor(el,targetNode){
   if(APP.editing) return;

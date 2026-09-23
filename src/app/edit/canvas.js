@@ -1,6 +1,6 @@
 'use strict';
 /* ================= 畫布互動 ================= */
-let drag=null,pendingUndo=null;
+let pendingUndo=null;
 let DBL={id:null,t:0,x:0,y:0};   // 手動雙擊偵測：pointerdown 的 preventDefault 會吃掉原生 dblclick
 function openEditor(el,targetNode){
   if(APP.editing) return;
