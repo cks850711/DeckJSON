@@ -10,9 +10,7 @@
  *   函式宣告的提升不跨 script，這種引用拆開後就是 ReferenceError。
  * 寫在函式本體內的引用不受影響：要等函式被呼叫時才解析，那時所有檔都已載入。
  *
- * 檔案清單的來源：
- *   src/index.html 裡有 <script src="app/…"> 時，照那份清單依序讀檔（＝瀏覽器的載入順序）。
- *   還沒拆檔時，改用 tools/modcheck.json 的切點把 index.html 的主程式切成同樣的單元。
+ * 檔案清單照 src/index.html 的 <script src="app/…"> 依序讀（＝瀏覽器的載入順序）。
  *
  * 分析只看名稱：區域變數與頂層名同名時會被當成引用（多報）；
  * window[名稱] 這類動態存取看不到（漏報），漏報由「開發版開機無錯誤」兜住。
@@ -20,22 +18,14 @@
 const fs=require('fs'), path=require('path');
 const acorn=require(path.join(__dirname,'vendor','acorn.js'));
 const SRC=path.join(__dirname,'..','src');
-const CONF=JSON.parse(fs.readFileSync(path.join(__dirname,'modcheck.json'),'utf8'));
 
-/* ---------- 取得單元：[{name, code, line0}]，line0＝該單元第 1 行在原檔的行號 ---------- */
+/* ---------- 取得單元：[{name, file, code}] ---------- */
 function units(){
   const html=fs.readFileSync(path.join(SRC,'index.html'),'utf8');
   const srcs=[...html.matchAll(/<script src="(app\/[^"]+)"><\/script>/g)].map(m=>m[1]);
-  if(srcs.length) return srcs.map(s=>({name:s.replace(/^app\/|\.js$/g,''),
-    file:'src/'+s, code:fs.readFileSync(path.join(SRC,s),'utf8'), line0:1}));
-  /* 未拆檔：取最後一個 <script>（主程式），依切點切開 */
-  const lines=html.split('\n');
-  const open=lines.lastIndexOf('<script>')+1, close=lines.lastIndexOf('</script>')+1;   // 1 起算
-  if(open<1||close<=open) throw new Error('找不到主程式 <script>');
-  const cuts=CONF.cuts;
-  if(cuts[0][0]!==open+1) throw new Error(`第一個切點應為 ${open+1}（主程式第一行），設定是 ${cuts[0][0]}`);
-  return cuts.map(([s,name],i)=>{ const e=i+1<cuts.length? cuts[i+1][0] : close;
-    return {name, file:'src/index.html', code:lines.slice(s-1,e-1).join('\n'), line0:s}; });
+  if(!srcs.length) throw new Error('src/index.html 裡找不到 <script src="app/…">');
+  return srcs.map(s=>({name:s.replace(/^app\/|\.js$/g,''), file:'src/'+s,
+    code:fs.readFileSync(path.join(SRC,s),'utf8')}));
 }
 
 /* ---------- AST 工具 ---------- */
@@ -76,13 +66,13 @@ const U=units(), problems=[];
 const decl=new Map();                       // 名稱 → 單元序號
 U.forEach((u,i)=>{
   try{ u.ast=acorn.parse(u.code,{ecmaVersion:'latest',sourceType:'script',locations:true}); }
-  catch(e){ problems.push(`${u.name}：單獨解析失敗（${e.message}）——切點落在敘述中間？`); return; }
+  catch(e){ problems.push(`${u.file}：解析失敗（${e.message}）`); return; }
   for(const st of u.ast.body) for(const n of topNames(st)){
     if(decl.has(n)&&decl.get(n)!==i) problems.push(`${u.name}：頂層名 ${n} 已在 ${U[decl.get(n)].name} 宣告過（跨 script 重複宣告是 SyntaxError）`);
     else decl.set(n,i);
   }
 });
-const at=(u,node)=>`${u.file}:${u.line0+node.loc.start.line-1}`;
+const at=(u,node)=>`${u.file}:${node.loc.start.line}`;
 const deps=new Map();
 U.forEach((u,i)=>{ if(!u.ast) return;
   for(const st of u.ast.body) refs(st,true,(id,eager)=>{
@@ -92,7 +82,7 @@ U.forEach((u,i)=>{ if(!u.ast) return;
   });
 });
 
-console.log(`${U.length} 個單元、${decl.size} 個頂層名（來源：${U[0].file==='src/index.html'?'index.html＋切點':'app/ 檔案清單'}）`);
+console.log(`${U.length} 個檔、${decl.size} 個頂層名`);
 if(process.argv.includes('--deps'))
   for(const [k,n] of [...deps].sort((a,b)=>b[1]-a[1])) console.log(`  ${String(n).padStart(4)}  ${k}`);
 if(problems.length){ console.log(`\n■ 問題（${problems.length}）`); problems.forEach(p=>console.log('  '+p)); process.exit(1); }

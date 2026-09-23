@@ -1,6 +1,6 @@
 /* 英文介面字串。
  *
- * 鍵是 src/index.html 裡 _t() 的中文原文，逐字相符（含全形標點與空白）；
+ * 鍵是 src/app/ 各檔裡 _t() 的中文原文，逐字相符（含全形標點與空白）；
  * 靜態 HTML 的鍵是壓掉連續空白後的文字節點或屬性值，帶 data-i18n 的元素則是整段 innerHTML。
  * 值是字串時，{0} {1} 依序代入 _t() 的參數；需要單複數等邏輯時寫成函式，參數原樣傳入。
  *
@@ -881,7 +881,7 @@ const I18N_EN={
 };
 
 /* 形狀名：以 OOXML preset 名為鍵，對 PowerPoint 英文版的名稱。
-   不走中文鍵的理由見 index.html 的 SHAPE_META。 */
+   不走中文鍵的理由見 app/model/geom.js 的 SHAPE_META。 */
 const SHAPE_NAMES_EN={
   rect: "Rectangle",
   roundRect: "Rounded Rectangle",

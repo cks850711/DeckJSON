@@ -147,16 +147,13 @@ def line_of(s, pos, _cache={}):
 
 
 def js_units(html):
-    """主程式，依瀏覽器的載入順序：(標示, 全文, [(起點, js)])。
-    已拆檔時是 index.html 的 <script src="app/…"> 清單；未拆檔時是 index.html 的 inline <script>。"""
+    """主程式，依 index.html 的 <script src="app/…"> 清單（＝瀏覽器的載入順序）：(標示, 全文, [(起點, js)])。"""
     srcs = re.findall(r'<script src="(app/[^"]+)"></script>', html)
-    if srcs:
-        for s in srcs:
-            t = (SRC.parent / s).read_text(encoding='utf-8')
-            yield 'src/' + s, t, [(0, t)]
-    else:
-        yield 'src/index.html', html, [(m.start(1), m.group(1))
-                                       for m in re.finditer(r'<script>(.*?)</script>', html, re.S)]
+    if not srcs:
+        sys.exit('src/index.html 裡找不到 <script src="app/…">')
+    for s in srcs:
+        t = (SRC.parent / s).read_text(encoding='utf-8')
+        yield 'src/' + s, t, [(0, t)]
 
 
 def js_text(html):
@@ -266,7 +263,7 @@ def html_static(html):
     s = re.sub(r'(<(\w+)\b[^>]*\stranslate="no"[^>]*>)(.*?)(</\2>)',
                lambda m: m.group(1) + '\n' * m.group(3).count('\n') + m.group(4), s, flags=re.S)
     found = []
-    # data-i18n：整段 innerHTML 是一個鍵（見 index.html 的 i18nStatic）。假設區塊內沒有同名巢狀標籤
+    # data-i18n：整段 innerHTML 是一個鍵（見 app/core/i18n.js 的 i18nStatic）。假設區塊內沒有同名巢狀標籤
     def block(m):
         inner = m.group(2)
         if CJK.search(inner):

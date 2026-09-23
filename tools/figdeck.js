@@ -23,7 +23,7 @@
 const fs=require('fs'), vm=require('vm'), path=require('path');
 const JSZip=require(path.join(__dirname,'..','src','vendor','jszip.min.js'));
 const DECK_MIME='application/vnd.deckjson.deck';
-/* .deck 容器的讀寫。寫出時比照 app：第一個 entry 是未壓縮的 mimetype（見 index.html 的 DECK_MIME） */
+/* .deck 容器的讀寫。寫出時比照 app：第一個 entry 是未壓縮的 mimetype（見 app/core/config.js 的 DECK_MIME） */
 async function readDeck(p){
   const buf=fs.readFileSync(p);
   if(buf[0]===0x7b) return JSON.parse(buf.toString('utf8'));        // '{'：舊的純 JSON
@@ -108,12 +108,10 @@ function proseEl(x,items,muted){
 }
 
 /* HELP_FIGS 住在哪個檔。說明本文在 index.html，配圖資料則在主程式裡：
-   主程式拆成 <script src="app/…"> 清單後，照清單找宣告 HELP_FIGS 的那個檔；
-   沒拆檔（舊版）時就是 index.html 本身。 */
+   照 index.html 的 <script src="app/…"> 清單找宣告 HELP_FIGS 的那個檔（現為 app/help/help.js）。 */
 function figsFile(htmlPath){
   const html=fs.readFileSync(htmlPath,'utf8');
   const srcs=[...html.matchAll(/<script src="(app\/[^"]+)"><\/script>/g)].map(m=>path.join(path.dirname(htmlPath),m[1]));
-  if(!srcs.length) return htmlPath;
   const f=srcs.find(p=>fs.readFileSync(p,'utf8').includes('const HELP_FIGS='));
   if(!f) throw new Error(htmlPath+' 的 <script src> 清單裡沒有宣告 HELP_FIGS 的檔');
   return f;
