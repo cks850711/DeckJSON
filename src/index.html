@@ -7748,7 +7748,11 @@ async function setUiLang(v){
   try{ localStorage.setItem(UI_LANG_KEY,v); stored=localStorage.getItem(UI_LANG_KEY)===v; }catch(e){}
   const u=new URL(location.href);
   if(stored) u.searchParams.delete('lang'); else u.searchParams.set('lang',v);
-  location.replace(u.href);
+  /* 不可用 location.replace(新網址)：那是一般導覽，會直接拿 HTTP 快取。拿掉 ?lang= 後的網址
+     可能還快取著改版前的頁面（伺服器沒送 Cache-Control 時 Chrome 用啟發式新鮮度），
+     實際踩到：切完語言載入舊版，切換鈕整列不見。reload 一定向伺服器驗證主頁面。 */
+  history.replaceState(history.state,'',u.href);
+  location.reload();
 }
 for(const b of document.querySelectorAll('#uiLangSeg button')) b.onclick=()=>setUiLang(b.dataset.lang);
 syncUiLangBtns();
