@@ -66,6 +66,14 @@ const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
 const NS='http://www.w3.org/2000/svg';
+/* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
+function setIcoBtn(b,ic,txt,title){
+  b.className=(b.className? b.className+' ':'')+'icBtn';
+  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
+  if(txt) b.appendChild(document.createTextNode(txt));
+  if(title) b.title=title;
+  return b;
+}
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 

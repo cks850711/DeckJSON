@@ -3147,6 +3147,14 @@ const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
 const NS='http://www.w3.org/2000/svg';
+/* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
+function setIcoBtn(b,ic,txt,title){
+  b.className=(b.className? b.className+' ':'')+'icBtn';
+  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
+  if(txt) b.appendChild(document.createTextNode(txt));
+  if(title) b.title=title;
+  return b;
+}
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
@@ -3386,6 +3394,7 @@ const TRANSITIONS={
    畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
 const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
 const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
+const CROP_MAX=3;      // 可見區最多放到原圖的 3 倍（再大就只是無盡留白）
 /* ================= 形狀庫：preset 幾何引擎 ================= */
 // key＝OOXML prstGeom 名稱（PptxGenJS ShapeType 同名）。
 // 幾何**不再手寫近似路徑**：一律由 PRESET_GEOM（vendor/preset-geom.js，轉自 OOXML
@@ -4290,6 +4299,13 @@ const gradCss=g=>g.type==='radial'
   ? `radial-gradient(circle at 50% 50%,${gradCssStops(g)})`
   // CSS 的 0deg＝朝上、90deg＝朝右，OOXML 的 0°＝朝右 → 差 90°
   : `linear-gradient(${(g.angle+90)%360}deg,${gradCssStops(g)})`;
+// 陰影的 CSS 預覽：PPT 角度 0°＝向右、順時針（與 CSS 座標同向，y 軸向下）
+function shadowCss(el){
+  const s=el&&el.shadow; if(!s) return '';
+  const a=((s.angle??SHADOW_DEF.angle))*Math.PI/180, d=pt2px(s.offset??SHADOW_DEF.offset);
+  const al=Math.round((s.opacity??SHADOW_DEF.opacity)*255).toString(16).padStart(2,'0');
+  return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
+}
 // SVG 漸層定義：objectBoundingBox 座標，故不必知道形狀實際尺寸
 function gradPaint(svg,id,g){
   const defs=document.createElementNS(NS,'defs');
@@ -5264,14 +5280,6 @@ function colorRow(label,val,onSet,allowNone){
 function secTitle(text,first){ const d=document.createElement('div'); d.className='secTitle'+(first?' first':''); d.textContent=text; return d; }
 // 組內次標題（如表格的「結構／儲存格樣式／框線」）：更輕量，無分隔線
 function subTitle(text){ const d=document.createElement('div'); d.className='subTitle'; d.textContent=text; return d; }
-/* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
-function setIcoBtn(b,ic,txt,title){
-  b.className=(b.className? b.className+' ':'')+'icBtn';
-  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
-  if(txt) b.appendChild(document.createTextNode(txt));
-  if(title) b.title=title;
-  return b;
-}
 /* label 可以是字串，或 {ic:'ic-image',txt:'背景圖'} —— 後者用工具列同一套 sprite。
    面板按鈕原本混用彩色 emoji（🖼🖌📋），在深色介面裡與描邊圖示格格不入。 */
 function btnRow(defs){ // [[label,fn,title,on],...]
@@ -5410,13 +5418,6 @@ function linkRows(el,note){
     tr.appendChild(ti); wrap.appendChild(tr);
   }
   return wrap;
-}
-// 陰影的 CSS 預覽：PPT 角度 0°＝向右、順時針（與 CSS 座標同向，y 軸向下）
-function shadowCss(el){
-  const s=el&&el.shadow; if(!s) return '';
-  const a=((s.angle??SHADOW_DEF.angle))*Math.PI/180, d=pt2px(s.offset??SHADOW_DEF.offset);
-  const al=Math.round((s.opacity??SHADOW_DEF.opacity)*255).toString(16).padStart(2,'0');
-  return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
 }
 // 行內勾選框列：items=[[label,get,set,title],...]
 // 面板提示語用：訊息裡可能夾帶使用者 option 內的字串（如 series.type）
@@ -6618,7 +6619,6 @@ function imageInner(el){
 /* 可見區可以大於原圖、也可以移出圖片外——那是刻意的「裁出留白」，四邊值因此允許為負
    （OOXML 的 srcRect 本來就是有號百分比）。只保留一條底線：至少 10% 的可見區要與圖片
    重疊，否則畫面整片空白、使用者會找不到圖片跑到哪去。 */
-const CROP_MAX=3;      // 可見區最多放到原圖的 3 倍（再大就只是無盡留白）
 const CROP_KEEP=.1;    // 至少這個比例的可見區必須壓在圖片上
 function cropNorm(el){ const c=cropOf(el); const vw=1-c.l-c.r, vh=1-c.t-c.b; return {vw,vh,cx:c.l+vw/2,cy:c.t+vh/2}; }
 /* 縮放時 vw 與 vh **同乘一個係數**：圖片顯示尺寸 dw=w/vw、dh=h/vh 因此同除該係數，
@@ -6676,28 +6676,6 @@ function cropFromFixedImage(el,f){
   el.w=Math.max(4,Math.round(vw*f.dw)); el.h=Math.max(4,Math.round(vh*f.dh));
   el.x=Math.round(f.ix+l*f.dw);         el.y=Math.round(f.iy+t*f.dh);
   cropStore(el,l,t,1-l-vw,1-t-vh);
-}
-/* AI 或手改 JSON 很可能塞進負值、四邊加起來超過 1、或非數字——這些會讓 imgGeom 算出
-   無限大的 dw、以及 PowerPoint 開檔就要求修復（srcRect 的 l+r 必須 <100%）。
-   一律夾成合法值而不是丟掉整個 crop：使用者的構圖意圖盡量保住。 */
-function normCrop(el){
-  const c=el.crop; if(!c||typeof c!=='object'){ delete el.crop; return; }
-  // 負值合法（留白），但要夾在 [-CROP_MAX, .95]；非數字一律歸零
-  const g=k=>{ const n=+c[k]; return isFinite(n)? Math.max(-CROP_MAX,Math.min(.95,n)) : 0; };
-  let l=g('l'),t=g('t'),r=g('r'),b=g('b');
-  /* 同軸兩邊要讓可見區 span=1-a-z 落在 [.05, CROP_MAX]：
-     太窄會讓 imgGeom 算出爆量的 dw，太寬則是無盡留白。按比例縮放兩邊，保住構圖的偏向。 */
-  const fix=(a,z)=>{
-    const sum=a+z; if(Math.abs(sum)<1e-9) return [a,z];
-    const span=1-sum;
-    if(span<.05) { const s=.95/sum; return [a*s,z*s]; }
-    if(span>CROP_MAX){ const s=(1-CROP_MAX)/sum; return [a*s,z*s]; }
-    return [a,z];
-  };
-  [l,r]=fix(l,r); [t,b]=fix(t,b);
-  const r5=n=>+n.toFixed(5);
-  if(Math.abs(l)+Math.abs(t)+Math.abs(r)+Math.abs(b)<1e-6) delete el.crop;
-  else el.crop={l:r5(l),t:r5(t),r:r5(r),b:r5(b)};
 }
 
 /* ================= 圖片重編碼（降解析度壓縮） =================
@@ -7445,18 +7423,6 @@ document.addEventListener('keydown',e=>{
      三路提示，請使用者在 PowerPoint 換成真影片。原因：20MB 的 mp4 base64 後約 27MB，
      會直接破壞「整份 JSON 可以貼給 AI」這個核心用法。 */
 let COVER_TARGET=null, VID_RECOVER=null;
-// YouTube 網址正規化：PowerPoint 的線上影片要 embed 形式，使用者手上多半是 watch?v= 或 youtu.be/
-function ytEmbed(u){
-  const s=String(u||'').trim(); if(!s) return null;
-  let id=null;
-  let m=s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);            if(m) id=m[1];
-  if(!id&&(m=s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/))) id=m[1];
-  if(!id&&(m=s.match(/\/embed\/([A-Za-z0-9_-]{6,})/)))   id=m[1];
-  if(!id&&(m=s.match(/\/shorts\/([A-Za-z0-9_-]{6,})/)))  id=m[1];
-  if(!id&&/^[A-Za-z0-9_-]{11}$/.test(s))                 id=s;   // 只貼影片 id 也接受
-  return id? 'https://www.youtube.com/embed/'+id : null;
-}
-// 自繪封面（抓不到畫面／連結影片沒給封面時）：深色底＋播放三角＋標題文字。不連網，不用外部縮圖
 function drawFallbackCover(w,h,label){
   const cv=document.createElement('canvas'); cv.width=Math.max(160,Math.round(w)); cv.height=Math.max(90,Math.round(h));
   const c=cv.getContext('2d');
@@ -9163,6 +9129,40 @@ function normElLink(el){   // 物件層級超連結（形狀／圖片／圖表�
 }
 /* 影片元素驗證：**位元組永不入 JSON** 是硬規則，所以這裡明確擋掉 src.data／src.path
    （AI 或手改 JSON 很可能好意塞進來），並限制 cover 必須是 data:image/。 */
+/* AI 或手改 JSON 很可能塞進負值、四邊加起來超過 1、或非數字——這些會讓 imgGeom 算出
+   無限大的 dw、以及 PowerPoint 開檔就要求修復（srcRect 的 l+r 必須 <100%）。
+   一律夾成合法值而不是丟掉整個 crop：使用者的構圖意圖盡量保住。 */
+function normCrop(el){
+  const c=el.crop; if(!c||typeof c!=='object'){ delete el.crop; return; }
+  // 負值合法（留白），但要夾在 [-CROP_MAX, .95]；非數字一律歸零
+  const g=k=>{ const n=+c[k]; return isFinite(n)? Math.max(-CROP_MAX,Math.min(.95,n)) : 0; };
+  let l=g('l'),t=g('t'),r=g('r'),b=g('b');
+  /* 同軸兩邊要讓可見區 span=1-a-z 落在 [.05, CROP_MAX]：
+     太窄會讓 imgGeom 算出爆量的 dw，太寬則是無盡留白。按比例縮放兩邊，保住構圖的偏向。 */
+  const fix=(a,z)=>{
+    const sum=a+z; if(Math.abs(sum)<1e-9) return [a,z];
+    const span=1-sum;
+    if(span<.05) { const s=.95/sum; return [a*s,z*s]; }
+    if(span>CROP_MAX){ const s=(1-CROP_MAX)/sum; return [a*s,z*s]; }
+    return [a,z];
+  };
+  [l,r]=fix(l,r); [t,b]=fix(t,b);
+  const r5=n=>+n.toFixed(5);
+  if(Math.abs(l)+Math.abs(t)+Math.abs(r)+Math.abs(b)<1e-6) delete el.crop;
+  else el.crop={l:r5(l),t:r5(t),r:r5(r),b:r5(b)};
+}
+// YouTube 網址正規化：PowerPoint 的線上影片要 embed 形式，使用者手上多半是 watch?v= 或 youtu.be/
+function ytEmbed(u){
+  const s=String(u||'').trim(); if(!s) return null;
+  let id=null;
+  let m=s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);            if(m) id=m[1];
+  if(!id&&(m=s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/))) id=m[1];
+  if(!id&&(m=s.match(/\/embed\/([A-Za-z0-9_-]{6,})/)))   id=m[1];
+  if(!id&&(m=s.match(/\/shorts\/([A-Za-z0-9_-]{6,})/)))  id=m[1];
+  if(!id&&/^[A-Za-z0-9_-]{11}$/.test(s))                 id=s;   // 只貼影片 id 也接受
+  return id? 'https://www.youtube.com/embed/'+id : null;
+}
+// 自繪封面（抓不到畫面／連結影片沒給封面時）：深色底＋播放三角＋標題文字。不連網，不用外部縮圖
 function normVideo(el){
   el.mode= el.mode==='online'? 'online':'local';
   if(el.mode==='online'){
@@ -9268,6 +9268,9 @@ function registerMaps(d){
     if(!echarts.getMap(k)) try{ echarts.registerMap(k,d.maps[k]); }catch(e){ console.warn('[deckjson] 地圖 '+k+' 註冊失敗：'+e.message); }
   }
 }
+/* 靜默少一張圖是這套格式最陰的失敗方式，所以 normalizeDeck 看到像引用的值就報錯。
+   正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
+const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function normalizeDeck(d){
   NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error(_t('不是有效的 DeckJSON（缺 pages）'));
@@ -9650,9 +9653,6 @@ function assetHash(b){
   }
   return h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
 }
-/* 靜默少一張圖是這套格式最陰的失敗方式，所以 normalizeDeck 看到像引用的值就報錯。
-   正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
-const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function sameBytes(a,b){ if(a.length!==b.length) return false;
   for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false; return true; }
 

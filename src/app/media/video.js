@@ -7,18 +7,6 @@
      三路提示，請使用者在 PowerPoint 換成真影片。原因：20MB 的 mp4 base64 後約 27MB，
      會直接破壞「整份 JSON 可以貼給 AI」這個核心用法。 */
 let COVER_TARGET=null, VID_RECOVER=null;
-// YouTube 網址正規化：PowerPoint 的線上影片要 embed 形式，使用者手上多半是 watch?v= 或 youtu.be/
-function ytEmbed(u){
-  const s=String(u||'').trim(); if(!s) return null;
-  let id=null;
-  let m=s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);            if(m) id=m[1];
-  if(!id&&(m=s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/))) id=m[1];
-  if(!id&&(m=s.match(/\/embed\/([A-Za-z0-9_-]{6,})/)))   id=m[1];
-  if(!id&&(m=s.match(/\/shorts\/([A-Za-z0-9_-]{6,})/)))  id=m[1];
-  if(!id&&/^[A-Za-z0-9_-]{11}$/.test(s))                 id=s;   // 只貼影片 id 也接受
-  return id? 'https://www.youtube.com/embed/'+id : null;
-}
-// 自繪封面（抓不到畫面／連結影片沒給封面時）：深色底＋播放三角＋標題文字。不連網，不用外部縮圖
 function drawFallbackCover(w,h,label){
   const cv=document.createElement('canvas'); cv.width=Math.max(160,Math.round(w)); cv.height=Math.max(90,Math.round(h));
   const c=cv.getContext('2d');

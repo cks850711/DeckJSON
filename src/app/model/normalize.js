@@ -99,6 +99,40 @@ function normElLink(el){   // 物件層級超連結（形狀／圖片／圖表�
 }
 /* 影片元素驗證：**位元組永不入 JSON** 是硬規則，所以這裡明確擋掉 src.data／src.path
    （AI 或手改 JSON 很可能好意塞進來），並限制 cover 必須是 data:image/。 */
+/* AI 或手改 JSON 很可能塞進負值、四邊加起來超過 1、或非數字——這些會讓 imgGeom 算出
+   無限大的 dw、以及 PowerPoint 開檔就要求修復（srcRect 的 l+r 必須 <100%）。
+   一律夾成合法值而不是丟掉整個 crop：使用者的構圖意圖盡量保住。 */
+function normCrop(el){
+  const c=el.crop; if(!c||typeof c!=='object'){ delete el.crop; return; }
+  // 負值合法（留白），但要夾在 [-CROP_MAX, .95]；非數字一律歸零
+  const g=k=>{ const n=+c[k]; return isFinite(n)? Math.max(-CROP_MAX,Math.min(.95,n)) : 0; };
+  let l=g('l'),t=g('t'),r=g('r'),b=g('b');
+  /* 同軸兩邊要讓可見區 span=1-a-z 落在 [.05, CROP_MAX]：
+     太窄會讓 imgGeom 算出爆量的 dw，太寬則是無盡留白。按比例縮放兩邊，保住構圖的偏向。 */
+  const fix=(a,z)=>{
+    const sum=a+z; if(Math.abs(sum)<1e-9) return [a,z];
+    const span=1-sum;
+    if(span<.05) { const s=.95/sum; return [a*s,z*s]; }
+    if(span>CROP_MAX){ const s=(1-CROP_MAX)/sum; return [a*s,z*s]; }
+    return [a,z];
+  };
+  [l,r]=fix(l,r); [t,b]=fix(t,b);
+  const r5=n=>+n.toFixed(5);
+  if(Math.abs(l)+Math.abs(t)+Math.abs(r)+Math.abs(b)<1e-6) delete el.crop;
+  else el.crop={l:r5(l),t:r5(t),r:r5(r),b:r5(b)};
+}
+// YouTube 網址正規化：PowerPoint 的線上影片要 embed 形式，使用者手上多半是 watch?v= 或 youtu.be/
+function ytEmbed(u){
+  const s=String(u||'').trim(); if(!s) return null;
+  let id=null;
+  let m=s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);            if(m) id=m[1];
+  if(!id&&(m=s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/))) id=m[1];
+  if(!id&&(m=s.match(/\/embed\/([A-Za-z0-9_-]{6,})/)))   id=m[1];
+  if(!id&&(m=s.match(/\/shorts\/([A-Za-z0-9_-]{6,})/)))  id=m[1];
+  if(!id&&/^[A-Za-z0-9_-]{11}$/.test(s))                 id=s;   // 只貼影片 id 也接受
+  return id? 'https://www.youtube.com/embed/'+id : null;
+}
+// 自繪封面（抓不到畫面／連結影片沒給封面時）：深色底＋播放三角＋標題文字。不連網，不用外部縮圖
 function normVideo(el){
   el.mode= el.mode==='online'? 'online':'local';
   if(el.mode==='online'){
@@ -204,6 +238,9 @@ function registerMaps(d){
     if(!echarts.getMap(k)) try{ echarts.registerMap(k,d.maps[k]); }catch(e){ console.warn('[deckjson] 地圖 '+k+' 註冊失敗：'+e.message); }
   }
 }
+/* 靜默少一張圖是這套格式最陰的失敗方式，所以 normalizeDeck 看到像引用的值就報錯。
+   正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
+const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function normalizeDeck(d){
   NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error(_t('不是有效的 DeckJSON（缺 pages）'));

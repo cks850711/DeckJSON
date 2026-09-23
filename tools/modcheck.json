@@ -33,9 +33,6 @@
     "media/video → renderAll",
     "media/video → renderProps",
     "model/geom → APP",
-    "model/normalize → looksLikeAssetRef",
-    "model/normalize → normCrop",
-    "model/normalize → ytEmbed",
     "model/table → APP",
     "model/table → commitUndo",
     "model/table → renderProps",
@@ -45,9 +42,7 @@
     "render/selection → drag",
     "render/selection → renderLayers",
     "render/selection → renderProps",
-    "render/selection → setIcoBtn",
     "render/stage → editOpen",
-    "render/stage → shadowCss",
     "render/stage → syncMelBtn"
   ]
 }

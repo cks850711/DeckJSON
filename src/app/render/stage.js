@@ -183,6 +183,13 @@ const gradCss=g=>g.type==='radial'
   ? `radial-gradient(circle at 50% 50%,${gradCssStops(g)})`
   // CSS 的 0deg＝朝上、90deg＝朝右，OOXML 的 0°＝朝右 → 差 90°
   : `linear-gradient(${(g.angle+90)%360}deg,${gradCssStops(g)})`;
+// 陰影的 CSS 預覽：PPT 角度 0°＝向右、順時針（與 CSS 座標同向，y 軸向下）
+function shadowCss(el){
+  const s=el&&el.shadow; if(!s) return '';
+  const a=((s.angle??SHADOW_DEF.angle))*Math.PI/180, d=pt2px(s.offset??SHADOW_DEF.offset);
+  const al=Math.round((s.opacity??SHADOW_DEF.opacity)*255).toString(16).padStart(2,'0');
+  return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
+}
 // SVG 漸層定義：objectBoundingBox 座標，故不必知道形狀實際尺寸
 function gradPaint(svg,id,g){
   const defs=document.createElementNS(NS,'defs');

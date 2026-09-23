@@ -195,14 +195,6 @@ function colorRow(label,val,onSet,allowNone){
 function secTitle(text,first){ const d=document.createElement('div'); d.className='secTitle'+(first?' first':''); d.textContent=text; return d; }
 // 組內次標題（如表格的「結構／儲存格樣式／框線」）：更輕量，無分隔線
 function subTitle(text){ const d=document.createElement('div'); d.className='subTitle'; d.textContent=text; return d; }
-/* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
-function setIcoBtn(b,ic,txt,title){
-  b.className=(b.className? b.className+' ':'')+'icBtn';
-  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
-  if(txt) b.appendChild(document.createTextNode(txt));
-  if(title) b.title=title;
-  return b;
-}
 /* label 可以是字串，或 {ic:'ic-image',txt:'背景圖'} —— 後者用工具列同一套 sprite。
    面板按鈕原本混用彩色 emoji（🖼🖌📋），在深色介面裡與描邊圖示格格不入。 */
 function btnRow(defs){ // [[label,fn,title,on],...]
@@ -341,13 +333,6 @@ function linkRows(el,note){
     tr.appendChild(ti); wrap.appendChild(tr);
   }
   return wrap;
-}
-// 陰影的 CSS 預覽：PPT 角度 0°＝向右、順時針（與 CSS 座標同向，y 軸向下）
-function shadowCss(el){
-  const s=el&&el.shadow; if(!s) return '';
-  const a=((s.angle??SHADOW_DEF.angle))*Math.PI/180, d=pt2px(s.offset??SHADOW_DEF.offset);
-  const al=Math.round((s.opacity??SHADOW_DEF.opacity)*255).toString(16).padStart(2,'0');
-  return `drop-shadow(${(Math.cos(a)*d).toFixed(1)}px ${(Math.sin(a)*d).toFixed(1)}px ${(pt2px(s.blur??SHADOW_DEF.blur)/2).toFixed(1)}px #${s.color||SHADOW_DEF.color}${al})`;
 }
 // 行內勾選框列：items=[[label,get,set,title],...]
 // 面板提示語用：訊息裡可能夾帶使用者 option 內的字串（如 series.type）

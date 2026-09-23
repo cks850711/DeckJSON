@@ -177,3 +177,4 @@ const TRANSITIONS={
    畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
 const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
 const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
+const CROP_MAX=3;      // 可見區最多放到原圖的 3 倍（再大就只是無盡留白）

@@ -49,7 +49,6 @@ function imageInner(el){
 /* 可見區可以大於原圖、也可以移出圖片外——那是刻意的「裁出留白」，四邊值因此允許為負
    （OOXML 的 srcRect 本來就是有號百分比）。只保留一條底線：至少 10% 的可見區要與圖片
    重疊，否則畫面整片空白、使用者會找不到圖片跑到哪去。 */
-const CROP_MAX=3;      // 可見區最多放到原圖的 3 倍（再大就只是無盡留白）
 const CROP_KEEP=.1;    // 至少這個比例的可見區必須壓在圖片上
 function cropNorm(el){ const c=cropOf(el); const vw=1-c.l-c.r, vh=1-c.t-c.b; return {vw,vh,cx:c.l+vw/2,cy:c.t+vh/2}; }
 /* 縮放時 vw 與 vh **同乘一個係數**：圖片顯示尺寸 dw=w/vw、dh=h/vh 因此同除該係數，
@@ -107,28 +106,6 @@ function cropFromFixedImage(el,f){
   el.w=Math.max(4,Math.round(vw*f.dw)); el.h=Math.max(4,Math.round(vh*f.dh));
   el.x=Math.round(f.ix+l*f.dw);         el.y=Math.round(f.iy+t*f.dh);
   cropStore(el,l,t,1-l-vw,1-t-vh);
-}
-/* AI 或手改 JSON 很可能塞進負值、四邊加起來超過 1、或非數字——這些會讓 imgGeom 算出
-   無限大的 dw、以及 PowerPoint 開檔就要求修復（srcRect 的 l+r 必須 <100%）。
-   一律夾成合法值而不是丟掉整個 crop：使用者的構圖意圖盡量保住。 */
-function normCrop(el){
-  const c=el.crop; if(!c||typeof c!=='object'){ delete el.crop; return; }
-  // 負值合法（留白），但要夾在 [-CROP_MAX, .95]；非數字一律歸零
-  const g=k=>{ const n=+c[k]; return isFinite(n)? Math.max(-CROP_MAX,Math.min(.95,n)) : 0; };
-  let l=g('l'),t=g('t'),r=g('r'),b=g('b');
-  /* 同軸兩邊要讓可見區 span=1-a-z 落在 [.05, CROP_MAX]：
-     太窄會讓 imgGeom 算出爆量的 dw，太寬則是無盡留白。按比例縮放兩邊，保住構圖的偏向。 */
-  const fix=(a,z)=>{
-    const sum=a+z; if(Math.abs(sum)<1e-9) return [a,z];
-    const span=1-sum;
-    if(span<.05) { const s=.95/sum; return [a*s,z*s]; }
-    if(span>CROP_MAX){ const s=(1-CROP_MAX)/sum; return [a*s,z*s]; }
-    return [a,z];
-  };
-  [l,r]=fix(l,r); [t,b]=fix(t,b);
-  const r5=n=>+n.toFixed(5);
-  if(Math.abs(l)+Math.abs(t)+Math.abs(r)+Math.abs(b)<1e-6) delete el.crop;
-  else el.crop={l:r5(l),t:r5(t),r:r5(r),b:r5(b)};
 }
 
 /* ================= 圖片重編碼（降解析度壓縮） =================

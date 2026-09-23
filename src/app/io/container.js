@@ -23,9 +23,6 @@ function assetHash(b){
   }
   return h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
 }
-/* 靜默少一張圖是這套格式最陰的失敗方式，所以 normalizeDeck 看到像引用的值就報錯。
-   正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
-const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function sameBytes(a,b){ if(a.length!==b.length) return false;
   for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false; return true; }
 
