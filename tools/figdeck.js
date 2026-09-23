@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 /* 說明配圖 ⇄ 說明簡報
  *
- *   node tools/figdeck.js export   src/index.html docs/使用說明配圖簡報.deck
- *   node tools/figdeck.js import   docs/使用說明配圖簡報.deck src/index.html [--lang=zh|en]
+ *   node tools/figdeck.js export   src/index.html docs/user-manual.deck
+ *   node tools/figdeck.js import   docs/user-manual.deck src/index.html [--lang=zh|en]
+ *   node tools/figdeck.js prose    docs/user-manual.deck src/index.html
+ *
+ * import --lang=zh 寫 HELP_FIGS（中文說明面板用），--lang=en 寫 HELP_FIGS_EN（英文說明面板用）。
+ * 簡報是 .deck zip 容器（deck.json ＋ mimetype）；舊的純 JSON 也讀得進來。
  *
  * 為什麼要有這個：說明配圖的座標由人在畫布上調最準，不該由 AI 盲寫。
  * 簡報一頁一張圖，左半中文、右半英文，兩區用同一份幾何——校對時中英並排看得到。
@@ -16,7 +20,22 @@
  *   圖說      y 406..446    同上分左右
  * 圖區固定 580×300：全部圖同一個尺度，標註字級才會一致（11pt ≒ 輸出後的 11px）。
  */
-const fs=require('fs'), vm=require('vm');
+const fs=require('fs'), vm=require('vm'), path=require('path');
+const JSZip=require(path.join(__dirname,'..','src','vendor','jszip.min.js'));
+const DECK_MIME='application/vnd.deckjson.deck';
+/* .deck 容器的讀寫。寫出時比照 app：第一個 entry 是未壓縮的 mimetype（見 index.html 的 DECK_MIME） */
+async function readDeck(p){
+  const buf=fs.readFileSync(p);
+  if(buf[0]===0x7b) return JSON.parse(buf.toString('utf8'));        // '{'：舊的純 JSON
+  const zip=await JSZip.loadAsync(buf);
+  return JSON.parse(await zip.file('deck.json').async('string'));
+}
+async function writeDeck(p,deck){
+  const zip=new JSZip();
+  zip.file('mimetype',DECK_MIME,{compression:'STORE'});
+  zip.file('deck.json',JSON.stringify(deck,null,1),{compression:'DEFLATE'});
+  fs.writeFileSync(p,await zip.generateAsync({type:'nodebuffer',mimeType:DECK_MIME}));
+}
 const ZH={x:40,y:96,w:580,h:300}, EN={x:660,y:96,w:580,h:300};
 const PROSE={y:452,h:248};                       // 說明文字區（左右各 580 寬）
 const uid=p=>p+'-'+Math.random().toString(36).slice(2,8);
@@ -63,7 +82,13 @@ function decode(t){
           .replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
 }
 /* 圖與文字的對應：<div data-fig="X"> 後面緊接的那個 <ul> 就是它在講的東西。 */
-function proseFor(html,figName){
+function helpSeg(html,lang){
+  const id= lang==='en'? 'helpBodyEn' : 'helpBody';
+  const a=html.indexOf('id="'+id+'"'), b=html.indexOf('<!--/'+id+'-->',a);
+  return a<0||b<0? '' : html.slice(a,b);
+}
+function proseFor(html,figName,lang){
+  html=helpSeg(html,lang||'zh');
   const ph='data-fig="'+figName+'"';
   const a=html.indexOf(ph); if(a<0) return [];
   const us=html.indexOf('<ul',a); if(us<0) return [];
@@ -146,11 +171,10 @@ function toDeck(figs,helpHtml){
       ...conv(figs[name],ZH), ...conv(figs[name],EN),
       txt(40,406,580,40,(figs[name].cap||'').replace(/<[^>]+>/g,''),{valign:'top',id:'cp-zh'}),
       txt(660,406,580,40,'(caption — to translate)',{valign:'top',c:'AAAAAA',id:'cp-en'}),
-      ...(()=>{ const items=proseFor(helpHtml,name);
+      ...(()=>{ const items=proseFor(helpHtml,name,'zh'), en=proseFor(helpHtml,name,'en');
         if(!items.length) return [];
-        /* 英文那半先放同一份中文、字色壓灰——翻譯時直接覆蓋，
-           結構與長度都對得上，也一眼看得出還沒翻。 */
-        return [proseEl(40,items,false), proseEl(660,items,true)]; })(),
+        /* 英文說明本文還沒有時，英文那半先放同一份中文、字色壓灰當翻譯骨架 */
+        return [proseEl(40,items,false), en.length? proseEl(660,en,false) : proseEl(660,items,true)]; })(),
     ]}));
   return {format:'deckjson',version:1,title:'DeckJSON 說明配圖',stage:{w:1280,h:720},pages};
 }
@@ -179,18 +203,24 @@ function fromDeck(deck,lang){
   }
   return figs;
 }
-function writeFigs(htmlPath,figs){
+function writeFigs(htmlPath,figs,lang){
   const s=fs.readFileSync(htmlPath,'utf8');
-  const a=s.indexOf('const HELP_FIGS=');
-  const b=s.indexOf('\n};',a)+3;
-  if(a<0) throw new Error('找不到 HELP_FIGS');
+  const name= lang==='en'? 'HELP_FIGS_EN' : 'HELP_FIGS';
+  let a=s.indexOf('const '+name+'=');
+  let b=a<0? -1 : s.indexOf('\n};',a)+3;
+  if(a<0&&lang==='en'){                        // 第一次產英文版：接在中文版後面
+    const z=s.indexOf('const HELP_FIGS=');
+    if(z<0) throw new Error('找不到 HELP_FIGS');
+    a=b=s.indexOf('\n};',z)+3;
+  }
+  if(a<0) throw new Error('找不到 '+name);
   const body=Object.keys(figs).map(k=>{
     const f=figs[k];
     return '  '+JSON.stringify(k)+':{view:'+JSON.stringify(f.view)+','
       +(f.cap?'cap:'+JSON.stringify(f.cap)+',':'')
       +'els:'+JSON.stringify(f.els)+'}';
   }).join(',\n');
-  const out='const HELP_FIGS={   /* 由 tools/figdeck.js 從 docs/使用說明配圖簡報.deck 產生，勿手改 */\n'
+  const out=(a===b?'\n':'')+'const '+name+'={   /* 由 tools/figdeck.js 從 docs/user-manual.deck 產生，勿手改 */\n'
     +body+'\n};';
   fs.writeFileSync(htmlPath, s.slice(0,a)+out+s.slice(b));
   return out.length;
@@ -199,37 +229,38 @@ function writeFigs(htmlPath,figs){
 /* ── prose：只更新簡報下半的說明文字，圖完全不動 ──────────
    圖歸簡報（人調），文字歸 HTML（正本）。這支就是把後者印進前者。
    舊的文字元素靠 id 前綴 pr- 辨識後整批換掉，不會累積。 */
-function refreshProse(deckPath,htmlPath){
-  const deck=JSON.parse(fs.readFileSync(deckPath,'utf8'));
+async function refreshProse(deckPath,htmlPath){
+  const deck=await readDeck(deckPath);
   const html=fs.readFileSync(htmlPath,'utf8');
   let n=0, empty=[];
   for(const pg of deck.pages){
     pg.elements=pg.elements.filter(e=>!/^pr-/.test(e.id));
-    const items=proseFor(html,figKey(pg));
+    const items=proseFor(html,figKey(pg),'zh'), en=proseFor(html,figKey(pg),'en');
     if(!items.length){ empty.push(figKey(pg)); continue; }
-    pg.elements.push(proseEl(40,items,false), proseEl(660,items,true));
-    n+=items.length;
+    pg.elements.push(proseEl(40,items,false), en.length? proseEl(660,en,false) : proseEl(660,items,true));
+    n+=items.length+en.length;
   }
-  fs.writeFileSync(deckPath, JSON.stringify(deck,null,1));
+  await writeDeck(deckPath,deck);
   return {n,empty};
 }
 
 const [,,cmd,inp,outp,...rest]=process.argv;
 const lang=(rest.find(a=>a.startsWith('--lang='))||'--lang=zh').split('=')[1];
+(async()=>{
 if(cmd==='prose'){
-  const r=refreshProse(inp,outp);
+  const r=await refreshProse(inp,outp);
   console.log('寫入 '+r.n+' 條說明文字 → '+inp);
   if(r.empty.length) console.log('  （找不到對應文字的圖：'+r.empty.join('、')+'）');
 }else if(cmd==='import'){
-  const deck=JSON.parse(fs.readFileSync(inp,'utf8'));
+  const deck=await readDeck(inp);
   const figs=fromDeck(deck,lang);
-  const n=writeFigs(outp,figs);
-  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+outp+'（HELP_FIGS '+n+' 位元組）');
+  const n=writeFigs(outp,figs,lang);
+  console.log('匯入 '+Object.keys(figs).length+' 張圖（'+lang+'）→ '+outp+'（'+(lang==='en'?'HELP_FIGS_EN':'HELP_FIGS')+' '+n+' 位元組）');
   for(const k in figs) console.log('  '+k.padEnd(16)+String(figs[k].els.length).padStart(3)+' 個元素');
 }else if(cmd==='export'){
   const figs=readFigs(inp);
   const deck=toDeck(figs, fs.readFileSync(inp,'utf8'));
-  fs.writeFileSync(outp, JSON.stringify(deck,null,1));
+  await writeDeck(outp,deck);
   console.log('匯出 %d 頁 → %s（%d 位元組）',deck.pages.length,outp,fs.statSync(outp).size);
   for(const p of deck.pages) console.log('  '+p.name.padEnd(16)+String(p.elements.length).padStart(3)+' 個元素');
 }else{
@@ -239,3 +270,4 @@ if(cmd==='prose'){
     +'  node tools/figdeck.js export <index.html> <deck>      一次性 bootstrap（會蓋掉人工調過的圖）');
   process.exit(1);
 }
+})().catch(e=>{ console.error(e.message||e); process.exit(1); });

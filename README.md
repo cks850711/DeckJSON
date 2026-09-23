@@ -1,138 +1,142 @@
 # DeckJSON
 
+**English** | [繁體中文](README.zh-TW.md)
+
 **v0.1.0**
 
-在瀏覽器裡做簡報，匯出**真正的 PowerPoint 檔**——形狀、表格、文字框都是原生 OOXML 元件，開啟後每一個都還能在 PowerPoint 裡繼續編輯。
+Build slides in your browser and export **real PowerPoint files** — shapes, tables and text boxes are native OOXML objects, and every one of them stays editable in PowerPoint.
 
-簡報內容就是一份 JSON：你可以把它整包丟給 AI 改版面、改內容，貼回來就生效（功能持續改進中）。
+The deck itself is a JSON document: hand the whole thing to an AI to rework the layout or content, paste it back, and it takes effect (still being improved).
 
-單檔 HTML，下載就能用。不需要帳號、不需要伺服器、不連任何外部網域，簡報內容不會離開你的電腦。
-
----
-
-## 開始使用
-
-1. 下載 **`deckjson.html`**
-2. 用 **Chrome** 開啟（才能使用完整的讀檔、存檔、另存新檔等操作）
-3. 開始在畫布上擺東西，做簡報
-4. 完成後按「**匯出 pptx**」
-
-就這樣，沒有第五步。
+A single HTML file — download it and it works. No account, no server, no external domains; your slides never leave your computer.
 
 ---
 
-## 為什麼是這個工具
+## Getting started
 
-**匯出的 pptx 是真的。** 黃色調整點還能拖、圖表能按「編輯資料」改數字、母版能跟隨目標佈景、章節能摺疊。市面上多數「網頁做簡報」的工具匯出的是圖片或近似版面，打開只能看不能改。
+1. Download **[`deckjson.html`](https://github.com/cks850711/DeckJSON/releases/latest/download/deckjson.html)** (always the latest version)
+2. Open it in **Chrome** (needed for the full open / save / save as experience)
+3. Start placing things on the canvas and build your slides
+4. When you're done, press **Export pptx**
 
-**簡報即資料。** `deck.json` 就是簡報的全部。人在畫布上拖，AI 在 JSON 上改，兩邊共用同一份資料——這也是這個工具叫 DeckJSON 的原因。
+That's it — there is no step five.
 
-**PowerPoint 的形狀，一個不少。** 176 種內建形狀由 OOXML 的 preset 幾何即時求值，畫布上的輪廓**就是 PowerPoint 的原生幾何本身**，不是手畫的近似路徑。清單裡沒有的，用內建的圖形編輯器畫（鋼筆、貝茲、挖洞），或直接寫座標交給 AI 產生。
+The interface comes in English and Traditional Chinese. It follows your browser language on first launch; switch any time under **gear → Interface language** in the toolbar.
 
-**從 Excel 貼過來還是表格。** 在 Excel 或 PowerPoint 複製一張表，`Cmd/Ctrl+V` 貼進畫布，得到的是可編輯的原生表格——合併儲存格、底色、粗斜體、對齊全部保留，不是一張截圖。
+---
+
+## Why this tool
+
+**The exported pptx is real.** Yellow adjustment handles still drag, charts open with “Edit Data”, the master can follow the destination theme, sections collapse. Most “slides in the browser” tools export images or approximate layouts that you can look at but not edit.
+
+**The deck is data.** `deck.json` is the entire presentation. You drag things on the canvas, the AI edits the JSON, and both work on the same data — which is where the name DeckJSON comes from.
+
+**Every PowerPoint shape.** The 176 built-in shapes are evaluated live from OOXML preset geometry, so the outline on the canvas **is PowerPoint's native geometry itself**, not a hand-drawn approximation. For anything the list lacks, draw it with the built-in shape editor (pen, Béziers, holes), or write the coordinates and let an AI generate them.
+
+**Tables pasted from Excel stay tables.** Copy a table in Excel or PowerPoint and press `Cmd/Ctrl+V` on the canvas: you get an editable native table — merged cells, fills, bold/italic and alignment all kept, not a screenshot.
 
 <details>
-<summary><b>完整功能清單</b>（點開）</summary>
+<summary><b>Full feature list</b> (click to expand)</summary>
 
-**編輯**
-- 就地富文本編輯：反白幾個字，格式就只套那幾個字。同一句話裡混用粗體、顏色、字級，匯出後仍是同一個文字框裡的一句話
-- 表格格內混排：同一格裡同時有上標、下標、變色、變字級
-- 原生文字格式：底線／刪除線／高亮／字距／描邊／輝光、項目符號與編號清單、段前後間距、超連結
-- 直書與文字方向：中日韓直書、旋轉 90°／270°、蒙文直書
-- 漸層填色、原生陰影、圖片裁切（拖曳構圖、滾輪縮放）與圓形裁切
-- 製圖式格線與吸附：格距可設 mm／px／pt／cm，移動吸左上緣、縮放吸四邊
-- 圖層面板、透明度、軟群組、對齊分佈、格式刷、色票系統、範本庫、Deck 合併
+**Editing**
+- Rich text editing in place: select a few characters and formatting applies to just those. Mixing bold, colors and sizes in one sentence still exports as one sentence in one text box
+- Mixed formatting inside table cells: superscript, subscript, colors and sizes in the same cell
+- Native text formatting: underline / strikethrough / highlight / character spacing / outline / glow, bulleted and numbered lists, space before/after, hyperlinks
+- Vertical text and text direction: CJK vertical, rotate 90° / 270°, Mongolian vertical
+- Gradient fills, native shadows, image cropping (drag to reframe, scroll to zoom) and circle crop
+- Drafting-style grid and snapping: spacing in mm / px / pt / cm; moving snaps the top-left edges, resizing snaps all four
+- Layers panel, opacity, soft groups, align and distribute, format painter, color swatches, template library, deck merging
 
-**簡報結構**
-- 母版（信紙）：共用元素墊在每頁底下，可選擇寫進版面配置或畫進每一頁
-- 章節：匯出為 PowerPoint 原生章節，縮圖窗格可整段摺疊搬動
-- Morph 平滑轉場：依元素 id 跨頁配對，舊版 PPT 自動退回淡出（實時播放投影開發中）
-- 自動頁碼（原生欄位，插刪頁自動更新）、頁面背景圖、檔案屬性
-- 環境設定檔（profile）：尺寸、字體三槽、語言、預留區都是資料，可帶著走
-- 雙字體模式：鎖定或依母版繼承，中西文分開指定，行距鎖定不跑版
+**Deck structure**
+- Master (“letterhead”): shared elements under every slide, written either to the slide layout or onto every slide
+- Sections: exported as native PowerPoint sections; collapse and move whole sections in the thumbnail pane
+- Morph transitions: elements are matched across slides by id; older PowerPoint falls back to a fade (live slideshow playback in progress)
+- Automatic slide numbers (native field, updates when slides are inserted or deleted), slide background images, file properties
+- Profiles: slide size, three font slots, language and reserved zones are all data you can carry around
+- Two font modes: locked, or inherited from the master; CJK and Latin fonts set separately, with locked line spacing so layouts don't shift
 
-**圖表與媒體**
-- 圖表資料就是 ECharts option（目前得自己寫或整份丟給 AI 輸出，未來會逐漸完善這個功能）；「視覺編輯」分頁只調外觀，面板頂端即時預覽
-- 圖表雙輸出：3 倍解析度 PNG，或匯出為 PowerPoint 原生圖表（PPT 內可編輯資料）。面板上每個設定都標清楚有沒有原生對應，沒有的會直接停用而不是讓它靜靜消失
-- 圖片壓縮：縮到顯示尺寸的 N 倍再存，按鈕上先標出會變成幾×幾、幾 KB
-- 影片：YouTube 連結匯出為原生線上影片；本機影片抓一格當封面，匯出後列出待插入清單
+**Charts and media**
+- Chart data is an ECharts option (for now you write it yourself or have an AI produce the whole thing; this will improve over time). The “Visual editor” tab only adjusts appearance, with a live preview on the canvas
+- Two chart outputs: a 3× resolution PNG, or a native PowerPoint chart whose data you can edit in PowerPoint. Every setting in the panel says whether it has a native equivalent; ones that don't are disabled rather than silently dropped
+- Image compression: shrink to N× the display size before saving; the button shows the resulting pixel size and KB first
+- Video: YouTube links export as native online videos; local videos keep one frame as a cover, and the export lists which slides still need the real video
 
-**存檔**
-- 自動存檔：每次改動後約 1 秒存進瀏覽器，重新整理會自動還原。存不進去（容量滿、無痕模式）一律轉紅字明講原因，不靜默失敗
-- 自動存檔**只有一份，而且是全域的**——詳見〈進階〉的說明
-- 勿依賴自動存檔，**任何重要進度請另存成 `.deck` 檔**
+**Saving**
+- Autosave: about 1 second after each change the deck is saved in the browser and restored on reload. If it can't save (storage full, private window), it says why in red instead of failing silently
+- There is **only one autosave, and it is global** — see “Advanced” below
+- Don't rely on autosave; **save anything important as a `.deck` file**
 
 </details>
 
 ---
 
-## 檔案格式
+## File format
 
-`.deck` 是一個 zip 容器：
+A `.deck` is a zip container:
 
 ```
-mimetype              第一個 entry，未壓縮。內容為 application/vnd.deckjson.deck
-deck.json             簡報本體。整份結構就在這裡
-assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖只存一份
+mimetype              first entry, stored uncompressed. Content: application/vnd.deckjson.deck
+deck.json             the presentation itself — the whole structure lives here
+assets/<hash>.<ext>   image bytes, content-addressed so identical images are stored once
 ```
 
-`deck.json` 是 JSON 純文字，可取出讀寫、丟給 AI 修改、進 git diff。存檔時會寫入 `generator`，記錄產生它的版本。
+`deck.json` is plain-text JSON: extract it, edit it, give it to an AI, diff it in git. Saving writes a `generator` field recording which version produced it.
 
-`.deck` 這個副檔名可能不只 DeckJSON 在用，所以容器的第一個 entry 放了 `mimetype` 讓檔案認得出自己——拿到別家的 `.deck`，工具會確認那是什麼格式。
+`.deck` may not be DeckJSON's extension alone, so the container's first entry is a `mimetype` that lets the file identify itself — hand the tool someone else's `.deck` and it will tell you what format it is.
 
 ---
 
-## 回報問題
+## Reporting problems
 
-工具列右側的 **`?`** 開啟使用說明，**版本號就標在它的標頭上**。
+The **`?`** on the right of the toolbar opens the help, and **the version number is shown in its header**.
 
-單檔成品沒有自動更新機制——你手上那份可能是任何時候下載的，所以回報問題時請一併附上：
+The single-file build has no auto-update — the copy you have could have been downloaded at any time — so please include the following when reporting a problem:
 
-| 附上什麼 | 在哪裡找 |
+| What to include | Where to find it |
 |---|---|
-| **版本號** | 說明面板標頭，如 `v0.1.0` |
-| 瀏覽器與版本 | Chrome 的「關於 Chrome」 |
-| 出問題的 `.deck` 檔 | 若不便提供，`deck.json` 裡的 `generator` 欄位也記錄了產生它的版本 |
-| 重現步驟 | 做了什麼、預期什麼、實際發生什麼 |
+| **Version** | Help panel header, e.g. `v0.1.0` |
+| Browser and version | Chrome's “About Chrome” |
+| The `.deck` file that has the problem | If you'd rather not share it, the `generator` field in `deck.json` also records the version that wrote it |
+| Steps to reproduce | What you did, what you expected, what actually happened |
 
-請開 [GitHub Issue](../../issues)。匯出的 pptx 有問題時，若允許，附上那個 pptx 會讓排查快很多。
+Please open a [GitHub Issue](../../issues). If the exported pptx is the problem and you're able to, attaching that pptx speeds things up a lot.
 
 ---
 
-## 進階
+## Advanced
 
 <details>
-<summary><b>存檔是寫回原檔，還是下載副本</b></summary>
+<summary><b>Does saving write back to the original file or download a copy?</b></summary>
 
-用 **Chrome** 開啟（雙擊 `deckjson.html` 即可，Edge 等 Chromium 系瀏覽器同樣可以），`Cmd/Ctrl+S` **直接寫回你開啟的那個檔**，跟一般軟體一樣。工具列會顯示目前的檔名，`●` 代表有還沒存的變更。
+Opened in **Chrome** (double-clicking `deckjson.html` is fine; Edge and other Chromium browsers work too), `Cmd/Ctrl+S` **writes straight back to the file you opened**, like any other app. The toolbar shows the current file name, and `●` means there are unsaved changes.
 
-**Safari 與 Firefox 沒有這個 API**，存檔會退回「下載一份副本到下載資料夾」，要自己搬回原位覆蓋。工具列按鈕的提示文字會直接寫明這件事，不會讓你以為存進去了。
+**Safari and Firefox don't have this API**, so saving falls back to “download a copy to your Downloads folder”, and you move it back over the original yourself. The toolbar button's tooltip says so, so you won't think it was saved in place.
 
 </details>
 
 <details>
-<summary><b>⚠ 自動存檔是全域一份，多個成品會互相覆蓋</b></summary>
+<summary><b>⚠ Autosave is a single global slot; multiple builds overwrite each other</b></summary>
 
-自動存檔放在瀏覽器的 IndexedDB，位置是固定的 `deckjson / autosave / current`。
+Autosave lives in the browser's IndexedDB at the fixed location `deckjson / autosave / current`.
 
-問題在於**雙擊開啟的頁面（`file://`）全部共用同一個儲存空間**——不是每個檔案各自一份。實測：把同一個頁面複製成兩個不同檔名，在 A 寫入，B 讀得到 A 寫的東西。
+The catch: **pages opened by double-clicking (`file://`) all share one storage area** — not one per file. Tested: copy the same page under two different file names, write in A, and B can read what A wrote.
 
-所以如果你手上有**兩份以上的成品**（例如通用版 `deckjson.html`，加上用 `--profile` 打包的個人版），在 `file://` 下它們**共用同一筆自動存檔**：在 A 編輯的內容，開 B 會看到；B 一存又蓋掉 A 的。
+So if you have **more than one build** (say the generic `deckjson.html` plus a personal build packaged with `--profile`), under `file://` they **share the same autosave**: what you edit in A shows up when you open B, and B's next save overwrites A's.
 
-要讓它們各自獨立，得讓頁面走不同的 origin——從 `http://localhost:<各自的 port>` 開啟，每個 port 是一個獨立的儲存空間。macOS 可直接雙擊專案根的 `start-localhost.command`（預設 `http://localhost:8110`），其他平台用任意靜態伺服器即可，例如 `python3 -m http.server 8110`。
+To keep them separate, serve each page from a different origin — `http://localhost:<its own port>`; each port is a separate storage area. On macOS, double-click `start-localhost.command` in the project root (defaults to `http://localhost:8110`); on other platforms any static server works, e.g. `python3 -m http.server 8110`.
 
-⚠ 走 localhost 的話**port 定了就別改**：換 port 等於換一個儲存空間，自動存檔會像消失一樣（其實留在舊 port 那邊）。`file://` 與 `localhost` 兩種開法的自動存檔也是各自獨立的。
+⚠ If you go the localhost route, **don't change the port once chosen**: a new port is a new storage area, and the autosave will seem to vanish (it's still there under the old port). Autosaves under `file://` and `localhost` are also separate from each other.
 
-**但最簡單的辦法還是：重要進度另存成 `.deck` 檔。** 自動存檔的定位是「瀏覽器當掉時的救命索」。
+**The simplest fix is still: save important work as a `.deck` file.** Autosave is meant as a lifeline for when the browser crashes.
 
 </details>
 
 ---
 
-## 授權
+## License
 
-MIT License，見 [LICENSE](LICENSE)。內嵌第三方函式庫的授權聲明見 [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md)。
+MIT License, see [LICENSE](LICENSE). License notices for the bundled third-party libraries are in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
 
-## 關於這個專案
+## About this project
 
-DeckJSON 是人與 AI（Anthropic Claude）協作開發的專案：需求定義、互動設計、驗收測試、架構與授權決策由作者主導並逐輪把關，程式碼實作由 Claude 完成。Claude 模型本身會持續更新，各次提交實際協作的模型版本記錄在對應 commit 的 `Co-Authored-By` 標註中。
+DeckJSON is developed by a human and an AI (Anthropic Claude) working together: the author leads requirements, interaction design, acceptance testing, and architecture and licensing decisions, reviewing every round, while Claude writes the code. Claude models keep being updated; the model version that actually worked on each commit is recorded in that commit's `Co-Authored-By` trailer.

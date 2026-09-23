@@ -31,7 +31,7 @@ def inline(m):
     js = js.replace('</script>', '<\\/script>')
     return '<script>\n' + js + '\n</script>'
 
-out = re.sub(r'<script src="(vendor/[^"]+)"></script>', inline, src)
+out = re.sub(r'<script src="((?:vendor|i18n)/[^"]+)"></script>', inline, src)
 
 prof = os.environ.get('PROFILE') or ''
 if prof:
