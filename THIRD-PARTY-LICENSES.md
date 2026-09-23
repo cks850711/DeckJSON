@@ -67,3 +67,15 @@ THE SOFTWARE.
 ```
 
 Apache License 2.0 全文請見 https://www.apache.org/licenses/LICENSE-2.0
+
+## 開發工具（不進成品）
+
+以下只供 `tools/` 內的開發檢查使用，不會內嵌進 `deckjson.html`。
+
+### acorn
+
+- 版本：8.18.0
+- 授權：MIT License（全文見 `tools/vendor/acorn.LICENSE`）
+- 版權：Copyright (C) 2012-2022 by various contributors
+- 專案：https://github.com/acornjs/acorn
+- 用途：`tools/modcheck.js` 解析主程式，檢查分檔後的載入順序
