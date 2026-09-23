@@ -10,7 +10,11 @@
  * 用語：簡報檔 deck／頁 slide／母版 master／預留區 reserved zone／軟群組 soft group／
  *       黃點 yellow handle／樣式模式「鎖定樣式」Locked、「母版繼承」Inherit from master。
  */
-const I18N_EN={
+var I18N_PACKS=I18N_PACKS||{};   // 語言包的登記處。每個語言檔都用這行開頭，所以誰先載入都行（見 zh.js）
+Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
+  name:'English', html:'en', match:/^en\b/i,
+  /* 介面字串：中文原文 → 英文 */
+  ui:{
   "DeckJSON 簡報設計器": "DeckJSON Slide Designer",
   "開新簡報（清空目前內容，需二次確認）": "New deck (clears the current content; asks twice)",
   "開啟 .deck 檔（舊的 .deck.json 也開得起來）": "Open a .deck file (old .deck.json files open too)",
@@ -878,11 +882,11 @@ const I18N_EN={
   "• 第 {0} 頁 {1}：{2}": "• Slide {0}, {1}: {2}",
   "⚠ 本機未安裝 {0}：畫布以替代字體預覽（折行位置可能不同），匯出仍寫原字體名": "⚠ Not installed on this computer: {0}. The canvas previews with a substitute font (line breaks may differ); the export still uses the original font name",
   "安裝該字體、或在「全簡報設定 → 字體」改成本機已有的字體，預覽就會與輸出一致": "Install that font, or change it to one this computer has under “Deck settings → Fonts”, and the preview will match the output",
-};
+},
 
 /* 形狀名：以 OOXML preset 名為鍵，對 PowerPoint 英文版的名稱。
    不走中文鍵的理由見 app/model/geom.js 的 SHAPE_META。 */
-const SHAPE_NAMES_EN={
+shapes:{
   rect: "Rectangle",
   roundRect: "Rounded Rectangle",
   snip1Rect: "Snip Single Corner Rectangle",
@@ -1059,4 +1063,5 @@ const SHAPE_NAMES_EN={
   actionButtonDocument: "Action Button: Document",
   actionButtonSound: "Action Button: Sound",
   actionButtonMovie: "Action Button: Video",
-};
+},
+});

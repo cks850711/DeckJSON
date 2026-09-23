@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-"""介面字串的英文化覆蓋檢查。
+"""介面字串的多語言覆蓋檢查。
 
     python3 tools/i18n-check.py            # 列出問題，有問題時離開碼 1
     python3 tools/i18n-check.py --keys     # 另外印出所有 _t() 鍵（除錯用）
 
-檢查三件事：
+語言包照 src/index.html 的 <script src="i18n/…"> 依序載入（結構見 src/i18n/zh.js），
+中文是原文，其餘每個語言各檢查一輪：
 
-  1. JS 裡含中文、卻沒包進 _t() 的字串字面值——漏翻的介面文字。
+  1. JS 裡含中文、卻沒包進 _t() 的字串字面值——漏翻的介面文字（與語言無關，只查一次）。
      註解、正規表示式、console.* 的參數不算（那是 L2，只有開原始碼的人看得到）。
      刻意保留中文的資料（字型名、解析中文輸入用的樣式）在字面值正前方加 /*zh*/。
-  2. _t() 的鍵在 src/i18n/en.js 找不到英文——翻了一半。
+  2. _t() 的鍵在該語言包的 ui 找不到——翻了一半。
   3. HTML 靜態區（說明面板以外）含中文的文字節點與 title／placeholder 屬性，
-     在 en.js 找不到英文——開機時 i18nStatic() 會照原文留著。
+     在該語言包的 ui 找不到——開機時 i18nStatic() 會照原文留著。
+  4. 形狀名：SHAPE_META 的每個 preset 在該語言包的 shapes 都要有名稱。
+  5. 說明面板不走字典：每個語言各一份完整 HTML，與中文版的 data-tab 分頁數、
+     data-fig 配圖順序必須一一對得上。
 
-說明面板不走字典：中英各一份完整 HTML（#helpBody 與 #helpBodyEn），
-兩邊的 data-tab 分頁數與 data-fig 配圖必須一一對得上，這裡也一併檢查。
+加一種語言時不用改這支：它照 index.html 的清單找語言包。
 
 為什麼是掃描器而不是執行期警告：漏翻的字串多半藏在不常走到的分支（錯誤訊息、
 邊界情況的 alert），執行期只抓得到有人點過的那幾條。
@@ -23,7 +26,6 @@ import json, os, pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / 'src' / 'index.html'
-EN = ROOT / 'src' / 'i18n' / 'en.js'
 CJK = re.compile(r'[㐀-鿿　-〿！-～]')
 REGEX_PREV_KW = {'return', 'typeof', 'case', 'do', 'else', 'in', 'of', 'new', 'delete',
                  'void', 'throw', 'instanceof', 'yield', 'await'}
@@ -228,18 +230,20 @@ def unescape_js(s):
              .replace('\\t', '\t').replace('\\\\', '\\'))
 
 
-def load_en():
-    """回傳 (I18N_EN 的鍵, SHAPE_NAMES_EN 的鍵)。"""
-    if not EN.exists():
-        return set(), set()
-    code = EN.read_text(encoding='utf-8')
-    js = code + ('\nprocess.stdout.write(JSON.stringify([Object.keys(I18N_EN),'
-                 'typeof SHAPE_NAMES_EN==="undefined"?[]:Object.keys(SHAPE_NAMES_EN)]));')
+def load_packs():
+    """照 index.html 的 <script src="i18n/…"> 依序在 node 裡執行語言包，
+    回傳 {語言: {'name', 'ui': 鍵集合, 'shapes': 鍵集合, 'help': HTML 或 None}}（依登記順序）。"""
+    html = SRC.read_text(encoding='utf-8')
+    files = re.findall(r'<script src="(i18n/[^"]+)"></script>', html)
+    code = '\n;\n'.join((SRC.parent / f).read_text(encoding='utf-8') for f in files)
+    js = code + (';\nprocess.stdout.write(JSON.stringify(Object.entries(I18N_PACKS).map(([l,p])=>'
+                 '[l,{name:p.name||l,ui:Object.keys(p.ui||{}),shapes:Object.keys(p.shapes||{}),'
+                 'help:typeof p.help==="string"?p.help:null}])));')
     out = subprocess.run(['node', '-e', js], capture_output=True, text=True)
     if out.returncode:
-        sys.exit('en.js 無法載入：\n' + out.stderr)
-    a, b = json.loads(out.stdout)
-    return set(a), set(b)
+        sys.exit('語言包無法載入（%s）：\n%s' % ('、'.join(files), out.stderr))
+    return {l: {'name': p['name'], 'ui': set(p['ui']), 'shapes': set(p['shapes']), 'help': p['help']}
+            for l, p in json.loads(out.stdout)}
 
 
 def shape_keys(html):
@@ -280,73 +284,85 @@ def html_static(html):
     return found
 
 
-def help_parity(html):
-    def seg(tag_id):
-        a = html.find('id="' + tag_id + '"')
-        if a < 0:
-            return None
-        b = html.find('<!--/' + tag_id + '-->', a)
-        return html[a:b] if b > a else None
-    zh, en = seg('helpBody'), seg('helpBodyEn')
-    if en is None:
-        return ['找不到 #helpBodyEn（英文說明面板）']
+def help_of(lang, pack, html):
+    """該語言的說明本文。語言包沒有 help 時，暫時退回 index.html 裡的舊位置。"""
+    if pack['help'] is not None:
+        return pack['help']
+    tag = 'helpBody' if lang == 'zh' else 'helpBody' + lang.capitalize()
+    a = html.find('id="' + tag + '"')
+    if a < 0:
+        return None
+    b = html.find('<!--/' + tag + '-->', a)
+    return html[a:b] if b > a else None
+
+
+def help_parity(zh, other, name):
+    if other is None:
+        return ['%s：沒有說明本文（會退回中文）' % name]
     probs = []
-    tz, te = re.findall(r'data-tab="', zh), re.findall(r'data-tab="', en)
+    tz, te = re.findall(r'data-tab="', zh), re.findall(r'data-tab="', other)
     if len(tz) != len(te):
-        probs.append('分頁數不同：中 %d／英 %d' % (len(tz), len(te)))
-    fz, fe = re.findall(r'data-fig="([^"]+)"', zh), re.findall(r'data-fig="([^"]+)"', en)
+        probs.append('%s：分頁數與中文不同：中 %d／%s %d' % (name, len(tz), name, len(te)))
+    fz, fe = re.findall(r'data-fig="([^"]+)"', zh), re.findall(r'data-fig="([^"]+)"', other)
     if fz != fe:
-        probs.append('配圖順序不同：\n    中 %s\n    英 %s' % (fz, fe))
+        probs.append('%s：配圖順序與中文不同：\n    中 %s\n    %s %s' % (name, fz, name, fe))
     return probs
 
 
 def main():
     html = SRC.read_text(encoding='utf-8')
-    en, shape_en = load_en()
+    packs = load_packs()
     keys, leaks = js_keys_and_leaks(html)
+    static = html_static(html)
+    shapes = shape_keys(js_text(html))
+    zh_help = help_of('zh', packs.get('zh', {'help': None}), html)
     bad = 0
     if leaks:
         print('■ 含中文但沒包 _t() 的字面值（%d）' % len(leaks))
         for ln, kind, v in leaks:
             print('  %s  %-8s %s' % (ln, kind, v[:90].replace('\n', '⏎')))
         bad += len(leaks)
-    missing = sorted({unescape_js(k) for _, k in keys} - en, key=lambda k: k)
-    if missing:
-        print('■ _t() 鍵在 en.js 沒有英文（%d）' % len(missing))
-        where = {}
-        for ln, k in keys:
-            where.setdefault(unescape_js(k), ln)
-        for k in missing:
-            print('  %s  %s' % (where[k], k[:90].replace('\n', '⏎')))
-        bad += len(missing)
-    st = [(ln, kd, v) for ln, kd, v in html_static(html) if v not in en]
-    if st:
-        print('■ HTML 靜態中文在 en.js 沒有英文（%d）' % len(st))
-        for ln, kd, v in st:
-            print('  %5d  %-11s %s' % (ln, kd, v[:90]))
-        bad += len(st)
-    sm = sorted(shape_keys(js_text(html)) - shape_en)
-    if sm:
-        print('■ SHAPE_NAMES_EN 缺形狀英文名（%d）' % len(sm))
-        print('  ' + ' '.join(sm))
-        bad += len(sm)
-    hp = help_parity(html)
-    if hp:
-        print('■ 說明面板中英不對稱')
-        for p in hp:
-            print('  ' + p)
-        bad += len(hp)
-    used = {unescape_js(k) for _, k in keys} | {v for _, _, v in html_static(html)}
-    unused = sorted(en - used)
-    if unused:
-        # 不算錯：可能是動態組出來的鍵（見 en.js 的說明），只是提醒
-        print('□ en.js 裡沒被引用到的鍵（%d，僅提醒）' % len(unused))
-        for k in unused[:40]:
-            print('         ' + k[:90].replace('\n', '⏎'))
+    for lang, pack in packs.items():
+        if lang == 'zh':
+            continue
+        name, ui = pack['name'], pack['ui']
+        missing = sorted({unescape_js(k) for _, k in keys} - ui)
+        if missing:
+            print('■ %s：_t() 鍵在語言包的 ui 找不到（%d）' % (name, len(missing)))
+            where = {}
+            for ln, k in keys:
+                where.setdefault(unescape_js(k), ln)
+            for k in missing:
+                print('  %s  %s' % (where[k], k[:90].replace('\n', '⏎')))
+            bad += len(missing)
+        st = [(ln, kd, v) for ln, kd, v in static if v not in ui]
+        if st:
+            print('■ %s：HTML 靜態中文在語言包的 ui 找不到（%d）' % (name, len(st)))
+            for ln, kd, v in st:
+                print('  src/index.html:%d  %-11s %s' % (ln, kd, v[:90]))
+            bad += len(st)
+        sm = sorted(shapes - pack['shapes'])
+        if sm:
+            print('■ %s：語言包的 shapes 缺形狀名（%d）' % (name, len(sm)))
+            print('  ' + ' '.join(sm))
+            bad += len(sm)
+        hp = help_parity(zh_help, help_of(lang, pack, html), name)
+        if hp:
+            print('■ 說明面板與中文不對稱')
+            for p in hp:
+                print('  ' + p)
+            bad += len(hp)
+        used = {unescape_js(k) for _, k in keys} | {v for _, _, v in static}
+        unused = sorted(ui - used)
+        if unused:
+            # 不算錯：可能是動態組出來的鍵，只是提醒
+            print('□ %s：語言包裡沒被引用到的鍵（%d，僅提醒）' % (name, len(unused)))
+            for k in unused[:40]:
+                print('         ' + k[:90].replace('\n', '⏎'))
     if '--keys' in sys.argv:
         for ln, k in keys:
             print('%s  %s' % (ln, k))
-    print('OK' if not bad else '共 %d 項待處理' % bad)
+    print('%s：%s' % ('、'.join(p['name'] for p in packs.values()), 'OK' if not bad else '共 %d 項待處理' % bad))
     sys.exit(1 if bad else 0)
 
 

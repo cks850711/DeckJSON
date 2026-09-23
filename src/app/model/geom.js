@@ -120,8 +120,8 @@ const LINE_KINDS={
   elbowDoubleArrow:{label:_t('肘形雙箭頭'),pptx:'bentConnector3',begin:1,end:1},
 };
 // 形狀清單：中文名／分類／插入預設尺寸。幾何本身不在這裡，一律來自 PRESET_GEOM。
-// 形狀名不走 _t()：英文名對的是 PowerPoint 英文版的官方名稱，以 preset 名為鍵（i18n/en.js 的
-// SHAPE_NAMES_EN），而且中文同名不同義的情形避不掉（「外框」是 frame 形狀，也是表格的外框線）。
+// 形狀名不走 _t()：各語言的名稱對的是該語言版 PowerPoint 的官方名稱，以 preset 名為鍵（語言包的
+// shapes，例如 i18n/en.js），而且中文同名不同義的情形避不掉（「外框」是 frame 形狀，也是表格的外框線）。
 // 分類代碼 rc 矩形／bs 基本圖案／ar 箭號圖案／eq 方程式／fl 流程圖／st 星星綵帶／cl 圖說／ab 動作按鈕
 const SHAPE_META={
   // rc
@@ -315,8 +315,8 @@ const SHAPES={};
 for(const k in SHAPE_META){
   if(!PRESET_GEOM[k]) continue;                    // 分類表寫錯字時寧可少一個，也不要留個畫不出來的按鈕
   const m=SHAPE_META[k];
-  const en= UI_LANG==='en'&&typeof SHAPE_NAMES_EN!=='undefined'&&SHAPE_NAMES_EN[k];
-  SHAPES[k]={label:en||m[0],cat:m[1],size:[m[2],m[3]]};
+  const tr=UI_PACK.shapes&&UI_PACK.shapes[k];     // 語言包沒有這個形狀的名稱就用中文
+  SHAPES[k]={label:tr||m[0],cat:m[1],size:[m[2],m[3]]};
 }
 // 自訂幾何：不是 preset，幾何來自元素自己的 points 陣列。
 // 三種來源：形狀庫插入後直接開圖形編輯器、內建形狀按「轉成可編輯端點」、或由 AI 直接寫 points。

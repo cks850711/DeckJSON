@@ -61,7 +61,13 @@ async function setUiLang(v){
   history.replaceState(history.state,'',u.href);
   location.reload();
 }
-for(const b of document.querySelectorAll('#uiLangSeg button')) b.onclick=()=>setUiLang(b.dataset.lang);
+/* 選單照語言包產生：一個語言一顆鈕，名稱用該語言自己寫。translate="no" 要放在按鈕上而不是
+   外層：i18nStatic() 用 closest() 判斷，放外層會連外層自己的 title 一起跳過不翻。 */
+for(const l of LANGS){
+  const b=document.createElement('button'); b.type='button'; b.dataset.lang=l; b.setAttribute('translate','no');
+  b.textContent=(I18N_PACKS[l]&&I18N_PACKS[l].name)||l;
+  b.onclick=()=>setUiLang(l); $('#uiLangSeg').appendChild(b);
+}
 syncUiLangBtns();
 $('#btnFitW').onclick=fitWidth;
 $('#btnFitH').onclick=fitHeight;
