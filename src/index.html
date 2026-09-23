@@ -8665,7 +8665,7 @@ $('#btnLayerClose').onclick=()=>$('#layerPanel').hidden=true;
 makeDraggable($('#layerPanel'),$('#layerHead'),'#btnLayerClose');
 
 $('#btnJsonSave').onclick=()=>saveDeck();
-$('#btnJsonLoad').onclick=openDeckPicker;
+$('#btnJsonLoad').onclick=()=>openDeckPicker();   // 包一層：openDeckPicker 在後面的檔才宣告，載入當下還取不到
 $('#jsonInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   if(!f) return;
