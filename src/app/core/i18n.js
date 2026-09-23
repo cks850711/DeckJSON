@@ -8,8 +8,12 @@
    所以切換語言走「存進自動存檔 → 重載」，不做即時重繪（見 setUiLang）。
    漏翻檢查：python3 tools/i18n-check.py。 */
 const UI_LANG_KEY='deckjson.uiLang';
-/* 可選的語言＝有登記語言包的語言。中文是原文，沒有語言包也永遠可選 */
-const LANGS=typeof I18N_PACKS==='object'&&I18N_PACKS.zh? Object.keys(I18N_PACKS) : ['zh'];
+/* 語言包一個都沒載入時（例如外掛只抽了主程式）也要能跑，只是只剩中文。
+   中文是原文，沒有語言包也永遠可選。 */
+var I18N_PACKS=I18N_PACKS||{};
+if(!I18N_PACKS.zh) I18N_PACKS.zh={};
+/* 可選的語言＝有登記語言包的語言 */
+const LANGS=Object.keys(I18N_PACKS);
 const UI_LANG=(()=>{
   const ok=v=>LANGS.includes(v);
   /* 網址參數優先：localStorage 在某些 file:// 環境寫不進去，那時語言就靠 ?lang= 帶過重載 */
@@ -20,7 +24,7 @@ const UI_LANG=(()=>{
   const nav=navigator.language||'';
   return LANGS.find(l=>I18N_PACKS[l].match&&I18N_PACKS[l].match.test(nav)) || (ok('en')? 'en' : 'zh');
 })();
-const UI_PACK=(typeof I18N_PACKS==='object'&&I18N_PACKS[UI_LANG])||{};
+const UI_PACK=I18N_PACKS[UI_LANG];
 const UI_DICT=UI_PACK.ui||null;          // 中文沒有字典：_t() 直接回原文
 document.documentElement.lang=UI_PACK.html||'zh-Hant';
 function _t(zh,...a){
