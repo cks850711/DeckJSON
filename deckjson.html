@@ -3146,6 +3146,7 @@ function defaultProfile(){
 const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
@@ -3369,6 +3370,22 @@ const SAMPLE_CHART={grid:{left:44,right:16,top:30,bottom:30},
   xAxis:{type:'category',data:[_t('一月'),_t('二月'),_t('三月'),_t('四月')]},yAxis:{type:'value'},
   series:[{type:'bar',data:[52,88,64,120],itemStyle:{color:'#4D9DE0'}}]};
 
+/* ---- 元素屬性的預設值與上限 ----
+   資料模型的一部分：正規化（補預設、夾上限）、面板、畫布、匯出都讀同一份，所以放模型層。 */
+// 頁面轉場（進入此頁時播放）。morph 走 mc:AlternateContent（p159 命名空間，PowerPoint 2019+/365），
+// 舊版開啟時自動退回 fallback 的 fade；morph 跨頁配對靠「同名同型」shape——本工具 shape 名＝元素 JSON id，
+// 複製頁刻意保留元素 id 即為此用（改位置/大小/adj 後兩頁同 id 元素會平滑補間）
+const TRANSITIONS={
+  morph:{label:_t('平滑（Morph）')},
+  fade:{label:_t('淡出')},
+  push:{label:_t('推入')},
+  wipe:{label:_t('擦去')},
+};
+/* ---- 原生投影陰影（PPT 真實 <a:outerShdw>，非編輯器 CSS 效果）----
+   PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
+   畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
+const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
+const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
 /* ================= 形狀庫：preset 幾何引擎 ================= */
 // key＝OOXML prstGeom 名稱（PptxGenJS ShapeType 同名）。
 // 幾何**不再手寫近似路徑**：一律由 PRESET_GEOM（vendor/preset-geom.js，轉自 OOXML
@@ -4268,13 +4285,11 @@ function renderTableInto(box,el){
    故匯出時先寫一個「第一個色標」的 solidFill 當錨點，再於後製把它換成 <a:gradFill>——
    與 avLst、字體補丁同一套手法：PptxGenJS 表達不了的，一律先寫一個結構合法的錨點，再於匯出後製用字串替換補上。
    角度沿用 OOXML 定義：0°＝由左至右，順時針遞增。 */
-const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
 const gradCssStops=g=>g.stops.map(s=>`#${s.color} ${s.pos}%`).join(',');
 const gradCss=g=>g.type==='radial'
   ? `radial-gradient(circle at 50% 50%,${gradCssStops(g)})`
   // CSS 的 0deg＝朝上、90deg＝朝右，OOXML 的 0°＝朝右 → 差 90°
   : `linear-gradient(${(g.angle+90)%360}deg,${gradCssStops(g)})`;
-const NS='http://www.w3.org/2000/svg';
 // SVG 漸層定義：objectBoundingBox 座標，故不必知道形狀實際尺寸
 function gradPaint(svg,id,g){
   const defs=document.createElementNS(NS,'defs');
@@ -5291,10 +5306,6 @@ function numRow(label,val,onSet,o){
   if(o.unit) row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:o.unit}));
   return row;
 }
-/* ---- 原生投影陰影（PPT 真實 <a:outerShdw>，非編輯器 CSS 效果）----
-   PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
-   畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
-const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
 /* 漸層填色的屬性列。勾起來時「底色」自動退居為第一個色標的初值，
    兩者不並存——OOXML 的 spPr 也只能有一種填色。 */
 function gradRows(el){
@@ -11342,15 +11353,6 @@ async function addElToSlide(slide,el,pend){
 }
 // 字體後處理：兩種模式都明確填 latin/ea/cs（不剝離、不切 run），全 run lang=zh-TW
 // 鎖定模式寫死三字體；繼承模式寫 +mn-lt/+mn-ea/+mn-cs 主題槽引用（貼上時由目的端母版接手）
-// 頁面轉場（進入此頁時播放）。morph 走 mc:AlternateContent（p159 命名空間，PowerPoint 2019+/365），
-// 舊版開啟時自動退回 fallback 的 fade；morph 跨頁配對靠「同名同型」shape——本工具 shape 名＝元素 JSON id，
-// 複製頁刻意保留元素 id 即為此用（改位置/大小/adj 後兩頁同 id 元素會平滑補間）
-const TRANSITIONS={
-  morph:{label:_t('平滑（Morph）')},
-  fade:{label:_t('淡出')},
-  push:{label:_t('推入')},
-  wipe:{label:_t('擦去')},
-};
 function transitionXml(tr){
   if(!tr||!TRANSITIONS[tr.type]) return '';
   if(tr.type==='morph'){

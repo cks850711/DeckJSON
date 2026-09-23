@@ -237,10 +237,6 @@ function numRow(label,val,onSet,o){
   if(o.unit) row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:o.unit}));
   return row;
 }
-/* ---- 原生投影陰影（PPT 真實 <a:outerShdw>，非編輯器 CSS 效果）----
-   PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
-   畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
-const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
 /* 漸層填色的屬性列。勾起來時「底色」自動退居為第一個色標的初值，
    兩者不並存——OOXML 的 spPr 也只能有一種填色。 */
 function gradRows(el){

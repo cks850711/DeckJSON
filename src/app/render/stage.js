@@ -178,13 +178,11 @@ function renderTableInto(box,el){
    故匯出時先寫一個「第一個色標」的 solidFill 當錨點，再於後製把它換成 <a:gradFill>——
    與 avLst、字體補丁同一套手法：PptxGenJS 表達不了的，一律先寫一個結構合法的錨點，再於匯出後製用字串替換補上。
    角度沿用 OOXML 定義：0°＝由左至右，順時針遞增。 */
-const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）
 const gradCssStops=g=>g.stops.map(s=>`#${s.color} ${s.pos}%`).join(',');
 const gradCss=g=>g.type==='radial'
   ? `radial-gradient(circle at 50% 50%,${gradCssStops(g)})`
   // CSS 的 0deg＝朝上、90deg＝朝右，OOXML 的 0°＝朝右 → 差 90°
   : `linear-gradient(${(g.angle+90)%360}deg,${gradCssStops(g)})`;
-const NS='http://www.w3.org/2000/svg';
 // SVG 漸層定義：objectBoundingBox 座標，故不必知道形狀實際尺寸
 function gradPaint(svg,id,g){
   const defs=document.createElementNS(NS,'defs');

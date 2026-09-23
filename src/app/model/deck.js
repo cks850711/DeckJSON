@@ -161,3 +161,19 @@ const SAMPLE_CHART={grid:{left:44,right:16,top:30,bottom:30},
   xAxis:{type:'category',data:[_t('一月'),_t('二月'),_t('三月'),_t('四月')]},yAxis:{type:'value'},
   series:[{type:'bar',data:[52,88,64,120],itemStyle:{color:'#4D9DE0'}}]};
 
+/* ---- 元素屬性的預設值與上限 ----
+   資料模型的一部分：正規化（補預設、夾上限）、面板、畫布、匯出都讀同一份，所以放模型層。 */
+// 頁面轉場（進入此頁時播放）。morph 走 mc:AlternateContent（p159 命名空間，PowerPoint 2019+/365），
+// 舊版開啟時自動退回 fallback 的 fade；morph 跨頁配對靠「同名同型」shape——本工具 shape 名＝元素 JSON id，
+// 複製頁刻意保留元素 id 即為此用（改位置/大小/adj 後兩頁同 id 元素會平滑補間）
+const TRANSITIONS={
+  morph:{label:_t('平滑（Morph）')},
+  fade:{label:_t('淡出')},
+  push:{label:_t('推入')},
+  wipe:{label:_t('擦去')},
+};
+/* ---- 原生投影陰影（PPT 真實 <a:outerShdw>，非編輯器 CSS 效果）----
+   PptxGenJS 3.12 對 inner 型的收尾標籤寫死成 </a:outerShdw>（產出不合法），故只開放 outer。
+   畫布用 filter:drop-shadow 預覽（html2canvas 不支援 CSS filter，快照 PNG 不會有陰影，屬已知落差）。*/
+const SHADOW_DEF={blur:8,offset:4,angle:270,color:'808080',opacity:0.5};
+const GRAD_MAX=6;   // 色標數上限（PPT 沒有硬限制，這裡只是防手改 JSON 塞爆面板）

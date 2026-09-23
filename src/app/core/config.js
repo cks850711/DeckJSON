@@ -65,6 +65,7 @@ function defaultProfile(){
 const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 

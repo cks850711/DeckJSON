@@ -280,15 +280,6 @@ async function addElToSlide(slide,el,pend){
 }
 // 字體後處理：兩種模式都明確填 latin/ea/cs（不剝離、不切 run），全 run lang=zh-TW
 // 鎖定模式寫死三字體；繼承模式寫 +mn-lt/+mn-ea/+mn-cs 主題槽引用（貼上時由目的端母版接手）
-// 頁面轉場（進入此頁時播放）。morph 走 mc:AlternateContent（p159 命名空間，PowerPoint 2019+/365），
-// 舊版開啟時自動退回 fallback 的 fade；morph 跨頁配對靠「同名同型」shape——本工具 shape 名＝元素 JSON id，
-// 複製頁刻意保留元素 id 即為此用（改位置/大小/adj 後兩頁同 id 元素會平滑補間）
-const TRANSITIONS={
-  morph:{label:_t('平滑（Morph）')},
-  fade:{label:_t('淡出')},
-  push:{label:_t('推入')},
-  wipe:{label:_t('擦去')},
-};
 function transitionXml(tr){
   if(!tr||!TRANSITIONS[tr.type]) return '';
   if(tr.type==='morph'){
