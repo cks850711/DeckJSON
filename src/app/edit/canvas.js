@@ -2,6 +2,16 @@
 /* ================= 畫布互動 ================= */
 let pendingUndo=null;
 let DBL={id:null,t:0,x:0,y:0};   // 手動雙擊偵測：pointerdown 的 preventDefault 會吃掉原生 dblclick
+let FITDBL={id:null,dir:null,t:0};   // 同上，給把手用：雙擊邊把手＝貼合內容
+/* 只認「會改到那一維」的邊把手：橫書是上下（n／s），直書是左右（e／w）。角把手與其他類型照常縮放。 */
+function fitByHandle(el,dir){
+  if(el.type!=='text'||el.locked) return false;
+  const vert=!!VERT_MODES[el.vert];
+  if(vert? !(dir==='e'||dir==='w') : !(dir==='n'||dir==='s')) return false;
+  const s=snapshot();
+  if(fitTextBox(el,{n:'bottom',s:'top',e:'left',w:'right'}[dir])){ commitUndo(s); renderAll(); syncPageJson(); }
+  return true;
+}
 function openEditor(el,targetNode){
   if(APP.editing) return;
   if(el.type==='image'){ startCrop(el); return; }   // 雙擊圖片＝進裁切（PowerPoint／Keynote 同款手勢）
@@ -64,6 +74,11 @@ stage.addEventListener('pointerdown',e=>{
       fixed:{x:el.x+(movingStart?E.x2:E.x1),y:el.y+(movingStart?E.y2:E.y1)},
       mx:el.x+(movingStart?E.x1:E.x2),my:el.y+(movingStart?E.y1:E.y2)};
   }else if(rh&&el){
+    // 雙擊文字框的邊把手＝貼合內容（Figma 同款手勢）；固定對邊，所以拖哪邊就是往哪邊收
+    const now=performance.now(), dir=rh.dataset.dir;
+    if(FITDBL.id===el.id&&FITDBL.dir===dir&&now-FITDBL.t<400&&fitByHandle(el,dir)){
+      FITDBL.t=0; e.preventDefault(); return; }
+    FITDBL={id:el.id,dir,t:now};
     drag={type:'resize',dir:rh.dataset.dir,el,sx:e.clientX,sy:e.clientY,
       x:el.x,y:el.y,w:elSize(el).w,h:elSize(el).h,
       colW:el.colW&&[...el.colW],rowH:el.rowH&&[...el.rowH],

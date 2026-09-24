@@ -24,6 +24,26 @@ function deleteSelected(){
   setSel([]); renderAll();
 }
 
+/* ================= 貼合內容 =================
+   把文字框縮放到剛好裝下文字：橫書調高、直書調寬。keep 是不動的那一邊
+   （'top'／'bottom'／'left'／'right'，省略＝上緣或左緣）——拖哪一邊的把手，就固定對邊。
+   只改資料、不 commitUndo 也不重繪：畫布把手、屬性面板、腳本介面三個呼叫點各自收尾。
+   回傳 {from,to}（沒變化或不適用時回 null）。 */
+function fitTextBox(el,keep){
+  const f=textFitSize(el); if(!f) return null;
+  if(VERT_MODES[el.vert]){
+    if(f.w===el.w) return null;
+    const from=el.w; if(keep==='right') el.x+=el.w-f.w; el.w=f.w; return {from,to:f.w};
+  }
+  if(f.h===el.h) return null;
+  const from=el.h; if(keep==='bottom') el.y+=el.h-f.h; el.h=f.h; return {from,to:f.h};
+}
+function fitSelected(){
+  const els=selEls().filter(el=>el.type==='text'&&!el.locked); if(!els.length) return;
+  const s=snapshot();   // 先拍、有變化才進堆疊：已經貼合時按下去不該多一步空的復原
+  if(els.map(el=>fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
+}
+
 /* ================= 格式刷 ================= */
 // 抽取來源樣式 → 點目標套用（依目標型別對映，不改內容/位置/尺寸）
 function extractStyle(el){

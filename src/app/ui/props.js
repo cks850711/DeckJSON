@@ -221,6 +221,8 @@ function renderPropsBody(){
   pp.appendChild(dimRow('Y',()=>el.y,v=>el.y=Math.round(v)));
   pp.appendChild(dimRow(_t('寬'),()=>elSize(el).w,v=>applyDim(el,true,v)));
   pp.appendChild(dimRow(_t('高'),()=>elSize(el).h,v=>applyDim(el,false,v)));
+  if(el.type==='text') pp.appendChild(btnRow([[_t('貼合內容'),fitSelected,
+    _t('把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。')]]));
   if(el.type!=='image'&&!isLineEl(el)) pp.appendChild(checkRow([
     [_t('比例鎖定'),()=>APP.ratioLock,v=>APP.ratioLock=v,_t('鎖寬高比：改一邊或拖曳 resize 時另一邊等比放大')],
     [_t('字級同步'),()=>APP.fontSync,v=>APP.fontSync=v,_t('改尺寸／拖曳 resize 時字級一起放大')],

@@ -115,6 +115,15 @@ assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖�
 </details>
 
 <details>
+<summary><b>可以讓腳本或 AI 代理直接在編輯器裡改簡報嗎</b></summary>
+
+可以。頁面提供 `window.DJ`，一組精簡而穩定的介面，用 id 讀取與修改目前開著的簡報：列出頁面、修改元素、把文字框貼合內容、找出放不下的文字，並把 `.deck`／`.pptx` 以檔案形式取回。每次寫入都是一步復原，腳本做了什麼，按 Cmd/Ctrl+Z 都能撤銷。
+
+說明見 **[docs/scripting-api.zh-TW.md](docs/scripting-api.zh-TW.md)**。
+
+</details>
+
+<details>
 <summary><b>⚠ 自動存檔是全域一份，多個成品會互相覆蓋</b></summary>
 
 自動存檔放在瀏覽器的 IndexedDB，位置是固定的 `deckjson / autosave / current`。

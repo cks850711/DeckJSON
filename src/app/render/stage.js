@@ -413,6 +413,29 @@ function markOverflow(){
       VERT_MODES[el.vert]? t.scrollWidth>el.w+2 : t.scrollHeight>el.h+2);
   }
 }
+/* 文字框「剛好裝下內容」的尺寸：橫書量高（寬不動），直書量寬（高不動）。
+   markOverflow 只答得出「有沒有溢出」：.txt 撐滿容器，不溢出時 scrollHeight 恰好等於框高，量不到真實需求。
+   所以另外 renderEl 一份，把框的那一維改成 auto 再讀。三個要點，都是實際量錯過才定下來的：
+   - 要 append 進 #stage，不能掛 document.body：字體變數與 :is(.el,.mel) .txt 的規則都掛在畫布底下，
+     掛到外面會退回預設字級（2026-09-17 實測：只 clone .txt 到 body，行高 21px 變 15px；2026-09-25 以 278 個文字框
+     比對，9 個少算超過 2px，最差只量到三分之一，其餘相符——不是每個都錯，所以抽查不容易發現）
+   - 量整個框（含框線）而不是 .txt：box-sizing 是 border-box，框線吃的是框自己的高度
+   - 拿掉 data-id：否則 markOverflow／選取之類「用 id 找 DOM」的程式會先找到這份替身
+   不依賴目前顯示哪一頁：任何一頁的元素都能量（字體設定是整份簡報共用的）。 */
+function textFitSize(el){
+  if(!el||el.type!=='text') return null;
+  const vert=!!VERT_MODES[el.vert];
+  const box=renderEl(el);
+  box.removeAttribute('data-id');
+  box.style.visibility='hidden'; box.style.pointerEvents='none';
+  const t=box.querySelector('.txt');
+  if(vert){ box.style.width='auto'; t.style.width='auto'; }
+  else{ box.style.height='auto'; t.style.height='auto'; }
+  stage.appendChild(box);
+  const w=vert? Math.ceil(box.offsetWidth) : el.w, h=vert? el.h : Math.ceil(box.offsetHeight);
+  box.remove();
+  return {w:Math.max(4,w), h:Math.max(4,h)};
+}
 function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM）
   const box=stage.querySelector(`.el[data-id="${el.id}"]`);
   if(!box) return;

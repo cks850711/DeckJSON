@@ -5,7 +5,7 @@
     ["model/*", "chart/native-map"],
     ["core/state", "io/*"],
     ["render/*", "media/*", "export/*"],
-    ["edit/*", "ui/*", "chart/chart-modal", "help/*", "boot"]
+    ["edit/*", "ui/*", "chart/chart-modal", "help/*", "api", "boot"]
   ],
   "//allow": "既有的往上引用（模組 → 名稱）。只准縮小：修掉一條就刪一條，modcheck 會提醒過期項目。",
   "allow": [

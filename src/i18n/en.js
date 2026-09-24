@@ -333,6 +333,8 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "多選 {0} 個物件": n=>n+(n===1?' object':' objects')+' selected',
   "位置尺寸（包圍盒）": "Position & size (bounding box)",
   "比例鎖定": "Lock ratio",
+  "貼合內容": "Fit to text",
+  "把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。": "Resize the box to fit its text exactly: height for horizontal text, width for vertical text.\nYou can also double-click the handle in the middle of an edge (the opposite edge stays put).",
   "鎖包圍盒寬高比：改一邊另一邊等比跟著變": "Lock the bounding box aspect ratio: changing one side scales the other",
   "字級同步": "Scale text",
   "改包圍盒尺寸時，組內文字的字級一起放大縮小": "When resizing the bounding box, the text sizes in the group scale too",

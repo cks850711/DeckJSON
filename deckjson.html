@@ -1872,6 +1872,8 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "多選 {0} 個物件": n=>n+(n===1?' object':' objects')+' selected',
   "位置尺寸（包圍盒）": "Position & size (bounding box)",
   "比例鎖定": "Lock ratio",
+  "貼合內容": "Fit to text",
+  "把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。": "Resize the box to fit its text exactly: height for horizontal text, width for vertical text.\nYou can also double-click the handle in the middle of an edge (the opposite edge stays put).",
   "鎖包圍盒寬高比：改一邊另一邊等比跟著變": "Lock the bounding box aspect ratio: changing one side scales the other",
   "字級同步": "Scale text",
   "改包圍盒尺寸時，組內文字的字級一起放大縮小": "When resizing the bounding box, the text sizes in the group scale too",
@@ -4642,6 +4644,29 @@ function markOverflow(){
       VERT_MODES[el.vert]? t.scrollWidth>el.w+2 : t.scrollHeight>el.h+2);
   }
 }
+/* 文字框「剛好裝下內容」的尺寸：橫書量高（寬不動），直書量寬（高不動）。
+   markOverflow 只答得出「有沒有溢出」：.txt 撐滿容器，不溢出時 scrollHeight 恰好等於框高，量不到真實需求。
+   所以另外 renderEl 一份，把框的那一維改成 auto 再讀。三個要點，都是實際量錯過才定下來的：
+   - 要 append 進 #stage，不能掛 document.body：字體變數與 :is(.el,.mel) .txt 的規則都掛在畫布底下，
+     掛到外面會退回預設字級（2026-09-17 實測：只 clone .txt 到 body，行高 21px 變 15px；2026-09-25 以 278 個文字框
+     比對，9 個少算超過 2px，最差只量到三分之一，其餘相符——不是每個都錯，所以抽查不容易發現）
+   - 量整個框（含框線）而不是 .txt：box-sizing 是 border-box，框線吃的是框自己的高度
+   - 拿掉 data-id：否則 markOverflow／選取之類「用 id 找 DOM」的程式會先找到這份替身
+   不依賴目前顯示哪一頁：任何一頁的元素都能量（字體設定是整份簡報共用的）。 */
+function textFitSize(el){
+  if(!el||el.type!=='text') return null;
+  const vert=!!VERT_MODES[el.vert];
+  const box=renderEl(el);
+  box.removeAttribute('data-id');
+  box.style.visibility='hidden'; box.style.pointerEvents='none';
+  const t=box.querySelector('.txt');
+  if(vert){ box.style.width='auto'; t.style.width='auto'; }
+  else{ box.style.height='auto'; t.style.height='auto'; }
+  stage.appendChild(box);
+  const w=vert? Math.ceil(box.offsetWidth) : el.w, h=vert? el.h : Math.ceil(box.offsetHeight);
+  box.remove();
+  return {w:Math.max(4,w), h:Math.max(4,h)};
+}
 function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM）
   const box=stage.querySelector(`.el[data-id="${el.id}"]`);
   if(!box) return;
@@ -5804,6 +5829,8 @@ function renderPropsBody(){
   pp.appendChild(dimRow('Y',()=>el.y,v=>el.y=Math.round(v)));
   pp.appendChild(dimRow(_t('寬'),()=>elSize(el).w,v=>applyDim(el,true,v)));
   pp.appendChild(dimRow(_t('高'),()=>elSize(el).h,v=>applyDim(el,false,v)));
+  if(el.type==='text') pp.appendChild(btnRow([[_t('貼合內容'),fitSelected,
+    _t('把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。')]]));
   if(el.type!=='image'&&!isLineEl(el)) pp.appendChild(checkRow([
     [_t('比例鎖定'),()=>APP.ratioLock,v=>APP.ratioLock=v,_t('鎖寬高比：改一邊或拖曳 resize 時另一邊等比放大')],
     [_t('字級同步'),()=>APP.fontSync,v=>APP.fontSync=v,_t('改尺寸／拖曳 resize 時字級一起放大')],
@@ -6625,6 +6652,26 @@ function deleteSelected(){
   commitUndo();
   {const arr=curEls(); for(let i=arr.length-1;i>=0;i--) if(ids.has(arr[i].id)) arr.splice(i,1);}
   setSel([]); renderAll();
+}
+
+/* ================= 貼合內容 =================
+   把文字框縮放到剛好裝下文字：橫書調高、直書調寬。keep 是不動的那一邊
+   （'top'／'bottom'／'left'／'right'，省略＝上緣或左緣）——拖哪一邊的把手，就固定對邊。
+   只改資料、不 commitUndo 也不重繪：畫布把手、屬性面板、腳本介面三個呼叫點各自收尾。
+   回傳 {from,to}（沒變化或不適用時回 null）。 */
+function fitTextBox(el,keep){
+  const f=textFitSize(el); if(!f) return null;
+  if(VERT_MODES[el.vert]){
+    if(f.w===el.w) return null;
+    const from=el.w; if(keep==='right') el.x+=el.w-f.w; el.w=f.w; return {from,to:f.w};
+  }
+  if(f.h===el.h) return null;
+  const from=el.h; if(keep==='bottom') el.y+=el.h-f.h; el.h=f.h; return {from,to:f.h};
+}
+function fitSelected(){
+  const els=selEls().filter(el=>el.type==='text'&&!el.locked); if(!els.length) return;
+  const s=snapshot();   // 先拍、有變化才進堆疊：已經貼合時按下去不該多一步空的復原
+  if(els.map(el=>fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
 }
 
 /* ================= 格式刷 ================= */
@@ -7690,6 +7737,16 @@ document.addEventListener('paste',async e=>{
 /* ================= 畫布互動 ================= */
 let pendingUndo=null;
 let DBL={id:null,t:0,x:0,y:0};   // 手動雙擊偵測：pointerdown 的 preventDefault 會吃掉原生 dblclick
+let FITDBL={id:null,dir:null,t:0};   // 同上，給把手用：雙擊邊把手＝貼合內容
+/* 只認「會改到那一維」的邊把手：橫書是上下（n／s），直書是左右（e／w）。角把手與其他類型照常縮放。 */
+function fitByHandle(el,dir){
+  if(el.type!=='text'||el.locked) return false;
+  const vert=!!VERT_MODES[el.vert];
+  if(vert? !(dir==='e'||dir==='w') : !(dir==='n'||dir==='s')) return false;
+  const s=snapshot();
+  if(fitTextBox(el,{n:'bottom',s:'top',e:'left',w:'right'}[dir])){ commitUndo(s); renderAll(); syncPageJson(); }
+  return true;
+}
 function openEditor(el,targetNode){
   if(APP.editing) return;
   if(el.type==='image'){ startCrop(el); return; }   // 雙擊圖片＝進裁切（PowerPoint／Keynote 同款手勢）
@@ -7752,6 +7809,11 @@ stage.addEventListener('pointerdown',e=>{
       fixed:{x:el.x+(movingStart?E.x2:E.x1),y:el.y+(movingStart?E.y2:E.y1)},
       mx:el.x+(movingStart?E.x1:E.x2),my:el.y+(movingStart?E.y1:E.y2)};
   }else if(rh&&el){
+    // 雙擊文字框的邊把手＝貼合內容（Figma 同款手勢）；固定對邊，所以拖哪邊就是往哪邊收
+    const now=performance.now(), dir=rh.dataset.dir;
+    if(FITDBL.id===el.id&&FITDBL.dir===dir&&now-FITDBL.t<400&&fitByHandle(el,dir)){
+      FITDBL.t=0; e.preventDefault(); return; }
+    FITDBL={id:el.id,dir,t:now};
     drag={type:'resize',dir:rh.dataset.dir,el,sx:e.clientX,sy:e.clientY,
       x:el.x,y:el.y,w:elSize(el).w,h:elSize(el).h,
       colW:el.colW&&[...el.colW],rowH:el.rowH&&[...el.rowH],
@@ -11873,6 +11935,243 @@ async function exportPptx(download=true){
 }
 $('#btnExport').onclick=()=>exportPptx(true);
 
+/* ================= 腳本介面 window.DJ =================
+   給外部腳本（瀏覽器自動化、測試、AI 代理）驅動 DeckJSON 的**唯一穩定入口**。
+   內部函式名會隨重構改變，外部一律只呼叫這裡；改內部時由這一層吸收差異。
+   用法與每個動詞的說明見 docs/scripting-api.md（對外文件）。
+
+   這層存在的理由不只是「名字穩定」，更是把外部呼叫內部函式時踩過的坑收進程式碼：
+   - applyPageJson() 寫的是「畫面上目前那一頁」，不是 JSON 裡 id 指的那一頁——外部照 id 呼叫，
+     曾經整頁蓋掉另一頁（2026-09-17 實際發生，一頁 28 個元素全失）。這裡一律用 id 定位，不看游標。
+   - 量文字需求高度的正確量法不直觀（見 textFitSize）。這裡直接給 measure／fit／overflow。
+   - 讀狀態時把整頁 JSON 倒出來很貴。這裡預設回摘要（outline），要全貌才用 get。
+
+   約定：
+   - 用 id 指定頁與元素；'master' 指母版。**除了 show()，沒有動詞會改變使用者正在看的頁**
+   - 寫入先在副本上做完、過 normalizeDeck，成功才換上並 commitUndo（使用者按 Cmd/Ctrl+Z 可撤銷）；
+     任何一步出錯就拋例外，簡報原封不動，不會留下半套
+   - 會重繪的動詞是 async，等排版穩定才回傳
+   - version 只在不相容的改動時 +1；新增動詞不算 */
+const DJ_VERSION=1;
+
+function djErr(msg){ return new Error('DJ: '+msg); }
+function djPage(deck,pid){
+  const p=deck.pages.find(p=>p.id===pid);
+  if(!p) throw djErr(`no page "${pid}"`+(pid===undefined? ' (pageId is required)' : ''));
+  return p;
+}
+function djEls(deck,pid){
+  if(pid==='master'){
+    if(!deck.master) deck.master={on:false,flatten:false,elements:[]};
+    return deck.master.elements||(deck.master.elements=[]);
+  }
+  return djPage(deck,pid).elements;
+}
+/* 元素一律「頁 ＋ id」定位：跨頁同 id 是合法的，而且正是 Morph 的配對依據，只給 id 會找錯頁 */
+function djEl(deck,pid,id){
+  const el=djEls(deck,pid).find(e=>e.id===id);
+  if(!el) throw djErr(`no element "${id}" on page "${pid}"`);
+  return el;
+}
+function djIds(ids){ return ids==null? null : (Array.isArray(ids)? ids : [ids]); }
+/* 等排版穩定。刻意不用 requestAnimationFrame：分頁或面板不在前景時 rAF 會暫停（規格行為），
+   外部腳本等不到回呼就整個卡住（2026-09-17 實際遇過：瀏覽器面板不在前景時，等 rAF 的呼叫一直沒有回來）。字體載完才量得準，所以也等 fonts.ready（上限 1.5 秒）。 */
+async function djSettle(){
+  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  await new Promise(r=>setTimeout(r,0));
+}
+/* 換上新的 deck。保留使用者目前的頁（還在的話）與選取，只收掉進行中的文字編輯——
+   它指向的 DOM 在重繪後已不存在。 */
+function djCommit(d,undoSnap){
+  commitUndo(undoSnap);
+  APP.edit=null; APP.editing=null;
+  APP.deck=d;
+  if(!d.pages.some(p=>p.id===APP.page)) APP.page=d.pages[0].id;
+  setSel(APP.selIds);
+  renderAll(); syncPageJson(); reportChartIssues();
+}
+function djOver(el){
+  if(el.type!=='text'||el.hidden) return false;
+  const f=textFitSize(el);
+  return VERT_MODES[el.vert]? f.w>el.w+2 : f.h>el.h+2;   // 容差同 markOverflow
+}
+function djOverIds(pid){ return djEls(APP.deck,pid).filter(djOver).map(el=>el.id); }
+const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
+
+const DJ=Object.freeze({
+  version:DJ_VERSION,
+
+  /* ---------- 讀：回摘要，不回整份 ---------- */
+  info(){
+    return {version:DJ_VERSION, app:APP_VERSION, title:APP.deck.title, pages:APP.deck.pages.length,
+      page:APP.page, stage:{w:APP.deck.stage.w,h:APP.deck.stage.h}, master:masterOn(),
+      file:APP.file? APP.file.name : null, dirty:!!APP.dirty};
+  },
+  list(){
+    return APP.deck.pages.map((p,i)=>{
+      const o={n:i+1,id:p.id,name:p.name||'',els:p.elements.length};
+      if(p.section) o.section=p.section;
+      if(p.skip) o.skip=true;
+      if(p.id===APP.page) o.current=true;
+      return o;
+    });
+  },
+  outline(pid){
+    return djEls(APP.deck,pid).map(el=>{
+      const o={id:el.id,type:el.type,x:Math.round(el.x),y:Math.round(el.y)};
+      if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=el.rowH.reduce((a,b)=>a+b,0);
+        o.grid=el.rowH.length+'x'+el.colW.length; }
+      else{ o.w=Math.round(el.w); o.h=Math.round(el.h); }
+      if(el.type==='shape') o.shape=el.shape;
+      if(el.paras){ const t=plainText(el).replace(/\s+/g,' ').trim(); if(t) o.text=t.length>40? t.slice(0,40)+'…' : t; }
+      if(el.hidden) o.hidden=true;
+      if(el.locked) o.locked=true;
+      if(el.groupId) o.group=el.groupId;
+      if(djOver(el)) o.overflow=true;
+      return o;
+    });
+  },
+  /* 完整 JSON（圖片以 @asset: 佔位、地圖以 @map: 佔位）。給 elId 只回那個元素 */
+  get(pid,elId){
+    const els=djEls(APP.deck,pid);
+    if(elId!=null){
+      const el=djEl(APP.deck,pid,elId);
+      return JSON.parse(maskedJson({elements:[el]})).elements[0];
+    }
+    return JSON.parse(maskedJson(pid==='master'? {elements:els} : djPage(APP.deck,pid)));
+  },
+
+  /* ---------- 寫：用 id 定位，先驗證再換上 ---------- */
+  /* changes：[{id, set:{…}, unset:[鍵], remove:true}]。set 是淺層合併（要改 paras 就整個換掉）。
+     id 等於頁 id 時改的是頁面屬性（name／notes／skip…），不能 remove。回傳本頁溢出清單 */
+  async patch(pid,changes){
+    const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
+    const pg=pid==='master'? null : djPage(t,pid);
+    let n=0;
+    for(const c of (Array.isArray(changes)? changes : [changes])){
+      if(!c||typeof c!=='object'||!c.id) throw djErr('each change needs an id');
+      if(pg&&c.id===pg.id){
+        if(c.remove) throw djErr('use removePage() to delete a page');
+        for(const k of Object.keys(c.set||{}).concat(c.unset||[]))
+          if(!DJ_PAGE_KEYS.includes(k)) throw djErr(`page field "${k}" cannot be patched (allowed: ${DJ_PAGE_KEYS.join(', ')})`);
+        Object.assign(pg,c.set||{}); for(const k of c.unset||[]) delete pg[k];
+        n++; continue;
+      }
+      const i=els.findIndex(e=>e.id===c.id);
+      if(i<0) throw djErr(`no element "${c.id}" on page "${pid}"`);
+      if(c.remove){ els.splice(i,1); n++; continue; }
+      if(c.set&&('id' in c.set||'type' in c.set)) throw djErr('id and type cannot be changed; remove and add instead');
+      Object.assign(els[i],c.set||{}); for(const k of c.unset||[]) delete els[i][k];
+      n++;
+    }
+    const d=normalizeDeck(resolveAssets(t));
+    djCommit(d,s); await djSettle();
+    return {page:pid,changed:n,overflow:djOverIds(pid)};
+  },
+  /* 加元素到該頁最上層。沒給 id 或與本頁（含母版）撞號的自動配，回傳實際的 id（順序同輸入）。
+     與**別頁**同 id 是刻意允許的：那是 Morph 配對的方式 */
+  async add(pid,elements){
+    const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
+    const list=(Array.isArray(elements)? elements : [elements]).map(e=>structuredClone(e));
+    const taken=new Set(els.map(e=>e.id));
+    for(const e of (t.master&&t.master.elements)||[]) taken.add(e.id);
+    for(const e of list){
+      if(!e||typeof e!=='object'||!e.type) throw djErr('each element needs a type');
+      if(!e.id||taken.has(e.id)) e.id=uid('e');
+      taken.add(e.id); els.push(e);
+    }
+    const d=normalizeDeck(resolveAssets(t));
+    djCommit(d,s); await djSettle();
+    return {page:pid,ids:list.map(e=>e.id),overflow:djOverIds(pid)};
+  },
+  /* 整頁替換（elements 與列出的頁面屬性）。沒列出的頁面屬性沿用原頁，頁 id 不變 */
+  async replacePage(pid,json){
+    if(Array.isArray(json)) json={elements:json};
+    if(!json||!Array.isArray(json.elements)) throw djErr('page JSON needs an elements array');
+    const s=snapshot(), t=structuredClone(APP.deck), i=t.pages.indexOf(djPage(t,pid));
+    const next={id:pid,elements:structuredClone(json.elements)};
+    for(const k of DJ_PAGE_KEYS) next[k]=(k in json)? structuredClone(json[k]) : t.pages[i][k];
+    t.pages[i]=next;
+    const d=normalizeDeck(resolveAssets(t));
+    djCommit(d,s); await djSettle();
+    return {page:pid,overflow:djOverIds(pid)};
+  },
+  /* 新增一頁，插在 after 那頁之後（省略＝最後）。回傳新頁 id */
+  async addPage(json,after){
+    const s=snapshot(), t=structuredClone(APP.deck);
+    const pg=Object.assign(newPage(),structuredClone(json||{}));
+    if(!Array.isArray(pg.elements)) pg.elements=[];
+    if(t.pages.some(p=>p.id===pg.id)) pg.id=uid('p');
+    const at=after==null? t.pages.length : t.pages.indexOf(djPage(t,after))+1;
+    t.pages.splice(at,0,pg);
+    const d=normalizeDeck(resolveAssets(t));
+    djCommit(d,s); await djSettle();
+    return {page:pg.id,n:at+1,overflow:djOverIds(pg.id)};
+  },
+  async removePage(pid){
+    const s=snapshot(), t=structuredClone(APP.deck), i=t.pages.indexOf(djPage(t,pid));
+    if(t.pages.length===1) throw djErr('cannot remove the only page');
+    t.pages.splice(i,1);
+    djCommit(normalizeDeck(t),s); await djSettle();
+    return {removed:pid,pages:t.pages.length};
+  },
+
+  /* ---------- 版面 ---------- */
+  /* 文字框剛好裝下內容需要的尺寸（不改任何東西）。橫書看 h，直書看 w */
+  measure(pid,elId){
+    const el=djEl(APP.deck,pid,elId);
+    if(el.type!=='text') throw djErr(`"${elId}" is a ${el.type}; only text boxes can be measured`);
+    const f=textFitSize(el);
+    return {id:elId,w:el.w,h:el.h,needW:f.w,needH:f.h};
+  },
+  /* 把文字框縮放到剛好裝下內容（同畫布上的「貼合內容」）。橫書固定上緣、直書固定左緣。
+     ids 必填：整頁一起貼合會把刻意留高的卡片也收掉 */
+  async fit(pid,ids){
+    ids=djIds(ids); if(!ids||!ids.length) throw djErr('fit() needs element ids');
+    const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid), out=[];
+    for(const id of ids){
+      const el=djEl(t,pid,id);
+      if(el.type!=='text') throw djErr(`"${id}" is a ${el.type}; only text boxes can be fitted`);
+      const r=fitTextBox(el); if(r) out.push({id,...r});
+    }
+    if(out.length){ djCommit(t,s); await djSettle(); }
+    return {page:pid,fitted:out,overflow:djOverIds(pid)};
+  },
+  /* 溢出的文字框。給 pid 回該頁的 id 陣列；省略則掃整份，只列有溢出的頁 */
+  overflow(pid){
+    if(pid!=null) return djOverIds(pid);
+    const out={};
+    for(const p of APP.deck.pages){ const ids=djOverIds(p.id); if(ids.length) out[p.id]=ids; }
+    return out;
+  },
+
+  /* ---------- 進出 ---------- */
+  /* 載入：Blob／File／ArrayBuffer（.deck 容器或純 JSON）、JSON 字串或物件。
+     會清掉「目前開啟的檔案」：否則之後按 Cmd/Ctrl+S 會把這份寫進原本那個檔 */
+  async load(src){
+    let obj=src;
+    if(src instanceof Blob) obj=await deckFromFile(src);
+    else if(src instanceof ArrayBuffer) obj=await deckFromFile(new Blob([src]));
+    else if(typeof src==='string') obj=JSON.parse(src);
+    loadDeck(obj); setDeckFile(null);
+    await djSettle();
+    return {pages:APP.deck.pages.length,page:APP.page};
+  },
+  toBlob(){ return deckToBlob(); },
+  async snapshot(pid,opt){
+    const o=opt||{}, fmt=o.format==='jpeg'? 'jpeg' : 'png';
+    const url=await snapshotDataUrl(djPage(APP.deck,pid),fmt,o.scale||1);
+    return await (await fetch(url)).blob();
+  },
+  async exportPptx(){
+    await exportPptx(false);
+    return await (await fetch('data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,'
+      +window.__lastPptxB64)).blob();
+  },
+  /* 唯一會改變使用者畫面的動詞：切到那一頁給人看 */
+  show(pid){ djPage(APP.deck,pid); setPage(pid); return {page:pid}; },
+});
+window.DJ=DJ;
 /* ================= 字體可用性提示 ================= */
 function fontAvailable(name){
   const c=document.createElement('canvas').getContext('2d'), t=/*zh*/'0mW中永19';

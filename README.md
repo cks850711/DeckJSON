@@ -115,6 +115,15 @@ Opened in **Chrome** (double-clicking `deckjson.html` is fine; Edge and other Ch
 </details>
 
 <details>
+<summary><b>Can a script or an AI agent edit a deck in the editor?</b></summary>
+
+Yes. The page exposes `window.DJ`, a small stable API for reading and editing the open deck by id — list pages, patch elements, fit text boxes to their text, find overflowing text, and get the `.deck` / `.pptx` back as a file. Every write is one undo step, so you can take back anything a script did with Cmd/Ctrl+Z.
+
+See **[docs/scripting-api.md](docs/scripting-api.md)**.
+
+</details>
+
+<details>
 <summary><b>⚠ Autosave is a single global slot; multiple builds overwrite each other</b></summary>
 
 Autosave lives in the browser's IndexedDB at the fixed location `deckjson / autosave / current`.
