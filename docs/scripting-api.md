@@ -72,7 +72,19 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `exportPptx()` | The exported `.pptx` as a `Blob`, without triggering a download |
 | `show(pageId)` | Switches the editor to that page, for the person watching. The only call that changes the view |
 
-Saving to disk is up to the caller: a browser page can't write files on its own without the user picking a location. A typical script posts `toBlob()` to a small local receiver.
+Saving to disk is up to the caller: a browser page can't write files on its own without the user picking a location. The development server `tools/serve.py` covers both directions: `--mount /PREFIX=DIR` mounts another folder read-only so the page can fetch pictures and decks from it, and `--save DIR` accepts saved files.
+
+```bash
+python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out
+```
+
+```js
+await DJ.load(await fetch('/notes/talk.deck').then(r => r.blob()))
+await DJ.addImage(page, '/notes/figures/a.png', {x: 640, y: 120, w: 560, h: 420})
+await fetch('/save?n=talk.deck', {method: 'POST', body: await DJ.toBlob()})
+```
+
+The server listens on 127.0.0.1 only, checks the Host and Origin headers and sends no CORS headers, so other websites can neither read the mounted files nor write into the save folder.
 
 ## Changing text without losing its formatting
 

@@ -72,7 +72,19 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `exportPptx()` | 匯出的 `.pptx`（`Blob`），不觸發下載 |
 | `show(pageId)` | 把編輯器切到那一頁給旁觀的人看。唯一會改變畫面的呼叫 |
 
-存到磁碟由呼叫端負責：網頁不經使用者選位置，不能自己寫檔。常見做法是把 `toBlob()` POST 給一支本機的小型收檔程式。
+存到磁碟由呼叫端負責：網頁不經使用者選位置，不能自己寫檔。開發用的 `tools/serve.py` 兩頭都包了：`--mount /前綴=資料夾` 把別的資料夾唯讀掛進來，頁面直接 fetch 那裡的圖和簡報；`--save 資料夾` 接收存檔。
+
+```bash
+python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out
+```
+
+```js
+await DJ.load(await fetch('/notes/talk.deck').then(r => r.blob()))
+await DJ.addImage(page, '/notes/figures/a.png', {x: 640, y: 120, w: 560, h: 420})
+await fetch('/save?n=talk.deck', {method: 'POST', body: await DJ.toBlob()})
+```
+
+伺服器只聽 127.0.0.1、檢查 Host 與 Origin、不送 CORS 標頭，別的網站讀不到掛載的檔，也寫不進存檔資料夾。
 
 ## 換文字、不丟格式
 
