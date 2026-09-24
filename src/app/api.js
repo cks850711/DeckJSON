@@ -39,6 +39,30 @@ function djEl(deck,pid,id){
   if(!el) throw djErr(`no element "${id}" on page "${pid}"`);
   return el;
 }
+/* 讀入一份簡報：Blob／File／ArrayBuffer（.deck 容器或純 JSON）、JSON 字串或物件 → 物件（資產已還原） */
+async function djReadDeck(src){
+  if(src instanceof Blob) return await deckFromFile(src);
+  if(src instanceof ArrayBuffer) return await deckFromFile(new Blob([src]));
+  if(typeof src==='string') return JSON.parse(src);
+  if(src&&typeof src==='object') return structuredClone(src);
+  throw djErr('expected a Blob, File, ArrayBuffer, JSON string or deck object');
+}
+/* 換文字、留樣式：md 以換行分段，第 k 段沿用原本第 k 段（超出的沿用最後一段）的段落設定
+   與第一個 run 的字元樣式。直接 set:{paras:[{md}]} 會把字級、顏色、粗細一起換成預設
+   ——從模板套字時實際踩到：44pt 紫色標題變成 18pt 黑字。 */
+const DJ_PARA_KEEP=['align','bullet','spaceBefore','spaceAfter'];
+function djRestyle(old,md){
+  const ps=Array.isArray(old)&&old.length? old : [{}];
+  return String(md).split('\n').map((line,k)=>{
+    const op=ps[Math.min(k,ps.length-1)]||{}, base=Object.assign({},(op.runs||[])[0]||{});
+    delete base.text; delete base.link;   // 連結屬於那幾個字，不該跟著換掉的文字走
+    const p={};
+    for(const key of DJ_PARA_KEEP) if(op[key]!=null) p[key]=structuredClone(op[key]);
+    p.runs=[Object.assign(base,{text:''})]; p.md=line;
+    return p;
+  });
+}
+const DJ_CHANGE_KEYS=['id','set','unset','remove','md'];
 function djIds(ids){ return ids==null? null : (Array.isArray(ids)? ids : [ids]); }
 /* 等排版穩定。刻意不用 requestAnimationFrame：分頁或面板不在前景時 rAF 會暫停（規格行為），
    外部腳本等不到回呼就整個卡住（2026-09-17 實際遇過：瀏覽器面板不在前景時，等 rAF 的呼叫一直沒有回來）。字體載完才量得準，所以也等 fonts.ready（上限 1.5 秒）。 */
@@ -108,7 +132,8 @@ const DJ=Object.freeze({
   },
 
   /* ---------- 寫：用 id 定位，先驗證再換上 ---------- */
-  /* changes：[{id, set:{…}, unset:[鍵], remove:true}]。set 是淺層合併（要改 paras 就整個換掉）。
+  /* changes：[{id, set:{…}, unset:[鍵], remove:true, md:'新文字'}]。set 是淺層合併（改 paras 就整個換掉、
+     樣式一起換掉）；只想換字就用 md，每段沿用原本的樣式（見 djRestyle）。
      id 等於頁 id 時改的是頁面屬性（name／notes／skip…），不能 remove。回傳本頁溢出清單 */
   async patch(pid,changes){
     const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
@@ -116,6 +141,8 @@ const DJ=Object.freeze({
     let n=0; const warnings=[];
     for(const c of (Array.isArray(changes)? changes : [changes])){
       if(!c||typeof c!=='object'||!c.id) throw djErr('each change needs an id');
+      for(const k of Object.keys(c)) if(!DJ_CHANGE_KEYS.includes(k))
+        throw djErr(`unknown key "${k}" in a change (allowed: ${DJ_CHANGE_KEYS.join(', ')}); element fields go inside set`);
       if(pg&&c.id===pg.id){
         if(c.remove) throw djErr('use removePage() to delete a page');
         for(const k of Object.keys(c.set||{}).concat(c.unset||[]))
@@ -126,6 +153,12 @@ const DJ=Object.freeze({
       const i=els.findIndex(e=>e.id===c.id);
       if(i<0) throw djErr(`no element "${c.id}" on page "${pid}"`);
       if(c.remove){ els.splice(i,1); n++; continue; }
+      if(c.md!=null){
+        if(!(els[i].type==='text'||(els[i].type==='shape'&&!LINE_KINDS[els[i].shape])))
+          throw djErr(`"${c.id}" is a ${els[i].type}; md only replaces the text of a text box or shape`);
+        if(c.set&&'paras' in c.set) throw djErr('give either md or set.paras, not both');
+        els[i].paras=djRestyle(els[i].paras,c.md);
+      }
       if(c.set&&('id' in c.set||'type' in c.set)) throw djErr('id and type cannot be changed; remove and add instead');
       if(c.set) warnings.push(...schemaCheck(Object.assign({type:els[i].type},c.set),'element',c.id));
       Object.assign(els[i],c.set||{}); for(const k of c.unset||[]) delete els[i][k];
@@ -226,14 +259,36 @@ const DJ=Object.freeze({
   /* 載入：Blob／File／ArrayBuffer（.deck 容器或純 JSON）、JSON 字串或物件。
      會清掉「目前開啟的檔案」：否則之後按 Cmd/Ctrl+S 會把這份寫進原本那個檔 */
   async load(src){
-    let obj=src;
-    if(src instanceof Blob) obj=await deckFromFile(src);
-    else if(src instanceof ArrayBuffer) obj=await deckFromFile(new Blob([src]));
-    else if(typeof src==='string') obj=JSON.parse(src);
+    const obj=await djReadDeck(src);
     const warnings=schemaCheck(obj,'deck');
     loadDeck(obj); setDeckFile(null);
     await djSettle();
     return {pages:APP.deck.pages.length,page:APP.page,warnings};
+  },
+  /* 從模板開新簡報：沿用模板的整份設定（尺寸、預留區、字體、樣式模式、母版、頁碼日期…），只篩頁面。
+     pages：'shown'（預設）＝只留會放映的頁——模板的規格頁、說明頁、元件頁慣例上設為不放映，正好濾掉；
+     'all'＝全留；或頁 id／頁名的陣列（依陣列順序）。標題不沿用模板的，除非給 title。
+     同 load：一步可復原，並清掉目前開啟的檔案，免得存檔寫回模板本身 */
+  async fromTemplate(src,opt){
+    const o=opt||{}, obj=await djReadDeck(src);
+    const pages=Array.isArray(obj.pages)? obj.pages : [];
+    const want=o.pages==null? 'shown' : o.pages;
+    let keep;
+    if(want==='all') keep=pages.slice();
+    else if(want==='shown') keep=pages.filter(p=>!p.skip);
+    else if(Array.isArray(want)){
+      keep=want.map(ref=>{ const p=pages.find(p=>p.id===ref)||pages.find(p=>p.name===ref);
+        if(!p) throw djErr(`template has no page "${ref}" (pages: ${pages.map(p=>p.name||p.id).join(', ')})`); return p; });
+      if(new Set(keep).size!==keep.length) throw djErr('the same template page is listed twice; copy it later with addPage(get(id))');
+    }
+    else throw djErr("pages must be 'shown', 'all', or an array of page ids/names");
+    const dropped=pages.filter(p=>!keep.includes(p)).map(p=>({id:p.id,name:p.name||''}));
+    const d=Object.assign({},obj,{pages:keep.length? keep : [newPage()]});
+    if(o.title!=null&&String(o.title).trim()) d.title=String(o.title).trim(); else delete d.title;
+    const warnings=schemaCheck(d,'deck');
+    loadDeck(d); setDeckFile(null);
+    await djSettle();
+    return {pages:DJ.list().map(({n,id,name})=>({n,id,name})),dropped,warnings};
   },
   toBlob(){ return deckToBlob(); },
   async snapshot(pid,opt){

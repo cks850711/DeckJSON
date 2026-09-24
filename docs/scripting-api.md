@@ -44,7 +44,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Does |
 |---|---|
-| `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?}`: `set` merges fields shallowly (to change `paras`, pass the whole array), `unset` is a list of keys to delete, `remove: true` deletes the element. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
+| `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape **while keeping its formatting** (see below). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
 | `add(pageId, elements)` | Adds elements on top of the page. Missing ids, or ids already used on that page, get a fresh one. Returns `{page, ids, overflow}` with the ids actually used, in input order |
 | `replacePage(pageId, json)` | Replaces the page's elements (and any page fields present in `json`). Fields not given keep their current values; the page id never changes. `json` may also be a bare elements array |
 | `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). Returns `{page, n, overflow}` |
@@ -63,6 +63,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Does |
 |---|---|
+| `fromTemplate(src, {pages?, title?})` | Starts a new deck from a template: keeps all of the template's settings (slide size, reserved zones, fonts, style mode, master, page numbers…) and only filters its pages. `pages` is `'shown'` (default: pages not marked "skip" — templates conventionally hide their instruction and component pages), `'all'`, or an array of page ids/names in the order you want. The template's title is not reused unless you pass `title`. Returns `{pages, dropped, warnings}`. Like `load`, it is one undo step and clears the currently open file |
 | `load(src)` | Loads a deck from a `Blob`/`File`/`ArrayBuffer` (`.deck` container or plain JSON), a JSON string, or an object. Clears the "currently open file", so a later Cmd/Ctrl+S can't overwrite the file that was open before |
 | `toBlob()` | The deck as a `.deck` file (`Blob`) |
 | `snapshot(pageId, {scale?, format?})` | A PNG (or `format: 'jpeg'`) image of one page as a `Blob` |
@@ -70,6 +71,19 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `show(pageId)` | Switches the editor to that page, for the person watching. The only call that changes the view |
 
 Saving to disk is up to the caller: a browser page can't write files on its own without the user picking a location. A typical script posts `toBlob()` to a small local receiver.
+
+## Changing text without losing its formatting
+
+Replacing `paras` through `set` replaces the formatting too: a 44 pt colored title becomes default 18 pt black text. To change only the words, use `md`:
+
+```js
+await DJ.patch(page, [{id: 'title', md: 'New title'}])
+await DJ.patch(page, [{id: 'box', md: 'First line **bold part**\nSecond line'}])
+```
+
+Each line becomes a paragraph. Line *k* takes the paragraph settings (alignment, bullet, spacing) and the character style of the first run of the old paragraph *k*; extra lines reuse the last old paragraph. Inline markdown (`**bold**`, `*italic*`, `==highlight==`…) still applies on top.
+
+To start a page from a template page, copy it and then replace its text: `const {page} = await DJ.addPage(DJ.get(examplePageId), examplePageId)`.
 
 ## Unknown fields
 

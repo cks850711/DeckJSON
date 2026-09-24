@@ -30,6 +30,17 @@ function fixture() {
   };
 }
 
+const PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+function template() {
+  return {
+    title: 'My template', stage: {w: 1280, h: 720}, pages: [
+      {id: 'tSpec', name: 'Spec', skip: true, notes: 'rules', elements: [TEXT('s1', 0, 0, 400, 40, 'rules')]},
+      {id: 'tEx', name: 'Example', elements: [TEXT('title', 20, 0, 900, 80, 'Title'), TEXT('sub', 40, 90, 900, 36, 'Subtitle')]},
+      {id: 'tComp', name: 'Component', skip: true, elements: [{id: 'icon', type: 'image', x: 0, y: 0, w: 40, h: 40, dataUrl: PX}]},
+    ],
+  };
+}
+
 export default async function run() {
   const DJ = window.DJ, results = [];
   const ok = (name, cond, info) => results.push({name, pass: !!cond, info});
@@ -113,6 +124,19 @@ export default async function run() {
     await DJ.removePage(np.page);
     ok('removePage', DJ.list().length === 2);
 
+    // ---- 換文字、留樣式 ----
+    const st = await DJ.add('pB', [{id: 'styled', type: 'text', x: 0, y: 0, w: 900, h: 100, valign: 'middle',
+      paras: [{align: 'center', runs: [{text: 'Old title', sizePt: 44, color: '5E3687', bold: true}]}]}]);
+    await DJ.patch('pB', [{id: 'styled', md: '新標題 **重點**\n第二行'}]);
+    const sp = DJ.get('pB', 'styled').paras;
+    ok('md: keeps size, color and paragraph align', sp[0].runs[0].sizePt === 44 && sp[0].runs[0].color === '5E3687' && sp[0].align === 'center', sp);
+    ok('md: inline markdown still applies', sp[0].runs.some(r => r.text === '重點' && r.bold));
+    ok('md: extra lines reuse the last paragraph style', sp.length === 2 && sp[1].runs[0].sizePt === 44, sp);
+    ok('md: element fields untouched', DJ.get('pB', 'styled').valign === 'middle');
+    await throws('md: not on a table', () => DJ.patch('pA', [{id: 'tbl', md: 'x'}]));
+    await throws('change keys are strict (typo "sett")', () => DJ.patch('pB', [{id: 'styled', sett: {x: 1}}]));
+    await DJ.patch('pB', [{id: 'styled', remove: true}]);
+
     // ---- 不認得的欄位：只警告、照樣寫入 ----
     const w1 = await DJ.add('pB', [{type: 'shape', shape: 'line', x: 0, y: 600, w: 200, h: 0, endArrow: 'triangle'}]);
     ok('warn: endArrow gets the arrow hint', w1.warnings.length === 1 && /shape:'arrow'/.test(w1.warnings[0]), w1.warnings);
@@ -128,6 +152,30 @@ export default async function run() {
     ok('lint: finds what was written', DJ.lint('pB').length === 4, DJ.lint('pB'));
     ok('lint: clean page is clean', DJ.lint('pA').length === 0, DJ.lint('pA'));
     await DJ.patch('pB', [w1.ids[0], w4.ids[0], w5.ids[0]].map(id => ({id, remove: true})).concat([{id: 'tall', unset: ['fil']}]));
+
+    // ---- 從模板開新簡報 ----
+    await DJ.load(template());
+    const tplBlob = await DJ.toBlob();            // 走 .deck 容器（資產另存）這條路
+    DJ.show(DJ.list()[0].id);
+    const t1 = await DJ.fromTemplate(tplBlob);
+    ok('fromTemplate: keeps only shown pages', t1.pages.length === 1 && t1.pages[0].id === 'tEx', t1.pages);
+    ok('fromTemplate: reports dropped pages', t1.dropped.map(d => d.name).join() === 'Spec,Component', t1.dropped);
+    ok('fromTemplate: template title not reused', DJ.info().title !== 'My template', DJ.info().title);
+    ok('fromTemplate: settings kept, file cleared', DJ.info().stage.w === 1280 && DJ.info().file === null);
+    const t2 = await DJ.fromTemplate(tplBlob, {pages: ['Component', 'tEx'], title: 'Report'});
+    ok('fromTemplate: listed pages in given order', t2.pages.map(p => p.id).join() === 'tComp,tEx', t2.pages);
+    ok('fromTemplate: title option', DJ.info().title === 'Report');
+    // get() 把位元組遮成 @asset: 佔位；佔位只在記憶體裡真的有位元組時才會出現
+    ok('fromTemplate: image bytes survive the container', /^@asset:icon /.test(DJ.get('tComp', 'icon').dataUrl || ''), DJ.get('tComp', 'icon').dataUrl);
+    const t3 = await DJ.fromTemplate(tplBlob, {pages: 'all'});
+    ok('fromTemplate: all', t3.pages.length === 3 && t3.dropped.length === 0);
+    const cp = await DJ.addPage(DJ.get('tEx'), 'tEx');
+    ok('copy a template page with addPage(get())', cp.page !== 'tEx' && DJ.outline(cp.page).map(o => o.id).join() === 'title,sub', DJ.list());
+    const beforeBad = JSON.stringify(DJ.list());
+    await throws('fromTemplate: unknown page throws', () => DJ.fromTemplate(tplBlob, {pages: ['Nope']}));
+    ok('fromTemplate: failed call leaves deck unchanged', JSON.stringify(DJ.list()) === beforeBad);
+    await throws('fromTemplate: duplicate page throws', () => DJ.fromTemplate(tplBlob, {pages: ['tEx', 'Example']}));
+    await DJ.load(fixture());
 
     // ---- 進出 ----
     const blob = await DJ.toBlob();

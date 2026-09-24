@@ -44,7 +44,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 作用 |
 |---|---|
-| `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
+| `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字**但保留格式**（見下文）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
 | `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、或 id 已被該頁用掉的，自動配新的。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
 | `replacePage(pageId, json)` | 換掉該頁的元素（以及 `json` 裡有列出的頁面欄位）。沒列出的欄位沿用原值，頁 id 不變。`json` 也可以直接是元素陣列 |
 | `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。回傳 `{page, n, overflow}` |
@@ -63,6 +63,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 作用 |
 |---|---|
+| `fromTemplate(src, {pages?, title?})` | 從模板開新簡報：沿用模板的全部設定（投影片尺寸、預留區、字體、樣式模式、母版、頁碼…），只篩選頁面。`pages` 可為 `'shown'`（預設：沒有設為不放映的頁——模板慣例上會把說明頁、元件頁設為不放映）、`'all'`，或依想要順序排列的頁 id／頁名陣列。不沿用模板的標題，除非給 `title`。回傳 `{pages, dropped, warnings}`。和 `load` 一樣是一步復原，並清掉目前開啟的檔案 |
 | `load(src)` | 載入簡報：`Blob`／`File`／`ArrayBuffer`（`.deck` 容器或純 JSON）、JSON 字串或物件。會清掉「目前開啟的檔案」，之後按 Cmd/Ctrl+S 才不會把它寫進先前開著的那個檔 |
 | `toBlob()` | 整份簡報的 `.deck` 檔（`Blob`） |
 | `snapshot(pageId, {scale?, format?})` | 單頁的 PNG（或 `format: 'jpeg'`）圖片，`Blob` |
@@ -70,6 +71,19 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `show(pageId)` | 把編輯器切到那一頁給旁觀的人看。唯一會改變畫面的呼叫 |
 
 存到磁碟由呼叫端負責：網頁不經使用者選位置，不能自己寫檔。常見做法是把 `toBlob()` POST 給一支本機的小型收檔程式。
+
+## 換文字、不丟格式
+
+用 `set` 換 `paras` 會連格式一起換掉：44pt 的彩色標題會變成預設的 18pt 黑字。只想換字就用 `md`：
+
+```js
+await DJ.patch(page, [{id: 'title', md: '新標題'}])
+await DJ.patch(page, [{id: 'box', md: '第一行 **粗體部分**\n第二行'}])
+```
+
+每一行成為一個段落。第 *k* 行沿用原本第 *k* 段的段落設定（對齊、項目符號、段距）與第一個文字片段的字元樣式；多出來的行沿用原本最後一段。行內 markdown（`**粗體**`、`*斜體*`、`==標記==`…）照樣疊加上去。
+
+要以模板裡的某一頁為起點，先複製再換字：`const {page} = await DJ.addPage(DJ.get(範例頁id), 範例頁id)`。
 
 ## 不認得的欄位
 
