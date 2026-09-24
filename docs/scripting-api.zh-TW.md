@@ -20,6 +20,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 - **回傳時版面已穩定。** 會重繪的呼叫是 `async`，等排版（與網頁字型）穩定才回傳，緊接著量測也是準的。
 - **回傳值很小。** 讀取預設回摘要；需要完整 JSON 時才另外要。
 - **錯誤**以 `Error` 拋出，訊息以 `DJ:` 開頭。
+- **不認得的欄位只回報、不擋。** 每個寫入呼叫都回傳 `warnings`：這次傳入的 JSON 裡 DeckJSON 不認得的欄位——拼錯的名字、放錯層、或根本不存在的欄位。它們照樣寫入（不丟資料），但不會有任何效果，所以要看這份清單。
 
 `DJ.version` 目前是 `1`，只在不相容的改動時變更；新增動詞不算。
 
@@ -56,6 +57,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}`：文字框剛好裝下文字需要的尺寸。橫書比 `needH` 與 `h`，直書比 `needW` 與 `w`。不改任何東西 |
 | `fit(pageId, ids)` | 把文字框縮放到剛好裝下文字：橫書調高（上緣不動），直書調寬（左緣不動）。`ids` 必填，免得刻意留高的卡片被一起收掉。等同編輯器裡的「貼合內容」。回傳 `{page, fitted:[{id, from, to}], overflow}` |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
+| `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西）。可給單頁、`'master'`，省略則掃整份 |
 
 ## 檔案與輸出
 
@@ -68,6 +70,18 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `show(pageId)` | 把編輯器切到那一頁給旁觀的人看。唯一會改變畫面的呼叫 |
 
 存到磁碟由呼叫端負責：網頁不經使用者選位置，不能自己寫檔。常見做法是把 `toBlob()` POST 給一支本機的小型收檔程式。
+
+## 不認得的欄位
+
+每條警告寫明欄位、在哪一層發現，以及有的話附上提示：
+
+```
+tx-1.paras[0].runs[0].valign: unknown field on a text run — valid on a table cell, text/shape elements, not on a text run
+added[0].endArrow: unknown field on shape element — arrowheads are a line kind: use shape:'arrow' or 'doubleArrow' (or 'elbowArrow')
+tx-2.fil: unknown field on text element — did you mean "fill"?
+```
+
+同樣的檢查也能在瀏覽器外跑：`node tools/deck-lint.js <檔案.deck>` 列出已存檔案裡不認得的欄位（有的話離開碼 1；`--json` 輸出給程式讀）。它載入的是 app 自己的 `src/app/model/schema.js`，結果永遠和上面的警告一致。
 
 ## 測試
 

@@ -15,6 +15,8 @@
    - 寫入先在副本上做完、過 normalizeDeck，成功才換上並 commitUndo（使用者按 Cmd/Ctrl+Z 可撤銷）；
      任何一步出錯就拋例外，簡報原封不動，不會留下半套
    - 會重繪的動詞是 async，等排版穩定才回傳
+   - 寫入類動詞的回傳值帶 warnings：這次傳進來的 JSON 裡不認得的欄位（見 model/schema.js）。
+     只警告、照樣寫入——寫錯欄位名在畫面上只是「沒效果」，不回報的話呼叫端無從得知
    - version 只在不相容的改動時 +1；新增動詞不算 */
 const DJ_VERSION=1;
 
@@ -111,7 +113,7 @@ const DJ=Object.freeze({
   async patch(pid,changes){
     const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
     const pg=pid==='master'? null : djPage(t,pid);
-    let n=0;
+    let n=0; const warnings=[];
     for(const c of (Array.isArray(changes)? changes : [changes])){
       if(!c||typeof c!=='object'||!c.id) throw djErr('each change needs an id');
       if(pg&&c.id===pg.id){
@@ -125,18 +127,20 @@ const DJ=Object.freeze({
       if(i<0) throw djErr(`no element "${c.id}" on page "${pid}"`);
       if(c.remove){ els.splice(i,1); n++; continue; }
       if(c.set&&('id' in c.set||'type' in c.set)) throw djErr('id and type cannot be changed; remove and add instead');
+      if(c.set) warnings.push(...schemaCheck(Object.assign({type:els[i].type},c.set),'element',c.id));
       Object.assign(els[i],c.set||{}); for(const k of c.unset||[]) delete els[i][k];
       n++;
     }
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
-    return {page:pid,changed:n,overflow:djOverIds(pid)};
+    return {page:pid,changed:n,overflow:djOverIds(pid),warnings};
   },
   /* 加元素到該頁最上層。沒給 id 或與本頁（含母版）撞號的自動配，回傳實際的 id（順序同輸入）。
      與**別頁**同 id 是刻意允許的：那是 Morph 配對的方式 */
   async add(pid,elements){
     const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
     const list=(Array.isArray(elements)? elements : [elements]).map(e=>structuredClone(e));
+    const warnings=schemaCheck(list,'elements','added');
     const taken=new Set(els.map(e=>e.id));
     for(const e of (t.master&&t.master.elements)||[]) taken.add(e.id);
     for(const e of list){
@@ -146,22 +150,24 @@ const DJ=Object.freeze({
     }
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
-    return {page:pid,ids:list.map(e=>e.id),overflow:djOverIds(pid)};
+    return {page:pid,ids:list.map(e=>e.id),overflow:djOverIds(pid),warnings};
   },
   /* 整頁替換（elements 與列出的頁面屬性）。沒列出的頁面屬性沿用原頁，頁 id 不變 */
   async replacePage(pid,json){
     if(Array.isArray(json)) json={elements:json};
     if(!json||!Array.isArray(json.elements)) throw djErr('page JSON needs an elements array');
+    const warnings=schemaCheck(json,'page',pid);
     const s=snapshot(), t=structuredClone(APP.deck), i=t.pages.indexOf(djPage(t,pid));
     const next={id:pid,elements:structuredClone(json.elements)};
     for(const k of DJ_PAGE_KEYS) next[k]=(k in json)? structuredClone(json[k]) : t.pages[i][k];
     t.pages[i]=next;
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
-    return {page:pid,overflow:djOverIds(pid)};
+    return {page:pid,overflow:djOverIds(pid),warnings};
   },
   /* 新增一頁，插在 after 那頁之後（省略＝最後）。回傳新頁 id */
   async addPage(json,after){
+    const warnings=schemaCheck(json||{},'page','new page');
     const s=snapshot(), t=structuredClone(APP.deck);
     const pg=Object.assign(newPage(),structuredClone(json||{}));
     if(!Array.isArray(pg.elements)) pg.elements=[];
@@ -170,7 +176,7 @@ const DJ=Object.freeze({
     t.pages.splice(at,0,pg);
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
-    return {page:pg.id,n:at+1,overflow:djOverIds(pg.id)};
+    return {page:pg.id,n:at+1,overflow:djOverIds(pg.id),warnings};
   },
   async removePage(pid){
     const s=snapshot(), t=structuredClone(APP.deck), i=t.pages.indexOf(djPage(t,pid));
@@ -209,6 +215,13 @@ const DJ=Object.freeze({
     return out;
   },
 
+  /* 掃既有內容裡不認得的欄位（寫入類動詞只檢查這次傳進來的東西）。給 pid 只掃那一頁，省略掃整份 */
+  lint(pid){
+    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master');
+    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid);
+    return schemaCheck(APP.deck,'deck');
+  },
+
   /* ---------- 進出 ---------- */
   /* 載入：Blob／File／ArrayBuffer（.deck 容器或純 JSON）、JSON 字串或物件。
      會清掉「目前開啟的檔案」：否則之後按 Cmd/Ctrl+S 會把這份寫進原本那個檔 */
@@ -217,9 +230,10 @@ const DJ=Object.freeze({
     if(src instanceof Blob) obj=await deckFromFile(src);
     else if(src instanceof ArrayBuffer) obj=await deckFromFile(new Blob([src]));
     else if(typeof src==='string') obj=JSON.parse(src);
+    const warnings=schemaCheck(obj,'deck');
     loadDeck(obj); setDeckFile(null);
     await djSettle();
-    return {pages:APP.deck.pages.length,page:APP.page};
+    return {pages:APP.deck.pages.length,page:APP.page,warnings};
   },
   toBlob(){ return deckToBlob(); },
   async snapshot(pid,opt){

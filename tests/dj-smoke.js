@@ -42,8 +42,9 @@ export default async function run() {
   const original = await DJ.toBlob();
   try {
     ok('version is 1', DJ.version === 1);
-    await DJ.load(fixture());
+    const lr = await DJ.load(fixture());
     ok('load: two pages', DJ.list().length === 2);
+    ok('load: clean fixture has no warnings', lr.warnings.length === 0, lr.warnings);
     ok('load: file handle cleared', DJ.info().file === null);
 
     // ---- 讀 ----
@@ -111,6 +112,22 @@ export default async function run() {
     ok('patch: remove element', !DJ.outline('pB').some(o => o.id === a.ids[0]));
     await DJ.removePage(np.page);
     ok('removePage', DJ.list().length === 2);
+
+    // ---- 不認得的欄位：只警告、照樣寫入 ----
+    const w1 = await DJ.add('pB', [{type: 'shape', shape: 'line', x: 0, y: 600, w: 200, h: 0, endArrow: 'triangle'}]);
+    ok('warn: endArrow gets the arrow hint', w1.warnings.length === 1 && /shape:'arrow'/.test(w1.warnings[0]), w1.warnings);
+    ok('warn: element still added', DJ.outline('pB').some(o => o.id === w1.ids[0]));
+    const w2 = await DJ.patch('pB', [{id: 'tall', set: {paras: [{runs: [{text: 'x', valign: 'middle'}]}]}}]);
+    ok('warn: valign on a run points to the right level', w2.warnings.length === 1 && /not on a text run/.test(w2.warnings[0]), w2.warnings);
+    const w3 = await DJ.patch('pB', [{id: 'tall', set: {fil: 'FF0000'}}]);
+    ok('warn: typo suggests the near name', /did you mean "fill"/.test(w3.warnings[0] || ''), w3.warnings);
+    const w4 = await DJ.add('pB', [{type: 'table', x: 0, y: 0, w: 300, colW: [100], rowH: [30], cells: [[{md: 'a'}]]}]);
+    ok('warn: table w is not a table field', w4.warnings.length === 1 && /\.w: /.test(w4.warnings[0]), w4.warnings);
+    const w5 = await DJ.add('pB', [{type: 'text', x: 0, y: 0, w: 100, h: 30, paras: [{md: 'ok', bullet: {type: 'bullet', level: 0}}], fill: 'EEEEEE', role: 'title'}]);
+    ok('warn: valid element has no warnings (role is a documented field)', w5.warnings.length === 0, w5.warnings);
+    ok('lint: finds what was written', DJ.lint('pB').length === 4, DJ.lint('pB'));
+    ok('lint: clean page is clean', DJ.lint('pA').length === 0, DJ.lint('pA'));
+    await DJ.patch('pB', [w1.ids[0], w4.ids[0], w5.ids[0]].map(id => ({id, remove: true})).concat([{id: 'tall', unset: ['fil']}]));
 
     // ---- 進出 ----
     const blob = await DJ.toBlob();

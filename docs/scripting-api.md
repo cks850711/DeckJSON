@@ -20,6 +20,7 @@ const blob = await DJ.toBlob()                   // the .deck file, ready to sav
 - **Settled on return.** Calls that re-render are `async` and resolve after layout (and web fonts) have settled, so a measurement taken right after is accurate.
 - **Small results.** Reads return summaries by default; ask for full JSON only when you need it.
 - **Errors** are thrown as `Error` with a message starting `DJ:`.
+- **Unknown fields are reported, not rejected.** Every write returns `warnings`: fields in the JSON you passed that DeckJSON doesn't recognize — a misspelled name, a field on the wrong level, or one that doesn't exist. They're still written (nothing is dropped), but they have no effect, so read the list.
 
 `DJ.version` is `1`. It changes only on incompatible changes; new verbs don't bump it.
 
@@ -56,6 +57,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}` — the size the text box needs to hold its text exactly. Horizontal text: compare `needH` with `h`. Vertical text: compare `needW` with `w`. Changes nothing |
 | `fit(pageId, ids)` | Resizes text boxes to fit their text — height for horizontal text (top edge stays), width for vertical text (left edge stays). `ids` is required, so a card deliberately taller than its text isn't collapsed by accident. Same as **Fit to text** in the editor. Returns `{page, fitted:[{id, from, to}], overflow}` |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
+| `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in). One page, `'master'`, or the whole deck when omitted |
 
 ## Files and output
 
@@ -68,6 +70,18 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `show(pageId)` | Switches the editor to that page, for the person watching. The only call that changes the view |
 
 Saving to disk is up to the caller: a browser page can't write files on its own without the user picking a location. A typical script posts `toBlob()` to a small local receiver.
+
+## Unknown fields
+
+A warning names the field, the level it was found on, and a hint when one is available:
+
+```
+tx-1.paras[0].runs[0].valign: unknown field on a text run — valid on a table cell, text/shape elements, not on a text run
+added[0].endArrow: unknown field on shape element — arrowheads are a line kind: use shape:'arrow' or 'doubleArrow' (or 'elbowArrow')
+tx-2.fil: unknown field on text element — did you mean "fill"?
+```
+
+The same check runs outside the browser: `node tools/deck-lint.js <file.deck>` lists unknown fields in a saved file (exit code 1 if there are any; `--json` for machine-readable output). It loads the app's own `src/app/model/schema.js`, so it always agrees with the warnings above.
 
 ## Testing
 
