@@ -209,6 +209,47 @@ export default async function run() {
     try { await DJ.patch('iA', [{id: 'pic', set: {dataUrl: '@asset:pic (1KB)'}}]); } catch (e) { oldErr = e.message; }
     ok('assets: ambiguous old id placeholder throws', /@asset:pic/.test(oldErr), oldErr || 'did not throw');
     ok('assets: failed call leaves deck unchanged', JSON.stringify(DJ.get('iA')) === beforeOld);
+
+    // ---- addImage：轉碼、原始尺寸、不變形的框 ----
+    const canvasBlob = (w, h, noise) => new Promise(res => {
+      const k = document.createElement('canvas'); k.width = w; k.height = h;
+      const g = k.getContext('2d');
+      if (noise) {   // 雜訊壓不小，用來做出「原圖遠大於所需」的檔
+        const d = g.createImageData(w, h);
+        for (let i = 0; i < d.data.length; i += 4) { d.data[i] = Math.random() * 255; d.data[i + 1] = Math.random() * 255; d.data[i + 2] = Math.random() * 255; d.data[i + 3] = 255; }
+        g.putImageData(d, 0, 0);
+      } else { g.fillStyle = '#f80'; g.fillRect(0, 0, w, h); }
+      k.toBlob(res, 'image/png');
+    });
+    const wide = await canvasBlob(400, 200);
+    const box = (pid, id) => { const e = DJ.get(pid, id); return [e.x, e.y, e.w, e.h, e.natW, e.natH].join(); };
+    const i1 = await DJ.addImage('iA', wide, {x: 100, y: 100, w: 300, h: 300, alt: 'orange'});
+    ok('addImage: contain in box keeps aspect and centers', box('iA', i1.id) === '100,175,300,150,400,200', box('iA', i1.id));
+    ok('addImage: alt and no warnings', DJ.get('iA', i1.id).alt === 'orange' && i1.warnings.length === 0, i1);
+    const i2 = await DJ.addImage('iA', wide, {x: 0, y: 0, h: 100});
+    ok('addImage: only h gives w from aspect', box('iA', i2.id) === '0,0,200,100,400,200', box('iA', i2.id));
+    const i3 = await DJ.addImage('iA', wide);
+    ok('addImage: no size = half size, centered', box('iA', i3.id) === '540,310,200,100,400,200', box('iA', i3.id));
+    const i4 = await DJ.addImage('iA', wide, {x: 0, y: 0, w: 300, h: 300, fit: 'cover'});
+    ok('addImage: cover fills the box', box('iA', i4.id) === '0,0,300,300,400,200' && DJ.get('iA', i4.id).fit === 'cover', DJ.get('iA', i4.id));
+    const bu = URL.createObjectURL(wide);
+    const i5 = await DJ.addImage('iA', bu, {w: 100});
+    URL.revokeObjectURL(bu);
+    ok('addImage: fetches a URL', box('iA', i5.id).endsWith('100,50,400,200'), box('iA', i5.id));
+    ok('addImage: same bytes from Blob and URL are one asset', DJ.assets().length === 3, DJ.assets().map(a => a.asset));
+    const i6 = await DJ.addImage('iA', blue.asset, {w: 30});
+    ok('addImage: reuse an @asset placeholder', key(DJ.get('iA', i6.id).dataUrl) === blue.asset && DJ.get('iA', i6.id).h === 20, DJ.get('iA', i6.id));
+    const beforeImg = JSON.stringify(DJ.outline('iA'));
+    await throws('addImage: 404 throws', () => DJ.addImage('iA', '/no-such-image-dj-smoke.png'));
+    await throws('addImage: non-image URL throws', () => DJ.addImage('iA', '/tests/dj-smoke.js'));
+    await throws('addImage: unknown option throws', () => DJ.addImage('iA', wide, {width: 100}));
+    await throws('addImage: cover needs a box', () => DJ.addImage('iA', wide, {w: 100, fit: 'cover'}));
+    ok('addImage: failed calls leave deck unchanged', JSON.stringify(DJ.outline('iA')) === beforeImg);
+    const big = await canvasBlob(900, 600, true);
+    const i7 = await DJ.addImage('iA', big, {w: 150});
+    ok('addImage: warns when far larger than shown', i7.warnings.some(w => /compress/.test(w)), i7.warnings);
+    const i8 = await DJ.addImage('iA', big, {w: 150, compress: 'web'});
+    ok('addImage: compress shrinks to display need', i8.natW === 225 && i8.kb < i7.kb && i8.warnings.length === 0, [i7.kb, i8]);
     await DJ.load(fixture());
 
     // ---- 進出 ----

@@ -47,6 +47,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 |---|---|
 | `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字**但保留格式**（見下文）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
 | `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、或 id 已被該頁用掉的，自動配新的。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
+| `addImage(pageId, src, opts?)` | 加一張圖，轉碼、讀原始尺寸、算不變形的框都由它做。見下文〈圖片〉。回傳 `{page, id, natW, natH, kb, overflow, warnings}` |
 | `replacePage(pageId, json)` | 換掉該頁的元素（以及 `json` 裡有列出的頁面欄位）。沒列出的欄位沿用原值，頁 id 不變。`json` 也可以直接是元素陣列 |
 | `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。回傳 `{page, n, overflow}` |
 | `removePage(pageId)` | 刪除一頁。只剩一頁時不能刪 |
@@ -85,6 +86,27 @@ await DJ.patch(page, [{id: 'box', md: '第一行 **粗體部分**\n第二行'}])
 每一行成為一個段落。第 *k* 行沿用原本第 *k* 段的段落設定（對齊、項目符號、段距）與第一個文字片段的字元樣式；多出來的行沿用原本最後一段。行內 markdown（`**粗體**`、`*斜體*`、`==標記==`…）照樣疊加上去。
 
 要以模板裡的某一頁為起點，先複製再換字：`const {page} = await DJ.addPage(DJ.get(範例頁id), 範例頁id)`。
+
+## 圖片
+
+`addImage` 的 `src` 可以是 `Blob`／`File`、瀏覽器 fetch 得到的網址、`data:` URL，或 `assets()` 列出的佔位（重用簡報裡已有的圖）。`opts` 是 `{x, y, w, h, fit, compress, id, alt}`，其他鍵一律報錯：
+
+| 給了什麼 | 結果 |
+|---|---|
+| `w` 和 `h` | 圖按比例放進這個框並置中，元素框就是縮好的圖，不留白 |
+| `w`、`h` 加上 `fit: 'cover'` | 元素框就是這個框，圖放大填滿、超出的部分裁掉 |
+| 只給 `w` 或 `h` | 另一邊按原圖比例算 |
+| 都沒給 | 同編輯器的插入圖片：原圖一半，最多畫布的六成 |
+
+`x`、`y` 是框的左上角，省略則置中於畫布。`compress: 'web'｜'std'｜'print'` 會按顯示尺寸重編碼（1.5、2、3 倍像素），與屬性面板的圖片壓縮是同一套，**不可逆**。沒壓縮而原圖遠大於顯示所需時，`warnings` 會提醒。抓回來的不是圖（例如 404 頁）就拋錯，不會把破圖放進簡報。
+
+```js
+await DJ.addImage(page, '/figures/chart.png', {x: 640, y: 120, w: 560, h: 420, alt: '年度營收'})
+const logo = DJ.assets().find(a => a.usedBy.some(u => u.page === 'master'))
+await DJ.addImage(page, logo.asset, {x: 40, y: 640, h: 48})
+```
+
+JSON 裡的圖片以 `@asset:<雜湊>` 佔位出現，雜湊按圖片內容算：同一張圖在哪裡都是同一個佔位，也就是 `.deck` 檔裡 `assets/` 下的檔名。所以直接寫 `{type: 'image', dataUrl: '@asset:…', …}` 也能重用那張圖，`natW`／`natH` 可省。舊版的 `@asset:<元素id>` 佔位照樣能還原，但只在那個 id 全簡報只對應一張圖時。
 
 ## 不認得的欄位
 

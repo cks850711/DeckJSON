@@ -12217,6 +12217,30 @@ function djOver(el){
 }
 function djOverIds(pid){ return djEls(APP.deck,pid).filter(djOver).map(el=>el.id); }
 const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
+const DJ_IMG_OPTS=['x','y','w','h','fit','compress','id','alt'];
+const djBlobUrl=b=>new Promise((res,rej)=>{ const rd=new FileReader();
+  rd.onload=()=>res(rd.result); rd.onerror=()=>rej(djErr('could not read the image bytes')); rd.readAsDataURL(b); });
+/* addImage 的來源 → data URL。網址指的是瀏覽器 fetch 得到的位置（本機伺服器提供的檔、blob: 網址）；
+   抓回來的不是圖（例如 404 頁）就當場擋下，不讓一張破圖進簡報 */
+async function djImageUrl(src){
+  if(src instanceof Blob){
+    if(src.type&&!/^image\//.test(src.type)) throw djErr(`the Blob is ${src.type}, not an image`);
+    return await djBlobUrl(src);
+  }
+  if(typeof src!=='string'||!src) throw djErr('addImage needs a Blob, a URL, a data: URL or an @asset: placeholder');
+  if(src.startsWith('@asset:')){
+    const a=assetIndex().byKey.get(src.slice(7).split(' ')[0].trim());
+    if(!a) throw djErr(`no image ${src} in this deck (see assets())`);
+    return a.url;
+  }
+  if(src.startsWith('data:')) return src;
+  let r;
+  try{ r=await fetch(src); }catch(e){ throw djErr(`cannot fetch "${src}": ${e.message}`); }
+  if(!r.ok) throw djErr(`cannot fetch "${src}" (HTTP ${r.status})`);
+  const b=await r.blob();
+  if(b.type&&!/^image\//.test(b.type)) throw djErr(`"${src}" is ${b.type}, not an image`);
+  return await djBlobUrl(b);
+}
 
 const DJ=Object.freeze({
   version:DJ_VERSION,
@@ -12324,6 +12348,57 @@ const DJ=Object.freeze({
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
     return {page:pid,ids:list.map(e=>e.id),overflow:djOverIds(pid),warnings};
+  },
+  /* 加一張圖。自己寫 {type:'image'} 要先轉 data URL、讀原始尺寸、算不變形的寬高，每一步都容易錯
+     （寬高比算錯就變形，而且畫面上不一定看得出來）；這裡一次做完。
+     src：Blob／File、網址（fetch 得到的）、data: URL，或 assets() 的佔位（重用簡報裡已有的圖）。
+     opts：{x, y, w, h, fit, compress, id, alt}
+     - w、h 都給：圖按比例放進這個框並置中，元素框就是縮好的圖（不留白）；
+       fit:'cover' 時元素框就是這個框，圖放大填滿、超出的部分裁掉
+     - 只給 w 或 h：另一邊按原圖比例算。都沒給：同工具列插入（原圖一半，最多畫布的六成）
+     - x、y 是框（或圖）的左上角，缺省置中於畫布
+     - compress：'web'｜'std'｜'print'，按顯示尺寸重編碼，與屬性面板的圖片壓縮同一套（不可逆）
+     回傳 {page, id, natW, natH, kb, overflow, warnings}；原圖遠大於顯示所需時 warnings 會建議壓縮 */
+  async addImage(pid,src,opts){
+    djEls(APP.deck,pid);   // 頁不存在就先擋，免得白讀一張圖
+    const o=opts||{};
+    for(const k of Object.keys(o)) if(!DJ_IMG_OPTS.includes(k))
+      throw djErr(`unknown option "${k}" (allowed: ${DJ_IMG_OPTS.join(', ')})`);
+    if(o.fit!=null&&o.fit!=='contain'&&o.fit!=='cover') throw djErr(`fit must be 'contain' or 'cover'`);
+    if(o.fit==='cover'&&!(o.w>0&&o.h>0)) throw djErr(`fit:'cover' needs both w and h`);
+    const preset=o.compress==null? null : RECODE_PRESETS.find(p=>p.key===o.compress);
+    if(o.compress!=null&&!preset) throw djErr(`compress must be one of ${RECODE_PRESETS.map(p=>p.key).join(', ')}`);
+    let url=await djImageUrl(src);
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i);
+      i.onerror=()=>rej(djErr('the source could not be decoded as an image')); i.src=url; });
+    let nw=img.naturalWidth, nh=img.naturalHeight;
+    if(!(nw>0&&nh>0)){   // 沒寫 width/height 的 SVG：瀏覽器給不出原始尺寸
+      if(!(o.w>0&&o.h>0)) throw djErr('this image has no intrinsic size (an SVG without width/height?); give both w and h');
+      nw=o.w; nh=o.h;
+    }
+    let x,y,w,h,dw,dh;   // dw×dh：圖實際顯示的大小（cover 時比框大），壓縮與建議都依它
+    if(o.w>0&&o.h>0){
+      if(o.fit==='cover'){ w=o.w; h=o.h; const s=Math.max(w/nw,h/nh); dw=nw*s; dh=nh*s; }
+      else{ const s=Math.min(o.w/nw,o.h/nh); w=dw=nw*s; h=dh=nh*s; }
+      x=(o.x!=null? o.x : (STAGE_W-o.w)/2)+(o.w-w)/2; y=(o.y!=null? o.y : (STAGE_H-o.h)/2)+(o.h-h)/2;
+    }else{
+      if(o.w>0){ w=o.w; h=w*nh/nw; } else if(o.h>0){ h=o.h; w=h*nw/nh; }
+      else{ w=nw*.5; h=nh*.5; const f=Math.min(1,STAGE_W*.6/w,STAGE_H*.6/h); w*=f; h*=f; }
+      dw=w; dh=h; x=o.x!=null? o.x : (STAGE_W-w)/2; y=o.y!=null? o.y : (STAGE_H-h)/2;
+    }
+    const extra=[];
+    if(preset){
+      const rc=await recodeImage(url,Math.round(dw*preset.mul),Math.round(dh*preset.mul));
+      if(rc){ url=rc.dataUrl; nw=rc.natW; nh=rc.natH; }   // null＝原圖已不大於所需，或重編碼反而更大：保留原圖
+    }else if(nw>dw*3&&dataUrlBytes(url)>200*1024)
+      extra.push(`image: ${nw}×${nh} px shown at ${Math.round(dw)}×${Math.round(dh)} (${fmtBytes(dataUrlBytes(url))}); pass compress:'std' to shrink it`);
+    const el={type:'image',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),natW:nw,natH:nh,dataUrl:url};
+    if(o.fit==='cover') el.fit='cover';
+    if(o.id!=null) el.id=o.id;
+    if(o.alt!=null) el.alt=o.alt;
+    const r=await DJ.add(pid,[el]);
+    return {page:pid,id:r.ids[0],natW:nw,natH:nh,kb:Math.round(dataUrlBytes(url)/1024),overflow:r.overflow,
+      warnings:r.warnings.concat(extra)};
   },
   /* 整頁替換（elements 與列出的頁面屬性）。沒列出的頁面屬性沿用原頁，頁 id 不變 */
   async replacePage(pid,json){

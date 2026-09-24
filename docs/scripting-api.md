@@ -47,6 +47,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 |---|---|
 | `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape **while keeping its formatting** (see below). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
 | `add(pageId, elements)` | Adds elements on top of the page. Missing ids, or ids already used on that page, get a fresh one. Returns `{page, ids, overflow}` with the ids actually used, in input order |
+| `addImage(pageId, src, opts?)` | Adds a picture, doing the decoding, intrinsic size and undistorted box for you. See “Images” below. Returns `{page, id, natW, natH, kb, overflow, warnings}` |
 | `replacePage(pageId, json)` | Replaces the page's elements (and any page fields present in `json`). Fields not given keep their current values; the page id never changes. `json` may also be a bare elements array |
 | `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). Returns `{page, n, overflow}` |
 | `removePage(pageId)` | Deletes a page. The last remaining page can't be removed |
@@ -85,6 +86,27 @@ await DJ.patch(page, [{id: 'box', md: 'First line **bold part**\nSecond line'}])
 Each line becomes a paragraph. Line *k* takes the paragraph settings (alignment, bullet, spacing) and the character style of the first run of the old paragraph *k*; extra lines reuse the last old paragraph. Inline markdown (`**bold**`, `*italic*`, `==highlight==`…) still applies on top.
 
 To start a page from a template page, copy it and then replace its text: `const {page} = await DJ.addPage(DJ.get(examplePageId), examplePageId)`.
+
+## Images
+
+`addImage`'s `src` can be a `Blob`/`File`, a URL the browser can fetch, a `data:` URL, or a placeholder listed by `assets()` (to reuse a picture already in the deck). `opts` is `{x, y, w, h, fit, compress, id, alt}`; any other key is an error:
+
+| Given | Result |
+|---|---|
+| `w` and `h` | The picture is scaled to fit inside that box and centered; the element's frame is the scaled picture, with no empty margin |
+| `w`, `h` and `fit: 'cover'` | The element's frame is the box; the picture is enlarged to fill it and the overflow is cropped |
+| only `w` or only `h` | The other side follows the picture's aspect ratio |
+| neither | Same as Insert Image in the editor: half the original size, at most 60% of the slide |
+
+`x`, `y` are the box's top-left corner; omitted, the box is centered on the slide. `compress: 'web'|'std'|'print'` re-encodes to the displayed size (1.5×, 2×, 3× the pixels) using the same code as the image compression in the properties panel — **this can't be undone**. Without it, `warnings` tells you when the picture is far larger than it is shown. If what comes back isn't an image (a 404 page, say) the call throws instead of putting a broken picture on the slide.
+
+```js
+await DJ.addImage(page, '/figures/chart.png', {x: 640, y: 120, w: 560, h: 420, alt: 'Annual revenue'})
+const logo = DJ.assets().find(a => a.usedBy.some(u => u.page === 'master'))
+await DJ.addImage(page, logo.asset, {x: 40, y: 640, h: 48})
+```
+
+In JSON, pictures appear as `@asset:<hash>` placeholders. The hash is taken from the picture's content, so the same picture has the same placeholder everywhere — and it is the file name under `assets/` in the `.deck` file. Writing `{type: 'image', dataUrl: '@asset:…', …}` therefore reuses that picture too, and `natW`/`natH` may be left out. Older `@asset:<element id>` placeholders still resolve, but only while that id refers to a single picture across the deck.
 
 ## Unknown fields
 
