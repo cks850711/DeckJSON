@@ -4663,7 +4663,11 @@ function textFitSize(el){
   if(vert){ box.style.width='auto'; t.style.width='auto'; }
   else{ box.style.height='auto'; t.style.height='auto'; }
   stage.appendChild(box);
-  const w=vert? Math.ceil(box.offsetWidth) : el.w, h=vert? el.h : Math.ceil(box.offsetHeight);
+  /* 框的外框尺寸 ＋ 內容超出 .txt 的部分。行距小於字型本身的高度時，字形上下緣會凸出行框：
+     框高（offsetHeight）不算這一截，markOverflow 看的 scrollHeight 卻算。只量框高的話，
+     貼合完仍被判溢出（2026-09-25 實測 22 頁簡報：278 個文字框中 2 個，都是 lineSpacing 1.18 以下的大字標題，差 3–6px）。 */
+  const w=vert? Math.ceil(box.offsetWidth+Math.max(0,t.scrollWidth-t.offsetWidth)) : el.w;
+  const h=vert? el.h : Math.ceil(box.offsetHeight+Math.max(0,t.scrollHeight-t.offsetHeight));
   box.remove();
   return {w:Math.max(4,w), h:Math.max(4,h)};
 }
