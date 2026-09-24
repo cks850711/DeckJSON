@@ -37,7 +37,8 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}` — `page` is the one on screen |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text |
-| `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<id>` placeholders, which `patch`/`replacePage` resolve back |
+| `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |
+| `assets()` | `[{asset, type, kb, natW?, natH?, usedBy}]`: one entry per distinct image in the deck (including page backgrounds and video covers). `asset` is the placeholder string; `usedBy` lists the `{page, id}` or `{page, field}` that use it |
 | `get(pageId, elementId)` | One element's full JSON |
 
 ## Writing

@@ -37,7 +37,8 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}`；`page` 是畫面上那一頁 |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字 |
-| `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<id>` 佔位，`patch`／`replacePage` 會自動還原 |
+| `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |
+| `assets()` | `[{asset, type, kb, natW?, natH?, usedBy}]`，簡報裡的每張圖（含背景圖、影片封面）一筆，內容相同的只列一次。`asset` 就是佔位字串，`usedBy` 列出用到它的 `{page, id}` 或 `{page, field}` |
 | `get(pageId, elementId)` | 單一元素的完整 JSON |
 
 ## 寫入

@@ -122,19 +122,36 @@ async function deckFromFile(f){
 }
 function deckJson(){ return JSON.stringify(APP.deck,null,1); }
 /* ---- JSON 顯示層圖片佔位：base64 太長會塞爆協作視窗 ----
-   顯示時 dataUrl 換成 "@asset:<元素id> (大小)"；套用時從現有簡報按 id 還原位元組。
-   存 .json 檔仍寫完整 base64（檔案自足可攜）。新圖一律由工具插入。 */
+   顯示時 dataUrl 換成 "@asset:<雜湊> (大小)"；套用時從現有簡報按雜湊還原位元組。
+   存 .json 檔仍寫完整 base64（檔案自足可攜）。
+
+   佔位的鍵是**位元組的內容雜湊**（與容器裡 assets/<雜湊>.<副檔名> 同一個名字），不是元素 id。
+   不同頁可以有同 id 的元素（Morph 配對、複製範例頁都會產生），按 id 還原會拿到別頁的圖：
+   2026-09-25 實測兩頁同 id 各放一張圖，取出第一頁再原樣寫回，第一頁的圖就被換成第二頁的，
+   沒有任何錯誤。按內容定址就沒有這個問題，也讓「重用簡報裡已有的圖」只要寫佔位、不必搬位元組。
+   舊的 @asset:<元素id> 佔位照樣還原，但只在那個 id 全簡報只對應一張圖時；對應多張就擋下。 */
 const kb=s=>Math.round(s.length*3/4/1024)+'KB';
+let ASSET_KEYS=new Map();   // dataUrl → 雜湊。同一份位元組只解一次 base64；assetIndex() 重建時順手清掉已不在簡報裡的
+function assetKey(u){
+  let k=ASSET_KEYS.get(u);
+  if(!k){
+    const i=u.indexOf(','), head=u.slice(0,i);
+    // 非 base64 的 data URL（例：data:image/svg+xml;utf8,…）不能 atob，改雜湊文字本身
+    k=assetHash(/;base64$/i.test(head)? dataUrlDecode(u).bytes : new TextEncoder().encode(u));
+    ASSET_KEYS.set(u,k);
+  }
+  return k;
+}
+const maskable=v=>typeof v==='string'&&v.startsWith('data:')&&v.length>80;
+const assetPlaceholder=v=>'@asset:'+assetKey(v)+' ('+kb(v)+')';
 function maskedJson(root){
   const o=structuredClone(root);
   const walk=els=>(els||[]).forEach(el=>{
-    if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.length>80)
-      el.dataUrl='@asset:'+el.id+' ('+kb(el.dataUrl)+')';
-    if(el&&el.type==='video'&&typeof el.cover==='string'&&el.cover.length>80)
-      el.cover='@asset:'+el.id+' ('+kb(el.cover)+')';   // 影片封面圖同樣遮罩（影片本體從來就不在 JSON 裡）
+    if(el&&el.type==='image'&&maskable(el.dataUrl)) el.dataUrl=assetPlaceholder(el.dataUrl);
+    if(el&&el.type==='video'&&maskable(el.cover)) el.cover=assetPlaceholder(el.cover);   // 影片封面圖同樣遮罩（影片本體從來就不在 JSON 裡）
   });
-  // 頁面背景圖同樣遮罩（以頁 id 為鍵），否則單一頁面 JSON 就被 base64 塞爆
-  const maskPg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.length>80) p.bgImage='@asset:'+p.id+' ('+kb(p.bgImage)+')'; walk(p.elements); };
+  // 頁面背景圖同樣遮罩，否則單一頁面 JSON 就被 base64 塞爆
+  const maskPg=p=>{ if(maskable(p.bgImage)) p.bgImage=assetPlaceholder(p.bgImage); walk(p.elements); };
   if(o.pages){ o.pages.forEach(maskPg); if(o.master) walk(o.master.elements); }
   else if(o.id||o.elements) maskPg(o); else walk(o.elements||(Array.isArray(o)?o:[]));
   // 地圖 GeoJSON 動輒數十 KB，比照圖片遮罩，否則整份 JSON 一開就被幾何座標塞爆
@@ -144,33 +161,51 @@ function maskedJson(root){
   }
   return JSON.stringify(o,null,1);
 }
-function assetMap(){
-  const m={};
-  for(const el of (APP.deck.master&&APP.deck.master.elements)||[]){
-    if(el.type==='image'&&typeof el.dataUrl==='string'&&!el.dataUrl.startsWith('@asset:')) m[el.id]=el.dataUrl;
-    if(el.type==='video'&&typeof el.cover==='string'&&!el.cover.startsWith('@asset:')) m[el.id]=el.cover;
-  }
-  for(const p of APP.deck.pages){
-    if(typeof p.bgImage==='string'&&!p.bgImage.startsWith('@asset:')) m[p.id]=p.bgImage;
-    for(const el of p.elements){
-      if(el.type==='image'&&typeof el.dataUrl==='string'&&!el.dataUrl.startsWith('@asset:')) m[el.id]=el.dataUrl;
-      if(el.type==='video'&&typeof el.cover==='string'&&!el.cover.startsWith('@asset:')) m[el.id]=el.cover;
-    }
-  }
-  return m;
+/* 目前簡報的所有資產：byKey 是 雜湊 → {url, natW, natH, uses:[{page, id}|{page, field}]}；
+   byId 是舊佔位用的 元素／頁 id → 它帶過的 dataUrl 集合 */
+function assetIndex(){
+  const byKey=new Map(), byId=new Map(), fresh=new Map();
+  const add=(url,use,holder,el)=>{
+    if(typeof url!=='string'||!url.startsWith('data:')) return;
+    const k=assetKey(url); fresh.set(url,k);
+    let a=byKey.get(k);
+    if(!a) byKey.set(k,a={url,natW:0,natH:0,uses:[]});
+    if(el&&el.type==='image'&&el.natW>0&&el.natH>0&&!a.natW){ a.natW=el.natW; a.natH=el.natH; }
+    a.uses.push(use);
+    if(!byId.has(holder)) byId.set(holder,new Set());
+    byId.get(holder).add(url);
+  };
+  const els=(list,page)=>{ for(const el of list||[]){
+    if(el.type==='image') add(el.dataUrl,{page,id:el.id},el.id,el);
+    if(el.type==='video') add(el.cover,{page,id:el.id,field:'cover'},el.id);
+  } };
+  els(APP.deck.master&&APP.deck.master.elements,'master');
+  for(const p of APP.deck.pages){ add(p.bgImage,{page:p.id,field:'bgImage'},p.id); els(p.elements,p.id); }
+  ASSET_KEYS=fresh;
+  return {byKey,byId};
 }
 function resolveAssets(obj){
-  const m=assetMap();
-  const back=(v,what)=>{ const id=v.slice(7).split(' ')[0].trim();
-    if(!m[id]) throw new Error(_t('{0}佔位 @asset:{1} 在目前簡報找不到來源位元組',what,id));
-    return m[id]; };
+  let idx=null;
+  const back=(v,what)=>{
+    idx=idx||assetIndex();
+    const key=v.slice(7).split(' ')[0].trim();
+    const a=idx.byKey.get(key);
+    if(a) return a;
+    const urls=idx.byId.get(key);
+    if(urls&&urls.size===1) return {url:[...urls][0]};
+    if(urls) throw new Error(_t('{0}佔位 @asset:{1} 是舊式的元素 id 佔位，而這個 id 在不同頁對應到 {2} 張不同的圖，無法判斷是哪一張。請重新取一次 JSON（新的佔位按圖片內容標記）',what,key,urls.size));
+    throw new Error(_t('{0}佔位 @asset:{1} 在目前簡報找不到來源位元組',what,key));
+  };
   const walk=els=>(els||[]).forEach(el=>{
-    if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.startsWith('@asset:'))
-      el.dataUrl=back(el.dataUrl,_t('圖片'));
+    if(el&&el.type==='image'&&typeof el.dataUrl==='string'&&el.dataUrl.startsWith('@asset:')){
+      const a=back(el.dataUrl,_t('圖片')); el.dataUrl=a.url;
+      // 重用已有的圖時可以不寫原始尺寸：從簡報裡用同一張圖的元素抄過來
+      if(!(el.natW>0&&el.natH>0)&&a.natW){ el.natW=a.natW; el.natH=a.natH; }
+    }
     if(el&&el.type==='video'&&typeof el.cover==='string'&&el.cover.startsWith('@asset:'))
-      el.cover=back(el.cover,_t('影片封面'));
+      el.cover=back(el.cover,_t('影片封面')).url;
   });
-  const pg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.startsWith('@asset:')) p.bgImage=back(p.bgImage,_t('背景圖')); walk(p.elements); };
+  const pg=p=>{ if(typeof p.bgImage==='string'&&p.bgImage.startsWith('@asset:')) p.bgImage=back(p.bgImage,_t('背景圖')).url; walk(p.elements); };
   if(obj&&obj.pages){ obj.pages.forEach(pg); if(obj.master) walk(obj.master.elements); }
   else if(obj&&(obj.id||obj.elements)) pg(obj);
   else if(obj) walk(Array.isArray(obj)?obj:[]);

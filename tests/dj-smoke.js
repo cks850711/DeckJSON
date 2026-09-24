@@ -166,7 +166,7 @@ export default async function run() {
     ok('fromTemplate: listed pages in given order', t2.pages.map(p => p.id).join() === 'tComp,tEx', t2.pages);
     ok('fromTemplate: title option', DJ.info().title === 'Report');
     // get() 把位元組遮成 @asset: 佔位；佔位只在記憶體裡真的有位元組時才會出現
-    ok('fromTemplate: image bytes survive the container', /^@asset:icon /.test(DJ.get('tComp', 'icon').dataUrl || ''), DJ.get('tComp', 'icon').dataUrl);
+    ok('fromTemplate: image bytes survive the container', /^@asset:[0-9a-f]{16} /.test(DJ.get('tComp', 'icon').dataUrl || ''), DJ.get('tComp', 'icon').dataUrl);
     const t3 = await DJ.fromTemplate(tplBlob, {pages: 'all'});
     ok('fromTemplate: all', t3.pages.length === 3 && t3.dropped.length === 0);
     const cp = await DJ.addPage(DJ.get('tEx'), 'tEx');
@@ -175,6 +175,40 @@ export default async function run() {
     await throws('fromTemplate: unknown page throws', () => DJ.fromTemplate(tplBlob, {pages: ['Nope']}));
     ok('fromTemplate: failed call leaves deck unchanged', JSON.stringify(DJ.list()) === beforeBad);
     await throws('fromTemplate: duplicate page throws', () => DJ.fromTemplate(tplBlob, {pages: ['tEx', 'Example']}));
+    await DJ.load(fixture());
+
+    // ---- 圖片資產：佔位按內容，不按元素 id ----
+    const px2 = (() => {
+      const k = document.createElement('canvas'); k.width = 3; k.height = 2;
+      const g = k.getContext('2d'); g.fillStyle = '#00f'; g.fillRect(0, 0, 3, 2); return k.toDataURL('image/png');
+    })();
+    const IMG = (url, natW, natH) => ({id: 'pic', type: 'image', x: 10, y: 10, w: 90, h: 60, natW, natH, dataUrl: url});
+    await DJ.load({pages: [{id: 'iA', elements: [IMG(PX, 1, 1)]}, {id: 'iB', elements: [IMG(px2, 3, 2)]},
+      {id: 'iC', bgImage: px2, elements: []}]});
+    const gA = DJ.get('iA');
+    await DJ.replacePage('iA', gA);
+    // 兩頁都有 id 為 pic 的圖：按 id 還原會拿到 iB 那張（2026-09-25 的 bug）
+    ok('assets: same id on two pages keeps its own image',
+      DJ.get('iA', 'pic').dataUrl === gA.elements[0].dataUrl && DJ.get('iA', 'pic').dataUrl !== DJ.get('iB', 'pic').dataUrl,
+      [DJ.get('iA', 'pic').dataUrl, DJ.get('iB', 'pic').dataUrl]);
+    const as = DJ.assets();
+    ok('assets: one entry per distinct image', as.length === 2, as);
+    const blue = as.find(a => a.natW === 3);
+    ok('assets: usedBy lists the element and the page background',
+      !!blue && blue.usedBy.length === 2 && blue.usedBy.some(u => u.page === 'iC' && u.field === 'bgImage'), blue);
+    const ra = await DJ.add('iA', [{type: 'image', x: 200, y: 10, w: 90, h: 60, dataUrl: blue.asset}]);
+    const key = u => String(u).split(' ')[0];   // 佔位後面帶「 (大小)」，比對只看鍵
+    const reused = DJ.get('iA', ra.ids[0]);
+    ok('assets: reuse by placeholder, natW/natH filled in', key(reused.dataUrl) === blue.asset && reused.natW === 3 && reused.natH === 2, reused);
+    ok('assets: reuse adds no new asset', DJ.assets().length === 2, DJ.assets());
+    // 舊式佔位（元素 id）：id 全簡報唯一時照樣還原；對到多張不同的圖就擋下，不猜
+    await DJ.patch('iA', [{id: ra.ids[0], set: {dataUrl: '@asset:' + ra.ids[0] + ' (1KB)'}}]);
+    ok('assets: old id placeholder still resolves when unambiguous', key(DJ.get('iA', ra.ids[0]).dataUrl) === blue.asset);
+    const beforeOld = JSON.stringify(DJ.get('iA'));
+    let oldErr = '';
+    try { await DJ.patch('iA', [{id: 'pic', set: {dataUrl: '@asset:pic (1KB)'}}]); } catch (e) { oldErr = e.message; }
+    ok('assets: ambiguous old id placeholder throws', /@asset:pic/.test(oldErr), oldErr || 'did not throw');
+    ok('assets: failed call leaves deck unchanged', JSON.stringify(DJ.get('iA')) === beforeOld);
     await DJ.load(fixture());
 
     // ---- 進出 ----

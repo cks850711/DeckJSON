@@ -130,6 +130,16 @@ const DJ=Object.freeze({
     }
     return JSON.parse(maskedJson(pid==='master'? {elements:els} : djPage(APP.deck,pid)));
   },
+  /* 簡報裡的圖片資產（圖片、背景圖、影片封面），按內容去重。asset 就是 get() 裡的佔位；
+     要重用某張圖，元素寫 dataUrl: asset 即可，natW／natH 可省（從用同一張圖的元素抄） */
+  assets(){
+    return [...assetIndex().byKey].map(([k,a])=>{
+      const o={asset:'@asset:'+k, type:(a.url.match(/^data:([^;,]+)/)||[])[1]||'', kb:Math.round(a.url.length*3/4/1024)};
+      if(a.natW){ o.natW=a.natW; o.natH=a.natH; }
+      o.usedBy=a.uses;
+      return o;
+    });
+  },
 
   /* ---------- 寫：用 id 定位，先驗證再換上 ---------- */
   /* changes：[{id, set:{…}, unset:[鍵], remove:true, md:'新文字'}]。set 是淺層合併（改 paras 就整個換掉、

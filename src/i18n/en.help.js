@@ -404,7 +404,7 @@ var I18N_PACKS=I18N_PACKS||{};
       </ul>
       <h4>How images are handled</h4>
       <ul>
-        <li>Images in the JSON show as <code>@asset:element-id</code> placeholders so base64 doesn't flood the window. They're turned back into bytes automatically when you press “Apply”.</li>
+        <li>Images in the JSON show as <code>@asset:…</code> placeholders so base64 doesn't flood the window. They're turned back into bytes automatically when you press “Apply”. A placeholder is named after the <b>image content</b>: the same picture has the same placeholder on every slide and element, so copying one image's placeholder into another image element reuses that picture.</li>
         <li>Add new images with the tool's insert button rather than pasting base64 into the JSON yourself. Files saved as <code>.deck</code> still contain the full images.</li>
       </ul>
       <h4>When pasting into external tools</h4>

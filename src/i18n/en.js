@@ -664,6 +664,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "這是一個 zip，但不是 DeckJSON 容器（缺 deck.json）": "This is a zip, but not a DeckJSON container (no deck.json)",
   "這是 OpenDeck 格式的 .deck（manifest 只有 entry，指向 {0}）。\nDeckJSON 讀的是 pages 陣列，兩者不相容。": "This is an OpenDeck .deck (its manifest only has an entry, pointing to {0}).\nDeckJSON reads a pages array; the two aren't compatible.",
   "{0}佔位 @asset:{1} 在目前簡報找不到來源位元組": "{0} placeholder @asset:{1} has no source bytes in the current deck",
+  "{0}佔位 @asset:{1} 是舊式的元素 id 佔位，而這個 id 在不同頁對應到 {2} 張不同的圖，無法判斷是哪一張。請重新取一次 JSON（新的佔位按圖片內容標記）": "{0} placeholder @asset:{1} is an old element-id placeholder, and that id maps to {2} different images on different slides, so it is ambiguous. Fetch the JSON again (new placeholders are named after the image content)",
   "影片封面": "Video cover",
   "地圖佔位 @map:{0} 在目前簡報找不到幾何資料": "Map placeholder @map:{0} has no geometry in the current deck",
   "不是有效的頁面 JSON": "Not a valid slide JSON",
