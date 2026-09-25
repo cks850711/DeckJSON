@@ -136,7 +136,8 @@ const DJ=Object.freeze({
   outline(pid){
     return djEls(APP.deck,pid).map(el=>{
       const o={id:el.id,type:el.type,x:Math.round(el.x),y:Math.round(el.y)};
-      if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=el.rowH.reduce((a,b)=>a+b,0);
+      // 表格高度用畫出來的實際高度：rowH 只是下限，字放不下時列會自己長高，加總 rowH 會少算
+      if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=tableRowHeights(el).reduce((a,b)=>a+b,0);
         o.grid=el.rowH.length+'x'+el.colW.length; }
       else{ o.w=Math.round(el.w); o.h=Math.round(el.h); }
       if(el.type==='shape') o.shape=el.shape;
@@ -327,6 +328,22 @@ const DJ=Object.freeze({
     }
     if(out.length){ djCommit(t,s); await djSettle(); }
     return {page:pid,fitted:out,overflow:djOverIds(pid)};
+  },
+  /* 表格列高貼合內容（同畫布上的「列高貼合內容」）：每列＝裝下該列文字的最小高度＋pad。
+     pad 預設 10：儲存格上下沒有內距，不留字會貼著框線。列會變高也會變矮；ids 必填，理由同 fit() */
+  async fitTable(pid,ids,opts){
+    ids=djIds(ids); if(!ids||!ids.length) throw djErr('fitTable() needs table ids');
+    const o=opts||{};
+    for(const k of Object.keys(o)) if(k!=='pad') throw djErr(`unknown option "${k}" (allowed: pad)`);
+    if(o.pad!=null&&!(typeof o.pad==='number'&&o.pad>=0)) throw djErr('pad must be a number ≥ 0');
+    const s=snapshot(), t=structuredClone(APP.deck), out=[];
+    for(const id of ids){
+      const el=djEl(t,pid,id);
+      if(el.type!=='table') throw djErr(`"${id}" is a ${el.type}; fitTable() only fits tables (use fit() for text boxes)`);
+      const r=fitTableRows(el,o.pad); if(r) out.push({id,rowH:r.to,was:r.from,h:r.to.reduce((a,b)=>a+b,0)});
+    }
+    if(out.length){ djCommit(t,s); await djSettle(); }
+    return {page:pid,fitted:out};
   },
   /* 溢出的文字框。給 pid 回該頁的 id 陣列；省略則掃整份，只列有溢出的頁 */
   overflow(pid){

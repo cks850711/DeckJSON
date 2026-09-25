@@ -150,6 +150,7 @@ var I18N_PACKS=I18N_PACKS||{};
       <div data-fig="tbl-handles"></div>
       <ul>
         <li><b>Column widths and row heights</b>: with the table selected, blue handles appear along the top and left edges; drag them. To add a column or row, use “＋ Column” / “＋ Row” under Structure in the right panel's <b>“Table” tab</b>.</li>
+        <li><b>Fit rows to content</b>: the button on the right panel's “Layout” tab sets each row just tall enough for its text, with about 5px above and below. Cells have no top or bottom padding, so a row that hugs its text puts the text right against the borders. Press it again after changing the font size, the text or a column width.</li>
         <li><b>Deleting a whole column or row</b>: the grey segments between the handles turn red on hover; click to delete. Merged cells shrink automatically, and other column widths and row heights are unaffected.</li>
       </ul>
       <h4>Merging cells</h4>

@@ -38,10 +38,20 @@ function fitTextBox(el,keep){
   if(f.h===el.h) return null;
   const from=el.h; if(keep==='bottom') el.y+=el.h-f.h; el.h=f.h; return {from,to:f.h};
 }
+/* 表格列高貼合內容：每列設成「裝下該列文字的最小高度＋pad」，列會變高也會變矮。
+   畫布與匯出的儲存格上下都沒有內距（匯出 margin 只給左右），不留 pad 字就貼著框線；
+   預設 10px 約等於 PowerPoint 表格預設的上下內距（各 0.05 吋）。有變化回 {from,to}（各列高度陣列），否則 null */
+const TABLE_FIT_PAD=10;
+function fitTableRows(el,pad){
+  const p=pad!=null? pad : TABLE_FIT_PAD;
+  const to=tableRowHeights(el,el.rowH.map(()=>1)).map(h=>h+p);
+  if(to.every((h,i)=>h===el.rowH[i])) return null;
+  const from=el.rowH.slice(); el.rowH=to; return {from,to:to.slice()};
+}
 function fitSelected(){
-  const els=selEls().filter(el=>el.type==='text'&&!el.locked); if(!els.length) return;
+  const els=selEls().filter(el=>(el.type==='text'||el.type==='table')&&!el.locked); if(!els.length) return;
   const s=snapshot();   // 先拍、有變化才進堆疊：已經貼合時按下去不該多一步空的復原
-  if(els.map(el=>fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
+  if(els.map(el=>el.type==='table'? fitTableRows(el) : fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
 }
 
 /* ================= 格式刷 ================= */

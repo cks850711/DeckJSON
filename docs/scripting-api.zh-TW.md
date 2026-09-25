@@ -9,6 +9,7 @@ DJ.list()                                        // 所有頁
 DJ.outline('p-abc')                              // 某一頁的元素摘要
 await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // 文字框縮放到剛好裝下文字
+await DJ.fitTable('p-abc', ['tb-1'])             // 表格列高貼合文字
 const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 ```
 
@@ -36,7 +37,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 |---|---|
 | `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}`；`page` 是畫面上那一頁 |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
-| `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字 |
+| `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字。表格的 `h` 是畫出來的實際高度：`rowH` 只是下限，字放不下的列會自己長高，直接加總 `rowH` 會少算 |
 | `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |
 | `assets()` | `[{asset, type, kb, natW?, natH?, usedBy}]`，簡報裡的每張圖（含背景圖、影片封面）一筆，內容相同的只列一次。`asset` 就是佔位字串，`usedBy` 列出用到它的 `{page, id}` 或 `{page, field}` |
 | `get(pageId, elementId)` | 單一元素的完整 JSON |
@@ -58,6 +59,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 |---|---|
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}`：文字框剛好裝下文字需要的尺寸。橫書比 `needH` 與 `h`，直書比 `needW` 與 `w`。不改任何東西 |
 | `fit(pageId, ids)` | 把文字框縮放到剛好裝下文字：橫書調高（上緣不動），直書調寬（左緣不動）。`ids` 必填，免得刻意留高的卡片被一起收掉。等同編輯器裡的「貼合內容」。回傳 `{page, fitted:[{id, from, to}], overflow}` |
+| `fitTable(pageId, ids, opts?)` | 把表格每一列設成剛好裝下文字的高度，再加 `pad`（預設 `10`）。儲存格上下沒有內距，不加的話字會貼著框線；10px 約等於 PowerPoint 表格預設的上下內距（各 0.05 吋）。列會變高也會變矮。任何頁都能量，不限畫面上這一頁。`opts`：`{pad}`。等同編輯器裡的「列高貼合內容」。回傳 `{page, fitted:[{id, rowH, was, h}]}` |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
 | `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉）。可給單頁、`'master'`，省略則掃整份 |
 

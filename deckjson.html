@@ -1182,6 +1182,7 @@ var I18N_PACKS=I18N_PACKS||{};
       <div data-fig="tbl-handles"></div>
       <ul>
         <li><b>調欄寬列高</b>：選取表格後，上緣與左緣會出現藍色把手，拖曳就能調。要加欄或加列，用右欄<b>「表格」分頁</b>→「結構」的「＋欄」「＋列」。</li>
+        <li><b>列高貼合內容</b>：右欄「版面」分頁的按鈕，把每一列調成剛好裝下文字、上下各留約 5px。儲存格上下沒有內距，列高貼著字的話，字會貼住框線。改過字級、內容或欄寬之後按一次就好。</li>
         <li><b>刪掉整欄或整列</b>：把手之間的灰色區段，滑過會變紅，點一下就刪掉。合併過的儲存格會自動縮減，其他欄寬列高不受影響。</li>
       </ul>
       <h4>合併儲存格</h4>
@@ -1878,6 +1879,8 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "位置尺寸（包圍盒）": "Position & size (bounding box)",
   "比例鎖定": "Lock ratio",
   "貼合內容": "Fit to text",
+  "列高貼合內容": "Fit rows to content",
+  "每一列調成剛好裝下文字，再上下留約 5px 的空隙，列會變高也會變矮。\n儲存格上下沒有內距，不留空隙字會貼著框線。": "Sets each row just tall enough for its text, plus about 5px above and below; rows can grow or shrink.\nCells have no top or bottom padding, so without the gap the text touches the borders.",
   "把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。": "Resize the box to fit its text exactly: height for horizontal text, width for vertical text.\nYou can also double-click the handle in the middle of an edge (the opposite edge stays put).",
   "鎖包圍盒寬高比：改一邊另一邊等比跟著變": "Lock the bounding box aspect ratio: changing one side scales the other",
   "字級同步": "Scale text",
@@ -2772,6 +2775,7 @@ var I18N_PACKS=I18N_PACKS||{};
       <div data-fig="tbl-handles"></div>
       <ul>
         <li><b>Column widths and row heights</b>: with the table selected, blue handles appear along the top and left edges; drag them. To add a column or row, use “＋ Column” / “＋ Row” under Structure in the right panel's <b>“Table” tab</b>.</li>
+        <li><b>Fit rows to content</b>: the button on the right panel's “Layout” tab sets each row just tall enough for its text, with about 5px above and below. Cells have no top or bottom padding, so a row that hugs its text puts the text right against the borders. Press it again after changing the font size, the text or a column width.</li>
         <li><b>Deleting a whole column or row</b>: the grey segments between the handles turn red on hover; click to delete. Merged cells shrink automatically, and other column widths and row heights are unaffected.</li>
       </ul>
       <h4>Merging cells</h4>
@@ -4683,6 +4687,18 @@ function textFitSize(el){
   box.remove();
   return {w:Math.max(4,w), h:Math.max(4,h)};
 }
+/* 表格照給定的列高畫一次（不放上畫布），回各列實際高度。HTML 表格的列高只是下限，字放不下時整列自動長高，
+   所以列高全給 1 量到的就是每列裝下內容的最小高度。畫布上只有目前頁的 DOM，而且不同頁可以有同 id 的元素
+   （Morph 配對），tableDom 只查得到目前頁；這裡另外畫一份，任何頁的表格都量得到。 */
+function tableRowHeights(el,rowH){
+  const box=renderEl(Object.assign({},el,{rowH:rowH||el.rowH}));
+  box.removeAttribute('data-id');
+  box.style.visibility='hidden'; box.style.pointerEvents='none'; box.style.transform='none';
+  stage.appendChild(box);
+  const hs=[...box.querySelectorAll('tr')].map(t=>t.offsetHeight);
+  box.remove();
+  return hs;
+}
 function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM）
   const box=stage.querySelector(`.el[data-id="${el.id}"]`);
   if(!box) return;
@@ -5847,6 +5863,8 @@ function renderPropsBody(){
   pp.appendChild(dimRow(_t('高'),()=>elSize(el).h,v=>applyDim(el,false,v)));
   if(el.type==='text') pp.appendChild(btnRow([[_t('貼合內容'),fitSelected,
     _t('把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。')]]));
+  if(el.type==='table') pp.appendChild(btnRow([[_t('列高貼合內容'),fitSelected,
+    _t('每一列調成剛好裝下文字，再上下留約 5px 的空隙，列會變高也會變矮。\n儲存格上下沒有內距，不留空隙字會貼著框線。')]]));
   if(el.type!=='image'&&!isLineEl(el)) pp.appendChild(checkRow([
     [_t('比例鎖定'),()=>APP.ratioLock,v=>APP.ratioLock=v,_t('鎖寬高比：改一邊或拖曳 resize 時另一邊等比放大')],
     [_t('字級同步'),()=>APP.fontSync,v=>APP.fontSync=v,_t('改尺寸／拖曳 resize 時字級一起放大')],
@@ -6684,10 +6702,20 @@ function fitTextBox(el,keep){
   if(f.h===el.h) return null;
   const from=el.h; if(keep==='bottom') el.y+=el.h-f.h; el.h=f.h; return {from,to:f.h};
 }
+/* 表格列高貼合內容：每列設成「裝下該列文字的最小高度＋pad」，列會變高也會變矮。
+   畫布與匯出的儲存格上下都沒有內距（匯出 margin 只給左右），不留 pad 字就貼著框線；
+   預設 10px 約等於 PowerPoint 表格預設的上下內距（各 0.05 吋）。有變化回 {from,to}（各列高度陣列），否則 null */
+const TABLE_FIT_PAD=10;
+function fitTableRows(el,pad){
+  const p=pad!=null? pad : TABLE_FIT_PAD;
+  const to=tableRowHeights(el,el.rowH.map(()=>1)).map(h=>h+p);
+  if(to.every((h,i)=>h===el.rowH[i])) return null;
+  const from=el.rowH.slice(); el.rowH=to; return {from,to:to.slice()};
+}
 function fitSelected(){
-  const els=selEls().filter(el=>el.type==='text'&&!el.locked); if(!els.length) return;
+  const els=selEls().filter(el=>(el.type==='text'||el.type==='table')&&!el.locked); if(!els.length) return;
   const s=snapshot();   // 先拍、有變化才進堆疊：已經貼合時按下去不該多一步空的復原
-  if(els.map(el=>fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
+  if(els.map(el=>el.type==='table'? fitTableRows(el) : fitTextBox(el)).some(Boolean)){ commitUndo(s); renderAll(); syncPageJson(); }
 }
 
 /* ================= 格式刷 ================= */
@@ -12417,7 +12445,8 @@ const DJ=Object.freeze({
   outline(pid){
     return djEls(APP.deck,pid).map(el=>{
       const o={id:el.id,type:el.type,x:Math.round(el.x),y:Math.round(el.y)};
-      if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=el.rowH.reduce((a,b)=>a+b,0);
+      // 表格高度用畫出來的實際高度：rowH 只是下限，字放不下時列會自己長高，加總 rowH 會少算
+      if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=tableRowHeights(el).reduce((a,b)=>a+b,0);
         o.grid=el.rowH.length+'x'+el.colW.length; }
       else{ o.w=Math.round(el.w); o.h=Math.round(el.h); }
       if(el.type==='shape') o.shape=el.shape;
@@ -12608,6 +12637,22 @@ const DJ=Object.freeze({
     }
     if(out.length){ djCommit(t,s); await djSettle(); }
     return {page:pid,fitted:out,overflow:djOverIds(pid)};
+  },
+  /* 表格列高貼合內容（同畫布上的「列高貼合內容」）：每列＝裝下該列文字的最小高度＋pad。
+     pad 預設 10：儲存格上下沒有內距，不留字會貼著框線。列會變高也會變矮；ids 必填，理由同 fit() */
+  async fitTable(pid,ids,opts){
+    ids=djIds(ids); if(!ids||!ids.length) throw djErr('fitTable() needs table ids');
+    const o=opts||{};
+    for(const k of Object.keys(o)) if(k!=='pad') throw djErr(`unknown option "${k}" (allowed: pad)`);
+    if(o.pad!=null&&!(typeof o.pad==='number'&&o.pad>=0)) throw djErr('pad must be a number ≥ 0');
+    const s=snapshot(), t=structuredClone(APP.deck), out=[];
+    for(const id of ids){
+      const el=djEl(t,pid,id);
+      if(el.type!=='table') throw djErr(`"${id}" is a ${el.type}; fitTable() only fits tables (use fit() for text boxes)`);
+      const r=fitTableRows(el,o.pad); if(r) out.push({id,rowH:r.to,was:r.from,h:r.to.reduce((a,b)=>a+b,0)});
+    }
+    if(out.length){ djCommit(t,s); await djSettle(); }
+    return {page:pid,fitted:out};
   },
   /* 溢出的文字框。給 pid 回該頁的 id 陣列；省略則掃整份，只列有溢出的頁 */
   overflow(pid){

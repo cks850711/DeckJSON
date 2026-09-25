@@ -9,6 +9,7 @@ DJ.list()                                        // pages
 DJ.outline('p-abc')                              // elements on one page, summarized
 await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // shrink/grow the text box to fit its text
+await DJ.fitTable('p-abc', ['tb-1'])             // set table rows to fit their text
 const blob = await DJ.toBlob()                   // the .deck file, ready to save
 ```
 
@@ -36,7 +37,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 |---|---|
 | `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}` — `page` is the one on screen |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
-| `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text |
+| `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text. A table's `h` is its drawn height: `rowH` is only a minimum, and a row whose text doesn't fit grows, so adding up `rowH` can come out short |
 | `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |
 | `assets()` | `[{asset, type, kb, natW?, natH?, usedBy}]`: one entry per distinct image in the deck (including page backgrounds and video covers). `asset` is the placeholder string; `usedBy` lists the `{page, id}` or `{page, field}` that use it |
 | `get(pageId, elementId)` | One element's full JSON |
@@ -58,6 +59,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 |---|---|
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}` — the size the text box needs to hold its text exactly. Horizontal text: compare `needH` with `h`. Vertical text: compare `needW` with `w`. Changes nothing |
 | `fit(pageId, ids)` | Resizes text boxes to fit their text — height for horizontal text (top edge stays), width for vertical text (left edge stays). `ids` is required, so a card deliberately taller than its text isn't collapsed by accident. Same as **Fit to text** in the editor. Returns `{page, fitted:[{id, from, to}], overflow}` |
+| `fitTable(pageId, ids, opts?)` | Sets each row of the tables to the smallest height that holds its text, plus `pad` (default `10`). Cells have no top or bottom padding, so without it the text touches the borders; 10px is about PowerPoint's default cell padding (0.05 in above and below). Rows can grow or shrink. Works on any page, not just the one on screen. `opts`: `{pad}`. Same as **Fit rows to content** in the editor. Returns `{page, fitted:[{id, rowH, was, h}]}` |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
 | `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below). One page, `'master'`, or the whole deck when omitted |
 

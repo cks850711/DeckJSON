@@ -440,6 +440,18 @@ function textFitSize(el){
   box.remove();
   return {w:Math.max(4,w), h:Math.max(4,h)};
 }
+/* 表格照給定的列高畫一次（不放上畫布），回各列實際高度。HTML 表格的列高只是下限，字放不下時整列自動長高，
+   所以列高全給 1 量到的就是每列裝下內容的最小高度。畫布上只有目前頁的 DOM，而且不同頁可以有同 id 的元素
+   （Morph 配對），tableDom 只查得到目前頁；這裡另外畫一份，任何頁的表格都量得到。 */
+function tableRowHeights(el,rowH){
+  const box=renderEl(Object.assign({},el,{rowH:rowH||el.rowH}));
+  box.removeAttribute('data-id');
+  box.style.visibility='hidden'; box.style.pointerEvents='none'; box.style.transform='none';
+  stage.appendChild(box);
+  const hs=[...box.querySelectorAll('tr')].map(t=>t.offsetHeight);
+  box.remove();
+  return hs;
+}
 function updateElStyle(el){  // 拖曳中僅更新位置尺寸（不重建 DOM）
   const box=stage.querySelector(`.el[data-id="${el.id}"]`);
   if(!box) return;

@@ -334,6 +334,8 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "位置尺寸（包圍盒）": "Position & size (bounding box)",
   "比例鎖定": "Lock ratio",
   "貼合內容": "Fit to text",
+  "列高貼合內容": "Fit rows to content",
+  "每一列調成剛好裝下文字，再上下留約 5px 的空隙，列會變高也會變矮。\n儲存格上下沒有內距，不留空隙字會貼著框線。": "Sets each row just tall enough for its text, plus about 5px above and below; rows can grow or shrink.\nCells have no top or bottom padding, so without the gap the text touches the borders.",
   "把框縮放到剛好裝下文字：橫書調高、直書調寬。\n也可以直接雙擊框邊中間的把手（固定對邊）。": "Resize the box to fit its text exactly: height for horizontal text, width for vertical text.\nYou can also double-click the handle in the middle of an edge (the opposite edge stays put).",
   "鎖包圍盒寬高比：改一邊另一邊等比跟著變": "Lock the bounding box aspect ratio: changing one side scales the other",
   "字級同步": "Scale text",

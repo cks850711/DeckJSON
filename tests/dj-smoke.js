@@ -108,6 +108,25 @@ export default async function run() {
     await throws('fit: table rejected', () => DJ.fit('pA', 'tbl'));
     await throws('fit: needs ids', () => DJ.fit('pA'));
 
+    // ---- 表格列高貼合：量不在畫面上的頁，同 id 的表格在另一頁也不會量錯 ----
+    const sumH = a => a.reduce((x, y) => x + y, 0);
+    await DJ.add('pB', [{id: 'tbl', type: 'table', x: 0, y: 400, colW: [80], rowH: [20, 20],
+      cells: [[{md: LONG}], [{md: 'x'}]]}]);
+    DJ.show('pA');
+    const ob = DJ.outline('pB').find(e => e.id === 'tbl');
+    ok('outline: table height is the drawn height, not the rowH sum', ob.h > 40, ob);
+    const ft = await DJ.fitTable('pB', ['tbl']);
+    const fr = el('pB', 'tbl').rowH;
+    ok('fitTable: wrapped row grows, one-line row gets the default pad', ft.fitted.length === 1 && fr[0] > 100 && fr[1] > 20 && fr[1] < 40, ft);
+    ok('fitTable: outline height now equals the rowH sum', DJ.outline('pB').find(e => e.id === 'tbl').h === sumH(fr));
+    ok('fitTable: same id on the current page untouched', JSON.stringify(el('pA', 'tbl').rowH) === '[30,30]', el('pA', 'tbl').rowH);
+    ok('fitTable: already fitted is a no-op', (await DJ.fitTable('pB', 'tbl')).fitted.length === 0);
+    await DJ.fitTable('pB', 'tbl', {pad: 0});
+    ok('fitTable: pad 0 takes the pad back off', el('pB', 'tbl').rowH[1] === fr[1] - 10, el('pB', 'tbl').rowH);
+    await throws('fitTable: text box rejected', () => DJ.fitTable('pA', 'tall'));
+    await throws('fitTable: unknown option', () => DJ.fitTable('pB', 'tbl', {padding: 4}));
+    await DJ.patch('pB', [{id: 'tbl', remove: true}]);
+
     // ---- 增刪頁與元素 ----
     const a = await DJ.add('pB', [TEXT(null, 0, 500, 200, 40, '新增'), TEXT('tall', 0, 0, 10, 10, '撞號')]);
     ok('add: auto id', a.ids[0] && a.ids[0] !== 'tall');
