@@ -12398,6 +12398,64 @@ function djOver(el){
   return VERT_MODES[el.vert]? f.w>el.w+2 : f.h>el.h+2;   // 容差同 markOverflow
 }
 function djOverIds(pid){ return djEls(APP.deck,pid).filter(djOver).map(el=>el.id); }
+/* ---- 排版（bbox／center／align／stack）----
+   ids 的每一項是元素 id 或軟群組 id（outline 的 group）：群組整組當一個單位移動，組內相對位置不變，
+   例如圖和圖說。元素 id 只動那個元素，即使它屬於某個群組。
+   外框不計旋轉；表格高度用畫出來的實際高度（rowH 只是下限，見 tableRowHeights）。
+   只移動、不縮放：模板規格明訂「置中只移動位置，不得為了置中或填滿而放大」。 */
+function djBox(el){
+  if(el.type==='table') return {x:el.x,y:el.y,w:el.colW.reduce((a,b)=>a+b,0),h:tableRowHeights(el).reduce((a,b)=>a+b,0)};
+  return {x:el.x,y:el.y,w:el.w,h:el.h};
+}
+function djUnion(bs){
+  const x0=Math.min(...bs.map(b=>b.x)), y0=Math.min(...bs.map(b=>b.y));
+  const x1=Math.max(...bs.map(b=>b.x+b.w)), y1=Math.max(...bs.map(b=>b.y+b.h));
+  return {x:x0,y:y0,w:x1-x0,h:y1-y0};
+}
+function djUnits(deck,pid,ids,verb){
+  ids=djIds(ids); if(!ids||!ids.length) throw djErr(`${verb}() needs element or group ids`);
+  const els=djEls(deck,pid), seen=new Set();
+  return ids.map(id=>{
+    let members=els.filter(e=>e.id===id);
+    if(!members.length) members=els.filter(e=>e.groupId&&e.groupId===id);
+    if(!members.length) throw djErr(`no element or group "${id}" on page "${pid}"`);
+    for(const m of members){
+      if(seen.has(m)) throw djErr(`"${m.id}" is listed twice (directly or through its group)`);
+      seen.add(m);
+    }
+    return {id,els:members,box:djUnion(members.map(djBox)),dx:0,dy:0};
+  });
+}
+const djBoxOut=b=>({x:Math.round(b.x),y:Math.round(b.y),w:Math.round(b.w),h:Math.round(b.h)});
+/* 在副本上算好每個單位的位移（plan 填 u.dx／u.dy），整數化後一次寫入。位移先取整再套到每個成員，
+   組內的相對位置才會分毫不差 */
+async function djArrange(pid,ids,verb,plan){
+  const s=snapshot(), t=structuredClone(APP.deck);
+  const units=djUnits(t,pid,ids,verb);
+  const warnings=plan(units)||[];
+  const moved=[];
+  for(const u of units){
+    const dx=Math.round(u.dx), dy=Math.round(u.dy);
+    if(!dx&&!dy) continue;
+    for(const e of u.els){ e.x+=dx; e.y+=dy; }
+    moved.push({id:u.id,dx,dy});
+  }
+  if(moved.length){ djCommit(t,s); await djSettle(); }
+  const box=djUnion(djUnits(APP.deck,pid,ids,verb).map(u=>u.box));
+  return {page:pid,moved,box:djBoxOut(box),overflow:djOverIds(pid),warnings};
+}
+function djArea(a,verb){
+  if(a==null) return {x:0,y:0,w:APP.deck.stage.w,h:APP.deck.stage.h};
+  if(!a||typeof a!=='object'||!['x','y','w','h'].every(k=>typeof a[k]==='number')||!(a.w>0&&a.h>0))
+    throw djErr(`${verb}(): area must be {x, y, w, h} with numbers, w and h > 0`);
+  return a;
+}
+function djOpts(o,allowed,verb){
+  o=o||{};
+  if(typeof o!=='object') throw djErr(`${verb}(): options must be an object`);
+  for(const k of Object.keys(o)) if(!allowed.includes(k)) throw djErr(`${verb}(): unknown option "${k}" (allowed: ${allowed.join(', ')})`);
+  return o;
+}
 const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
 const DJ_IMG_OPTS=['x','y','w','h','fit','compress','id','alt'];
 const djBlobUrl=b=>new Promise((res,rej)=>{ const rd=new FileReader();
@@ -12637,6 +12695,54 @@ const DJ=Object.freeze({
     }
     if(out.length){ djCommit(t,s); await djSettle(); }
     return {page:pid,fitted:out,overflow:djOverIds(pid)};
+  },
+  /* 外框（不改任何東西）。ids 同 center()：元素 id 或軟群組 id */
+  bbox(pid,ids){
+    return djBoxOut(djUnion(djUnits(APP.deck,pid,ids,'bbox').map(u=>u.box)));
+  },
+  /* 整組置中：取所有單位的共同外框，整組平移到 area 的中央（預設整張投影片），組內相對位置不變。
+     axis：'both'（預設）｜'x'｜'y'。外框比 area 大時照樣置中，並回 warning */
+  async center(pid,ids,opts){
+    const o=djOpts(opts,['area','axis'],'center');
+    const axis=o.axis==null? 'both' : o.axis;
+    if(!['both','x','y'].includes(axis)) throw djErr(`center(): axis must be 'both', 'x' or 'y'`);
+    const area=djArea(o.area,'center');
+    return djArrange(pid,ids,'center',units=>{
+      const b=djUnion(units.map(u=>u.box)), w=[];
+      const dx= axis==='y'? 0 : area.x+(area.w-b.w)/2-b.x;
+      const dy= axis==='x'? 0 : area.y+(area.h-b.h)/2-b.y;
+      for(const u of units){ u.dx=dx; u.dy=dy; }
+      if(axis!=='y'&&b.w>area.w) w.push(`the group is ${Math.round(b.w)}px wide, wider than the area (${area.w}px)`);
+      if(axis!=='x'&&b.h>area.h) w.push(`the group is ${Math.round(b.h)}px tall, taller than the area (${area.h}px)`);
+      return w;
+    });
+  },
+  /* 對齊：每個單位的某一邊（或中線）對齊到所有單位共同外框的同一邊（同 PowerPoint「對齊選取的物件」）。
+     edge：'left'｜'center'｜'right'｜'top'｜'middle'｜'bottom' */
+  async align(pid,ids,edge){
+    const E={left:['x',0],center:['x',.5],right:['x',1],top:['y',0],middle:['y',.5],bottom:['y',1]};
+    if(!E[edge]) throw djErr(`align(): edge must be one of ${Object.keys(E).join(', ')}`);
+    const [ax,f]=E[edge], sz= ax==='x'? 'w' : 'h';
+    return djArrange(pid,ids,'align',units=>{
+      const b=djUnion(units.map(u=>u.box)), target=b[ax]+b[sz]*f;
+      for(const u of units) u['d'+ax]=target-(u.box[ax]+u.box[sz]*f);
+    });
+  },
+  /* 堆疊：照 ids 的順序排，第一個不動，其後每個接在前一個的後面、間隔 gap（預設 0）。
+     axis：'y'（預設，由上往下）｜'x'（由左往右）。另一軸不動，要對齊另外呼叫 align() */
+  async stack(pid,ids,opts){
+    const o=djOpts(opts,['gap','axis'],'stack');
+    const axis=o.axis==null? 'y' : o.axis;
+    if(axis!=='x'&&axis!=='y') throw djErr(`stack(): axis must be 'x' or 'y'`);
+    if(o.gap!=null&&typeof o.gap!=='number') throw djErr('stack(): gap must be a number');
+    const gap=o.gap||0, sz= axis==='x'? 'w' : 'h';
+    return djArrange(pid,ids,'stack',units=>{
+      let next=null;
+      for(const u of units){
+        if(next!=null) u['d'+axis]=next-u.box[axis];
+        next=Math.round(u.box[axis]+u['d'+axis])+u.box[sz]+gap;
+      }
+    });
   },
   /* 表格列高貼合內容（同畫布上的「列高貼合內容」）：每列＝裝下該列文字的最小高度＋pad。
      pad 預設 10：儲存格上下沒有內距，不留字會貼著框線。列會變高也會變矮；ids 必填，理由同 fit() */

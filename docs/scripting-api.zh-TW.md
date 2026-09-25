@@ -10,6 +10,7 @@ DJ.outline('p-abc')                              // 某一頁的元素摘要
 await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // 文字框縮放到剛好裝下文字
 await DJ.fitTable('p-abc', ['tb-1'])             // 表格列高貼合文字
+await DJ.center('p-abc', ['tb-1', 'g-fig'], {area: {x: 19, y: 132, w: 1242, h: 548}})   // 整組置中於某個區域
 const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 ```
 
@@ -60,8 +61,14 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}`：文字框剛好裝下文字需要的尺寸。橫書比 `needH` 與 `h`，直書比 `needW` 與 `w`。不改任何東西 |
 | `fit(pageId, ids)` | 把文字框縮放到剛好裝下文字：橫書調高（上緣不動），直書調寬（左緣不動）。`ids` 必填，免得刻意留高的卡片被一起收掉。等同編輯器裡的「貼合內容」。回傳 `{page, fitted:[{id, from, to}], overflow}` |
 | `fitTable(pageId, ids, opts?)` | 把表格每一列設成剛好裝下文字的高度，再加 `pad`（預設 `10`）。儲存格上下沒有內距，不加的話字會貼著框線；10px 約等於 PowerPoint 表格預設的上下內距（各 0.05 吋）。列會變高也會變矮。任何頁都能量，不限畫面上這一頁。`opts`：`{pad}`。等同編輯器裡的「列高貼合內容」。回傳 `{page, fitted:[{id, rowH, was, h}]}` |
+| `bbox(pageId, ids)` | `{x, y, w, h}`：這些元素與群組的共同外框。不改任何東西 |
+| `center(pageId, ids, opts?)` | 整組一起平移，讓共同外框落在 `area` 的正中央（預設整張投影片）。彼此的相對位置不變，不縮放。`opts`：`{area: {x, y, w, h}, axis: 'both' \| 'x' \| 'y'}`。外框比 area 大時回 warning |
+| `align(pageId, ids, edge)` | 每個元素或群組的某一邊，對齊到全體共同外框的同一邊，同 PowerPoint 的「對齊」。`edge`：`'left'`、`'center'`、`'right'`、`'top'`、`'middle'`、`'bottom'` |
+| `stack(pageId, ids, opts?)` | 照給的順序一個接一個排：第一個不動，之後每個從前一個的結尾再隔 `gap` 開始。另一軸不動，要對齊另外呼叫 `align()`。`opts`：`{gap: 0, axis: 'y' \| 'x'}` |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
 | `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉）。可給單頁、`'master'`，省略則掃整份 |
+
+`bbox`、`center`、`align`、`stack` 的 `ids`，每一項可以是元素 id 或軟群組 id（`outline()` 的 `group` 欄位）。群組整組當一件移動，圖和圖說不會分開；給元素 id 只動那個元素，即使它屬於某個群組。同一個元素直接或透過群組列了兩次會報錯。外框不計旋轉，表格高度用畫出來的實際高度。三個會移動的動詞回傳 `{page, moved: [{id, dx, dy}], box, overflow, warnings}`。
 
 ## 檔案與輸出
 

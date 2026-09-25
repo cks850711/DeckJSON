@@ -127,6 +127,23 @@ export default async function run() {
     await throws('fitTable: unknown option', () => DJ.fitTable('pB', 'tbl', {padding: 4}));
     await DJ.patch('pB', [{id: 'tbl', remove: true}]);
 
+    // ---- 排版：外框、置中、對齊、堆疊（群組 id 整組移動） ----
+    await DJ.add('pB', [TEXT('L1', 100, 100, 200, 50, 'a'), TEXT('L2', 400, 300, 100, 80, 'b', {groupId: 'gL'}),
+      TEXT('L3', 420, 390, 60, 20, 'c', {groupId: 'gL'})]);
+    const xy = id => { const e = el('pB', id); return [e.x, e.y]; };
+    ok('bbox: element and group together', JSON.stringify(DJ.bbox('pB', ['L1', 'gL'])) === '{"x":100,"y":100,"w":400,"h":310}', DJ.bbox('pB', ['L1', 'gL']));
+    const ce = await DJ.center('pB', ['L1', 'gL'], {area: {x: 0, y: 0, w: 1000, h: 600}});
+    ok('center: group box lands in the middle of the area', JSON.stringify(ce.box) === '{"x":300,"y":145,"w":400,"h":310}', ce);
+    ok('center: group members keep their offsets', xy('L3')[0] - xy('L2')[0] === 20 && xy('L3')[1] - xy('L2')[1] === 90, [xy('L2'), xy('L3')]);
+    await DJ.align('pB', ['L1', 'gL'], 'bottom');
+    ok('align: bottom edges meet', xy('L1')[1] + 50 === xy('L3')[1] + 20, [xy('L1'), xy('L3')]);
+    await DJ.stack('pB', ['L1', 'gL'], {gap: 10});
+    ok('stack: next unit starts gap below the previous one', xy('L2')[1] === xy('L1')[1] + 50 + 10 && xy('L1')[1] === 405, [xy('L1'), xy('L2')]);
+    ok('center: warns when the group is bigger than the area', (await DJ.center('pB', 'gL', {area: {x: 0, y: 0, w: 50, h: 500}})).warnings.length === 1);
+    await throws('arrange: element listed twice through its group', () => DJ.align('pB', ['L2', 'gL'], 'top'));
+    await throws('arrange: unknown edge', () => DJ.align('pB', ['L1'], 'up'));
+    await DJ.patch('pB', ['L1', 'L2', 'L3'].map(id => ({id, remove: true})));
+
     // ---- 增刪頁與元素 ----
     const a = await DJ.add('pB', [TEXT(null, 0, 500, 200, 40, '新增'), TEXT('tall', 0, 0, 10, 10, '撞號')]);
     ok('add: auto id', a.ids[0] && a.ids[0] !== 'tall');

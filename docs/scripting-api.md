@@ -10,6 +10,7 @@ DJ.outline('p-abc')                              // elements on one page, summar
 await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // shrink/grow the text box to fit its text
 await DJ.fitTable('p-abc', ['tb-1'])             // set table rows to fit their text
+await DJ.center('p-abc', ['tb-1', 'g-fig'], {area: {x: 19, y: 132, w: 1242, h: 548}})   // center the group in an area
 const blob = await DJ.toBlob()                   // the .deck file, ready to save
 ```
 
@@ -60,8 +61,14 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}` — the size the text box needs to hold its text exactly. Horizontal text: compare `needH` with `h`. Vertical text: compare `needW` with `w`. Changes nothing |
 | `fit(pageId, ids)` | Resizes text boxes to fit their text — height for horizontal text (top edge stays), width for vertical text (left edge stays). `ids` is required, so a card deliberately taller than its text isn't collapsed by accident. Same as **Fit to text** in the editor. Returns `{page, fitted:[{id, from, to}], overflow}` |
 | `fitTable(pageId, ids, opts?)` | Sets each row of the tables to the smallest height that holds its text, plus `pad` (default `10`). Cells have no top or bottom padding, so without it the text touches the borders; 10px is about PowerPoint's default cell padding (0.05 in above and below). Rows can grow or shrink. Works on any page, not just the one on screen. `opts`: `{pad}`. Same as **Fit rows to content** in the editor. Returns `{page, fitted:[{id, rowH, was, h}]}` |
+| `bbox(pageId, ids)` | `{x, y, w, h}` — the box around the given elements and groups. Changes nothing |
+| `center(pageId, ids, opts?)` | Moves the elements and groups together so the box around them sits in the middle of `area` (default: the whole slide). They keep their positions relative to each other; nothing is resized. `opts`: `{area: {x, y, w, h}, axis: 'both' \| 'x' \| 'y'}`. Warns when the box is bigger than the area |
+| `align(pageId, ids, edge)` | Lines up one edge of each element or group with the same edge of the box around all of them, as PowerPoint's Align does. `edge`: `'left'`, `'center'`, `'right'`, `'top'`, `'middle'`, `'bottom'` |
+| `stack(pageId, ids, opts?)` | Places them one after another in the order given: the first stays put, each next one starts `gap` after the previous one ends. The other axis is left alone; use `align()` for that. `opts`: `{gap: 0, axis: 'y' \| 'x'}` |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
 | `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below). One page, `'master'`, or the whole deck when omitted |
+
+In `bbox`, `center`, `align` and `stack`, each entry of `ids` is an element id or a soft-group id (the `group` field in `outline()`). A group moves as one piece, so a figure and its caption stay together; an element id moves only that element, even if it is in a group. Listing an element twice, directly or through its group, is an error. Boxes ignore rotation, and a table's height is its drawn height. The three movers return `{page, moved: [{id, dx, dy}], box, overflow, warnings}`.
 
 ## Files and output
 
