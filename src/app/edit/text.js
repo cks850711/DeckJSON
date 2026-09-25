@@ -128,8 +128,22 @@ function onEditPaste(ev){   // 一律轉純文字：擋掉從網頁帶進來的�
   const t=(ev.clipboardData&&ev.clipboardData.getData('text/plain'))||'';
   if(t) document.execCommand('insertText',false,t.replace(/\r\n?/g,'\n'));
 }
+/* 不斷行字元的快捷鍵，按法同 Word：Cmd/Ctrl+Shift+空白＝不斷行空白（U+00A0）、Cmd/Ctrl+Shift+連字號＝
+   不斷行連字號（U+2011）。「2 GHz」「F-42%」這類不該被換行拆開的字，PowerPoint 與瀏覽器都只認這兩個
+   字元——pptx 沒有「這段不換行」的格式設定，所以提供的是輸入方式，不是新格式。
+   U+2060（字詞連接符）瀏覽器認、PowerPoint 不認（2026-09-25 以 PowerPoint 實測），故不採用。
+   文字框與表格儲存格兩個編輯器共用；回傳 true 表示已處理。 */
+function noBreakKey(ev){
+  if(!ev.shiftKey||!(ev.metaKey||ev.ctrlKey)||ev.altKey) return false;
+  // code 是實體鍵位；再看 key 做後備（部分鍵盤配置或自動化工具送出的事件沒有 code，Shift 下連字號鍵的 key 是「_」）
+  const ch= ev.code==='Space'||ev.key===' '? '\u00a0' : ev.code==='Minus'||ev.key==='-'||ev.key==='_'? '\u2011' : null;
+  if(!ch) return false;
+  ev.preventDefault(); document.execCommand('insertText',false,ch);
+  return true;
+}
 function onEditKey(ev){
   if(ev.isComposing||ev.keyCode===229) return;   // 輸入法組字中不攔截
+  if(noBreakKey(ev)) return;
   /* 選字確認的餘波：引擎若先發 compositionend 再發 keydown，那一下的 isComposing 已是 false，
      注音按 Enter 確認選字就會順帶多分一段。同儲存格編輯器的 60ms 守衛。 */
   if(ev.key==='Enter'&&APP.edit&&APP.edit.compEnd&&Date.now()-APP.edit.compEnd<60){ APP.edit.compEnd=0; return; }
@@ -257,6 +271,7 @@ function startCellEdit(el,td,initSel){
   ed.addEventListener('keydown',e=>{
     if(e.isComposing||e.keyCode===229) return;   // 組字中不攔截（含 Esc：那是取消組字，不是結束編輯）
     if(e.key==='Enter'&&compEnd&&Date.now()-compEnd<60){ compEnd=0; return; }   // 選字確認的餘波
+    if(noBreakKey(e)) return;
     if(e.key==='Enter'){   // Enter／Shift+Enter＝格內換行（明確插入 \n，不依賴瀏覽器預設，跨引擎一致）
       e.preventDefault(); document.execCommand('insertText',false,'\n');
     }else if(e.key==='Tab'){   // 吃掉 Tab：不跳格，也不讓瀏覽器把焦點帶去別的控件（那會意外結束編輯）

@@ -59,7 +59,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}`：文字框剛好裝下文字需要的尺寸。橫書比 `needH` 與 `h`，直書比 `needW` 與 `w`。不改任何東西 |
 | `fit(pageId, ids)` | 把文字框縮放到剛好裝下文字：橫書調高（上緣不動），直書調寬（左緣不動）。`ids` 必填，免得刻意留高的卡片被一起收掉。等同編輯器裡的「貼合內容」。回傳 `{page, fitted:[{id, from, to}], overflow}` |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
-| `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西）。可給單頁、`'master'`，省略則掃整份 |
+| `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉）。可給單頁、`'master'`，省略則掃整份 |
 
 ## 檔案與輸出
 
@@ -131,6 +131,21 @@ tx-2.fil: unknown field on text element — did you mean "fill"?
 ```
 
 同樣的檢查也能在瀏覽器外跑：`node tools/deck-lint.js <檔案.deck>` 列出已存檔案裡不認得的欄位（有的話離開碼 1；`--json` 輸出給程式讀）。它載入的是 app 自己的 `src/app/model/schema.js`，結果永遠和上面的警告一致。
+
+## 換行提醒
+
+換行位置由 Unicode 的換行規則決定：一般空白、en dash「–」、連字號「-」後面都可以換行，所以「2 GHz」「2–18」「F-42%」可能被拆到兩行。瀏覽器與 PowerPoint 的規則大致相同，但字型不同、每行寬度就不同，畫布上沒拆開不代表 PowerPoint 裡也沒拆開。pptx 沒有「這段不換行」的格式設定，擋得住的只有字元本身：
+
+| 情況 | 寫法 |
+|---|---|
+| 數字＋單位 | 中間用不斷行空白 U+00A0 |
+| 數字範圍 | 「2 至 18」並在「至」前後用 U+00A0，或用不斷行連字號 U+2011 當範圍符號（en dash、全形～、U+2060 都擋不住 PowerPoint 換行） |
+| 字母與數字間的連字號 | 不斷行連字號 U+2011 |
+| 比較符號（RL < −10 dB） | 兩側用 U+00A0 |
+
+`lint()` 把這幾種寫法列成提醒（`頁id/元素id: "片段": a line can break …`），**只提醒、不修改**——要不要黏住是寫的人的判斷。命令列 `deck-lint` 也會列出，但不影響離開碼；`--json` 要加 `--breaks` 才會輸出（`{檔名: {fields, breaks}}`），不加時格式與以往相同。
+
+在 DeckJSON 裡編輯文字（文字框與表格儲存格）時，<kbd>Cmd/Ctrl+Shift+空白</kbd> 打出不斷行空白、<kbd>Cmd/Ctrl+Shift+連字號</kbd> 打出不斷行連字號，按法同 Word。
 
 ## 測試
 

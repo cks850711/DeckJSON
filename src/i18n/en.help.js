@@ -100,6 +100,7 @@ var I18N_PACKS=I18N_PACKS||{};
         <li><b>Double-click</b> a text box or shape to start typing; bold, colors and highlights are <b>visible and editable</b>. Double-clicking a table cell edits its content; double-clicking a chart edits its option.</li>
         <li><b>Select a few characters and the formatting buttons in the right panel apply to just those</b>; with no selection they apply to the whole text box.</li>
         <li>Clicking buttons in the right panel while editing <b>doesn't end the editing</b>, and your selection stays — set one thing, then the next.</li>
+        <li><b>Keeping “2 GHz” or “F-42%” from being split across lines</b>: while editing text, <kbd>Cmd/Ctrl+Shift+Space</kbd> types a <b>no-break space</b> and <kbd>Cmd/Ctrl+Shift+Hyphen</kbd> a <b>no-break hyphen</b>, as in Word — table cells too. They look like an ordinary space and hyphen but hold the text together at line breaks; they are also the only way PowerPoint honors.</li>
         <li>The <b>plain-text box</b> in the right panel is a shortcut for “replace the whole box” and clears mixed formatting inside it. When it detects mixed formatting it asks first. To keep formatting, edit in place on the canvas.</li>
       </ul>
       <h4>Character styles</h4>

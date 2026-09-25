@@ -1128,6 +1128,7 @@ var I18N_PACKS=I18N_PACKS||{};
         <li><b>雙擊</b>文字框或形狀就開始改字，粗體、顏色、高亮<b>看得見也改得動</b>。雙擊表格儲存格是改內容，雙擊圖表是改 option。</li>
         <li><b>反白幾個字，右欄的格式按鈕就只套那幾個字</b>；沒反白就是整個文字框。</li>
         <li>編輯途中點右欄的按鈕<b>不會中斷編輯</b>，反白的範圍也留著——設完一項可以接著設下一項。</li>
+        <li><b>不讓「2 GHz」「F-42%」被換行拆開</b>：編輯文字時按 <kbd>Cmd/Ctrl+Shift+空白</kbd> 打出<b>不斷行空白</b>、<kbd>Cmd/Ctrl+Shift+連字號</kbd> 打出<b>不斷行連字號</b>，按法同 Word，表格儲存格裡也能用。這兩個字元看起來跟一般空白、連字號一樣，但換行時會黏在一起；PowerPoint 也只認這兩個字元。</li>
         <li>右欄那個<b>純文字編輯框</b>是「整框換掉」用的捷徑，會清掉框裡的混排格式。偵測到混排時會先問你一次。要保留格式，請在畫布上就地改。</li>
       </ul>
       <h4>字元樣式</h4>
@@ -2712,6 +2713,7 @@ var I18N_PACKS=I18N_PACKS||{};
         <li><b>Double-click</b> a text box or shape to start typing; bold, colors and highlights are <b>visible and editable</b>. Double-clicking a table cell edits its content; double-clicking a chart edits its option.</li>
         <li><b>Select a few characters and the formatting buttons in the right panel apply to just those</b>; with no selection they apply to the whole text box.</li>
         <li>Clicking buttons in the right panel while editing <b>doesn't end the editing</b>, and your selection stays — set one thing, then the next.</li>
+        <li><b>Keeping “2 GHz” or “F-42%” from being split across lines</b>: while editing text, <kbd>Cmd/Ctrl+Shift+Space</kbd> types a <b>no-break space</b> and <kbd>Cmd/Ctrl+Shift+Hyphen</kbd> a <b>no-break hyphen</b>, as in Word — table cells too. They look like an ordinary space and hyphen but hold the text together at line breaks; they are also the only way PowerPoint honors.</li>
         <li>The <b>plain-text box</b> in the right panel is a shortcut for “replace the whole box” and clears mixed formatting inside it. When it detects mixed formatting it asks first. To keep formatting, edit in place on the canvas.</li>
       </ul>
       <h4>Character styles</h4>
@@ -8350,8 +8352,22 @@ function onEditPaste(ev){   // 一律轉純文字：擋掉從網頁帶進來的�
   const t=(ev.clipboardData&&ev.clipboardData.getData('text/plain'))||'';
   if(t) document.execCommand('insertText',false,t.replace(/\r\n?/g,'\n'));
 }
+/* 不斷行字元的快捷鍵，按法同 Word：Cmd/Ctrl+Shift+空白＝不斷行空白（U+00A0）、Cmd/Ctrl+Shift+連字號＝
+   不斷行連字號（U+2011）。「2 GHz」「F-42%」這類不該被換行拆開的字，PowerPoint 與瀏覽器都只認這兩個
+   字元——pptx 沒有「這段不換行」的格式設定，所以提供的是輸入方式，不是新格式。
+   U+2060（字詞連接符）瀏覽器認、PowerPoint 不認（2026-09-25 以 PowerPoint 實測），故不採用。
+   文字框與表格儲存格兩個編輯器共用；回傳 true 表示已處理。 */
+function noBreakKey(ev){
+  if(!ev.shiftKey||!(ev.metaKey||ev.ctrlKey)||ev.altKey) return false;
+  // code 是實體鍵位；再看 key 做後備（部分鍵盤配置或自動化工具送出的事件沒有 code，Shift 下連字號鍵的 key 是「_」）
+  const ch= ev.code==='Space'||ev.key===' '? '\u00a0' : ev.code==='Minus'||ev.key==='-'||ev.key==='_'? '\u2011' : null;
+  if(!ch) return false;
+  ev.preventDefault(); document.execCommand('insertText',false,ch);
+  return true;
+}
 function onEditKey(ev){
   if(ev.isComposing||ev.keyCode===229) return;   // 輸入法組字中不攔截
+  if(noBreakKey(ev)) return;
   /* 選字確認的餘波：引擎若先發 compositionend 再發 keydown，那一下的 isComposing 已是 false，
      注音按 Enter 確認選字就會順帶多分一段。同儲存格編輯器的 60ms 守衛。 */
   if(ev.key==='Enter'&&APP.edit&&APP.edit.compEnd&&Date.now()-APP.edit.compEnd<60){ APP.edit.compEnd=0; return; }
@@ -8479,6 +8495,7 @@ function startCellEdit(el,td,initSel){
   ed.addEventListener('keydown',e=>{
     if(e.isComposing||e.keyCode===229) return;   // 組字中不攔截（含 Esc：那是取消組字，不是結束編輯）
     if(e.key==='Enter'&&compEnd&&Date.now()-compEnd<60){ compEnd=0; return; }   // 選字確認的餘波
+    if(noBreakKey(e)) return;
     if(e.key==='Enter'){   // Enter／Shift+Enter＝格內換行（明確插入 \n，不依賴瀏覽器預設，跨引擎一致）
       e.preventDefault(); document.execCommand('insertText',false,'\n');
     }else if(e.key==='Tab'){   // 吃掉 Tab：不跳格，也不讓瀏覽器把焦點帶去別的控件（那會意外結束編輯）
@@ -9809,6 +9826,70 @@ function schemaCheck(obj,kind,path){
     if(obj.pageNum&&typeof obj.pageNum==='object') keys(obj.pageNum,S.pageNum,'deck.pageNum','pageNum');
     if(obj.date&&typeof obj.date==='object') keys(obj.date,S.date,'deck.date','date');
     if(obj.master&&typeof obj.master==='object'){ keys(obj.master,S.master,'master','the master'); elsOf(obj.master.elements,'master.elements'); }
+    (Array.isArray(obj.pages)?obj.pages:[]).forEach((g,i)=>page(g,g&&g.id? g.id : 'pages['+i+']'));
+  }
+  return out;
+}
+/* ================= 容易被換行拆開的寫法 =================
+   換行位置由 Unicode 的換行規則決定，引擎只看字元、不懂語意：一般空白、en dash「–」、連字號「-」
+   後面都是合法的換行點，所以「2 GHz」「2–18」「F-42%」會被拆到兩行。瀏覽器與 PowerPoint 都一樣，
+   只是字型不同、每行寬度不同，拆開的位置不同——畫布上沒拆開，不代表 PowerPoint 裡也沒拆開。
+
+   pptx 沒有「這段不換行」的格式設定，能擋住的只有字元本身：不斷行空白 U+00A0、不斷行連字號 U+2011
+   （2026-09-25 以 PowerPoint 實測；en dash、全形～、U+2060 都擋不住）。這跟 Word 的做法相同：
+   由寫的人決定哪裡要黏住，編輯器提供輸入方式（edit/text.js 的 noBreakKey）。
+   所以這裡**只提醒、不修改**：同一個「2–18」在英文句子裡斷開可能是可以接受的，要不要黏住是寫的人的判斷。
+
+   與 model/schema.js 一樣只能用 JS 本身，tools/deck-lint.js 在 node 裡載入同一份。 */
+const BREAK_UNITS=['GHz','MHz','kHz','THz','Hz','dBm','dB','mm','cm','km','nm','μm','µm','Å','m',
+  '°C','°F','K','ms','μs','ns','min','h','s','vol%','wt%','at%','%','r/min','rpm','kg/m²','kg/m2','g/cm³',
+  'mg','kg','g','emu/g','Oe','mT','T','mA','A','mV','kV','V','kW','mW','W','kΩ','Ω','MPa','GPa','kPa','Pa',
+  'N','J','mL','μL','L','eV','keV','ppm','px','pt','dpi','fps','MB','GB','TB','KB'];
+const BREAK_RULES=[
+  {re:new RegExp('\\d+(?:\\.\\d+)? ('+BREAK_UNITS.map(u=>u.replace(/[.*+?^${}()|[\]\\/]/g,'\\$&')).join('|')+')(?![A-Za-zμµ°²³/%])','g'),
+   why:'a line can break between the number and the unit; use a no-break space (U+00A0)'},
+  {re:/\d+(?:\.\d+)?%? ?[–—~～] ?\d+(?:\.\d+)?%?/g,
+   why:'a line can break at the dash; for a range write a word between the numbers with no-break spaces (U+00A0) around it, or use U+2011 as the dash'},
+  {re:/[A-Za-zα-ωΑ-Ω]+-\d+(?:\.\d+)?%?/g,
+   why:'a line can break after the hyphen; use a non-breaking hyphen (U+2011)'},
+  {re:/\S+ [<>≤≥] [−\-+]?\d+(?:\.\d+)?/g,
+   why:'a line can break around the comparison sign; use no-break spaces (U+00A0) on both sides'},
+];
+/* 一個元素的所有文字 → 提醒字串陣列：同一條規則合併成一行，列出前幾個片段。
+   逐格逐段各列一行的話，一張 5×7 的表就能洗掉整個畫面，真正要看的反而被淹沒 */
+function breakHints(texts,where){
+  const out=[];
+  for(const r of BREAK_RULES){
+    const hits=[];
+    for(const t of texts){ r.re.lastIndex=0; for(const m of String(t).matchAll(r.re)) if(!hits.includes(m[0])) hits.push(m[0]); }
+    if(!hits.length) continue;
+    const shown=hits.slice(0,4).map(h=>'"'+h+'"').join(', ')+(hits.length>4? ' (+'+(hits.length-4)+' more)' : '');
+    out.push(where+': '+shown+': '+r.why);
+  }
+  return out;
+}
+/* 掃一個物件，回傳提醒字串陣列。kind 與 path 同 schemaCheck：'deck'｜'page'｜'element'｜'elements'。
+   只看會畫在投影片上的字：文字框、形狀的段落與表格儲存格；備忘稿不上投影片，不看。 */
+function breakCheck(obj,kind,path){
+  const out=[];
+  const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
+  const el=(e,p)=>{
+    if(!e||typeof e!=='object'||e.hidden) return;
+    const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
+    if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
+      if(!c||typeof c!=='object'||c.covered) continue;
+      texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));
+    }
+    out.push(...breakHints(texts,p));
+  };
+  // 位置寫成「頁/元素」：元素 id 只在同一頁內唯一（跨頁同 id 是 Morph 的配對方式），只給 id 看不出是哪一頁
+  const elsOf=(list,p)=>(Array.isArray(list)?list:[]).forEach((e,i)=>el(e,p+'/'+(e&&e.id? e.id : '['+i+']')));
+  const page=(g,p)=>{ if(g&&typeof g==='object') elsOf(g.elements,p); };
+  if(kind==='element') el(obj,path);
+  else if(kind==='elements') elsOf(obj,path);
+  else if(kind==='page') page(obj,path);
+  else if(kind==='deck'&&obj&&typeof obj==='object'){
+    if(obj.master&&typeof obj.master==='object') elsOf(obj.master.elements,'master');
     (Array.isArray(obj.pages)?obj.pages:[]).forEach((g,i)=>page(g,g&&g.id? g.id : 'pages['+i+']'));
   }
   return out;
@@ -12467,10 +12548,12 @@ const DJ=Object.freeze({
   },
 
   /* 掃既有內容裡不認得的欄位（寫入類動詞只檢查這次傳進來的東西）。給 pid 只掃那一頁，省略掃整份 */
+  /* 不認得的欄位（model/schema.js），加上容易被換行拆開的寫法（model/textlint.js，只提醒）。
+     兩類訊息格式不同：前者「路徑.欄位: unknown field …」，後者「路徑: "片段": a line can break …」 */
   lint(pid){
-    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master');
-    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid);
-    return schemaCheck(APP.deck,'deck');
+    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master').concat(breakCheck(djEls(APP.deck,'master'),'elements','master'));
+    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid).concat(breakCheck(djPage(APP.deck,pid),'page',pid));
+    return schemaCheck(APP.deck,'deck').concat(breakCheck(APP.deck,'deck'));
   },
 
   /* ---------- 進出 ---------- */

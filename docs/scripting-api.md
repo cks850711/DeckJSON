@@ -59,7 +59,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `measure(pageId, elementId)` | `{id, w, h, needW, needH}` — the size the text box needs to hold its text exactly. Horizontal text: compare `needH` with `h`. Vertical text: compare `needW` with `w`. Changes nothing |
 | `fit(pageId, ids)` | Resizes text boxes to fit their text — height for horizontal text (top edge stays), width for vertical text (left edge stays). `ids` is required, so a card deliberately taller than its text isn't collapsed by accident. Same as **Fit to text** in the editor. Returns `{page, fitted:[{id, from, to}], overflow}` |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
-| `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in). One page, `'master'`, or the whole deck when omitted |
+| `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below). One page, `'master'`, or the whole deck when omitted |
 
 ## Files and output
 
@@ -131,6 +131,21 @@ tx-2.fil: unknown field on text element — did you mean "fill"?
 ```
 
 The same check runs outside the browser: `node tools/deck-lint.js <file.deck>` lists unknown fields in a saved file (exit code 1 if there are any; `--json` for machine-readable output). It loads the app's own `src/app/model/schema.js`, so it always agrees with the warnings above.
+
+## Line-break hints
+
+Where a line may break is decided by Unicode's line-breaking rules: a line can break after an ordinary space, an en dash “–” or a hyphen “-”, so “2 GHz”, “2–18” or “F-42%” can end up split across two lines. Browsers and PowerPoint follow much the same rules, but with different fonts the lines have different widths — text that stays together on the canvas may still be split in PowerPoint. A pptx has no “keep this together” formatting; only the characters themselves can prevent the break:
+
+| Case | Write |
+|---|---|
+| number + unit | a no-break space U+00A0 between them |
+| number range | a no-break hyphen U+2011 as the range sign, or a word with no-break spaces on both sides (en dash, full-width ～ and U+2060 do not stop PowerPoint from breaking) |
+| hyphen between a letter and a number | a no-break hyphen U+2011 |
+| comparison sign (RL < −10 dB) | no-break spaces U+00A0 on both sides |
+
+`lint()` lists these as hints (`pageId/elementId: "snippet": a line can break …`). They are **hints only; nothing is changed** — whether a phrase must stay together is the writer's call. The `deck-lint` command lists them too, without affecting the exit code; with `--json` they are only included when you add `--breaks` (`{file: {fields, breaks}}`), so the plain `--json` output is unchanged.
+
+When editing text in DeckJSON (text boxes and table cells), <kbd>Cmd/Ctrl+Shift+Space</kbd> types a no-break space and <kbd>Cmd/Ctrl+Shift+Hyphen</kbd> a no-break hyphen, as in Word.
 
 ## Testing
 

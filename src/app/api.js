@@ -337,10 +337,12 @@ const DJ=Object.freeze({
   },
 
   /* 掃既有內容裡不認得的欄位（寫入類動詞只檢查這次傳進來的東西）。給 pid 只掃那一頁，省略掃整份 */
+  /* 不認得的欄位（model/schema.js），加上容易被換行拆開的寫法（model/textlint.js，只提醒）。
+     兩類訊息格式不同：前者「路徑.欄位: unknown field …」，後者「路徑: "片段": a line can break …」 */
   lint(pid){
-    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master');
-    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid);
-    return schemaCheck(APP.deck,'deck');
+    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master').concat(breakCheck(djEls(APP.deck,'master'),'elements','master'));
+    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid).concat(breakCheck(djPage(APP.deck,pid),'page',pid));
+    return schemaCheck(APP.deck,'deck').concat(breakCheck(APP.deck,'deck'));
   },
 
   /* ---------- 進出 ---------- */

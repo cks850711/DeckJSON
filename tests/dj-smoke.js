@@ -161,6 +161,15 @@ export default async function run() {
     ok('lint: clean page is clean', DJ.lint('pA').length === 0, DJ.lint('pA'));
     await DJ.patch('pB', [w1.ids[0], w4.ids[0], w5.ids[0]].map(id => ({id, remove: true})).concat([{id: 'tall', unset: ['fil']}]));
 
+    // ---- 容易被換行拆開的寫法：只提醒，不修改 ----
+    await DJ.add('pB', [{id: 'brk', type: 'text', x: 0, y: 300, w: 600, h: 40, paras: [{runs: [{text: '頻段 2–18 GHz，F-42%，RL < −10 dB', sizePt: 14}]}]}]);
+    const bh = DJ.lint('pB').filter(w => /line can break/.test(w));
+    ok('lint: line-break hints for unit, range, hyphen and comparison', bh.length === 4 && bh.every(w => w.startsWith('pB/brk:')), bh);
+    ok('lint: hints do not touch the text', DJ.get('pB', 'brk').paras[0].runs[0].text === '頻段 2–18 GHz，F-42%，RL < −10 dB');
+    await DJ.patch('pB', [{id: 'brk', md: '頻段 2\u00a0至\u00a018\u00a0GHz，F\u201142%，RL\u00a0<\u00a0−10\u00a0dB'}]);
+    ok('lint: no-break characters clear the hints', !DJ.lint('pB').some(w => /line can break/.test(w)), DJ.lint('pB'));
+    await DJ.patch('pB', [{id: 'brk', remove: true}]);
+
     // ---- 從模板開新簡報 ----
     await DJ.load(template());
     const tplBlob = await DJ.toBlob();            // 走 .deck 容器（資產另存）這條路
