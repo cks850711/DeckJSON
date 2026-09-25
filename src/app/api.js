@@ -48,13 +48,16 @@ async function djReadDeck(src){
   throw djErr('expected a Blob, File, ArrayBuffer, JSON string or deck object');
 }
 /* 換文字、留樣式：md 以換行分段，第 k 段沿用原本第 k 段（超出的沿用最後一段）的段落設定
-   與第一個 run 的字元樣式。直接 set:{paras:[{md}]} 會把字級、顏色、粗細一起換成預設
-   ——從模板套字時實際踩到：44pt 紫色標題變成 18pt 黑字。 */
+   與**文字最長的那個 run** 的字元樣式。直接 set:{paras:[{md}]} 會把字級、顏色、粗細一起換成預設
+   ——從模板套字時實際踩到：44pt 紫色標題變成 18pt 黑字。
+   取最長而不取第一個：段首粗體標籤（「**原理**：…」）是常見寫法，取第一個 run 會把整段變粗，
+   而標籤本身 md 裡的 ** 會再加回去（2026-09-25 實際做簡報時踩到，匯出的 pptx 整段粗體）。 */
 const DJ_PARA_KEEP=['align','bullet','spaceBefore','spaceAfter'];
 function djRestyle(old,md){
   const ps=Array.isArray(old)&&old.length? old : [{}];
   return String(md).split('\n').map((line,k)=>{
-    const op=ps[Math.min(k,ps.length-1)]||{}, base=Object.assign({},(op.runs||[])[0]||{});
+    const op=ps[Math.min(k,ps.length-1)]||{}, runs=op.runs||[];
+    const base=Object.assign({},runs.reduce((a,r)=>String(r.text||'').length>String(a.text||'').length? r : a,runs[0]||{}));
     delete base.text; delete base.link;   // 連結屬於那幾個字，不該跟著換掉的文字走
     const p={};
     for(const key of DJ_PARA_KEEP) if(op[key]!=null) p[key]=structuredClone(op[key]);

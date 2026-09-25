@@ -133,6 +133,14 @@ export default async function run() {
     ok('md: inline markdown still applies', sp[0].runs.some(r => r.text === '重點' && r.bold));
     ok('md: extra lines reuse the last paragraph style', sp.length === 2 && sp[1].runs[0].sizePt === 44, sp);
     ok('md: element fields untouched', DJ.get('pB', 'styled').valign === 'middle');
+    // 段首粗體標籤：字元樣式取最長的 run（內文），不取第一個（標籤），否則整段變粗
+    await DJ.add('pB', [{id: 'label', type: 'text', x: 0, y: 200, w: 900, h: 40,
+      paras: [{runs: [{text: '目的', bold: true, sizePt: 14}, {text: '：一段比標籤長得多的內文', sizePt: 14}]}]}]);
+    await DJ.patch('pB', [{id: 'label', md: '**方法**：換過的內文'}]);
+    const lbl = DJ.get('pB', 'label').paras[0].runs;
+    ok('md: bold label does not make the whole paragraph bold',
+      lbl.some(r => r.text === '方法' && r.bold) && lbl.some(r => /換過的內文/.test(r.text) && !r.bold) && lbl.every(r => r.sizePt === 14), lbl);
+    await DJ.patch('pB', [{id: 'label', remove: true}]);
     await throws('md: not on a table', () => DJ.patch('pA', [{id: 'tbl', md: 'x'}]));
     await throws('change keys are strict (typo "sett")', () => DJ.patch('pB', [{id: 'styled', sett: {x: 1}}]));
     await DJ.patch('pB', [{id: 'styled', remove: true}]);

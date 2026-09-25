@@ -95,7 +95,7 @@ await DJ.patch(page, [{id: 'title', md: 'New title'}])
 await DJ.patch(page, [{id: 'box', md: 'First line **bold part**\nSecond line'}])
 ```
 
-Each line becomes a paragraph. Line *k* takes the paragraph settings (alignment, bullet, spacing) and the character style of the first run of the old paragraph *k*; extra lines reuse the last old paragraph. Inline markdown (`**bold**`, `*italic*`, `==highlight==`…) still applies on top.
+Each line becomes a paragraph. Line *k* takes the paragraph settings (alignment, bullet, spacing) and the character style of the longest run of the old paragraph *k* (so a bold label at the start of a paragraph doesn't make the whole new paragraph bold); extra lines reuse the last old paragraph. Inline markdown (`**bold**`, `*italic*`, `==highlight==`…) still applies on top.
 
 To start a page from a template page, copy it and then replace its text: `const {page} = await DJ.addPage(DJ.get(examplePageId), examplePageId)`.
 
