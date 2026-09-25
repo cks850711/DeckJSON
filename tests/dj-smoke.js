@@ -144,6 +144,27 @@ export default async function run() {
     await throws('arrange: unknown edge', () => DJ.align('pB', ['L1'], 'up'));
     await DJ.patch('pB', ['L1', 'L2', 'L3'].map(id => ({id, remove: true})));
 
+    // ---- 複製：圖片位元組跟著走，群組換新 id ----
+    const {page: pC} = await DJ.addPage({name: 'components', elements: [
+      {id: 'ic', type: 'image', x: 10, y: 10, w: 20, h: 20, natW: 1, natH: 1, dataUrl: PX, groupId: 'gK'},
+      TEXT('lab', 40, 10, 100, 20, 'label', {groupId: 'gK'})]});
+    const c1 = await DJ.copy(pC, 'gK', 'pB', {x: 500, y: 500});
+    const c2 = await DJ.copy(pC, 'gK', 'pB', {dx: 0, dy: 100});
+    const g1 = el('pB', c1.map.ic).groupId, g2 = el('pB', c2.map.ic).groupId;
+    ok('copy: group copied twice becomes two groups', g1 && g2 && g1 !== g2 && el('pB', c1.map.lab).groupId === g1, [g1, g2]);
+    ok('copy: {x, y} places the group box, offsets kept', JSON.stringify(DJ.bbox('pB', g1)) === '{"x":500,"y":500,"w":130,"h":20}', DJ.bbox('pB', g1));
+    ok('copy: {dx, dy} shifts from the source position', el('pB', c2.map.ic).y === 110 && el('pB', c2.map.lab).x === 40);
+    const one = await DJ.copy(pC, 'lab', 'pB');
+    ok('copy: a lone member drops its group', el('pB', one.ids[0]).groupId === undefined, el('pB', one.ids[0]));
+    await DJ.removePage(pC);
+    await DJ.load(await DJ.toBlob());   // 走一次存檔：資產要真的留在簡報裡，不是只留在記憶體
+    ok('copy: picture survives removing the source page', DJ.outline('pB').filter(e => e.type === 'image').length === 2 && DJ.assets().some(a => a.usedBy.some(u => u.page === 'pB')));
+    const wa = await DJ.add('pB', [TEXT(null, 0, 0, 50, 20, 'x', {groupId: g1})]);
+    ok('add: warns when joining an existing group', wa.warnings.some(w => /already used/.test(w)), wa.warnings);
+    await throws('copy: both {x,y} and {dx,dy}', () => DJ.copy('pB', g1, 'pB', {x: 0, dx: 1}));
+    await throws('copy: unknown source', () => DJ.copy('pB', 'nope', 'pB'));
+    await DJ.patch('pB', DJ.outline('pB').filter(e => e.group === g1 || e.group === g2 || e.id === one.ids[0]).map(e => ({id: e.id, remove: true})));
+
     // ---- 增刪頁與元素 ----
     const a = await DJ.add('pB', [TEXT(null, 0, 500, 200, 40, '新增'), TEXT('tall', 0, 0, 10, 10, '撞號')]);
     ok('add: auto id', a.ids[0] && a.ids[0] !== 'tall');

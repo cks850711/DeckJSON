@@ -12581,6 +12581,11 @@ const DJ=Object.freeze({
     const warnings=schemaCheck(list,'elements','added');
     const taken=new Set(els.map(e=>e.id));
     for(const e of (t.master&&t.master.elements)||[]) taken.add(e.id);
+    // 帶進來的群組 id 若這頁已經有人用，新元素會併進那一組。可能是刻意的，所以只提醒不改名；
+    // 要複製一整組請用 copy()，它會換新的群組 id
+    const groups=new Set(els.map(e=>e.groupId).filter(Boolean));
+    for(const g of new Set(list.map(e=>e&&e.groupId).filter(g=>groups.has(g))))
+      warnings.push(`groupId "${g}" is already used on page "${pid}"; the new elements join that group (use copy() to duplicate a group as a new one)`);
     for(const e of list){
       if(!e||typeof e!=='object'||!e.type) throw djErr('each element needs a type');
       if(!e.id||taken.has(e.id)) e.id=uid('e');
@@ -12589,6 +12594,40 @@ const DJ=Object.freeze({
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
     return {page:pid,ids:list.map(e=>e.id),overflow:djOverIds(pid),warnings};
+  },
+  /* 複製元素到某一頁（可以是同一頁）。與 get → add 的差別：
+     - 圖片位元組直接帶過去，不經 @asset 佔位；複製完就與來源無關，之後刪掉來源頁（例如模板的元件頁）也不影響
+     - 元素一律換新 id；群組 id 也換新，同一次複製裡同一組的成員換成同一個新 id，
+       所以複製兩次不會併成一組。只複製到群組裡一個成員時，它不再帶群組
+     ids 同 center()：元素 id 或軟群組 id，保留來源頁的前後順序。
+     位置：{x, y} 是複製後整組外框的左上角；{dx, dy} 是位移；都不給＝原座標 */
+  async copy(fromPid,ids,toPid,opts){
+    const o=djOpts(opts,['x','y','dx','dy'],'copy');
+    const abs=o.x!=null||o.y!=null, rel=o.dx!=null||o.dy!=null;
+    if(abs&&rel) throw djErr('copy(): give either {x, y} or {dx, dy}, not both');
+    for(const k of ['x','y','dx','dy']) if(o[k]!=null&&typeof o[k]!=='number') throw djErr(`copy(): ${k} must be a number`);
+    const s=snapshot(), t=structuredClone(APP.deck);
+    const src=djEls(t,fromPid), dst=djEls(t,toPid);
+    const units=djUnits(t,fromPid,ids,'copy');
+    const picked=new Set(units.flatMap(u=>u.els));
+    const list=src.filter(e=>picked.has(e));            // 來源頁的前後順序
+    const box=djUnion(units.map(u=>u.box));
+    const dx=Math.round(abs? (o.x!=null? o.x-box.x : 0) : (o.dx||0));
+    const dy=Math.round(abs? (o.y!=null? o.y-box.y : 0) : (o.dy||0));
+    const count=new Map(); for(const e of list) if(e.groupId) count.set(e.groupId,(count.get(e.groupId)||0)+1);
+    const gmap=new Map(), map={}, out=[];
+    for(const e of list){
+      const c=structuredClone(e);
+      c.id=uid('e'); map[e.id]=c.id;
+      if(c.groupId){
+        if(count.get(c.groupId)<2) delete c.groupId;
+        else{ if(!gmap.has(c.groupId)) gmap.set(c.groupId,uid('g')); c.groupId=gmap.get(c.groupId); }
+      }
+      c.x+=dx; c.y+=dy;
+      dst.push(c); out.push(c.id);
+    }
+    djCommit(normalizeDeck(t),s); await djSettle();
+    return {page:toPid,ids:out,map,groups:Object.fromEntries(gmap),overflow:djOverIds(toPid)};
   },
   /* 加一張圖。自己寫 {type:'image'} 要先轉 data URL、讀原始尺寸、算不變形的寬高，每一步都容易錯
      （寬高比算錯就變形，而且畫面上不一定看得出來）；這裡一次做完。
