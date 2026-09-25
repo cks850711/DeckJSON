@@ -2,7 +2,7 @@
 /* ================= 常數 ================= */
 /* 版本號只在這裡定義一次：說明面板的標頭顯示它，存檔時 deck.json 的 generator 欄位也寫它。
    單檔成品是離線傳播的——使用者手上那份沒有自動更新，回報問題時「哪一版」只能靠檔案自己講。 */
-const APP_VERSION='0.2.0';
+const APP_VERSION='0.3.0';
 /* 容器的自我識別。`.deck` 這個副檔名至少有三套互不相容的格式在用（本專案、deckyard 的
    application/vnd.deckyard.deck、OpenDeck 的 application/x-deck），單看副檔名分不出誰是誰。
    仿 OCF／EPUB 的作法：zip 的第一個 entry 是未壓縮的 mimetype，於是不解壓也認得出來。
