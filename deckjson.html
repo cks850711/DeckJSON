@@ -12632,7 +12632,7 @@ const DJ=Object.freeze({
       const rc=await recodeImage(url,Math.round(dw*preset.mul),Math.round(dh*preset.mul));
       if(rc){ url=rc.dataUrl; nw=rc.natW; nh=rc.natH; }   // null＝原圖已不大於所需，或重編碼反而更大：保留原圖
     }else if(nw>dw*3&&dataUrlBytes(url)>200*1024)
-      extra.push(`image: ${nw}×${nh} px shown at ${Math.round(dw)}×${Math.round(dh)} (${fmtBytes(dataUrlBytes(url))}); pass compress:'std' to shrink it`);
+      extra.push(`image: ${nw}×${nh} px shown at ${Math.round(dw)}×${Math.round(dh)} (${fmtBytes(dataUrlBytes(url))}); pass compress:'std' to shrink it, or call compress() on it afterwards`);
     const el={type:'image',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),natW:nw,natH:nh,dataUrl:url};
     if(o.fit==='cover') el.fit='cover';
     if(o.id!=null) el.id=o.id;
@@ -12640,6 +12640,36 @@ const DJ=Object.freeze({
     const r=await DJ.add(pid,[el]);
     return {page:pid,id:r.ids[0],natW:nw,natH:nh,kb:Math.round(dataUrlBytes(url)/1024),overflow:r.overflow,
       warnings:r.warnings.concat(extra)};
+  },
+  /* 壓縮已經放上去的圖，框、裁切、群組都不動（與屬性面板的圖片壓縮同一套：recodeImage、targetPixels）。
+     原本只能在 addImage 時壓；圖放上去之後才看到警告，就得刪掉重放、再補回群組。
+     ids 省略＝該頁所有圖片元素（不含背景圖）。preset：'web'｜'std'（預設）｜'print'。
+     同一份位元組、同一個目標尺寸只編碼一次，多處共用的圖壓完仍是同一份資產。
+     不可逆，但與其他寫入一樣可以 Cmd/Ctrl+Z */
+  async compress(pid,ids,preset){
+    const key=preset==null? 'std' : preset;
+    const p=RECODE_PRESETS.find(q=>q.key===key);
+    if(!p) throw djErr(`compress(): preset must be one of ${RECODE_PRESETS.map(q=>q.key).join(', ')}`);
+    const s=snapshot(), t=structuredClone(APP.deck), els=djEls(t,pid);
+    ids=djIds(ids);
+    const targets= ids? ids.map(id=>{ const el=djEl(t,pid,id);
+      if(el.type!=='image') throw djErr(`"${id}" is a ${el.type}; compress() only takes images`);
+      return el; }) : els.filter(el=>el.type==='image'&&el.dataUrl);
+    const done=new Map(), compressed=[], skipped=[];
+    let before=0, after=0;
+    for(const el of targets){
+      const [tw,th]=targetPixels(el,p.mul), k=el.dataUrl.length+'|'+assetKey(el.dataUrl)+'|'+tw+'x'+th;
+      const b=dataUrlBytes(el.dataUrl); before+=b;
+      if(!done.has(k)) done.set(k,await recodeImage(el.dataUrl,tw,th,IMG_QUALITY));
+      const r=done.get(k);
+      if(!r){ after+=b; skipped.push({id:el.id,natW:el.natW,natH:el.natH,need:[tw,th]}); continue; }
+      const from={natW:el.natW,natH:el.natH,kb:Math.round(b/1024)};
+      el.dataUrl=r.dataUrl; el.natW=r.natW; el.natH=r.natH;
+      after+=dataUrlBytes(r.dataUrl);
+      compressed.push({id:el.id,from,to:{natW:r.natW,natH:r.natH,kb:Math.round(dataUrlBytes(r.dataUrl)/1024)}});
+    }
+    if(compressed.length){ djCommit(t,s); await djSettle(); }
+    return {page:pid,preset:key,compressed,skipped,kb:{before:Math.round(before/1024),after:Math.round(after/1024)}};
   },
   /* 整頁替換（elements 與列出的頁面屬性）。沒列出的頁面屬性沿用原頁，頁 id 不變 */
   async replacePage(pid,json){

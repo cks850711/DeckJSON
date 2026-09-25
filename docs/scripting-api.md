@@ -50,6 +50,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape **while keeping its formatting** (see below). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
 | `add(pageId, elements)` | Adds elements on top of the page. Missing ids, or ids already used on that page, get a fresh one. Returns `{page, ids, overflow}` with the ids actually used, in input order |
 | `addImage(pageId, src, opts?)` | Adds a picture, doing the decoding, intrinsic size and undistorted box for you. See “Images” below. Returns `{page, id, natW, natH, kb, overflow, warnings}` |
+| `compress(pageId, ids?, preset?)` | Re-encodes pictures already on the slide down to what they are shown at; frame, crop and group stay as they are. See “Images” |
 | `replacePage(pageId, json)` | Replaces the page's elements (and any page fields present in `json`). Fields not given keep their current values; the page id never changes. `json` may also be a bare elements array |
 | `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). Returns `{page, n, overflow}` |
 | `removePage(pageId)` | Deletes a page. The last remaining page can't be removed |
@@ -120,6 +121,8 @@ To start a page from a template page, copy it and then replace its text: `const 
 | neither | Same as Insert Image in the editor: half the original size, at most 60% of the slide |
 
 `x`, `y` are the box's top-left corner; omitted, the box is centered on the slide. `compress: 'web'|'std'|'print'` re-encodes to the displayed size (1.5×, 2×, 3× the pixels) using the same code as the image compression in the properties panel — **this can't be undone**. Without it, `warnings` tells you when the picture is far larger than it is shown. If what comes back isn't an image (a 404 page, say) the call throws instead of putting a broken picture on the slide.
+
+For a picture that is already placed — when the warning showed up after the fact — use `compress(pageId, ids?, preset?)` instead of removing and re-adding it: the frame, crop and group stay put. `ids` omitted means every image element on that page (backgrounds are not included); `preset` is `'web'`, `'std'` (default) or `'print'`. Elements sharing the same picture at the same size are encoded once, so they still share one asset afterwards. Returns `{page, preset, compressed: [{id, from, to}], skipped, kb: {before, after}}`; `skipped` lists pictures already no bigger than needed. Like the panel's compression it can't be undone except with Cmd/Ctrl+Z.
 
 ```js
 await DJ.addImage(page, '/figures/chart.png', {x: 640, y: 120, w: 560, h: 420, alt: 'Annual revenue'})

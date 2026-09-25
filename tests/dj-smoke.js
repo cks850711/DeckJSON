@@ -311,6 +311,20 @@ export default async function run() {
     ok('addImage: warns when far larger than shown', i7.warnings.some(w => /compress/.test(w)), i7.warnings);
     const i8 = await DJ.addImage('iA', big, {w: 150, compress: 'web'});
     ok('addImage: compress shrinks to display need', i8.natW === 225 && i8.kb < i7.kb && i8.warnings.length === 0, [i7.kb, i8]);
+    // 事後壓縮：框與群組不動；同一張圖同一尺寸只編碼一次，壓完仍是同一份資產
+    const i9 = await DJ.addImage('iA', big, {w: 150});
+    await DJ.patch('iA', [{id: i7.id, set: {groupId: 'gImg'}}]);
+    const frame = id => box('iA', id).split(',').slice(0, 4).join();
+    const box7 = frame(i7.id);
+    const cmp = await DJ.compress('iA', [i7.id, i9.id], 'web');
+    ok('compress: shrinks placed images to display need', cmp.compressed.length === 2 && DJ.get('iA', i7.id).natW === 225 && cmp.kb.after < cmp.kb.before, cmp);
+    ok('compress: frame and group untouched', frame(i7.id) === box7 && DJ.get('iA', i7.id).groupId === 'gImg', [frame(i7.id), box7]);
+    ok('compress: same picture stays one asset', key(DJ.get('iA', i7.id).dataUrl) === key(DJ.get('iA', i9.id).dataUrl));
+    const cmp2 = await DJ.compress('iA', i7.id, 'web');
+    ok('compress: already small is skipped', cmp2.compressed.length === 0 && cmp2.skipped.length === 1, cmp2);
+    await DJ.add('iA', [TEXT('capt', 0, 0, 100, 20, 'caption')]);
+    await throws('compress: non-image rejected', () => DJ.compress('iA', 'capt'));
+    await throws('compress: unknown preset', () => DJ.compress('iA', i7.id, 'tiny'));
     await DJ.load(fixture());
 
     // ---- 進出 ----

@@ -50,6 +50,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字**但保留格式**（見下文）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
 | `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、或 id 已被該頁用掉的，自動配新的。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
 | `addImage(pageId, src, opts?)` | 加一張圖，轉碼、讀原始尺寸、算不變形的框都由它做。見下文〈圖片〉。回傳 `{page, id, natW, natH, kb, overflow, warnings}` |
+| `compress(pageId, ids?, preset?)` | 把已經放上去的圖按顯示尺寸重編碼，框、裁切、群組都不動。見下文〈圖片〉 |
 | `replacePage(pageId, json)` | 換掉該頁的元素（以及 `json` 裡有列出的頁面欄位）。沒列出的欄位沿用原值，頁 id 不變。`json` 也可以直接是元素陣列 |
 | `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。回傳 `{page, n, overflow}` |
 | `removePage(pageId)` | 刪除一頁。只剩一頁時不能刪 |
@@ -120,6 +121,8 @@ await DJ.patch(page, [{id: 'box', md: '第一行 **粗體部分**\n第二行'}])
 | 都沒給 | 同編輯器的插入圖片：原圖一半，最多畫布的六成 |
 
 `x`、`y` 是框的左上角，省略則置中於畫布。`compress: 'web'｜'std'｜'print'` 會按顯示尺寸重編碼（1.5、2、3 倍像素），與屬性面板的圖片壓縮是同一套，**不可逆**。沒壓縮而原圖遠大於顯示所需時，`warnings` 會提醒。抓回來的不是圖（例如 404 頁）就拋錯，不會把破圖放進簡報。
+
+圖已經放上去、事後才看到警告時，用 `compress(pageId, ids?, preset?)`，不必刪掉重放：框、裁切、群組都不動。`ids` 省略＝該頁所有圖片元素（不含背景圖）；`preset` 是 `'web'`、`'std'`（預設）或 `'print'`。共用同一張圖、目標尺寸也相同的元素只編碼一次，壓完仍是同一份資產。回傳 `{page, preset, compressed: [{id, from, to}], skipped, kb: {before, after}}`；`skipped` 列出原本就不比需求大的圖。與屬性面板的壓縮一樣不可逆，只能用 Cmd/Ctrl+Z 復原。
 
 ```js
 await DJ.addImage(page, '/figures/chart.png', {x: 640, y: 120, w: 560, h: 420, alt: '年度營收'})
