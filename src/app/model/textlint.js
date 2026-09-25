@@ -24,33 +24,39 @@ const BREAK_RULES=[
   {re:/\S+ [<>≤≥] [−\-+]?\d+(?:\.\d+)?/g,
    why:'a line can break around the comparison sign; use no-break spaces (U+00A0) on both sides'},
 ];
+/* 一段段文字 → 每條規則命中的片段：[{rule, hits}]，同一個片段只列一次 */
+function breakHits(texts){
+  const out=[];
+  BREAK_RULES.forEach((r,rule)=>{
+    const hits=[];
+    for(const t of texts){ r.re.lastIndex=0; for(const m of String(t).matchAll(r.re)) if(!hits.includes(m[0])) hits.push(m[0]); }
+    if(hits.length) out.push({rule,hits});
+  });
+  return out;
+}
 /* 一個元素的所有文字 → 提醒字串陣列：同一條規則合併成一行，列出前幾個片段。
    逐格逐段各列一行的話，一張 5×7 的表就能洗掉整個畫面，真正要看的反而被淹沒 */
 function breakHints(texts,where){
-  const out=[];
-  for(const r of BREAK_RULES){
-    const hits=[];
-    for(const t of texts){ r.re.lastIndex=0; for(const m of String(t).matchAll(r.re)) if(!hits.includes(m[0])) hits.push(m[0]); }
-    if(!hits.length) continue;
+  return breakHits(texts).map(({rule,hits})=>{
     const shown=hits.slice(0,4).map(h=>'"'+h+'"').join(', ')+(hits.length>4? ' (+'+(hits.length-4)+' more)' : '');
-    out.push(where+': '+shown+': '+r.why);
-  }
-  return out;
+    return where+': '+shown+': '+BREAK_RULES[rule].why;
+  });
 }
-/* 掃一個物件，回傳提醒字串陣列。kind 與 path 同 schemaCheck：'deck'｜'page'｜'element'｜'elements'。
-   只看會畫在投影片上的字：文字框、形狀的段落與表格儲存格；備忘稿不上投影片，不看。 */
+/* 只看會畫在投影片上的字：文字框、形狀的段落與表格儲存格；備忘稿不上投影片，不看。隱藏元素也不看 */
+function breakTexts(e){
+  if(!e||typeof e!=='object'||e.hidden) return [];
+  const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
+  const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
+  if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
+    if(!c||typeof c!=='object'||c.covered) continue;
+    texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));
+  }
+  return texts;
+}
+/* 掃一個物件，回傳提醒字串陣列。kind 與 path 同 schemaCheck：'deck'｜'page'｜'element'｜'elements'。 */
 function breakCheck(obj,kind,path){
   const out=[];
-  const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
-  const el=(e,p)=>{
-    if(!e||typeof e!=='object'||e.hidden) return;
-    const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
-    if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
-      if(!c||typeof c!=='object'||c.covered) continue;
-      texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));
-    }
-    out.push(...breakHints(texts,p));
-  };
+  const el=(e,p)=>out.push(...breakHints(breakTexts(e),p));
   // 位置寫成「頁/元素」：元素 id 只在同一頁內唯一（跨頁同 id 是 Morph 的配對方式），只給 id 看不出是哪一頁
   const elsOf=(list,p)=>(Array.isArray(list)?list:[]).forEach((e,i)=>el(e,p+'/'+(e&&e.id? e.id : '['+i+']')));
   const page=(g,p)=>{ if(g&&typeof g==='object') elsOf(g.elements,p); };
@@ -61,5 +67,16 @@ function breakCheck(obj,kind,path){
     if(obj.master&&typeof obj.master==='object') elsOf(obj.master.elements,'master');
     (Array.isArray(obj.pages)?obj.pages:[]).forEach((g,i)=>page(g,g&&g.id? g.id : 'pages['+i+']'));
   }
+  return out;
+}
+/* 給畫面用的結構化結果：[{page, id, hits:[片段…]}]，依頁序、頁內元素順序排列。page 為 'master' 表示母版元素 */
+function breakScan(deck){
+  const out=[];
+  const elsOf=(list,page)=>{ for(const e of Array.isArray(list)?list:[]){
+    const hits=[].concat(...breakHits(breakTexts(e)).map(h=>h.hits));
+    if(hits.length&&e.id) out.push({page,id:e.id,hits:[...new Set(hits)]});
+  } };
+  if(deck&&deck.master&&deck.master.on) elsOf(deck.master.elements,'master');
+  for(const g of deck&&Array.isArray(deck.pages)?deck.pages:[]) if(g&&g.id) elsOf(g.elements,g.id);
   return out;
 }

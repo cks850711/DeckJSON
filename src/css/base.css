@@ -40,3 +40,6 @@
   #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
   #saveHint.bad{color:var(--danger);font-weight:600}
   #fontWarn{color:#e0b34d;font-size:11px}
+  /* 換行提醒：只是提醒，不用警告的紅色；可點，按一下跳到下一處 */
+  #breakHint{color:var(--fg-dim);font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #breakHint:hover{color:var(--fg);text-decoration:underline}

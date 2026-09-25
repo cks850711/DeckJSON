@@ -25,6 +25,7 @@ function renderAll(){
   syncMelBtn();   // 母版可能剛被啟用／關閉，標示鈕的去留跟著變
   renderDeckSettings();   // 全簡報面板開著時跟著更新（關著會自己 return）
   setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
+  scheduleBreakHint();  // 狀態列的換行提醒，停手後才重算
   scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
 }
 

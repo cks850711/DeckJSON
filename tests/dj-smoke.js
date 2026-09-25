@@ -166,8 +166,16 @@ export default async function run() {
     const bh = DJ.lint('pB').filter(w => /line can break/.test(w));
     ok('lint: line-break hints for unit, range, hyphen and comparison', bh.length === 4 && bh.every(w => w.startsWith('pB/brk:')), bh);
     ok('lint: hints do not touch the text', DJ.get('pB', 'brk').paras[0].runs[0].text === '頻段 2–18 GHz，F-42%，RL < −10 dB');
+    // 狀態列：自己動手編輯的人看得到件數，按一下跳到那個元素（停手 300ms 後才重算）
+    const hint = document.querySelector('#breakHint'), settle = () => new Promise(r => setTimeout(r, 400));
+    DJ.show('pA'); await settle();
+    ok('status bar: counts the spots', /\b5\b/.test(hint.textContent), hint.textContent);
+    hint.click();
+    ok('status bar: click jumps to the page and names the spots', DJ.info().page === 'pB' && /18 GHz/.test(hint.textContent) && /1\/1/.test(hint.textContent), [DJ.info().page, hint.textContent]);
     await DJ.patch('pB', [{id: 'brk', md: '頻段 2\u00a0至\u00a018\u00a0GHz，F\u201142%，RL\u00a0<\u00a0−10\u00a0dB'}]);
     ok('lint: no-break characters clear the hints', !DJ.lint('pB').some(w => /line can break/.test(w)), DJ.lint('pB'));
+    await settle();
+    ok('status bar: clears once fixed', hint.textContent === '', hint.textContent);
     await DJ.patch('pB', [{id: 'brk', remove: true}]);
 
     // ---- 從模板開新簡報 ----

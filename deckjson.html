@@ -50,6 +50,9 @@
   #saveHint{font-size:11px;color:var(--fg-dim);white-space:nowrap}
   #saveHint.bad{color:var(--danger);font-weight:600}
   #fontWarn{color:#e0b34d;font-size:11px}
+  /* 換行提醒：只是提醒，不用警告的紅色；可點，按一下跳到下一處 */
+  #breakHint{color:var(--fg-dim);font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #breakHint:hover{color:var(--fg);text-decoration:underline}
   /* ── 工具列：單排 46px。舊版靠 flex-wrap 疊成四排（實測 179px，佔視窗高 18%），
        且命令／工具／檢視設定／狀態顯示四類東西長得一模一樣。現在只留命令與工具，
        檢視設定下放畫布浮動列、狀態顯示下放底部狀態列。 ── */
@@ -117,7 +120,7 @@
   #viewBar .tb.ico{width:26px}
   #viewBar input[type=number]{width:52px;height:24px;text-align:center;font-family:var(--font-mono);font-size:11px}
   #viewBar .vr{height:16px;margin:0 3px}
-  /* ── 狀態列：舊版這五個 span 夾在工具列按鈕之間，既搶注意力又把工具列撐寬 ── */
+  /* ── 狀態列：舊版這幾個 span 夾在工具列按鈕之間，既搶注意力又把工具列撐寬 ── */
   #statusBar{height:23px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;
     background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--fg-mute)}
   #statusBar>span:empty{display:none}
@@ -703,6 +706,7 @@
   <span id="saveHint" title="自動存檔狀態"></span>
   <span id="warn"></span>
   <span id="fontWarn"></span>
+  <span id="breakHint" title="數字與單位、數字範圍、字母接數字、比較符號之間若是一般空白、dash 或連字號，換行時可能被拆到兩行，PowerPoint 裡也一樣。按一下跳到下一個元素。要黏住就把它換成不斷行字元：Cmd/Ctrl+Shift+空白（不斷行空白）、Cmd/Ctrl+Shift+連字號（不斷行連字號）；範圍改寫成「2 至 18」並在「至」兩側用不斷行空白。只是提醒，不改也能匯出。"></span>
   <span id="painterHint" style="color:var(--accent);font-weight:600"></span>
 </div>
 
@@ -1128,7 +1132,7 @@ var I18N_PACKS=I18N_PACKS||{};
         <li><b>雙擊</b>文字框或形狀就開始改字，粗體、顏色、高亮<b>看得見也改得動</b>。雙擊表格儲存格是改內容，雙擊圖表是改 option。</li>
         <li><b>反白幾個字，右欄的格式按鈕就只套那幾個字</b>；沒反白就是整個文字框。</li>
         <li>編輯途中點右欄的按鈕<b>不會中斷編輯</b>，反白的範圍也留著——設完一項可以接著設下一項。</li>
-        <li><b>不讓「2 GHz」「F-42%」被換行拆開</b>：編輯文字時按 <kbd>Cmd/Ctrl+Shift+空白</kbd> 打出<b>不斷行空白</b>、<kbd>Cmd/Ctrl+Shift+連字號</kbd> 打出<b>不斷行連字號</b>，按法同 Word，表格儲存格裡也能用。這兩個字元看起來跟一般空白、連字號一樣，但換行時會黏在一起；PowerPoint 也只認這兩個字元。</li>
+        <li><b>不讓「2 GHz」「F-42%」被換行拆開</b>：編輯文字時按 <kbd>Cmd/Ctrl+Shift+空白</kbd> 打出<b>不斷行空白</b>、<kbd>Cmd/Ctrl+Shift+連字號</kbd> 打出<b>不斷行連字號</b>，按法同 Word，表格儲存格裡也能用。這兩個字元看起來跟一般空白、連字號一樣，但換行時會黏在一起；PowerPoint 也只認這兩個字元。<b>哪裡該黏住</b>看底部狀態列：有可能被拆開的寫法時會顯示「ℹ N 處可能被換行拆開」，按一下跳到下一個元素並列出片段。只是提醒，不改也能匯出。</li>
         <li>右欄那個<b>純文字編輯框</b>是「整框換掉」用的捷徑，會清掉框裡的混排格式。偵測到混排時會先問你一次。要保留格式，請在畫布上就地改。</li>
       </ul>
       <h4>字元樣式</h4>
@@ -2424,6 +2428,11 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}": "These charts are set to “Export as native chart”, but their option can't be mapped right now, so they were exported as PNG:\n\n{0}",
   "• 第 {0} 頁 {1}：{2}": "• Slide {0}, {1}: {2}",
   "⚠ 本機未安裝 {0}：畫布以替代字體預覽（折行位置可能不同），匯出仍寫原字體名": "⚠ Not installed on this computer: {0}. The canvas previews with a substitute font (line breaks may differ); the export still uses the original font name",
+  "數字與單位、數字範圍、字母接數字、比較符號之間若是一般空白、dash 或連字號，換行時可能被拆到兩行，PowerPoint 裡也一樣。按一下跳到下一個元素。要黏住就把它換成不斷行字元：Cmd/Ctrl+Shift+空白（不斷行空白）、Cmd/Ctrl+Shift+連字號（不斷行連字號）；範圍改寫成「2 至 18」並在「至」兩側用不斷行空白。只是提醒，不改也能匯出。": "A number and its unit, a numeric range, letters joined to a number, or a comparison sign separated by an ordinary space, dash or hyphen can be split across two lines — in PowerPoint too. Click to jump to the next element. To keep them together, use no-break characters: Cmd/Ctrl+Shift+Space (no-break space) and Cmd/Ctrl+Shift+Hyphen (no-break hyphen); write a range as “2 to 18” with no-break spaces around “to”. This is only a hint; you can export without changing anything.",
+  "ℹ {0} 處可能被換行拆開": "ℹ {0} spots may be split by a line break",
+  "　▸ {0}／{1}：{2}　（{3}/{4}）": "  ▸ {0} / {1}: {2}  ({3}/{4})",
+  "「{0}」": "“{0}” ",
+  "…等 {0} 處": "… {0} in all",
   "安裝該字體、或在「全簡報設定 → 字體」改成本機已有的字體，預覽就會與輸出一致": "Install that font, or change it to one this computer has under “Deck settings → Fonts”, and the preview will match the output",
 },
 
@@ -2713,7 +2722,7 @@ var I18N_PACKS=I18N_PACKS||{};
         <li><b>Double-click</b> a text box or shape to start typing; bold, colors and highlights are <b>visible and editable</b>. Double-clicking a table cell edits its content; double-clicking a chart edits its option.</li>
         <li><b>Select a few characters and the formatting buttons in the right panel apply to just those</b>; with no selection they apply to the whole text box.</li>
         <li>Clicking buttons in the right panel while editing <b>doesn't end the editing</b>, and your selection stays — set one thing, then the next.</li>
-        <li><b>Keeping “2 GHz” or “F-42%” from being split across lines</b>: while editing text, <kbd>Cmd/Ctrl+Shift+Space</kbd> types a <b>no-break space</b> and <kbd>Cmd/Ctrl+Shift+Hyphen</kbd> a <b>no-break hyphen</b>, as in Word — table cells too. They look like an ordinary space and hyphen but hold the text together at line breaks; they are also the only way PowerPoint honors.</li>
+        <li><b>Keeping “2 GHz” or “F-42%” from being split across lines</b>: while editing text, <kbd>Cmd/Ctrl+Shift+Space</kbd> types a <b>no-break space</b> and <kbd>Cmd/Ctrl+Shift+Hyphen</kbd> a <b>no-break hyphen</b>, as in Word — table cells too. They look like an ordinary space and hyphen but hold the text together at line breaks; they are also the only way PowerPoint honors. <b>Where to use them</b>: when some text could be split, the status bar at the bottom shows “ℹ N spots may be split by a line break”; click it to jump to the next element and list the spots. It is only a hint; you can export without changing anything.</li>
         <li>The <b>plain-text box</b> in the right panel is a shortcut for “replace the whole box” and clears mixed formatting inside it. When it detects mixed formatting it asks first. To keep formatting, edit in place on the canvas.</li>
       </ul>
       <h4>Character styles</h4>
@@ -9855,33 +9864,39 @@ const BREAK_RULES=[
   {re:/\S+ [<>≤≥] [−\-+]?\d+(?:\.\d+)?/g,
    why:'a line can break around the comparison sign; use no-break spaces (U+00A0) on both sides'},
 ];
+/* 一段段文字 → 每條規則命中的片段：[{rule, hits}]，同一個片段只列一次 */
+function breakHits(texts){
+  const out=[];
+  BREAK_RULES.forEach((r,rule)=>{
+    const hits=[];
+    for(const t of texts){ r.re.lastIndex=0; for(const m of String(t).matchAll(r.re)) if(!hits.includes(m[0])) hits.push(m[0]); }
+    if(hits.length) out.push({rule,hits});
+  });
+  return out;
+}
 /* 一個元素的所有文字 → 提醒字串陣列：同一條規則合併成一行，列出前幾個片段。
    逐格逐段各列一行的話，一張 5×7 的表就能洗掉整個畫面，真正要看的反而被淹沒 */
 function breakHints(texts,where){
-  const out=[];
-  for(const r of BREAK_RULES){
-    const hits=[];
-    for(const t of texts){ r.re.lastIndex=0; for(const m of String(t).matchAll(r.re)) if(!hits.includes(m[0])) hits.push(m[0]); }
-    if(!hits.length) continue;
+  return breakHits(texts).map(({rule,hits})=>{
     const shown=hits.slice(0,4).map(h=>'"'+h+'"').join(', ')+(hits.length>4? ' (+'+(hits.length-4)+' more)' : '');
-    out.push(where+': '+shown+': '+r.why);
-  }
-  return out;
+    return where+': '+shown+': '+BREAK_RULES[rule].why;
+  });
 }
-/* 掃一個物件，回傳提醒字串陣列。kind 與 path 同 schemaCheck：'deck'｜'page'｜'element'｜'elements'。
-   只看會畫在投影片上的字：文字框、形狀的段落與表格儲存格；備忘稿不上投影片，不看。 */
+/* 只看會畫在投影片上的字：文字框、形狀的段落與表格儲存格；備忘稿不上投影片，不看。隱藏元素也不看 */
+function breakTexts(e){
+  if(!e||typeof e!=='object'||e.hidden) return [];
+  const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
+  const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
+  if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
+    if(!c||typeof c!=='object'||c.covered) continue;
+    texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));
+  }
+  return texts;
+}
+/* 掃一個物件，回傳提醒字串陣列。kind 與 path 同 schemaCheck：'deck'｜'page'｜'element'｜'elements'。 */
 function breakCheck(obj,kind,path){
   const out=[];
-  const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
-  const el=(e,p)=>{
-    if(!e||typeof e!=='object'||e.hidden) return;
-    const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
-    if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
-      if(!c||typeof c!=='object'||c.covered) continue;
-      texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));
-    }
-    out.push(...breakHints(texts,p));
-  };
+  const el=(e,p)=>out.push(...breakHints(breakTexts(e),p));
   // 位置寫成「頁/元素」：元素 id 只在同一頁內唯一（跨頁同 id 是 Morph 的配對方式），只給 id 看不出是哪一頁
   const elsOf=(list,p)=>(Array.isArray(list)?list:[]).forEach((e,i)=>el(e,p+'/'+(e&&e.id? e.id : '['+i+']')));
   const page=(g,p)=>{ if(g&&typeof g==='object') elsOf(g.elements,p); };
@@ -9892,6 +9907,17 @@ function breakCheck(obj,kind,path){
     if(obj.master&&typeof obj.master==='object') elsOf(obj.master.elements,'master');
     (Array.isArray(obj.pages)?obj.pages:[]).forEach((g,i)=>page(g,g&&g.id? g.id : 'pages['+i+']'));
   }
+  return out;
+}
+/* 給畫面用的結構化結果：[{page, id, hits:[片段…]}]，依頁序、頁內元素順序排列。page 為 'master' 表示母版元素 */
+function breakScan(deck){
+  const out=[];
+  const elsOf=(list,page)=>{ for(const e of Array.isArray(list)?list:[]){
+    const hits=[].concat(...breakHits(breakTexts(e)).map(h=>h.hits));
+    if(hits.length&&e.id) out.push({page,id:e.id,hits:[...new Set(hits)]});
+  } };
+  if(deck&&deck.master&&deck.master.on) elsOf(deck.master.elements,'master');
+  for(const g of deck&&Array.isArray(deck.pages)?deck.pages:[]) if(g&&g.id) elsOf(g.elements,g.id);
   return out;
 }
 /* ================= 原生圖表對應 =================
@@ -10514,6 +10540,50 @@ $('#jsonInput').addEventListener('change',async e=>{
   if(await openDeckFile(f)) $('#jsonModal').hidden=true;
 });
 
+/* ================= 狀態列：可能被換行拆開的寫法 =================
+   規則在 model/textlint.js（與 DJ.lint、deck-lint 同一份）。這裡只負責讓自己動手編輯的人也看得到：
+   狀態列顯示全簡報共幾處，按一下跳到下一個有問題的元素並選取它，後面列出那個元素裡的片段。
+   只提醒、不修改——要不要黏住是寫的人的判斷（見 textlint.js 開頭）。
+
+   每次改動都會走 renderAll，全簡報掃一遍正則的成本不高，但拖曳、連續輸入時沒必要每次都掃，
+   所以延後到停手之後再算。 */
+const BH={list:[], cur:-1, curId:null, curPage:null, timer:0};
+function scheduleBreakHint(){ clearTimeout(BH.timer); BH.timer=setTimeout(updateBreakHint,300); }
+function bhWhere(it){
+  if(it.page==='master') return _t('母版');
+  const i=APP.deck.pages.findIndex(p=>p.id===it.page);
+  return _t('第 {0} 頁',i+1);
+}
+function bhElName(it){
+  const els= it.page==='master'? (APP.deck.master&&APP.deck.master.elements||[]) : ((APP.deck.pages.find(p=>p.id===it.page)||{}).elements||[]);
+  const el=els.find(e=>e.id===it.id);
+  return el? layerLabel(el) : it.id;
+}
+function updateBreakHint(){
+  const s=$('#breakHint'); if(!s) return;
+  BH.list=breakScan(APP.deck);
+  // 剛跳到的元素改好了就不再指著它；還有問題就留著，片段清單跟著更新
+  BH.cur=BH.list.findIndex(it=>it.id===BH.curId&&it.page===BH.curPage);
+  const n=BH.list.reduce((a,it)=>a+it.hits.length,0);
+  if(!n){ s.textContent=''; return; }
+  let txt=_t('ℹ {0} 處可能被換行拆開',n);
+  if(BH.cur>=0){
+    const it=BH.list[BH.cur];
+    const frags=it.hits.slice(0,3).map(h=>_t('「{0}」',h)).join('')+(it.hits.length>3? _t('…等 {0} 處',it.hits.length) : '');
+    txt+=_t('　▸ {0}／{1}：{2}　（{3}/{4}）',bhWhere(it),bhElName(it),frags,BH.cur+1,BH.list.length);
+  }
+  s.textContent=txt;
+}
+function nextBreakHint(){
+  if(!BH.list.length) return;
+  const it=BH.list[(BH.cur+1)%BH.list.length];
+  BH.curId=it.id; BH.curPage=it.page;
+  if(it.page==='master'){ if(!APP.masterEdit) setMasterEdit(true); }
+  else{ if(APP.masterEdit) setMasterEdit(false); if(APP.page!==it.page) setPage(it.page); }
+  setSel([it.id]); renderAll();
+  updateBreakHint();
+}
+$('#breakHint').onclick=nextBreakHint;
 /* ================= 自動存檔（IndexedDB） =================
    單檔工具沒有存檔最違反直覺：重新整理／當機／誤關分頁 = 全沒了。
    為什麼是 IndexedDB 而不是 localStorage：一張 base64 圖片動輒數百 KB，
@@ -12632,6 +12702,7 @@ function renderAll(){
   syncMelBtn();   // 母版可能剛被啟用／關閉，標示鈕的去留跟著變
   renderDeckSettings();   // 全簡報面板開著時跟著更新（關著會自己 return）
   setZoom(Math.round(APP.zoom*100));              // 投影片尺寸變了要重算置中邊距與工作區
+  scheduleBreakHint();  // 狀態列的換行提醒，停手後才重算
   scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
 }
 

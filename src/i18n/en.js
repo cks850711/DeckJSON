@@ -884,6 +884,11 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}": "These charts are set to “Export as native chart”, but their option can't be mapped right now, so they were exported as PNG:\n\n{0}",
   "• 第 {0} 頁 {1}：{2}": "• Slide {0}, {1}: {2}",
   "⚠ 本機未安裝 {0}：畫布以替代字體預覽（折行位置可能不同），匯出仍寫原字體名": "⚠ Not installed on this computer: {0}. The canvas previews with a substitute font (line breaks may differ); the export still uses the original font name",
+  "數字與單位、數字範圍、字母接數字、比較符號之間若是一般空白、dash 或連字號，換行時可能被拆到兩行，PowerPoint 裡也一樣。按一下跳到下一個元素。要黏住就把它換成不斷行字元：Cmd/Ctrl+Shift+空白（不斷行空白）、Cmd/Ctrl+Shift+連字號（不斷行連字號）；範圍改寫成「2 至 18」並在「至」兩側用不斷行空白。只是提醒，不改也能匯出。": "A number and its unit, a numeric range, letters joined to a number, or a comparison sign separated by an ordinary space, dash or hyphen can be split across two lines — in PowerPoint too. Click to jump to the next element. To keep them together, use no-break characters: Cmd/Ctrl+Shift+Space (no-break space) and Cmd/Ctrl+Shift+Hyphen (no-break hyphen); write a range as “2 to 18” with no-break spaces around “to”. This is only a hint; you can export without changing anything.",
+  "ℹ {0} 處可能被換行拆開": "ℹ {0} spots may be split by a line break",
+  "　▸ {0}／{1}：{2}　（{3}/{4}）": "  ▸ {0} / {1}: {2}  ({3}/{4})",
+  "「{0}」": "“{0}” ",
+  "…等 {0} 處": "… {0} in all",
   "安裝該字體、或在「全簡報設定 → 字體」改成本機已有的字體，預覽就會與輸出一致": "Install that font, or change it to one this computer has under “Deck settings → Fonts”, and the preview will match the output",
 },
 

@@ -1,4 +1,4 @@
-  /* ── 狀態列：舊版這五個 span 夾在工具列按鈕之間，既搶注意力又把工具列撐寬 ── */
+  /* ── 狀態列：舊版這幾個 span 夾在工具列按鈕之間，既搶注意力又把工具列撐寬 ── */
   #statusBar{height:23px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;
     background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--fg-mute)}
   #statusBar>span:empty{display:none}
