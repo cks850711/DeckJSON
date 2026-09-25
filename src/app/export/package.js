@@ -75,6 +75,7 @@ function patchFonts(xml,latinFont,mode,F,lang){
     (m,t,at)=>`<a:${t}${fixA(at)}>${mk}</a:${t}>`);
   return s;
 }
+/* 回傳 pptx 的 base64；download=false 時不觸發下載，給 DJ.exportPptx 取結果用 */
 async function exportPptx(download=true){
   const orig=APP.page, origSel=[...APP.selIds];
   // 匯出途中會 renderStage() 量表格列高；若停在「編輯母版」，curEls() 會指向母版元素
@@ -378,7 +379,6 @@ async function exportPptx(download=true){
     zip.file(name,s);
   }
   const b64=await zip.generateAsync({type:'base64'});
-  window.__lastPptxB64=b64;
   if(download){
     const a=document.createElement('a');
     a.href='data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,'+b64;
@@ -397,8 +397,7 @@ async function exportPptx(download=true){
         nvDowngrade.map(d=>_t('• 第 {0} 頁 {1}：{2}',pgOf(d.id),d.id,d.reason)).join('\n')));
     }
   }
-  window.__lastPending=pendList;
-  return b64.length;
+  return b64;
 }
 $('#btnExport').onclick=()=>exportPptx(true);
 

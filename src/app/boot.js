@@ -29,14 +29,6 @@ function renderAll(){
   scheduleAutosave();   // 所有改動最後都會走到 renderAll，掛在這裡＝一個掛鉤覆蓋全部編輯路徑
 }
 
-/* ================= 測試掛鉤 ================= */
-window.__state=()=>({title:APP.deck.title,fontMode:APP.deck.fontMode,pages:APP.deck.pages.length,
-  page:APP.page,sel:APP.sel,selIds:APP.selIds,els:curEls().map(e=>({id:e.id,type:e.type,x:e.x,y:e.y,w:elSize(e).w,h:elSize(e).h}))});
-window.__deckJson=()=>deckJson();
-window.__loadDeck=j=>{ loadDeck(typeof j==='string'?JSON.parse(j):j); return 'loaded'; };
-window.__export=()=>exportPptx(false);
-window.__b64chunk=(i,n)=>window.__lastPptxB64.slice(i,i+n);
-
 renderAll();
 asRestore();   // 非同步：讀不到就維持空白簡報，讀得到就整份換掉（完成後才開啟自動存檔閘門）
 // 開啟預設適寬（白色投影片填滿檢視區）；等佈局算好 clientWidth 再套（量不到就維持 65%）

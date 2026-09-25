@@ -579,9 +579,8 @@ const DJ=Object.freeze({
     return await (await fetch(url)).blob();
   },
   async exportPptx(){
-    await exportPptx(false);
-    return await (await fetch('data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,'
-      +window.__lastPptxB64)).blob();
+    const b64=await exportPptx(false);
+    return await (await fetch('data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,'+b64)).blob();
   },
   /* 唯一會改變使用者畫面的動詞：切到那一頁給人看 */
   show(pid){ djPage(APP.deck,pid); setPage(pid); return {page:pid}; },
