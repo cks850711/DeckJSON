@@ -12881,6 +12881,21 @@ const DJ=Object.freeze({
     return {pages:DJ.list().map(({n,id,name})=>({n,id,name})),dropped,warnings};
   },
   toBlob(){ return deckToBlob(); },
+  /* 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但**不開任何對話框**：選檔器與權限詢問都只能由使用者
+     親手觸發（requestPermission 要 user gesture），代理從程式呼叫一定被擋。做不到時拋錯並說明
+     要請使用者做什麼，而不是退到下載——下載會在使用者不知情時多出一個檔。
+     硬碟上的檔被別處改過時也不問（confirm 會卡住代理），除非給 {force:true}。 */
+  async save(opt){
+    const o=opt||{}, f=APP.file;
+    if(!fsUsable()) throw djErr('save: this browser cannot write files in place; use toBlob() and let the user save it');
+    if(!f) throw djErr('save: no file is open; ask the user to save once with Cmd/Ctrl+S (or Save As) to pick a file, then save() works');
+    if(await f.handle.queryPermission({mode:'readwrite'})!=='granted')
+      throw djErr(`save: no write permission for "${f.name}" (needed again after a page reload); ask the user to press Cmd/Ctrl+S once`);
+    if(!o.force&&await externallyChanged())
+      throw djErr(`save: "${f.name}" was changed on disk since it was opened or last saved; reload it, or call save({force:true}) to overwrite`);
+    await writeDeckTo(f.handle);
+    return {file:APP.file.name, saved:true};
+  },
   async snapshot(pid,opt){
     const o=opt||{}, fmt=o.format==='jpeg'? 'jpeg' : 'png';
     const url=await snapshotDataUrl(djPage(APP.deck,pid),fmt,o.scale||1);

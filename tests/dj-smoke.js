@@ -358,6 +358,7 @@ export default async function run() {
     const pptx = await DJ.exportPptx();
     const magic = new Uint8Array(await pptx.slice(0, 2).arrayBuffer());
     ok('exportPptx: zip blob', magic[0] === 0x50 && magic[1] === 0x4b, pptx.size);
+    await throws('save: no open file throws instead of opening a dialog', () => DJ.save());
   } catch (e) {
     ok('unexpected exception', false, e.stack || String(e));
   } finally {
