@@ -86,6 +86,27 @@ assets/<hash>.<ext>   image bytes, content-addressed so identical images are sto
 
 ---
 
+## Using DeckJSON with an AI agent
+
+An AI agent that can run JavaScript in a browser tab (for example through a browser extension) can build and edit your deck in the editor while you watch. It works through `window.DJ`, a small stable API, and every change it makes is one undo step.
+
+**Install the DeckJSON skill** so the agent knows how to connect, what the JSON looks like, how to lay out slides and how to save:
+
+1. Download **[`deckjson-skill.zip`](https://github.com/cks850711/DeckJSON/releases/latest/download/deckjson-skill.zip)** from the latest release (or build it from a clone with `bash tools/package-skill.sh`)
+2. Put it where your agent looks for skills:
+
+| Agent | Where the skill goes |
+|---|---|
+| Claude Code | Unzip into `~/.claude/skills/` (every project) or `<your project>/.claude/skills/`, so the file ends up at `skills/deckjson/SKILL.md` |
+| Claude app (web and desktop) | **Customize → Skills → + → Upload a skill**, and choose the zip as it is |
+| Other agents | Give it `SKILL.md` and the two files in `references/` as instructions |
+
+**Then:** open `deckjson.html` in Chrome, open your `.deck` (or start a new one) and ask the agent. To let it save, press **Cmd/Ctrl+S** once yourself (the first time, choose where the file goes); after that the agent saves back to the same file. Browsers only let a page write to a file the user has picked, so this one click has to be yours.
+
+The skill's reference files are also here: [docs/scripting-api.md](docs/scripting-api.md) (every call) and [docs/deck-format.md](docs/deck-format.md) (what each element looks like in JSON).
+
+---
+
 ## Reporting problems
 
 The **`?`** on the right of the toolbar opens the help, and **the version number is shown in its header**.
@@ -119,7 +140,7 @@ Opened in **Chrome** (double-clicking `deckjson.html` is fine; Edge and other Ch
 
 Yes. The page exposes `window.DJ`, a small stable API for reading and editing the open deck by id — list pages, patch elements, fit text boxes to their text, find overflowing text, and get the `.deck` / `.pptx` back as a file. Every write is one undo step, so you can take back anything a script did with Cmd/Ctrl+Z.
 
-See **[docs/scripting-api.md](docs/scripting-api.md)**.
+See **[docs/scripting-api.md](docs/scripting-api.md)** for every call and **[docs/deck-format.md](docs/deck-format.md)** for the JSON of each element, or install the skill described in [Using DeckJSON with an AI agent](#using-deckjson-with-an-ai-agent).
 
 </details>
 

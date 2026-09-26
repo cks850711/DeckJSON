@@ -4,6 +4,8 @@
 
 `window.DJ` 是用腳本驅動 DeckJSON 的穩定入口，適用於瀏覽器自動化、測試，或讓 AI 代理替你改簡報。頁面裡其他的一切都是內部實作，隨時可能改名；`DJ` 是不會變的那一層。
 
+元素的 JSON 怎麼寫（文字框、形狀、表格、圖表…）見 [deck-format.zh-TW.md](deck-format.zh-TW.md)。
+
 ```js
 DJ.list()                                        // 所有頁
 DJ.outline('p-abc')                              // 某一頁的元素摘要
@@ -79,11 +81,12 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `fromTemplate(src, {pages?, title?})` | 從模板開新簡報：沿用模板的全部設定（投影片尺寸、預留區、字體、樣式模式、母版、頁碼…），只篩選頁面。`pages` 可為 `'shown'`（預設：沒有設為不放映的頁——模板慣例上會把說明頁、元件頁設為不放映）、`'all'`，或依想要順序排列的頁 id／頁名陣列。不沿用模板的標題，除非給 `title`。回傳 `{pages, dropped, warnings}`。和 `load` 一樣是一步復原，並清掉目前開啟的檔案 |
 | `load(src)` | 載入簡報：`Blob`／`File`／`ArrayBuffer`（`.deck` 容器或純 JSON）、JSON 字串或物件。會清掉「目前開啟的檔案」，之後按 Cmd/Ctrl+S 才不會把它寫進先前開著的那個檔 |
 | `toBlob()` | 整份簡報的 `.deck` 檔（`Blob`） |
+| `save({force?})` | 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但不開任何對話框。回傳 `{file, saved: true}`。做不到時拋錯並說明要請使用者做什麼：還沒開檔或還沒存過（請使用者按一次 Cmd/Ctrl+S 選位置）、重新整理後權限失效（請使用者按一次 Cmd/Ctrl+S）、瀏覽器不能就地寫檔（改用 `toBlob()`）。硬碟上的檔在開啟後被別處改過時也拋錯，確定要覆蓋才給 `{force: true}` |
 | `snapshot(pageId, {scale?, format?})` | 單頁的 PNG（或 `format: 'jpeg'`）圖片，`Blob` |
 | `exportPptx()` | 匯出的 `.pptx`（`Blob`），不觸發下載 |
 | `show(pageId)` | 把編輯器切到那一頁給旁觀的人看。唯一會改變畫面的呼叫 |
 
-存到磁碟由呼叫端負責：網頁不經使用者選位置，不能自己寫檔。開發用的 `tools/serve.py` 兩頭都包了：`--mount /前綴=資料夾` 把別的資料夾唯讀掛進來，頁面直接 fetch 那裡的圖和簡報；`--save 資料夾` 接收存檔。
+網頁不經使用者親手選位置，不能自己寫檔：使用者開過或存過一次之後，`save()` 就能存回同一個檔；在那之前，存到磁碟由呼叫端負責。開發用的 `tools/serve.py` 兩頭都包了：`--mount /前綴=資料夾` 把別的資料夾唯讀掛進來，頁面直接 fetch 那裡的圖和簡報；`--save 資料夾` 接收存檔。
 
 ```bash
 python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out

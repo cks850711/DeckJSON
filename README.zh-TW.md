@@ -86,6 +86,27 @@ assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖�
 
 ---
 
+## 讓 AI 代理替你做簡報
+
+能在瀏覽器分頁裡執行 JavaScript 的 AI 代理（例如透過瀏覽器擴充功能），可以在編輯器裡直接做簡報、改簡報，你在旁邊看得到每一步。它走的是 `window.DJ` 這組精簡而穩定的介面，每一次修改都是一步復原。
+
+**安裝 DeckJSON skill**，代理就知道怎麼連上編輯器、JSON 怎麼寫、怎麼排版、怎麼存檔：
+
+1. 從最新版下載 **[`deckjson-skill.zip`](https://github.com/cks850711/DeckJSON/releases/latest/download/deckjson-skill.zip)**（或從原始碼執行 `bash tools/package-skill.sh` 自己打包）
+2. 放到代理讀取 skill 的位置：
+
+| 代理 | 放在哪裡 |
+|---|---|
+| Claude Code | 解壓縮到 `~/.claude/skills/`（所有專案都用得到）或 `<你的專案>/.claude/skills/`，讓檔案落在 `skills/deckjson/SKILL.md` |
+| Claude app（網頁版與桌面版） | **自訂（Customize）→ Skills → ＋ → 上傳 skill**，直接選這個 zip |
+| 其他代理 | 把 `SKILL.md` 和 `references/` 裡的兩個檔當成指示給它 |
+
+**接著**：用 Chrome 開 `deckjson.html`，開啟你的 `.deck`（或開新簡報），再請代理動手。要讓它能存檔，請你自己先按一次 **Cmd/Ctrl+S**（第一次會問存在哪裡）；之後代理就能存回同一個檔。瀏覽器只允許網頁寫入使用者親手選過的檔，所以這一下必須由你來按。
+
+skill 附的參考文件也在這裡：[docs/scripting-api.zh-TW.md](docs/scripting-api.zh-TW.md)（每個呼叫）與 [docs/deck-format.zh-TW.md](docs/deck-format.zh-TW.md)（每種元素的 JSON）。
+
+---
+
 ## 回報問題
 
 工具列右側的 **`?`** 開啟使用說明，**版本號就標在它的標頭上**。
@@ -119,7 +140,7 @@ assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖�
 
 可以。頁面提供 `window.DJ`，一組精簡而穩定的介面，用 id 讀取與修改目前開著的簡報：列出頁面、修改元素、把文字框貼合內容、找出放不下的文字，並把 `.deck`／`.pptx` 以檔案形式取回。每次寫入都是一步復原，腳本做了什麼，按 Cmd/Ctrl+Z 都能撤銷。
 
-說明見 **[docs/scripting-api.zh-TW.md](docs/scripting-api.zh-TW.md)**。
+每個呼叫見 **[docs/scripting-api.zh-TW.md](docs/scripting-api.zh-TW.md)**，每種元素的 JSON 見 **[docs/deck-format.zh-TW.md](docs/deck-format.zh-TW.md)**；或安裝〈[讓 AI 代理替你做簡報](#讓-ai-代理替你做簡報)〉一節的 skill。
 
 </details>
 

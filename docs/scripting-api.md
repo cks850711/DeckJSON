@@ -4,6 +4,8 @@
 
 `window.DJ` is the stable entry point for driving DeckJSON from a script: browser automation, tests, or an AI agent editing a deck on your behalf. Everything else in the page is internal and may be renamed at any time; `DJ` is what stays put.
 
+For what an element looks like in JSON (text boxes, shapes, tables, charts…), see [deck-format.md](deck-format.md).
+
 ```js
 DJ.list()                                        // pages
 DJ.outline('p-abc')                              // elements on one page, summarized
@@ -79,11 +81,12 @@ In `bbox`, `center`, `align` and `stack`, each entry of `ids` is an element id o
 | `fromTemplate(src, {pages?, title?})` | Starts a new deck from a template: keeps all of the template's settings (slide size, reserved zones, fonts, style mode, master, page numbers…) and only filters its pages. `pages` is `'shown'` (default: pages not marked "skip" — templates conventionally hide their instruction and component pages), `'all'`, or an array of page ids/names in the order you want. The template's title is not reused unless you pass `title`. Returns `{pages, dropped, warnings}`. Like `load`, it is one undo step and clears the currently open file |
 | `load(src)` | Loads a deck from a `Blob`/`File`/`ArrayBuffer` (`.deck` container or plain JSON), a JSON string, or an object. Clears the "currently open file", so a later Cmd/Ctrl+S can't overwrite the file that was open before |
 | `toBlob()` | The deck as a `.deck` file (`Blob`) |
+| `save({force?})` | Saves back to the file the user has open, like Cmd/Ctrl+S, but never opens a dialog. Returns `{file, saved: true}`. When it can't, it throws and says what to ask the user: no file open or never saved (ask them to press Cmd/Ctrl+S once to pick a location), permission lost after a page reload (ask them to press Cmd/Ctrl+S once), or the browser can't write files in place (use `toBlob()`). It also throws if the file was changed on disk since it was opened; pass `{force: true}` only when overwriting is intended |
 | `snapshot(pageId, {scale?, format?})` | A PNG (or `format: 'jpeg'`) image of one page as a `Blob` |
 | `exportPptx()` | The exported `.pptx` as a `Blob`, without triggering a download |
 | `show(pageId)` | Switches the editor to that page, for the person watching. The only call that changes the view |
 
-Saving to disk is up to the caller: a browser page can't write files on its own without the user picking a location. The development server `tools/serve.py` covers both directions: `--mount /PREFIX=DIR` mounts another folder read-only so the page can fetch pictures and decks from it, and `--save DIR` accepts saved files.
+A browser page can't write a file until the user has picked it: once the user has opened or saved a file, `save()` writes back to it; before that, saving to disk is up to the caller. The development server `tools/serve.py` covers both directions: `--mount /PREFIX=DIR` mounts another folder read-only so the page can fetch pictures and decks from it, and `--save DIR` accepts saved files.
 
 ```bash
 python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out
