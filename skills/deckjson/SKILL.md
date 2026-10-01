@@ -42,6 +42,7 @@ Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportP
 - **Every write is one undo step** (Cmd/Ctrl+Z), and a failed call changes nothing. Errors start with `DJ:` and say what was wrong.
 - **Do not move the user's view** unless it helps them: `DJ.show(pageId)` is the only call that changes the page on screen.
 - **Read summaries, not dumps.** `DJ.outline(pageId)` gives each element's id, type, frame and first 40 characters. Use `DJ.get(pageId)` only when you need the full JSON of a page.
+- **Stay faithful to the source.** When the slides are made from the user's notes or document, every fact, figure and claim on them must come from that source. You may derive from it — shorten, reword, regroup, total a column, turn a list into a table — but list each derived item when you hand back, so the user can check it. Do not add facts the source does not contain (a subtitle, a statistic, a date, a tagline); if a slide seems to need one, leave a visible placeholder and say so.
 
 ## 3. Build content
 
@@ -101,3 +102,5 @@ Do not trigger downloads or open file dialogs from script: they either fail sile
 ## 7. Hand back
 
 Tell the user which pages you changed, anything you could not do (with the `DJ:` error text), and whether the deck is saved. If it is not saved, say what they need to press.
+
+If the slides came from a source, also list what you derived rather than copied (for example "slide 3: the total row is the sum of the four rows above", "slide 1: subtitle shortened from the first paragraph") and any placeholder you left for missing facts.
