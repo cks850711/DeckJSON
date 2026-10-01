@@ -1,11 +1,20 @@
 #!/usr/bin/env node
-/* DeckJSON 伺服器：給 AI 代理（以及需要的人）一個固定網址開 DeckJSON，並把簡報直接存回硬碟。
-   只用 Node 內建模組，不必 npm install；放在 deckjson.html 旁邊即可。
+/* DeckJSON 伺服器：給 AI 代理（以及需要的人）一個固定網址開 DeckJSON，並把簡報直接存回硬碟；
+   也負責安裝人類用的 DJ App。只用 Node 內建模組，不必 npm install；放在 deckjson.html 旁邊即可。
 
+     node deckjson-server.js install       安裝到 ~/.deckjson/app/，並開 Chrome 引導安裝 DJ App
+     node deckjson-server.js uninstall     關掉所有伺服器並移除 ~/.deckjson
      node deckjson-server.js start [資料夾或 .deck 檔] [--open 檔名] [--browser] [--idle 分鐘] [--json]
      node deckjson-server.js status [--json]
      node deckjson-server.js stop <port|all>
      node deckjson-server.js serve …   參數同 start，但在前景執行（關掉終端機即停止）
+     node deckjson-server.js app [--browser]   只啟動 DJ App 的安裝伺服器（47121）
+
+   人類與 AI 分開兩套（見下），各自的暫存一個蘿蔔一個坑：
+   - AI：47111～47115，一個工作一個 port。
+   - 人類：47121 的 DJ App。Chrome／Edge 把它安裝成 App 後，雙擊 .deck 就以 App 開啟、Cmd/Ctrl+S 寫回原檔；
+     App 內分 5 個槽位各自自動存檔。App 的程式由 service worker 快取，這個伺服器只在安裝與更新時需要，
+     平常沒在跑也能開。
 
    start 會在背景啟動伺服器、印出網址後立刻返回，給不能長時間佔住終端機的 AI 工具用。
    port 從 47111～47115 取第一個空的：一個工作一個 port，每個 port 是獨立的網站，
@@ -40,7 +49,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const {spawn} = require('child_process');
+const {spawn, spawnSync} = require('child_process');
 const {pipeline} = require('stream/promises');
 const {Transform} = require('stream');
 
@@ -49,6 +58,13 @@ const SCRIPT = path.resolve(__filename);
 const HOME = process.env.DECKJSON_HOME || path.join(os.homedir(), '.deckjson');
 const REG_DIR = path.join(HOME, 'servers');
 const LOG_DIR = path.join(HOME, 'logs');
+const INSTALL_DIR = path.join(HOME, 'app');
+const APP_PORT = Number(process.env.DECKJSON_APP_PORT) || 47121;
+const APP_IDLE_MIN = 10;
+if (+process.versions.node.split('.')[0] < 18) {
+  process.stderr.write(`deckjson-server: needs Node.js 18 or newer (this is ${process.version}); get the LTS version from https://nodejs.org\n`);
+  process.exit(1);
+}
 // 測試用：DECKJSON_PORTS=47191-47195 換一段 port，免得測試佔走正式的
 const PORTS = (() => {
   const m = /^(\d+)-(\d+)$/.exec(process.env.DECKJSON_PORTS || '');
@@ -75,6 +91,8 @@ function parseArgs(argv) {
     else if (a === '--port') o.port = Number(val(++i, a));
     else if (a === '--html') o.html = val(++i, a);
     else if (a === '--browser') o.browser = true;
+    else if (a === '--no-browser') o.browser = false;
+    else if (a === '--app') o.app = true;
     else if (a === '--json') o.json = true;
     else if (a === '--detached') o.detached = true;
     else if (a === '-h' || a === '--help') o.help = true;
@@ -167,22 +185,163 @@ function urls(port, open) {
 }
 
 function describe(info) {
+  if (info.mode === 'app') return [
+    `DJ App server ready on port ${info.port}`,
+    `  install page: ${info.url}  (open it in Chrome or Edge)`,
+    `  stops by itself after ${info.idleMin} min idle; the installed App keeps working without it`,
+  ].join('\n');
   const u = urls(info.port, info.open);
   return [
     `DeckJSON server ready on port ${info.port}`,
     `  open:   ${u.url}`,
     `  folder: ${info.folder}`,
     info.open ? `  file:   ${info.open}${info.openExists ? '' : '  (does not exist yet)'}` : null,
-    `  save:   DJ.save(), or fetch('/save?n=<file>.deck', {method: 'POST', body: await DJ.toBlob()})`,
+    `  save:   DJ.save() writes the open file back; DJ.save({as: 'name.deck'}) saves a new file into the folder`,
     `  status: ${u.status}`,
     `  stop:   ${SELF} stop ${info.port}` + (info.idleMin ? `  (stops by itself after ${info.idleMin} min with no page open)` : ''),
   ].filter(Boolean).join('\n');
+}
+
+/* 安裝頁要用 Chrome／Edge 開（Safari、Firefox 不能把網頁裝成 App），找不到才用預設瀏覽器 */
+function openInstallBrowser(url) {
+  const tryRun = (cmd, args) => spawnSync(cmd, args, {stdio: 'ignore'}).status === 0;
+  if (process.platform === 'darwin') {
+    if (tryRun('open', ['-a', 'Google Chrome', url]) || tryRun('open', ['-a', 'Microsoft Edge', url])) return true;
+  } else if (process.platform === 'win32') {
+    if (tryRun('cmd', ['/c', 'start', '', 'chrome', url]) || tryRun('cmd', ['/c', 'start', '', 'msedge', url])) return true;
+  } else {
+    for (const b of ['google-chrome', 'google-chrome-stable', 'microsoft-edge', 'chromium']) {
+      try { spawn(b, [url], {stdio: 'ignore', detached: true}).on('error', () => {}).unref(); return true; } catch { /* 下一個 */ }
+    }
+  }
+  openBrowser(url);
+  return false;
 }
 
 function openBrowser(url) {
   const [cmd, args] = process.platform === 'darwin' ? ['open', [url]]
     : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];
   try { spawn(cmd, args, {stdio: 'ignore', detached: true}).unref(); } catch { /* 開不了就算了，網址已印出 */ }
+}
+
+/* ---------------- DJ App（PWA）的檔案 ---------------- */
+
+/* 伺服器送出 deckjson.html 時在 <head> 開頭注入 window.DJ_HOST，DJ 開機就同步知道自己由誰提供、
+   要不要走伺服器存檔或槽位——不必先送一個請求去問。直接雙擊開的 deckjson.html 沒有這段，行為不變。
+   App 模式另外掛上 manifest：Chrome 要在頁面上看到它才會提供「安裝」。 */
+function injectHost(html, host, app) {
+  const js = JSON.stringify(host).replace(/</g, '\\u003c');
+  const tags = (app ? '<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#131418">' +
+    '<link rel="icon" href="/icon-192.png">' : '') + `<script>window.DJ_HOST=${js};</script>`;
+  const i = html.indexOf('<head>');
+  return i < 0 ? tags + html : html.slice(0, i + 6) + tags + html.slice(i + 6);
+}
+
+const MANIFEST = JSON.stringify({
+  id: '/', name: 'DeckJSON', short_name: 'DeckJSON', start_url: '/', scope: '/', display: 'standalone',
+  background_color: '#131418', theme_color: '#131418',
+  icons: [
+    {src: '/icon-192.png', sizes: '192x192', type: 'image/png'},
+    {src: '/icon-512.png', sizes: '512x512', type: 'image/png'},
+    {src: '/icon-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable'},
+  ],
+  // multiple-clients：每次雙擊各開一個視窗，各自選槽位。2026-10-01 原型實測：Chrome 154／macOS 會把 .deck
+  // 登記進 App 殼的文件類型，第一次雙擊問一次「要在這個網頁應用程式中開啟並編輯嗎」，之後拿到的把手已可寫
+  file_handlers: [{action: '/', accept: {'application/x-deckjson': ['.deck']}, launch_type: 'multiple-clients'}],
+}, null, 1);
+
+/* service worker：只攔 DJ App 自己的幾個檔，其餘（安裝頁、狀態頁、別的程式）一律放行。
+   先問伺服器、問不到才用快取：伺服器在跑時（安裝或更新）拿到新版，沒在跑時照樣開得起來。
+   回應要帶 X-DeckJSON: app 才收進快取——日後 47121 被別的程式佔走，也不會把它的頁面當成 DJ 存起來。 */
+const SW = `'use strict';
+const CACHE = 'deckjson-app-${SERVER_VERSION}';
+const FILES = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('deckjson-app-') && k !== CACHE)
+    .map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  const u = new URL(e.request.url);
+  if (u.origin !== location.origin || e.request.method !== 'GET') return;
+  const key = u.pathname === '/deckjson.html' ? '/' : u.pathname;
+  if (!FILES.includes(key)) return;
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch(key, {cache: 'no-store', signal: ctl.signal});
+      clearTimeout(t);
+      if (r.ok && r.headers.get('X-DeckJSON') === 'app') { await cache.put(key, r.clone()); return r; }
+    } catch (err) { /* 伺服器沒在跑 */ }
+    return (await cache.match(key)) || Response.error();
+  })());
+});
+`;
+
+/* 圖示用程式畫，不另外放圖檔：藍底圓角方塊上一張投影片（標題列、兩行字、一個色塊）。
+   maskable 版滿版無圓角、內容縮進中央安全區，給 Android／Windows 自己裁形狀用。 */
+function iconPng(size, maskable) {
+  const box = (x, y, bx, by, bw, bh, r) => {
+    if (x < bx || y < by || x > bx + bw || y > by + bh) return false;
+    const dx = Math.max(bx + r - x, 0, x - (bx + bw - r)), dy = Math.max(by + r - y, 0, y - (by + bh - r));
+    return dx * dx + dy * dy <= r * r;
+  };
+  const c0 = maskable ? 0.25 : 0.19, cw = 1 - 2 * c0;              // 內容區
+  const sx = c0, sy = 0.5 - cw * 0.33, sw = cw, sh = cw * 0.66;     // 投影片
+  const rel = (x, y, w, h) => [sx + x * sw, sy + y * sh, w * sw, h * sh];
+  const parts = [
+    [rel(0.1, 0.17, 0.56, 0.14), [28, 30, 36]],
+    [rel(0.1, 0.45, 0.8, 0.08), [154, 163, 175]],
+    [rel(0.1, 0.62, 0.58, 0.08), [154, 163, 175]],
+    [rel(0.74, 0.62, 0.16, 0.2), [242, 184, 75]],
+  ];
+  const color = (x, y) => {
+    if (!maskable && !box(x, y, 0, 0, 1, 1, 0.22)) return null;
+    if (box(x, y, sx, sy, sw, sh, 0.035)) {
+      for (const [[px, py, pw, ph], c] of parts) if (box(x, y, px, py, pw, ph, 0.012)) return c;
+      return [255, 255, 255];
+    }
+    return [43, 123, 208];
+  };
+  const raw = Buffer.alloc((size * 4 + 1) * size), S = 3;          // 每像素 3×3 取樣做反鋸齒
+  for (let y = 0; y < size; y++) {
+    raw[y * (size * 4 + 1)] = 0;
+    for (let x = 0; x < size; x++) {
+      let r = 0, g = 0, b = 0, a = 0;
+      for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+        const c = color((x + (i + 0.5) / S) / size, (y + (j + 0.5) / S) / size);
+        if (c) { r += c[0]; g += c[1]; b += c[2]; a++; }
+      }
+      const o = y * (size * 4 + 1) + 1 + x * 4;
+      if (a) { raw[o] = r / a; raw[o + 1] = g / a; raw[o + 2] = b / a; raw[o + 3] = 255 * a / (S * S); }
+    }
+  }
+  const crcT = Array.from({length: 256}, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = buf => { let c = 0xffffffff; for (const v of buf) c = crcT[(c ^ v) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (type, data) => {
+    const t = Buffer.concat([Buffer.from(type), data]), len = Buffer.alloc(4), cs = Buffer.alloc(4);
+    len.writeUInt32BE(data.length); cs.writeUInt32BE(crc(t));
+    return Buffer.concat([len, t, cs]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 6;   // 8 位元 RGBA
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr),
+    chunk('IDAT', require('zlib').deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+
+const appAssetCache = {};
+function appAsset(p) {
+  const make = {
+    '/manifest.webmanifest': () => ({body: MANIFEST, type: 'application/manifest+json'}),
+    '/sw.js': () => ({body: SW, type: 'text/javascript; charset=utf-8'}),
+    '/icon-192.png': () => ({body: iconPng(192, false), type: 'image/png'}),
+    '/icon-512.png': () => ({body: iconPng(512, false), type: 'image/png'}),
+    '/icon-maskable.png': () => ({body: iconPng(512, true), type: 'image/png'}),
+  }[p];
+  return make ? (appAssetCache[p] = appAssetCache[p] || make()) : null;
 }
 
 /* ---------------- 伺服器 ---------------- */
@@ -201,14 +360,15 @@ const MIME = {
 const isDeckFile = rel => /\.(deck|pptx)$/i.test(rel);
 
 async function serve(o) {
-  const {folder, open} = resolveTarget(o);
+  const app = !!o.app;            // DJ App 的安裝伺服器：沒有資料夾，不收存檔
+  const {folder, open} = app ? {folder: null, open: null} : resolveTarget(o);
   const htmlPath = path.resolve(o.html || path.join(path.dirname(SCRIPT), 'deckjson.html'));
   let djVersion = null;
   try {
     const m = /const APP_VERSION='([^']+)'/.exec(fs.readFileSync(htmlPath, 'utf8'));
     djVersion = m && m[1];
   } catch { fail(`deckjson.html not found next to the server (${htmlPath}); build it with src/build.sh or pass --html`); }
-  const idleMin = o.idle != null ? o.idle : DEFAULT_IDLE_MIN;
+  const idleMin = o.idle != null ? o.idle : app ? APP_IDLE_MIN : DEFAULT_IDLE_MIN;
   const started = new Date().toISOString();
   const decks = {};               // 相對路徑 → {read, lastRead, saved, lastSaved, mtimeMs}
   const tabs = new Map();         // 分頁 id → {title, file, lastSeen}
@@ -224,7 +384,7 @@ async function serve(o) {
     const now = Date.now();
     for (const [id, t] of tabs) if (now - t.lastSeen > TAB_TTL) tabs.delete(id);
     return {
-      app: 'deckjson-server', version: SERVER_VERSION, dj: djVersion, port, pid: process.pid, folder, started,
+      app: 'deckjson-server', mode: app ? 'app' : 'server', version: SERVER_VERSION, dj: djVersion, port, pid: process.pid, folder, started,
       open: open || null, idleMin, lastActive: new Date(lastActive).toISOString(),
       decks: Object.entries(decks).map(([file, d]) => ({file, read: d.read, lastRead: d.lastRead, saved: d.saved, lastSaved: d.lastSaved})),
       tabs: [...tabs].map(([id, t]) => ({id, title: t.title, file: t.file, lastSeen: new Date(t.lastSeen).toISOString()})),
@@ -334,14 +494,23 @@ async function serve(o) {
 
     if (req.method === 'GET' || req.method === 'HEAD') {
       if (p === '/' || p === '/deckjson.html') {
-        return fs.readFile(htmlPath, (err, buf) => err ? jerr(res, 500, 'deckjson.html is missing') :
-          send(res, 200, req.method === 'HEAD' ? Buffer.alloc(0) : buf, 'text/html; charset=utf-8'));
+        return fs.readFile(htmlPath, 'utf8', (err, html) => {
+          if (err) return jerr(res, 500, 'deckjson.html is missing');
+          const body = req.method === 'HEAD' ? '' : injectHost(html, app ? {mode: 'app', port, version: SERVER_VERSION}
+            : {mode: 'server', port, folder, open: open || null, version: SERVER_VERSION}, app);
+          send(res, 200, body, 'text/html; charset=utf-8', app ? {'X-DeckJSON': 'app'} : null);
+        });
+      }
+      if (app) {
+        const a = appAsset(p);
+        if (a) return send(res, 200, req.method === 'HEAD' ? '' : a.body, a.type, {'X-DeckJSON': 'app'});
+        if (p === '/install') return send(res, 200, installPage(), 'text/html; charset=utf-8');
       }
       if (p === '/__deckjson') return json(res, 200, info());
       if (p === '/__status.json') return json(res, 200, {range: RANGE, self: port, servers: await survey(port, info)});
       if (p === '/__status') return send(res, 200, statusPage(), 'text/html; charset=utf-8');
       if (p === '/favicon.ico') return send(res, 204, '', 'text/plain');
-      if (p.startsWith('/files/')) {
+      if (p.startsWith('/files/') && !app) {
         let s;
         try { s = decodeURIComponent(p.slice(7)); } catch { return jerr(res, 400, 'bad URL encoding'); }
         const rel = cleanRel(s);
@@ -353,8 +522,8 @@ async function serve(o) {
     if (req.method !== 'POST') return jerr(res, 405, 'method not allowed');
     if (!originOk(req)) return jerr(res, 403, 'Origin not allowed');
 
-    if (p === '/save') return save(req, res, u);
-    if (p === '/__ping') {
+    if (p === '/save' && !app) return save(req, res, u);
+    if (p === '/__ping' && !app) {
       let b;
       try { b = JSON.parse(await readSmall(req, 8192) || '{}'); } catch { return jerr(res, 400, 'ping body must be small JSON'); }
       const id = String(b.tab || '').slice(0, 64);
@@ -388,13 +557,14 @@ async function serve(o) {
     server.once('listening', onOk);
     server.listen(p, '127.0.0.1');
   });
-  const candidates = o.port ? [o.port] : PORTS;
+  const candidates = o.port ? [o.port] : app ? [APP_PORT] : PORTS;
   for (const c of candidates) { if (!(await tryListen(c))) { port = c; break; } }
   if (!port) {
     const reg = readRegistry();
     const who = candidates.map(c => { const e = reg.find(r => r.port === c);
       return `  ${c}: ${e ? `DeckJSON, ${e.folder} (pid ${e.pid})` : 'another program'}`; }).join('\n');
     const live = reg.find(r => candidates.includes(r.port));
+    if (app) fail(`port ${candidates[0]} for the DJ App is used by another program; close it and try again`);
     fail(`${o.port ? `port ${o.port} is` : `all DeckJSON ports (${RANGE}) are`} in use:\n${who}\n` +
       `Ask the user to stop one they no longer need: ${SELF} stop <port>` + (live ? `, or the status page http://127.0.0.1:${live.port}/__status` : ''));
   }
@@ -402,7 +572,7 @@ async function serve(o) {
   fs.mkdirSync(REG_DIR, {recursive: true});
   const regFile = path.join(REG_DIR, `${port}.json`);
   const regTmp = regFile + `.${process.pid}.tmp`;
-  fs.writeFileSync(regTmp, JSON.stringify({app: 'deckjson-server', port, pid: process.pid, folder, started, version: SERVER_VERSION}));
+  fs.writeFileSync(regTmp, JSON.stringify({app: 'deckjson-server', mode: app ? 'app' : 'server', port, pid: process.pid, folder, started, version: SERVER_VERSION}));
   fs.renameSync(regTmp, regFile);
 
   function shutdown(why) {
@@ -423,12 +593,13 @@ async function serve(o) {
     setInterval(() => { if (Date.now() - lastActive > ms) shutdown(`idle for ${idleMin} min`); }, Math.min(30e3, Math.max(500, ms / 4))).unref();
   }
 
-  const ready = {port, folder, open: open || null, openExists: !!open && fs.existsSync(path.join(folder, open)), idleMin,
-    pid: process.pid, ...urls(port, open)};
+  const ready = app ? {mode: 'app', port, idleMin, pid: process.pid, url: `http://127.0.0.1:${port}/install`}
+    : {mode: 'server', port, folder, open: open || null, openExists: !!open && fs.existsSync(path.join(folder, open)), idleMin,
+      pid: process.pid, ...urls(port, open)};
   if (o.detached && process.send) {
     fs.mkdirSync(LOG_DIR, {recursive: true});
     logOut = fs.createWriteStream(path.join(LOG_DIR, `${port}.log`), {flags: 'w'});
-    log(`started pid ${process.pid}, folder ${folder}`);
+    log(`started pid ${process.pid}, ${app ? 'DJ App' : 'folder ' + folder}`);
     process.send({ok: true, info: ready});
     process.disconnect();
   } else {
@@ -483,12 +654,14 @@ const STR={
   self:'本頁',bad:'沒有回應',open:'開 DeckJSON',stop:'關閉',started:'啟動於 {t}',idle:'沒有分頁開著時，閒置 {m} 分鐘後自行結束',
   noIdle:'不會自行結束',tabs:'開著的分頁',noTabs:'沒有分頁回報',decks:'讀過與存過的簡報',noDecks:'還沒有讀寫簡報',
   read:'讀 {n} 次',saved:'存 {n} 次',last:'最後 {t}',untitled:'（未命名）',empty:'目前沒有執行中的 DeckJSON 伺服器。',
-  down:'這個伺服器已經關閉，狀態無法更新。請從另一個 port 的 /__status 查看。'},
+  down:'這個伺服器已經關閉，狀態無法更新。請從另一個 port 的 /__status 查看。',
+  appBadge:'DJ App 安裝伺服器',appDesc:'提供 DJ App 的安裝與更新；App 裝好後不需要它在跑。',install:'安裝頁'},
  en:{title:'DeckJSON servers',sub:'Ports for AI agents: {r}; {n} in use. Each port is a separate job with its own autosave.',
   self:'this page',bad:'not responding',open:'Open DeckJSON',stop:'Stop',started:'started {t}',idle:'stops by itself after {m} min with no page open',
   noIdle:'never stops by itself',tabs:'Open tabs',noTabs:'no tab has reported',decks:'Decks read and saved',noDecks:'no deck read or saved yet',
   read:'read {n}×',saved:'saved {n}×',last:'last {t}',untitled:'(untitled)',empty:'No DeckJSON server is running.',
-  down:'This server has stopped, so this page can no longer update. Open /__status on another port.'}};
+  down:'This server has stopped, so this page can no longer update. Open /__status on another port.',
+  appBadge:'DJ App installer',appDesc:'Serves DJ App installs and updates; the installed app does not need it running.',install:'Install page'}};
 const q=new URLSearchParams(location.search).get('lang');
 const lang=q? (q.startsWith('zh')?'zh':'en') : ((navigator.language||'').startsWith('zh')?'zh':'en');
 const L=STR[lang], f=(s,o)=>s.replace(/\\{(\\w+)\\}/g,(_,k)=>o[k]);
@@ -501,11 +674,13 @@ async function stop(port){ await fetch('/__stop?port='+port,{method:'POST'}).cat
 function card(sv,self){
   const head=h('div',{className:'head'},
     h('span',{className:'port'},':'+sv.port),
+    sv.mode==='app'? h('span',{className:'badge',textContent:L.appBadge}) : null,
     sv.self? h('span',{className:'badge self',textContent:L.self}) : null,
     sv.ok? null : h('span',{className:'badge bad',textContent:L.bad}),
     h('span',{className:'grow'}),
-    sv.ok? h('a',{href:'http://127.0.0.1:'+sv.port+'/',target:'_blank',textContent:L.open}) : null,
+    sv.ok? h('a',{href:'http://127.0.0.1:'+sv.port+(sv.mode==='app'?'/install':'/'),target:'_blank',textContent:sv.mode==='app'?L.install:L.open}) : null,
     h('button',{textContent:L.stop,onclick:()=>stop(sv.port)}));
+  if(sv.mode==='app') return h('div',{className:'card'},head,h('div',{className:'meta',textContent:L.appDesc}));
   const kids=[head,h('div',{className:'folder',textContent:sv.folder||''})];
   if(sv.ok){
     kids.push(h('div',{className:'meta',textContent:f(L.started,{t:time(sv.started)})+' · '+(sv.idleMin? f(L.idle,{m:sv.idleMin}) : L.noIdle)}));
@@ -526,34 +701,231 @@ async function tick(){
   let d;
   try{ d=await (await fetch('/__status.json',{cache:'no-store'})).json(); }
   catch(e){ list.replaceChildren(h('div',{className:'empty',textContent:L.down})); s.textContent=''; return; }
-  s.textContent=f(L.sub,{r:d.range,n:d.servers.length});
+  s.textContent=f(L.sub,{r:d.range,n:d.servers.filter(x=>x.mode!=='app').length});
   list.replaceChildren(...(d.servers.length? d.servers.map(card) : [h('div',{className:'empty',textContent:L.empty})]));
 }
 tick(); setInterval(tick,3000);
 </script></body></html>`;
 }
 
+/* ---------------- 安裝頁 ---------------- */
+
+/* 人類第一次看到的說明書：install 指令開 Chrome 到這一頁，逐步帶過安裝、第一次雙擊、槽位與之後的事。
+   頁面本身也掛 manifest 並註冊 service worker，Chrome 才會在這一頁提供安裝。 */
+function installPage() {
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#131418"><link rel="icon" href="/icon-192.png">
+<title>Install DeckJSON</title>
+<style>
+:root{--bg:#131418;--panel:#1c1e24;--raised:#262a33;--line:#2b2e37;--fg:#e6e8ec;--dim:#8b909c;--mute:#5d626d;
+  --accent:#4d9de0;--danger:#e0625d;--warn:#e0b34d;--ok:#5fbf7f;--r:6px;--r-lg:9px;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme: light){:root{--bg:#f4f5f7;--panel:#fff;--raised:#eef0f3;--line:#dfe2e7;--fg:#1d2026;--dim:#5d6470;--mute:#8b909c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--ui)}
+main{max-width:720px;margin:0 auto;padding:32px 16px 56px}
+header{display:flex;gap:14px;align-items:center;margin-bottom:8px}
+header img{width:52px;height:52px}
+h1{font-size:22px;margin:0}
+.sub{color:var(--dim);margin:0 0 24px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:12px}
+.step h2{font-size:15px;margin:0 0 6px;display:flex;gap:10px;align-items:center}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--raised);font-size:13px;flex:none}
+.done .num{background:var(--ok);color:#10301c}
+.step p{margin:6px 0;color:var(--dim)}
+.step p b{color:var(--fg);font-weight:600}
+.msg{margin:8px 0 0;padding:8px 12px;border-radius:var(--r);background:var(--raised);font-size:14px}
+.msg.ok{color:var(--ok)}.msg.warn{color:var(--warn)}.msg.bad{color:var(--danger)}
+button{font:600 15px var(--ui);color:#fff;background:var(--accent);border:0;border-radius:var(--r);padding:8px 18px;cursor:pointer;margin-top:6px}
+button[disabled]{opacity:.45;cursor:default}
+code{font:13px var(--mono);background:var(--raised);padding:1px 6px;border-radius:4px;word-break:break-all}
+details{margin-top:6px;color:var(--dim)}
+summary{cursor:pointer}
+a{color:var(--accent)}
+[hidden]{display:none!important}
+</style></head><body><main>
+<header><img src="/icon-192.png" alt=""><h1 data-k="title"></h1></header>
+<p class="sub" data-k="sub"></p>
+<div class="step" id="s1"><h2><span class="num">1</span><span data-k="s1"></span></h2><div id="browserMsg" class="msg"></div></div>
+<div class="step" id="s2"><h2><span class="num">2</span><span data-k="s2"></span></h2>
+  <p data-k="s2p"></p><button id="btnInstall" disabled data-k="install"></button>
+  <div id="installMsg" class="msg" hidden></div>
+  <details><summary data-k="s2more"></summary><p data-k="s2manual"></p></details></div>
+<div class="step"><h2><span class="num">3</span><span data-k="s3"></span></h2><p data-k="s3p"></p>
+  <details><summary data-k="s3more"></summary><p data-k="s3mac"></p><p data-k="s3win"></p></details></div>
+<div class="step"><h2><span class="num">4</span><span data-k="s4"></span></h2><p data-k="s4p"></p></div>
+<div class="step"><h2><span class="num">5</span><span data-k="s5"></span></h2><p data-k="s5p"></p>
+  <details><summary data-k="s5more"></summary><p data-k="s5un"></p></details></div>
+</main><script>
+'use strict';
+const STR={
+ zh:{title:'安裝 DeckJSON App',
+  sub:'裝好之後，雙擊 .deck 就會用 DeckJSON 開啟，按 Cmd/Ctrl+S 直接存回原檔。程式和簡報都留在你的電腦裡，不連網也能用。',
+  s1:'用 Chrome 或 Edge 打開這一頁',okBrowser:'✓ 這個瀏覽器可以安裝。',
+  badBrowser:'這個瀏覽器不能把網頁裝成 App（Safari、Firefox 都不行）。請把這一頁的網址 <code>http://127.0.0.1:${APP_PORT}/install</code> 貼到 Chrome 或 Edge 打開。',
+  inApp:'✓ 你已經在 DeckJSON App 裡了。<a href="/">開始使用</a>',
+  s2:'安裝',s2p:'按下面的按鈕，瀏覽器會問一次要不要安裝，按「安裝」。',install:'安裝 DeckJSON',
+  waiting:'按鈕沒有亮起來？可能已經裝過了，或瀏覽器還在準備。也可以看下面的手動方式。',
+  installed:'✓ 已安裝。Dock（Windows 是開始選單）多了 DeckJSON 圖示，可以接著做第 3 步。',
+  dismissed:'這次沒有安裝。準備好時再按一次按鈕。',
+  s2more:'按鈕一直沒亮？',
+  s2manual:'按網址列右邊的「安裝」圖示（一個螢幕加箭頭的符號），或打開瀏覽器選單（⋮）找「安裝」相關的選項。如果選單裡顯示的是「開啟 DeckJSON」，代表已經裝好了。',
+  s3:'雙擊一個 .deck 檔',
+  s3p:'第一次會問「要在這個網頁應用程式中開啟並編輯…嗎？」。<b>勾「記住我對以下檔案類型的選擇」</b>再按「開啟」，以後雙擊就不再問。接著選一個槽位（見第 4 步）。',
+  s3more:'雙擊後被別的程式打開？',
+  s3mac:'<b>macOS：</b>在 .deck 上按右鍵 →「打開檔案的應用程式」→ DeckJSON。想每次都用它開：選檔案 →「取得資訊」→「打開檔案的應用程式」選 DeckJSON →「全部更改」。',
+  s3win:'<b>Windows：</b>在 .deck 上按右鍵 →「開啟檔案」→「選擇其他應用程式」→ DeckJSON，勾「一律使用此應用程式」。',
+  s4:'槽位',
+  s4p:'App 有 <b>5 個槽位</b>，各自保留一份自動存檔：當機、誤關視窗都救得回來。同一個槽位不能在兩個視窗同時開；要同時編兩份簡報，就開在不同槽位。直接從 Dock 打開 App 時，可以選一個槽位接著做。',
+  s5:'之後',
+  s5p:'裝好後這個安裝程式可以關掉（閒置 10 分鐘也會自己結束），App 照樣能開。要更新 DeckJSON，下載新版後再執行一次安裝程式。',
+  s5more:'怎麼移除？',
+  s5un:'在 App 視窗右上角的選單（⋮）選「解除安裝 DeckJSON」，勾「同時清除資料」會一併刪掉槽位裡的自動存檔。再在終端機執行 <code>node ~/.deckjson/app/deckjson-server.js uninstall</code> 移除其餘檔案。'},
+ en:{title:'Install the DeckJSON App',
+  sub:'Once installed, double-clicking a .deck opens it in DeckJSON, and Cmd/Ctrl+S saves straight back to the file. The app and your decks stay on your computer and work offline.',
+  s1:'Open this page in Chrome or Edge',okBrowser:'✓ This browser can install it.',
+  badBrowser:'This browser cannot install web apps (Safari and Firefox cannot). Paste this address into Chrome or Edge: <code>http://127.0.0.1:${APP_PORT}/install</code>',
+  inApp:'✓ You are already in the DeckJSON App. <a href="/">Start</a>',
+  s2:'Install',s2p:'Press the button below. The browser asks once whether to install; choose “Install”.',install:'Install DeckJSON',
+  waiting:'Button still grey? It may already be installed, or the browser is still getting ready. See the manual way below.',
+  installed:'✓ Installed. DeckJSON now has an icon in the Dock (the Start menu on Windows). Go on to step 3.',
+  dismissed:'Not installed this time. Press the button again when ready.',
+  s2more:'Button never turns on?',
+  s2manual:'Click the “Install” icon at the right end of the address bar (a screen with an arrow), or look for an install item in the browser menu (⋮). If the menu says “Open DeckJSON”, it is already installed.',
+  s3:'Double-click a .deck file',
+  s3p:'The first time, the browser asks whether to open and edit it in this web app. <b>Tick “Remember my choice for this file type”</b>, then choose “Open”; later double-clicks will not ask. Then pick a slot (step 4).',
+  s3more:'Opens in another program?',
+  s3mac:'<b>macOS:</b> right-click the .deck → Open With → DeckJSON. To make it the default: select the file → Get Info → Open with: DeckJSON → Change All.',
+  s3win:'<b>Windows:</b> right-click the .deck → Open with → Choose another app → DeckJSON, and tick “Always use this app”.',
+  s4:'Slots',
+  s4p:'The app has <b>5 slots</b>, each with its own autosave, so a crash or a closed window loses nothing. One slot cannot be open in two windows at once; to edit two decks side by side, use two slots. Opening the app from the Dock lets you pick a slot to continue.',
+  s5:'Afterwards',
+  s5p:'You can close this installer now (it also stops by itself after 10 idle minutes); the app keeps working without it. To update DeckJSON, download the new version and run the installer again.',
+  s5more:'How do I remove it?',
+  s5un:'In the app window menu (⋮) choose “Uninstall DeckJSON”; ticking “Also clear data” deletes the slot autosaves too. Then run <code>node ~/.deckjson/app/deckjson-server.js uninstall</code> in a terminal to remove the remaining files.'}};
+const q=new URLSearchParams(location.search).get('lang');
+const lang=q? (q.startsWith('zh')?'zh':'en') : ((navigator.language||'').startsWith('zh')?'zh':'en');
+const L=STR[lang];
+document.documentElement.lang=lang==='zh'?'zh-Hant':'en';
+document.title=L.title;
+for(const e of document.querySelectorAll('[data-k]')) e.innerHTML=L[e.dataset.k];
+const msg=(id,cls,html)=>{ const e=document.getElementById(id); e.hidden=false; e.className='msg '+cls; e.innerHTML=html; };
+const brands=(navigator.userAgentData&&navigator.userAgentData.brands||[]).map(b=>b.brand).join(' ');
+const capable=/Google Chrome|Microsoft Edge|Chromium/.test(brands);
+if(matchMedia('(display-mode: standalone)').matches) msg('browserMsg','ok',L.inApp);
+else if(capable){ msg('browserMsg','ok',L.okBrowser); document.getElementById('s1').classList.add('done'); }
+else msg('browserMsg','bad',L.badBrowser);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+let prompt=null;
+const btn=document.getElementById('btnInstall');
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); prompt=e; btn.disabled=false; document.getElementById('installMsg').hidden=true; });
+addEventListener('appinstalled',()=>{ btn.disabled=true; msg('installMsg','ok',L.installed); document.getElementById('s2').classList.add('done'); });
+btn.onclick=async()=>{ if(!prompt) return; prompt.prompt(); const r=await prompt.userChoice; prompt=null; btn.disabled=true;
+  if(r.outcome!=='accepted') msg('installMsg','warn',L.dismissed); };
+if(capable) setTimeout(()=>{ if(!prompt&&btn.disabled&&document.getElementById('installMsg').hidden) msg('installMsg','warn',L.waiting); },4000);
+</script></body></html>`;
+}
+
 /* ---------------- 指令 ---------------- */
 
-function start(o) {
+/* 在背景啟動一個 serve 程序，等它回報 port 再返回 */
+function spawnServer(script, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, 'serve', ...args, '--detached'],
+      {detached: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'], windowsHide: true});
+    const timer = setTimeout(() => { child.kill(); reject(new Error('server did not start within 10 s')); }, 10e3);
+    child.once('message', m => {
+      clearTimeout(timer);
+      child.removeAllListeners('exit');
+      if (child.connected) child.disconnect();
+      child.unref();
+      m.ok ? resolve(m.info) : reject(new Error(m.error));
+    });
+    child.once('exit', code => { clearTimeout(timer); reject(new Error(`server exited during start (code ${code})`)); });
+  });
+}
+
+async function start(o) {
   const {folder, open} = resolveTarget(o);
-  const args = [SCRIPT, 'serve', folder, '--detached'];
+  const args = [folder];
   if (open) args.push('--open', open);
   if (o.idle != null) args.push('--idle', String(o.idle));
   if (o.port) args.push('--port', String(o.port));
   if (o.html) args.push('--html', path.resolve(o.html));
-  const child = spawn(process.execPath, args, {detached: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'], windowsHide: true});
-  const timer = setTimeout(() => { child.kill(); die('server did not start within 10 s'); }, 10e3);
-  child.once('message', m => {
-    clearTimeout(timer);
-    child.removeAllListeners('exit');
-    if (child.connected) child.disconnect();
-    child.unref();
-    if (!m.ok) die(m.error);
-    process.stdout.write((o.json ? JSON.stringify(m.info) : describe(m.info)) + '\n');
-    if (o.browser) openBrowser(m.info.url);
-  });
-  child.once('exit', code => { clearTimeout(timer); die(`server exited during start (code ${code})`); });
+  let info;
+  try { info = await spawnServer(SCRIPT, args); } catch (e) { die(e.message); }
+  process.stdout.write((o.json ? JSON.stringify(info) : describe(info)) + '\n');
+  if (o.browser) openBrowser(info.url);
+}
+
+/* DJ App 的安裝伺服器：47121 已經是 DeckJSON 的 App 伺服器就沿用（換新版時先關舊的） */
+async function startApp(script, o, replace) {
+  const r = await request(APP_PORT, 'GET', '/__deckjson', 800);
+  const ours = r && r.json && r.json.app === 'deckjson-server' && r.json.mode === 'app';
+  if (ours && replace) {
+    await request(APP_PORT, 'POST', '/__stop', 1500);
+    for (let i = 0; i < 20 && await request(APP_PORT, 'GET', '/__deckjson', 300); i++) await new Promise(res => setTimeout(res, 100));
+  } else if (ours) {
+    return {mode: 'app', port: APP_PORT, idleMin: r.json.idleMin, pid: r.json.pid, url: `http://127.0.0.1:${APP_PORT}/install`};
+  }
+  const args = ['--app'];
+  if (o.idle != null) args.push('--idle', String(o.idle));
+  if (o.html) args.push('--html', path.resolve(o.html));
+  return spawnServer(script, args);
+}
+
+async function appCmd(o) {
+  let info;
+  try { info = await startApp(SCRIPT, o, false); } catch (e) { die(e.message); }
+  process.stdout.write((o.json ? JSON.stringify(info) : describe(info)) + '\n');
+  if (o.browser) openInstallBrowser(info.url);
+}
+
+/* 安裝：把 deckjson.html 與這支伺服器複製到固定位置 ~/.deckjson/app/。
+   固定位置的用處是讓 AI 與 skill 寫得出路徑（node ~/.deckjson/app/deckjson-server.js start …），
+   不必知道使用者把下載的 zip 解壓到哪。再執行一次就是更新。 */
+async function install(o) {
+  const srcDir = path.dirname(SCRIPT), html = path.join(srcDir, 'deckjson.html');
+  if (!fs.existsSync(html)) die(`deckjson.html is missing next to ${path.basename(SCRIPT)}; keep the two files in the same folder`);
+  const real = p => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } };
+  const same = real(srcDir) === real(INSTALL_DIR);   // macOS 的 /var 是 /private/var 的捷徑，比字串會誤判
+  if (!same) {
+    fs.mkdirSync(INSTALL_DIR, {recursive: true});
+    for (const f of ['deckjson.html', 'deckjson-server.js']) {
+      const tmp = path.join(INSTALL_DIR, `.${f}.tmp`);
+      fs.copyFileSync(path.join(srcDir, f), tmp);
+      fs.renameSync(tmp, path.join(INSTALL_DIR, f));
+    }
+    const skill = path.join(srcDir, 'deckjson-skill.zip');
+    if (fs.existsSync(skill)) fs.copyFileSync(skill, path.join(INSTALL_DIR, 'deckjson-skill.zip'));
+  }
+  const installed = path.join(INSTALL_DIR, 'deckjson-server.js');
+  let info;
+  try { info = await startApp(installed, o, true); } catch (e) { die(e.message); }
+  const opened = o.browser === false ? false : openInstallBrowser(info.url);
+  const nodeCmd = `node ${path.join(INSTALL_DIR, 'deckjson-server.js').replace(os.homedir(), '~')}`;
+  process.stdout.write([
+    same ? `DeckJSON ${SERVER_VERSION} is already in ${INSTALL_DIR}` : `Installed DeckJSON ${SERVER_VERSION} to ${INSTALL_DIR}`,
+    ``,
+    o.browser === false ? `Next: open this page in Chrome or Edge to install the DJ App:`
+      : `Next: install the DJ App in the browser page that just opened${opened ? '' : ' (if it is not Chrome or Edge, paste the address into one)'}:`,
+    `  ${info.url}`,
+    ``,
+    `For AI agents: ${nodeCmd} start <folder or file.deck>`,
+    `Remove later:  ${nodeCmd} uninstall`,
+  ].join('\n') + '\n');
+}
+
+async function uninstall() {
+  for (const e of readRegistry()) await request(e.port, 'POST', '/__stop', 1500);
+  for (const d of [INSTALL_DIR, REG_DIR, LOG_DIR]) fs.rmSync(d, {recursive: true, force: true});
+  try { fs.rmdirSync(HOME); } catch { /* 還有別的東西就留著 */ }
+  process.stdout.write([
+    `Stopped all DeckJSON servers and removed ${INSTALL_DIR}.`,
+    `To remove the DJ App itself: open it, then in the window menu (⋮) choose "Uninstall DeckJSON"`,
+    `(tick "Also clear data" to delete the slot autosaves).`,
+  ].join('\n') + '\n');
 }
 
 async function status(o) {
@@ -561,7 +933,8 @@ async function status(o) {
   if (o.json) return process.stdout.write(JSON.stringify({range: RANGE, servers: list}, null, 2) + '\n');
   if (!list.length) return process.stdout.write(`No DeckJSON server is running (ports ${RANGE}).\n`);
   for (const s of list) {
-    process.stdout.write(`${s.port}  ${s.ok ? 'running' : 'NOT RESPONDING'}  pid ${s.pid}  ${s.folder}\n`);
+    process.stdout.write(`${s.port}  ${s.ok ? 'running' : 'NOT RESPONDING'}  pid ${s.pid}  ${s.mode === 'app' ? '(DJ App installer)' : s.folder}\n`);
+    if (s.mode === 'app') continue;
     if (!s.ok) continue;
     for (const t of s.tabs) process.stdout.write(`      tab   ${t.title || '(untitled)'}${t.file ? '  ' + t.file : ''}\n`);
     for (const d of s.decks) process.stdout.write(`      deck  ${d.file}  read ${d.read}, saved ${d.saved}\n`);
@@ -587,6 +960,12 @@ async function stop(o) {
 
 const HELP = `DeckJSON server ${SERVER_VERSION}
 
+  ${SELF} install [--no-browser]
+      Copy DeckJSON to ${INSTALL_DIR.replace(os.homedir(), '~')} and open the page that installs the DJ App
+      (Chrome or Edge). Run it again to update.
+  ${SELF} uninstall     Stop all servers and remove ${HOME.replace(os.homedir(), '~')}
+  ${SELF} app [--browser]   Only start the DJ App install server on port ${APP_PORT}
+
   ${SELF} start [FOLDER|FILE.deck] [--open FILE] [--browser] [--idle MIN] [--json]
       Start a server in the background on the first free port ${RANGE} and print its URL.
       FOLDER is readable under /files/ and is the only place POST /save can write.
@@ -605,6 +984,9 @@ const HELP = `DeckJSON server ${SERVER_VERSION}
   const [cmd, ...rest] = process.argv.slice(2);
   const o = parseArgs(rest);
   if (!cmd || cmd === 'help' || cmd === '-h' || cmd === '--help' || o.help) return process.stdout.write(HELP);
+  if (cmd === 'install') return install(o);
+  if (cmd === 'uninstall') return uninstall();
+  if (cmd === 'app') return appCmd(o);
   if (cmd === 'start') return start(o);
   if (cmd === 'serve') return serve(o);
   if (cmd === 'status') return status(o);

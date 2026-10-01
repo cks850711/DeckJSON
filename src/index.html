@@ -343,6 +343,15 @@
   </div>
 </div>
 
+<div id="slotModal" class="modal" hidden>
+  <div class="mbox mS">
+    <div class="mhead"><b id="slotTitle">選一個槽位</b></div>
+    <div class="mbody">
+      <div id="slotList"></div>
+      <div class="mnote">每個槽位各自保留自動存檔。同一個槽位不能在兩個視窗同時開；要同時編兩份簡報，就開在不同槽位。</div>
+    </div>
+  </div>
+</div>
 <div id="helpModal" class="modal" hidden>
   <div class="mbox mL">
     <div class="mhead"><b>使用說明</b><span id="verTag" class="dim" style="font-weight:400;margin-left:.6em"></span><button id="btnHelpClose" class="mclose" title="關閉">×</button></div>
@@ -401,6 +410,7 @@
 <script src="app/ui/page-json.js"></script>
 <script src="app/ui/layers.js"></script>
 <script src="app/ui/break-hint.js"></script>
+<script src="app/io/host.js"></script>
 <script src="app/io/autosave.js"></script>
 <script src="app/io/file.js"></script>
 <script src="app/ui/templates.js"></script>
@@ -409,6 +419,7 @@
 <script src="app/help/help.js"></script>
 <script src="app/export/pptx.js"></script>
 <script src="app/export/package.js"></script>
+<script src="app/ui/host-boot.js"></script>
 <script src="app/api.js"></script>
 <script src="app/boot.js"></script>
 </body>

@@ -173,6 +173,17 @@ async function djImageUrl(src){
   return await djBlobUrl(b);
 }
 
+async function djHostSave(rel,force){
+  try{
+    const j=await hostWrite(rel,await deckToBlob(),!!force);
+    return {file:j.saved, saved:true, path:j.path, bytes:j.bytes};
+  }catch(err){
+    if(err.code==='changed') throw djErr(`save: "${rel}" was changed on disk since it was opened or last saved; reload it, or call save({force:true}) to overwrite`);
+    if(err.code==='exists') throw djErr(`save: "${rel}" already exists and was not opened here; open it with ?open=${rel} first, or pass force:true to overwrite it`);
+    throw djErr(`save: ${err.message||err}`);
+  }
+}
+
 const DJ=Object.freeze({
   version:DJ_VERSION,
 
@@ -180,7 +191,8 @@ const DJ=Object.freeze({
   info(){
     return {version:DJ_VERSION, app:APP_VERSION, title:APP.deck.title, pages:APP.deck.pages.length,
       page:APP.page, stage:{w:APP.deck.stage.w,h:APP.deck.stage.h}, master:masterOn(),
-      file:APP.file? APP.file.name : null, dirty:!!APP.dirty};
+      file:APP.file? APP.file.name : null, dirty:!!APP.dirty,
+      host:!HOST? null : HOST.mode==='server'? {mode:'server',port:HOST.port,folder:HOST.folder} : {mode:'app',slot:APP_SLOT||null}};
   },
   list(){
     return APP.deck.pages.map((p,i)=>{
@@ -598,9 +610,19 @@ const DJ=Object.freeze({
   /* 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但**不開任何對話框**：選檔器與權限詢問都只能由使用者
      親手觸發（requestPermission 要 user gesture），代理從程式呼叫一定被擋。做不到時拋錯並說明
      要請使用者做什麼，而不是退到下載——下載會在使用者不知情時多出一個檔。
-     硬碟上的檔被別處改過時也不問（confirm 會卡住代理），除非給 {force:true}。 */
+     硬碟上的檔被別處改過時也不問（confirm 會卡住代理），除非給 {force:true}。
+     由 deckjson-server 提供時（AI 用的 port），檔案在伺服器的資料夾裡，改由伺服器寫，不需要使用者先按存檔；
+     {as:'名稱.deck'} 存成資料夾裡的新檔（之後的 save() 就存回它）。 */
   async save(opt){
     const o=opt||{}, f=APP.file;
+    if(o.as!=null){
+      if(!hostServer()) throw djErr("save({as}) only works when DeckJSON is opened from deckjson-server (it writes into the server's folder); otherwise ask the user to use Save As");
+      const rel=String(o.as);
+      if(!/\.deck$/i.test(rel)) throw djErr(`save({as}) needs a .deck file name, got "${rel}"; for PowerPoint, POST await exportPptx() to /save?n=<name>.pptx`);
+      return await djHostSave(rel,o.force);
+    }
+    if(f&&f.server) return await djHostSave(f.name,o.force);
+    if(hostServer()) throw djErr(`save: no file is open; call save({as:'name.deck'}) to save into ${HOST.folder}`);
     if(!fsUsable()) throw djErr('save: this browser cannot write files in place; use toBlob() and let the user save it');
     if(!f) throw djErr('save: no file is open; ask the user to save once with Cmd/Ctrl+S (or Save As) to pick a file, then save() works');
     if(await f.handle.queryPermission({mode:'readwrite'})!=='granted')

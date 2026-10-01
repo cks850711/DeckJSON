@@ -34,8 +34,10 @@ const DECK_TYPES=[{description:_t('DeckJSON 簡報'),accept:{'application/zip':[
 
 function fileHint(){
   const s=$('#fileHint'); if(!s) return;
-  if(!APP.file){ s.textContent=''; s.className=''; return; }
-  s.textContent=(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?_t('（需重新授權）'):'');
+  hostTitle();
+  const slot=APP_SLOT? _t('槽位 {0}',APP_SLOT)+(APP.file? ' · ' : '') : '';
+  if(!APP.file){ s.textContent=slot; s.className=''; s.title=slot? _t('DJ App 的槽位：每個槽位各自保留自動存檔') : ''; return; }
+  s.textContent=slot+(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?_t('（需重新授權）'):'');
   s.className=APP.file.stale?'stale':(APP.dirty?'dirty':'');
   s.title=(APP.file.stale? _t('重整後權限要重新取得：按工具列的存檔鈕即可\n'):'')+_t('目前開啟：{0}',APP.file.name);
 }
@@ -90,6 +92,7 @@ async function writeBlobTo(h,blob){
   asHint(_t('已存檔 {0}　{1}',h.name,asStamp(Date.now())));   // 蓋掉 asSaveNow 的提示：這裡要講的是檔案存好了
 }
 async function saveDeck(){          // Cmd/Ctrl+S
+  if(APP.file&&APP.file.server) return hostSaveUI();   // 檔案在 AI 伺服器的資料夾裡：交給伺服器寫
   if(!fsUsable()) return saveDeckDownload();
   if(!APP.file) return saveDeckAs();
   try{

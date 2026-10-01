@@ -25,6 +25,27 @@ The interface comes in English and Traditional Chinese. It follows your browser 
 
 ---
 
+## Install the DJ App (optional)
+
+Double-clicking `deckjson.html` is all you need. Install the DJ App if you also want:
+
+- **Double-click any `.deck` to open it** in DeckJSON, in its own window with its own Dock / Start menu icon
+- **Cmd/Ctrl+S saves straight back to that file**, with no file picker — not even the first time
+- **5 slots, each with its own autosave**, so two decks in two windows never overwrite each other's autosave
+- It keeps working offline
+
+You need **Chrome or Edge** (Safari and Firefox can't install web apps), plus **[Node.js](https://nodejs.org)** (free; take the LTS version) for the installer.
+
+1. Download **[`DeckJSON.zip`](https://github.com/cks850711/DeckJSON/releases/latest/download/DeckJSON.zip)** and unzip it. Keep the files together in one folder.
+2. Double-click **`Install DeckJSON.command`** (macOS) or **`Install DeckJSON.bat`** (Windows).
+   - macOS may say it can't verify the developer: right-click the file → **Open**, or allow it in **System Settings → Privacy & Security → Open Anyway**. On Windows, SmartScreen may warn: **More info → Run anyway**.
+   - Or run it from a terminal: `node deckjson-server.js install`
+3. Chrome opens an install page that walks you through the rest: press **Install DeckJSON**, then double-click a `.deck`. The first time, the browser asks whether to open it in this app — tick **Remember my choice** and choose **Open**. Then pick a slot.
+
+The installer copies `deckjson.html` and `deckjson-server.js` to `~/.deckjson/app/`. It is only needed while installing or updating; the app runs without it. **To update**, run the installer from the new version. **To remove**, choose **Uninstall DeckJSON** in the app window's menu (⋮), then run `node ~/.deckjson/app/deckjson-server.js uninstall`.
+
+---
+
 ## Why this tool
 
 **The exported pptx is real.** Yellow adjustment handles still drag, charts open with “Edit Data”, the master can follow the destination theme, sections collapse. Most “slides in the browser” tools export images or approximate layouts that you can look at but not edit.
@@ -88,7 +109,12 @@ assets/<hash>.<ext>   image bytes, content-addressed so identical images are sto
 
 ## Using DeckJSON with an AI agent
 
-An AI agent that can run JavaScript in a browser tab (for example through a browser extension) can build and edit your deck in the editor while you watch. It works through `window.DJ`, a small stable API, and every change it makes is one undo step.
+An AI agent can build and edit your deck in the editor while you watch. It works through `window.DJ`, a small stable API, and every change it makes is one undo step. How it connects and saves depends on what the agent can do:
+
+| The agent can… | How it works |
+|---|---|
+| **run commands on your computer** (e.g. Claude Code) | It starts the DeckJSON server on a folder — `node ~/.deckjson/app/deckjson-server.js start <folder or file.deck>` after installing, or `node deckjson-server.js start …` from the unzipped folder — opens the address it prints, and saves with `DJ.save()` straight to disk, no clicks from you. Each job gets its own port (47111–47115) and its own autosave; `http://127.0.0.1:<port>/__status` lists which decks each port read and saved, which tabs are open, and can stop them. The server only listens on your own computer, can only write `.deck` / `.pptx` files inside that folder, and stops by itself after 15 minutes with no page open. |
+| **only drive a browser tab** (e.g. through a browser extension) | Open `deckjson.html` in Chrome, open your `.deck` (or start a new one) and ask the agent. To let it save, press **Cmd/Ctrl+S** once yourself (the first time, choose where the file goes); after that the agent saves back to the same file. Browsers only let a page write to a file the user has picked, so this one click has to be yours. |
 
 **Install the DeckJSON skill** so the agent knows how to connect, what the JSON looks like, how to lay out slides and how to save:
 
@@ -100,8 +126,6 @@ An AI agent that can run JavaScript in a browser tab (for example through a brow
 | Claude Code | Unzip into `~/.claude/skills/` (every project) or `<your project>/.claude/skills/`, so the file ends up at `skills/deckjson/SKILL.md` |
 | Claude app (web and desktop) | **Customize → Skills → + → Upload a skill**, and choose the zip as it is |
 | Other agents | Give it `SKILL.md` and the two files in `references/` as instructions |
-
-**Then:** open `deckjson.html` in Chrome, open your `.deck` (or start a new one) and ask the agent. To let it save, press **Cmd/Ctrl+S** once yourself (the first time, choose where the file goes); after that the agent saves back to the same file. Browsers only let a page write to a file the user has picked, so this one click has to be yours.
 
 The skill's reference files are also here: [docs/scripting-api.md](docs/scripting-api.md) (every call) and [docs/deck-format.md](docs/deck-format.md) (what each element looks like in JSON).
 
@@ -156,6 +180,8 @@ So if you have **more than one build** (say the generic `deckjson.html` plus a p
 To keep them separate, serve each page from a different origin — `http://localhost:<its own port>`; each port is a separate storage area. On macOS, double-click `start-localhost.command` in the project root (defaults to `http://localhost:8110`); on other platforms any static server works, e.g. `python3 -m http.server 8110`.
 
 ⚠ If you go the localhost route, **don't change the port once chosen**: a new port is a new storage area, and the autosave will seem to vanish (it's still there under the old port). Autosaves under `file://` and `localhost` are also separate from each other.
+
+The **DJ App** (see [Install the DJ App](#install-the-dj-app-optional)) avoids all of this: it has 5 separate slots, and each AI server port is its own storage area too.
 
 **The simplest fix is still: save important work as a `.deck` file.** Autosave is meant as a lifeline for when the browser crashes.
 

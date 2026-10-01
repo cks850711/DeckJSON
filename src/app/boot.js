@@ -30,7 +30,7 @@ function renderAll(){
 }
 
 renderAll();
-asRestore();   // 非同步：讀不到就維持空白簡報，讀得到就整份換掉（完成後才開啟自動存檔閘門）
+hostBoot();    // 非同步：還原自動存檔（讀不到就維持空白簡報），或依提供者開檔／選槽位；完成後才開啟自動存檔閘門
 // 開啟預設適寬（白色投影片填滿檢視區）；等佈局算好 clientWidth 再套（量不到就維持 65%）
 setZoom(65);
 requestAnimationFrame(()=>requestAnimationFrame(fitWidth));

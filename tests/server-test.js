@@ -2,7 +2,7 @@
  *
  *     node tests/server-test.js
  *
- * 用另一段 port（47191～47195）與暫存資料夾當登記目錄，不碰正式的 47111～47115 與 ~/.deckjson。
+ * 用另一段 port（47191～47195、App 用 47199）與暫存資料夾當登記目錄，不碰正式的 47111～47115、47121 與 ~/.deckjson。
  * 需要 repo 根目錄已有建好的 deckjson.html。
  */
 'use strict';
@@ -16,7 +16,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SERVER = path.join(ROOT, 'deckjson-server.js');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'dj-server-test-'));
 const HOME = path.join(TMP, 'home');
-const ENV = Object.assign({}, process.env, {DECKJSON_HOME: HOME, DECKJSON_PORTS: '47191-47195'});
+const ENV = Object.assign({}, process.env, {DECKJSON_HOME: HOME, DECKJSON_PORTS: '47191-47195', DECKJSON_APP_PORT: '47199'});
+const APP = 47199;
 const PORTS = [47191, 47192, 47193, 47194, 47195];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -83,8 +84,13 @@ async function main() {
   ok(/^\d+\.\d+\.\d+$/.test(id.json && id.json.dj || ''), '/__deckjson 帶 DJ 版本', id.json && id.json.dj);
   ok(!id.headers['access-control-allow-origin'], '不送 CORS 標頭');
   const home = await req(P, 'GET', '/');
-  ok(home.status === 200 && /window\.DJ=DJ/.test(home.buf.toString('utf8')), '/ 提供 deckjson.html');
+  const homeHtml = home.buf.toString('utf8');
+  ok(home.status === 200 && /window\.DJ=DJ/.test(homeHtml), '/ 提供 deckjson.html');
   ok(home.headers['cache-control'] === 'no-cache', 'no-cache');
+  const hostM = /<head><script>window\.DJ_HOST=(\{.*?\});<\/script>/.exec(homeHtml);
+  const host = hostM ? JSON.parse(hostM[1]) : {};
+  ok(host.mode === 'server' && host.port === P && host.folder === i1.folder && host.open === 'a.deck', '注入 window.DJ_HOST（server）', host);
+  ok(!/rel="manifest"/.test(homeHtml), 'AI 的 port 不掛 manifest');
   ok(regFiles().includes('47191.json'), '寫入登記檔', regFiles());
 
   const more = [];
@@ -210,6 +216,52 @@ async function main() {
   for (const p of PORTS) ok((await req(p, 'GET', '/__deckjson')).status === 0, `port ${p} 已釋放`);
 
   ok(cli('start', path.join(work, 'missing')).code === 1, '不存在的路徑拒絕');
+
+  /* ---- DJ App（47199 代替 47121） ---- */
+  const ap = cli('app', '--json');
+  const ai = JSON.parse(ap.out || '{}');
+  ok(ap.code === 0 && ai.mode === 'app' && ai.port === APP && /\/install$/.test(ai.url), 'app 指令啟動 App 伺服器', ap.out + ap.err);
+  const ah = await req(APP, 'GET', '/');
+  const ahtml = ah.buf ? ah.buf.toString('utf8') : '';
+  ok(ah.headers && ah.headers['x-deckjson'] === 'app', 'App 首頁帶 X-DeckJSON: app（service worker 據此判斷）');
+  ok(/<link rel="manifest" href="\/manifest\.webmanifest">/.test(ahtml) && /window\.DJ_HOST=\{"mode":"app"/.test(ahtml), 'App 首頁掛 manifest 並注入 mode:app');
+  const mf = (await req(APP, 'GET', '/manifest.webmanifest')).json || {};
+  const fh = (mf.file_handlers || [])[0] || {};
+  ok(mf.start_url === '/' && mf.display === 'standalone' && fh.action === '/' && (fh.accept || {})['application/x-deckjson'][0] === '.deck', 'manifest 登記 .deck', mf);
+  ok(mf.icons && mf.icons.some(i => i.sizes === '192x192') && mf.icons.some(i => i.sizes === '512x512') && mf.icons.some(i => i.purpose === 'maskable'), 'manifest 有 192／512／maskable 圖示');
+  for (const ic of ['/icon-192.png', '/icon-512.png', '/icon-maskable.png']) {
+    const r = await req(APP, 'GET', ic);
+    ok(r.status === 200 && r.buf.subarray(1, 4).toString() === 'PNG' && r.buf.readUInt32BE(16) === (ic === '/icon-192.png' ? 192 : 512), `${ic} 是對的 PNG`);
+  }
+  const sw = await req(APP, 'GET', '/sw.js');
+  ok(sw.status === 200 && /X-DeckJSON/.test(sw.buf.toString()) && /deckjson-app-/.test(sw.buf.toString()), 'sw.js');
+  ok(/beforeinstallprompt/.test((await req(APP, 'GET', '/install')).buf.toString()), '/install 安裝頁');
+  ok((await req(APP, 'POST', '/save?n=a.deck', {body: ZIP})).status === 404, 'App 伺服器不收存檔');
+  ok((await req(APP, 'GET', '/files/a.deck')).status === 404, 'App 伺服器不提供檔案');
+  ok((await req(APP, 'POST', '/__ping', {body: '{"tab":"x"}'})).status === 404, 'App 伺服器不收分頁回報');
+  ok((await req(P, 'GET', '/manifest.webmanifest')).status === 0, '（AI 伺服器已全關）');
+  const ap2 = cli('app', '--json');
+  ok(ap2.code === 0 && JSON.parse(ap2.out).pid === ai.pid, '再執行 app 沿用同一個伺服器', ap2.out);
+  const ast = cli('status');
+  ok(/47199 {2}running .*\(DJ App installer\)/.test(ast.out), 'status 標出 App 伺服器', ast.out);
+  ok(cli('stop', String(APP)).code === 0, '關閉 App 伺服器');
+
+  /* ---- install／uninstall ---- */
+  const ins = cli('install', '--no-browser');
+  const inst = path.join(HOME, 'app');
+  ok(ins.code === 0 && /Installed DeckJSON/.test(ins.out), 'install 成功', ins.out + ins.err);
+  ok(fs.existsSync(path.join(inst, 'deckjson.html')) && fs.existsSync(path.join(inst, 'deckjson-server.js')), 'install 複製兩個檔');
+  ok(/start <folder or file\.deck>/.test(ins.out) && /uninstall/.test(ins.out), 'install 印出 AI 用法與移除方法');
+  const ia1 = (await req(APP, 'GET', '/__deckjson')).json || {};
+  ok(ia1.mode === 'app', 'install 啟動 App 伺服器');
+  const r2 = spawnSync(process.execPath, [path.join(inst, 'deckjson-server.js'), 'install', '--no-browser'], {env: ENV, encoding: 'utf8', timeout: 15000});
+  const ia2 = (await req(APP, 'GET', '/__deckjson')).json || {};
+  ok(r2.status === 0 && /already in/.test(r2.stdout), '從安裝位置再執行 install 不重複複製', r2.stdout + r2.stderr);
+  ok(ia2.mode === 'app' && ia2.pid !== ia1.pid, '再次 install 換掉舊的 App 伺服器（更新時拿到新版）', [ia1.pid, ia2.pid]);
+  const un = cli('uninstall');
+  ok(un.code === 0 && !fs.existsSync(inst) && !fs.existsSync(path.join(HOME, 'servers')), 'uninstall 移除檔案', un.out + un.err);
+  await sleep(300);
+  ok((await req(APP, 'GET', '/__deckjson')).status === 0, 'uninstall 關掉 App 伺服器');
   const sp = cli('start', work, '--open', '../x.deck');
   ok(sp.code === 1 && /--open must name a file inside/.test(sp.err), '--open 不能指到外面', sp.err);
 }

@@ -25,6 +25,27 @@
 
 ---
 
+## 安裝 DJ App（可選）
+
+雙擊 `deckjson.html` 就能用，不裝也沒關係。想要以下這些再安裝 DJ App：
+
+- **雙擊任何 `.deck` 就用 DeckJSON 開啟**，有自己的視窗，Dock／開始選單也有自己的圖示
+- **Cmd/Ctrl+S 直接存回那個檔**，不跳選檔視窗，連第一次都不用
+- **5 個槽位，各自保留自動存檔**：兩個視窗開兩份簡報，自動存檔不會互相覆蓋
+- 不連網也能用
+
+需要 **Chrome 或 Edge**（Safari、Firefox 不能把網頁裝成 App），安裝程式另外需要 **[Node.js](https://nodejs.org)**（免費，下載 LTS 版）。
+
+1. 下載 **[`DeckJSON.zip`](https://github.com/cks850711/DeckJSON/releases/latest/download/DeckJSON.zip)** 並解壓縮，裡面的檔案要放在同一個資料夾
+2. 雙擊 **`Install DeckJSON.command`**（macOS）或 **`Install DeckJSON.bat`**（Windows）
+   - macOS 可能說無法驗證開發者：在檔案上按右鍵 →「**打開**」，或到「**系統設定 → 隱私權與安全性**」按「**強制打開**」。Windows 的 SmartScreen 可能警告：按「**其他資訊 → 仍要執行**」
+   - 也可以在終端機執行：`node deckjson-server.js install`
+3. Chrome 會打開安裝頁，照著做完：按「**安裝 DeckJSON**」，再雙擊一個 `.deck`。第一次瀏覽器會問要不要在這個 App 裡開啟——**勾「記住我的選擇」**再按「**開啟**」，接著選一個槽位
+
+安裝程式會把 `deckjson.html` 與 `deckjson-server.js` 複製到 `~/.deckjson/app/`，只在安裝與更新時需要，App 本身不靠它執行。**更新**：執行新版的安裝程式。**移除**：在 App 視窗的選單（⋮）選「**解除安裝 DeckJSON**」，再執行 `node ~/.deckjson/app/deckjson-server.js uninstall`。
+
+---
+
 ## 為什麼是這個工具
 
 **匯出的 pptx 是真的。** 黃色調整點還能拖、圖表能按「編輯資料」改數字、母版能跟隨目標佈景、章節能摺疊。市面上多數「網頁做簡報」的工具匯出的是圖片或近似版面，打開只能看不能改。
@@ -88,7 +109,12 @@ assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖�
 
 ## 讓 AI 代理替你做簡報
 
-能在瀏覽器分頁裡執行 JavaScript 的 AI 代理（例如透過瀏覽器擴充功能），可以在編輯器裡直接做簡報、改簡報，你在旁邊看得到每一步。它走的是 `window.DJ` 這組精簡而穩定的介面，每一次修改都是一步復原。
+AI 代理可以在編輯器裡直接做簡報、改簡報，你在旁邊看得到每一步。它走的是 `window.DJ` 這組精簡而穩定的介面，每一次修改都是一步復原。怎麼連上、怎麼存檔，看代理能做什麼：
+
+| 代理能… | 怎麼運作 |
+|---|---|
+| **在你的電腦上執行指令**（例如 Claude Code） | 它用一個資料夾啟動 DeckJSON 伺服器——裝過的話是 `node ~/.deckjson/app/deckjson-server.js start <資料夾或 .deck 檔>`，沒裝就在解壓縮的資料夾執行 `node deckjson-server.js start …`——打開它印出的網址，用 `DJ.save()` 直接存進硬碟，不用你按任何東西。每個工作各用一個 port（47111～47115），自動存檔也各自分開；`http://127.0.0.1:<port>/__status` 列出每個 port 讀過與存過哪些簡報、開著哪些分頁，也能關閉。伺服器只聽你自己的電腦、只能寫那個資料夾裡的 `.deck`／`.pptx`，沒有頁面開著 15 分鐘後會自己結束。 |
+| **只能操作瀏覽器分頁**（例如透過瀏覽器擴充功能） | 用 Chrome 開 `deckjson.html`，開啟你的 `.deck`（或開新簡報），再請代理動手。要讓它能存檔，請你自己先按一次 **Cmd/Ctrl+S**（第一次會問存在哪裡）；之後代理就能存回同一個檔。瀏覽器只允許網頁寫入使用者親手選過的檔，所以這一下必須由你來按。 |
 
 **安裝 DeckJSON skill**，代理就知道怎麼連上編輯器、JSON 怎麼寫、怎麼排版、怎麼存檔：
 
@@ -100,8 +126,6 @@ assets/<雜湊>.<副檔名>   圖片位元組，以內容定址，相同的圖�
 | Claude Code | 解壓縮到 `~/.claude/skills/`（所有專案都用得到）或 `<你的專案>/.claude/skills/`，讓檔案落在 `skills/deckjson/SKILL.md` |
 | Claude app（網頁版與桌面版） | **自訂（Customize）→ Skills → ＋ → 上傳 skill**，直接選這個 zip |
 | 其他代理 | 把 `SKILL.md` 和 `references/` 裡的兩個檔當成指示給它 |
-
-**接著**：用 Chrome 開 `deckjson.html`，開啟你的 `.deck`（或開新簡報），再請代理動手。要讓它能存檔，請你自己先按一次 **Cmd/Ctrl+S**（第一次會問存在哪裡）；之後代理就能存回同一個檔。瀏覽器只允許網頁寫入使用者親手選過的檔，所以這一下必須由你來按。
 
 skill 附的參考文件也在這裡：[docs/scripting-api.zh-TW.md](docs/scripting-api.zh-TW.md)（每個呼叫）與 [docs/deck-format.zh-TW.md](docs/deck-format.zh-TW.md)（每種元素的 JSON）。
 
@@ -156,6 +180,8 @@ skill 附的參考文件也在這裡：[docs/scripting-api.zh-TW.md](docs/script
 要讓它們各自獨立，得讓頁面走不同的 origin——從 `http://localhost:<各自的 port>` 開啟，每個 port 是一個獨立的儲存空間。macOS 可直接雙擊專案根的 `start-localhost.command`（預設 `http://localhost:8110`），其他平台用任意靜態伺服器即可，例如 `python3 -m http.server 8110`。
 
 ⚠ 走 localhost 的話**port 定了就別改**：換 port 等於換一個儲存空間，自動存檔會像消失一樣（其實留在舊 port 那邊）。`file://` 與 `localhost` 兩種開法的自動存檔也是各自獨立的。
+
+**DJ App**（見〈[安裝 DJ App](#安裝-dj-app可選)〉）沒有這些問題：它有 5 個各自分開的槽位，AI 用的每個伺服器 port 也各是一塊獨立的儲存空間。
 
 **但最簡單的辦法還是：重要進度另存成 `.deck` 檔。** 自動存檔的定位是「瀏覽器當掉時的救命索」。
 

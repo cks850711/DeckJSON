@@ -570,6 +570,20 @@
   .ocGrid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
   .ocGrid .palSw{width:100%;height:16px;border-radius:2px}
   #palettePop .pfull{display:flex;align-items:center;gap:8px;padding:6px 2px}
+  /* DJ App 的槽位選單：一格一列，數字鍵 1～5 直接選 */
+  #slotList{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+  .slotRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:9px 12px;
+    background:var(--bg-raised);border:1px solid var(--line);border-radius:var(--r);color:var(--fg);cursor:pointer}
+  .slotRow:hover:not(:disabled),.slotRow:focus-visible{border-color:var(--accent);outline:none}
+  .slotRow:disabled{opacity:.45;cursor:default}
+  .slotRow .sn{font-size:17px;font-weight:600;width:20px;text-align:center;color:var(--fg-dim);flex:none}
+  .slotRow .st{flex:1;min-width:0;display:flex;flex-direction:column}
+  .slotRow .t1{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slotRow .t2{font-size:11.5px;color:var(--fg-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slotRow.empty .t1{color:var(--fg-mute)}
+  .slotRow .tag{font-size:11.5px;flex:none;color:var(--fg-dim)}
+  .slotRow .tag.warn{color:var(--warn)}
+  .slotFull{font-size:12.5px;color:var(--warn);padding:4px 2px}
 </style>
 </head>
 <body>
@@ -901,6 +915,15 @@
   </div>
 </div>
 
+<div id="slotModal" class="modal" hidden>
+  <div class="mbox mS">
+    <div class="mhead"><b id="slotTitle">選一個槽位</b></div>
+    <div class="mbody">
+      <div id="slotList"></div>
+      <div class="mnote">每個槽位各自保留自動存檔。同一個槽位不能在兩個視窗同時開；要同時編兩份簡報，就開在不同槽位。</div>
+    </div>
+  </div>
+</div>
 <div id="helpModal" class="modal" hidden>
   <div class="mbox mL">
     <div class="mhead"><b>使用說明</b><span id="verTag" class="dim" style="font-weight:400;margin-left:.6em"></span><button id="btnHelpClose" class="mclose" title="關閉">×</button></div>
@@ -2229,6 +2252,22 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "IndexedDB 交易失敗": "IndexedDB transaction failed",
   "IndexedDB 交易中止": "IndexedDB transaction aborted",
   "已自動存檔 {0}": "Autosaved {0}",
+  "已開啟 {0}": "Opened {0}",
+  "新檔 {0}：存檔時建立": "New file {0}: created when you save",
+  "⚠ 開不了「{0}」：{1}": "⚠ Could not open “{0}”: {1}",
+  "寫入後大小對不上：{0}，應為 {1} 位元組": "Size after writing does not match: {0}, expected {1} bytes",
+  "未命名": "Untitled",
+  "槽位 {0}": "Slot {0}",
+  "DJ App 的槽位：每個槽位各自保留自動存檔": "DJ App slot: each slot keeps its own autosave",
+  "選一個槽位": "Choose a slot",
+  "要把「{0}」開在哪個槽位？": "Which slot should “{0}” open in?",
+  "（空）": "(empty)",
+  "{0} 頁": n => n == 1 ? "1 slide" : `${n} slides`,
+  "其他視窗使用中": "In use by another window",
+  "有未存檔的變更": "Unsaved changes",
+  "5 個槽位都有視窗在用。請先關掉一個 DeckJSON 視窗，再按重新整理。": "All 5 slots are open in other windows. Close one DeckJSON window, then reload.",
+  "槽位 {0} 有還沒存檔的變更（{1}）。\n\n開啟「{2}」會取代它，那些變更就沒了。要繼續嗎？": "Slot {0} has unsaved changes ({1}).\n\nOpening “{2}” replaces it and those changes are lost. Continue?",
+  "每個槽位各自保留自動存檔。同一個槽位不能在兩個視窗同時開；要同時編兩份簡報，就開在不同槽位。": "Each slot keeps its own autosave. A slot cannot be open in two windows at once; to edit two decks side by side, use two slots.",
   "⚠ 自動存檔失敗：瀏覽器容量已滿，請用工具列的「另存」存成檔案": "⚠ Autosave failed: browser storage is full. Use “Save as” in the toolbar to save a file",
   "⚠ 自動存檔停用：{0}": "⚠ Autosave disabled: {0}",
   "存檔中…": "Saving…",
@@ -10637,12 +10676,77 @@ function nextBreakHint(){
   updateBreakHint();
 }
 $('#breakHint').onclick=nextBreakHint;
+/* ================= 由 deckjson-server 提供時 =================
+   伺服器送出本頁時在 <head> 注入 window.DJ_HOST；直接雙擊 deckjson.html 時沒有它，這個檔的一切都不啟動。
+     {mode:'server', port, folder, open}   AI 用的 47111～47115：檔案在伺服器指定的資料夾，存檔走 POST /save
+     {mode:'app', port}                    人類用的 DJ App（47121）：存檔仍走檔案把手，另分 5 個槽位
+   開機時要做的事（?open= 載入、槽位選單、service worker）在 ui/host-boot.js；這裡只放存取。
+   伺服器資料夾裡的檔，在 APP.file 記成 {server:true, name:<資料夾內的相對路徑>}，沒有 handle——
+   存檔前「被別處改過」的檢查由伺服器做（它記得讀出時的修改時間）。 */
+const HOST=(()=>{ const h=window.DJ_HOST;
+  return h&&typeof h==='object'&&(h.mode==='server'||h.mode==='app')? h : null; })();
+const hostServer=()=>!!HOST&&HOST.mode==='server';
+let APP_SLOT=0;   // DJ App 目前用的槽位（1～5），0＝不是 App
+
+const hostFileUrl=rel=>'/files/'+String(rel).split('/').map(encodeURIComponent).join('/');
+function hostSetFile(rel){ APP.file={server:true,name:rel,stale:false}; }
+
+/* 把 blob 存成伺服器資料夾內的 rel。伺服器拒絕時丟出它的說明，並帶上 code（changed＝被別處改過、
+   exists＝已存在但不是從這裡開的），讓呼叫端決定要不要帶 force 再試 */
+async function hostWrite(rel,blob,force){
+  const r=await fetch('/save?n='+encodeURIComponent(rel)+(force?'&force=1':''),{method:'POST',body:blob});
+  let j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw Object.assign(new Error(j&&j.error||('HTTP '+r.status)),{code:j&&j.code,status:r.status});
+  // 同 writeBlobTo 的回讀驗證：伺服器回報寫了幾個位元組，對不上就不當作存好了
+  if(!j||j.bytes!==blob.size) throw new Error(_t('寫入後大小對不上：{0}，應為 {1} 位元組',j&&j.bytes,blob.size));
+  hostSetFile(j.saved); APP.dirty=false; fileHint();
+  await asSaveNow().catch(()=>{});
+  asHint(_t('已存檔 {0}　{1}',j.saved,asStamp(Date.now())));
+  hostPing();   // 檔名可能剛換（save({as})），狀態頁立刻跟上
+  return j;
+}
+async function hostSaveUI(){   // Cmd/Ctrl+S，檔案在伺服器資料夾裡時
+  const rel=APP.file.name;
+  try{ await hostWrite(rel,await deckToBlob(),false); }
+  catch(err){
+    if(err.code!=='changed'&&err.code!=='exists') return asHint(_t('⚠ 存檔失敗：{0}',err.message||err),true);
+    if(!confirm(_t('「{0}」在硬碟上被改過（可能是別的分頁或其他程式）。\n\n繼續存檔會蓋掉那些變更。要繼續嗎？',rel))) return;
+    try{ await hostWrite(rel,await deckToBlob(),true); }
+    catch(e2){ asHint(_t('⚠ 存檔失敗：{0}',e2.message||e2),true); }
+  }
+}
+
+/* 分頁回報：狀態頁靠它列出「現在開著哪些分頁、各是哪份簡報」，伺服器也靠它判斷還有沒有人在用 */
+const HOST_TAB=(()=>{
+  const mk=()=>Math.random().toString(36).slice(2,10);
+  try{ let t=sessionStorage.getItem('deckjson.tab'); if(!t){ t=mk(); sessionStorage.setItem('deckjson.tab',t); } return t; }
+  catch(e){ return mk(); }
+})();
+function hostPing(closed){
+  const body=JSON.stringify({tab:HOST_TAB,title:APP.deck.title||'',file:APP.file? APP.file.name : '',closed:!!closed});
+  if(closed&&navigator.sendBeacon) return navigator.sendBeacon('/__ping',new Blob([body],{type:'text/plain'}));
+  fetch('/__ping',{method:'POST',body,keepalive:true}).catch(()=>{});
+}
+function hostPingStart(){
+  hostPing(); setInterval(()=>hostPing(),20000);
+  addEventListener('pagehide',()=>hostPing(true));
+  addEventListener('pageshow',e=>{ if(e.persisted) hostPing(); });
+}
+
+/* 視窗標題：App 的每個視窗、AI 的每個分頁要分得出是哪份簡報、哪個槽位 */
+function hostTitle(){
+  if(!HOST) return;
+  const name=APP.file? APP.file.name : (APP.deck.title||_t('未命名'));
+  document.title=(APP.dirty?'● ':'')+name+(APP_SLOT? ` [${APP_SLOT}]` : '')+' — DeckJSON';
+}
 /* ================= 自動存檔（IndexedDB） =================
    單檔工具沒有存檔最違反直覺：重新整理／當機／誤關分頁 = 全沒了。
    為什麼是 IndexedDB 而不是 localStorage：一張 base64 圖片動輒數百 KB，
    localStorage 上限約 5MB 且只收字串，塞兩三張圖就爆；IndexedDB 可存結構化物件且額度大得多。
    失敗一律浮上檯面（頂端轉紅字），絕不靜默——「以為存了其實沒存」比沒有存檔更糟。 */
-const AS_DB='deckjson', AS_STORE='autosave', AS_KEY='current', AS_DELAY=1200;
+const AS_DB='deckjson', AS_STORE='autosave', AS_DELAY=1200;
+/* 記錄的鍵。平常只有一筆 'current'；DJ App 開機選了槽位後改成 'slot1'～'slot5'（見 ui/host-boot.js） */
+let AS_KEY='current';
 let asTimer=null, asDBP=null, asOff=false;   // asOff＝這個環境不支援／已失敗，停止再試
 function asDB(){
   if(asDBP) return asDBP;
@@ -10674,7 +10778,11 @@ function asSaveNow(){
   let fh=null;
   // 先試複製：萬一這個環境的 handle 不能結構化複製，寧可不記檔案，也不要讓自動存檔整條掛掉
   if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){} }
-  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now(),handle:fh};
+  /* srv：檔案在 AI 伺服器的資料夾裡（沒有 handle），連同資料夾一起記，還原時只在同一個資料夾才接回去——
+     port 會被下一個工作沿用，換了資料夾還接回去，Cmd/Ctrl+S 就會寫進別的資料夾裡的同名檔。
+     dirty：DJ App 的槽位選單據此提醒「這格有還沒存檔的變更」 */
+  const srv=APP.file&&APP.file.server&&HOST? {name:APP.file.name,folder:HOST.folder} : null;
+  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now(),handle:fh,srv,dirty:!!APP.dirty};
   return asTx('readwrite',st=>st.put(rec,AS_KEY))
     .then(()=>{ asHint(_t('已自動存檔 {0}',asStamp(rec.at))); return true; })
     .catch(err=>{
@@ -10706,6 +10814,7 @@ async function asRestore(){
       /* 「上次開的是哪個檔」就在同一筆記錄裡，與剛還原的內容必然成對（見上方〈檔案存檔〉的說明）。
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
+      else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
       try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
     }catch(err){ asHint(_t('⚠ 上次的自動存檔讀不回來：{0}',err.message),true); }
   }
@@ -10746,8 +10855,10 @@ const DECK_TYPES=[{description:_t('DeckJSON 簡報'),accept:{'application/zip':[
 
 function fileHint(){
   const s=$('#fileHint'); if(!s) return;
-  if(!APP.file){ s.textContent=''; s.className=''; return; }
-  s.textContent=(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?_t('（需重新授權）'):'');
+  hostTitle();
+  const slot=APP_SLOT? _t('槽位 {0}',APP_SLOT)+(APP.file? ' · ' : '') : '';
+  if(!APP.file){ s.textContent=slot; s.className=''; s.title=slot? _t('DJ App 的槽位：每個槽位各自保留自動存檔') : ''; return; }
+  s.textContent=slot+(APP.dirty?'● ':'')+APP.file.name+(APP.file.stale?_t('（需重新授權）'):'');
   s.className=APP.file.stale?'stale':(APP.dirty?'dirty':'');
   s.title=(APP.file.stale? _t('重整後權限要重新取得：按工具列的存檔鈕即可\n'):'')+_t('目前開啟：{0}',APP.file.name);
 }
@@ -10802,6 +10913,7 @@ async function writeBlobTo(h,blob){
   asHint(_t('已存檔 {0}　{1}',h.name,asStamp(Date.now())));   // 蓋掉 asSaveNow 的提示：這裡要講的是檔案存好了
 }
 async function saveDeck(){          // Cmd/Ctrl+S
+  if(APP.file&&APP.file.server) return hostSaveUI();   // 檔案在 AI 伺服器的資料夾裡：交給伺服器寫
   if(!fsUsable()) return saveDeckDownload();
   if(!APP.file) return saveDeckAs();
   try{
@@ -12333,6 +12445,179 @@ async function exportPptx(download=true){
 }
 $('#btnExport').onclick=()=>exportPptx(true);
 
+/* ================= 開機：依提供者決定怎麼開始 =================
+   直接雙擊的 deckjson.html（沒有 window.DJ_HOST）→ 照舊還原自動存檔。
+   AI 的伺服器（mode:'server'）→ 定時回報分頁；網址帶 ?open= 就載入那個檔，取代這個 port 的自動存檔。
+   人類的 DJ App（mode:'app'）→ 選槽位：雙擊 .deck 開進來的檔、或從 Dock 開 App 時要接著做的那份。
+
+   槽位為什麼存在：IndexedDB 是整個網站共用的，原本只有一筆 'current'，開兩個視窗就是後存的蓋掉先存的，
+   重整後還原成另一份簡報。App 只有一個網址（一個網站），所以改成 5 個各自的鍵；
+   每個槽位用 Web Locks 上鎖，鎖跟著視窗走——視窗關掉或當掉，鎖由瀏覽器自動放開，不會卡死。 */
+const SLOT_N=5;
+const slotKey=n=>'slot'+n, slotLockName=n=>'deckjson-slot-'+n;
+
+/* ?open=<檔名>：從伺服器資料夾載入。檔案還不存在時開一份空白簡報並記住檔名，第一次存檔就建立它 */
+async function hostOpen(rel){
+  try{
+    const r=await fetch(hostFileUrl(rel),{cache:'no-store'});
+    if(r.status===404){
+      APP.deck=newDeck(); APP.deck.title=rel.replace(/^.*\//,'').replace(/\.deck$/i,'');
+      APP.page=APP.deck.pages[0].id; setSel([]); renderAll(); syncPageJson();
+      hostSetFile(rel); APP.dirty=true;
+      asHint(_t('新檔 {0}：存檔時建立',rel));
+    }else if(!r.ok) throw new Error('HTTP '+r.status);
+    else{
+      loadDeck(await deckFromFile(await r.blob()));
+      hostSetFile(rel); APP.dirty=false;
+      asHint(_t('已開啟 {0}',rel));
+    }
+  }catch(err){ asHint(_t('⚠ 開不了「{0}」：{1}',rel,err.message||err),true); }
+  UNDO.length=0; REDO.length=0; updateUndoBtns();   // 開檔＝重新開始，不留「復原到開檔前」
+  fileHint();
+}
+
+/* ---------- 槽位 ---------- */
+function slotTake(n){
+  if(!navigator.locks) return Promise.resolve(true);   // 沒有 Web Locks 就不鎖（Chrome／Edge 都有）
+  return new Promise(res=>{
+    navigator.locks.request(slotLockName(n),{ifAvailable:true},lock=>{
+      if(!lock){ res(false); return null; }
+      res(true); return new Promise(()=>{});            // 不 resolve＝一直握著，直到視窗關閉
+    }).catch(()=>res(false));
+  });
+}
+async function slotInfo(){
+  let held=new Set();
+  try{ if(navigator.locks) held=new Set(((await navigator.locks.query()).held||[]).map(l=>l.name)); }catch(e){}
+  const out=[];
+  for(let n=1;n<=SLOT_N;n++){
+    let rec=null; try{ rec=await asTx('readonly',st=>st.get(slotKey(n))); }catch(e){}
+    const d=rec&&rec.deck;
+    out.push({n, busy:held.has(slotLockName(n)), used:!!d, title:d? d.title||'' : '', pages:d&&d.pages? d.pages.length : 0,
+      file:rec&&rec.handle? rec.handle.name : '', at:rec? rec.at : 0, dirty:!!(rec&&rec.dirty)});
+  }
+  return out;
+}
+function slotWhen(t){
+  if(!t) return '';
+  const d=new Date(t), now=new Date();
+  return d.toDateString()===now.toDateString()? asStamp(t) : `${d.getMonth()+1}/${d.getDate()} ${asStamp(t).slice(0,5)}`;
+}
+
+/* 槽位選單。getFile() 回傳雙擊開進來的檔（可能在選單開著時才送到，所以每次重畫都重問）；
+   回傳選定且已上鎖的槽位編號 */
+function slotPick(getFile){
+  return new Promise(resolve=>{
+    const modal=$('#slotModal'), list=$('#slotList');
+    let rows=[], busy=false;
+    async function draw(){
+      const h=getFile(), had=[...list.children].indexOf(document.activeElement);
+      $('#slotTitle').textContent=h? _t('要把「{0}」開在哪個槽位？',h.name) : _t('選一個槽位');
+      rows=await slotInfo();
+      const free=rows.filter(r=>!r.busy);
+      list.replaceChildren(...rows.map(r=>{
+        const b=document.createElement('button');
+        b.className='slotRow'+(r.used?'':' empty'); b.disabled=r.busy;
+        const sub=[r.file, r.used? _t('{0} 頁',r.pages) : '', slotWhen(r.at)].filter(Boolean).join(' · ');
+        b.innerHTML='<span class="sn"></span><span class="st"><span class="t1"></span><span class="t2"></span></span><span class="tag"></span>';
+        b.querySelector('.sn').textContent=r.n;
+        b.querySelector('.t1').textContent=r.used? (r.title||_t('未命名')) : _t('（空）');
+        b.querySelector('.t2').textContent=sub;
+        const tag=b.querySelector('.tag');
+        if(r.busy) tag.textContent=_t('其他視窗使用中');
+        else if(r.dirty){ tag.textContent=_t('有未存檔的變更'); tag.classList.add('warn'); }
+        b.onclick=()=>choose(r);
+        return b;
+      }));
+      if(!free.length){
+        const p=document.createElement('div'); p.className='slotFull';
+        p.textContent=_t('5 個槽位都有視窗在用。請先關掉一個 DeckJSON 視窗，再按重新整理。');
+        list.append(p);
+      }
+      // 預設焦點：開檔時挑第一個空槽位，否則挑最近用過的；定時重畫時保留使用者已經移到的那一格
+      const pref=h? (free.find(r=>!r.used)||free[0]) : (free.filter(r=>r.used).sort((a,b)=>b.at-a.at)[0]||free[0]);
+      if(had>=0&&rows[had]&&!rows[had].busy) list.children[had].focus();
+      else if(pref) list.children[pref.n-1].focus();
+    }
+    async function choose(r){
+      if(busy||r.busy) return;
+      const h=getFile();
+      if(h&&r.used&&r.dirty&&!confirm(_t('槽位 {0} 有還沒存檔的變更（{1}）。\n\n開啟「{2}」會取代它，那些變更就沒了。要繼續嗎？',r.n,r.title||_t('未命名'),h.name))) return;
+      busy=true;
+      const ok=await slotTake(r.n);
+      busy=false;
+      if(!ok) return draw();          // 剛好被別的視窗搶走：重畫，讓它顯示「使用中」
+      modal.hidden=true; document.removeEventListener('keydown',key,true); clearInterval(timer);
+      resolve(r.n);
+    }
+    function key(e){
+      const n=+e.key;
+      if(n>=1&&n<=SLOT_N&&rows[n-1]){ e.preventDefault(); e.stopPropagation(); choose(rows[n-1]); }
+      else if(e.key!=='Tab'&&e.key!=='Enter'&&e.key!==' ') e.stopPropagation();   // 選單開著時不讓快捷鍵動到畫布
+    }
+    document.addEventListener('keydown',key,true);
+    slotPick.redraw=draw;
+    const timer=setInterval(()=>{ if(!busy) draw(); },2000);   // 別的視窗關掉時，它的槽位要自己變回可選
+    modal.hidden=false;
+    draw();
+  });
+}
+
+async function appBoot(){
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  let launched=null;
+  if('launchQueue' in window) launchQueue.setConsumer(async p=>{
+    const h=p.files&&p.files[0];
+    if(!h) return;
+    if(!APP_SLOT){ launched=h; if(slotPick.redraw) slotPick.redraw(); return; }
+    // 已經有槽位（例如重新整理後瀏覽器再送一次同一個檔）：同一個檔就不理，別的檔照一般開檔流程問
+    if(APP.file&&APP.file.handle&&await APP.file.handle.isSameEntry(h).catch(()=>false)) return;
+    openDeckFile(await h.getFile(),true,h);
+  });
+
+  // 重新整理：沿用這個分頁原本的槽位。舊頁面的鎖在卸載時才放開，稍等幾次
+  let n=0;
+  try{ n=+sessionStorage.getItem('deckjson.slot')||0; }catch(e){}
+  if(n){
+    let ok=false;
+    for(let i=0;i<10&&!(ok=await slotTake(n));i++) await new Promise(r=>setTimeout(r,100));
+    if(!ok) n=0;
+  }
+  if(!n){
+    await new Promise(r=>setTimeout(r,250));   // 雙擊開進來的檔通常在這段時間內送到，選單一開就是「開在哪個槽位」
+    n=await slotPick(()=>launched);
+  }
+  APP_SLOT=n; AS_KEY=slotKey(n);
+  try{ sessionStorage.setItem('deckjson.slot',String(n)); }catch(e){}
+  if(launched){
+    const h=launched; launched=null;
+    try{
+      const f=await h.getFile();
+      if(await openDeckFile(f,false,h)){
+        UNDO.length=0; REDO.length=0; updateUndoBtns();
+        APP.ready=true; APP.dirty=false; fileHint();
+        asSaveNow();   // 立刻把「這個檔」記進槽位，取代槽位裡原本的那份
+        return;
+      }
+    }catch(err){ asHint(_t('⚠ 開不了「{0}」：{1}',h.name,err.message||err),true); }
+  }
+  await asRestore();
+  fileHint();
+}
+
+async function hostBoot(){
+  if(!HOST) return asRestore();
+  if(HOST.mode==='app') return appBoot();
+  const q=new URLSearchParams(location.search), rel=q.get('open');
+  if(!rel){ await asRestore(); return hostPingStart(); }   // 還原完才回報，狀態頁才不會先看到空白簡報
+  /* 從網址拿掉 ?open=：之後重新整理就是還原自動存檔，不會又從硬碟重載一次、把還沒存的修改丟掉 */
+  q.delete('open');
+  history.replaceState(null,'',location.pathname+(q.toString()? '?'+q : '')+location.hash);
+  await hostOpen(rel);
+  APP.ready=true;
+  asSaveNow();   // 直接取代這個 port 的自動存檔
+  hostPingStart();
+}
 /* ================= 腳本介面 window.DJ =================
    給外部腳本（瀏覽器自動化、測試、AI 代理）驅動 DeckJSON 的**唯一穩定入口**。
    內部函式名會隨重構改變，外部一律只呼叫這裡；改內部時由這一層吸收差異。
@@ -12507,6 +12792,17 @@ async function djImageUrl(src){
   return await djBlobUrl(b);
 }
 
+async function djHostSave(rel,force){
+  try{
+    const j=await hostWrite(rel,await deckToBlob(),!!force);
+    return {file:j.saved, saved:true, path:j.path, bytes:j.bytes};
+  }catch(err){
+    if(err.code==='changed') throw djErr(`save: "${rel}" was changed on disk since it was opened or last saved; reload it, or call save({force:true}) to overwrite`);
+    if(err.code==='exists') throw djErr(`save: "${rel}" already exists and was not opened here; open it with ?open=${rel} first, or pass force:true to overwrite it`);
+    throw djErr(`save: ${err.message||err}`);
+  }
+}
+
 const DJ=Object.freeze({
   version:DJ_VERSION,
 
@@ -12514,7 +12810,8 @@ const DJ=Object.freeze({
   info(){
     return {version:DJ_VERSION, app:APP_VERSION, title:APP.deck.title, pages:APP.deck.pages.length,
       page:APP.page, stage:{w:APP.deck.stage.w,h:APP.deck.stage.h}, master:masterOn(),
-      file:APP.file? APP.file.name : null, dirty:!!APP.dirty};
+      file:APP.file? APP.file.name : null, dirty:!!APP.dirty,
+      host:!HOST? null : HOST.mode==='server'? {mode:'server',port:HOST.port,folder:HOST.folder} : {mode:'app',slot:APP_SLOT||null}};
   },
   list(){
     return APP.deck.pages.map((p,i)=>{
@@ -12932,9 +13229,19 @@ const DJ=Object.freeze({
   /* 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但**不開任何對話框**：選檔器與權限詢問都只能由使用者
      親手觸發（requestPermission 要 user gesture），代理從程式呼叫一定被擋。做不到時拋錯並說明
      要請使用者做什麼，而不是退到下載——下載會在使用者不知情時多出一個檔。
-     硬碟上的檔被別處改過時也不問（confirm 會卡住代理），除非給 {force:true}。 */
+     硬碟上的檔被別處改過時也不問（confirm 會卡住代理），除非給 {force:true}。
+     由 deckjson-server 提供時（AI 用的 port），檔案在伺服器的資料夾裡，改由伺服器寫，不需要使用者先按存檔；
+     {as:'名稱.deck'} 存成資料夾裡的新檔（之後的 save() 就存回它）。 */
   async save(opt){
     const o=opt||{}, f=APP.file;
+    if(o.as!=null){
+      if(!hostServer()) throw djErr("save({as}) only works when DeckJSON is opened from deckjson-server (it writes into the server's folder); otherwise ask the user to use Save As");
+      const rel=String(o.as);
+      if(!/\.deck$/i.test(rel)) throw djErr(`save({as}) needs a .deck file name, got "${rel}"; for PowerPoint, POST await exportPptx() to /save?n=<name>.pptx`);
+      return await djHostSave(rel,o.force);
+    }
+    if(f&&f.server) return await djHostSave(f.name,o.force);
+    if(hostServer()) throw djErr(`save: no file is open; call save({as:'name.deck'}) to save into ${HOST.folder}`);
     if(!fsUsable()) throw djErr('save: this browser cannot write files in place; use toBlob() and let the user save it');
     if(!f) throw djErr('save: no file is open; ask the user to save once with Cmd/Ctrl+S (or Save As) to pick a file, then save() works');
     if(await f.handle.queryPermission({mode:'readwrite'})!=='granted')
@@ -12988,7 +13295,7 @@ function renderAll(){
 }
 
 renderAll();
-asRestore();   // 非同步：讀不到就維持空白簡報，讀得到就整份換掉（完成後才開啟自動存檔閘門）
+hostBoot();    // 非同步：還原自動存檔（讀不到就維持空白簡報），或依提供者開檔／選槽位；完成後才開啟自動存檔閘門
 // 開啟預設適寬（白色投影片填滿檢視區）；等佈局算好 clientWidth 再套（量不到就維持 65%）
 setZoom(65);
 requestAnimationFrame(()=>requestAnimationFrame(fitWidth));

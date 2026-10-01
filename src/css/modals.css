@@ -158,3 +158,17 @@
   .ocGrid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
   .ocGrid .palSw{width:100%;height:16px;border-radius:2px}
   #palettePop .pfull{display:flex;align-items:center;gap:8px;padding:6px 2px}
+  /* DJ App 的槽位選單：一格一列，數字鍵 1～5 直接選 */
+  #slotList{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+  .slotRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:9px 12px;
+    background:var(--bg-raised);border:1px solid var(--line);border-radius:var(--r);color:var(--fg);cursor:pointer}
+  .slotRow:hover:not(:disabled),.slotRow:focus-visible{border-color:var(--accent);outline:none}
+  .slotRow:disabled{opacity:.45;cursor:default}
+  .slotRow .sn{font-size:17px;font-weight:600;width:20px;text-align:center;color:var(--fg-dim);flex:none}
+  .slotRow .st{flex:1;min-width:0;display:flex;flex-direction:column}
+  .slotRow .t1{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slotRow .t2{font-size:11.5px;color:var(--fg-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slotRow.empty .t1{color:var(--fg-mute)}
+  .slotRow .tag{font-size:11.5px;flex:none;color:var(--fg-dim)}
+  .slotRow .tag.warn{color:var(--warn)}
+  .slotFull{font-size:12.5px;color:var(--warn);padding:4px 2px}

@@ -2,3 +2,6 @@
 # （單段副檔名是為了讓 Obsidian 等以「最後一個點之後」判型的工具認得出它）。
 # 沒有這一行的話 GitHub 會把它當無格式的純文字，不上色也不折疊。
 *.deck linguist-language=JSON
+
+# Windows 的批次檔要保持 CRLF，否則 cmd 可能讀錯行
+*.bat text eol=crlf

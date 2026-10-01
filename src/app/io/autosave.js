@@ -4,7 +4,9 @@
    為什麼是 IndexedDB 而不是 localStorage：一張 base64 圖片動輒數百 KB，
    localStorage 上限約 5MB 且只收字串，塞兩三張圖就爆；IndexedDB 可存結構化物件且額度大得多。
    失敗一律浮上檯面（頂端轉紅字），絕不靜默——「以為存了其實沒存」比沒有存檔更糟。 */
-const AS_DB='deckjson', AS_STORE='autosave', AS_KEY='current', AS_DELAY=1200;
+const AS_DB='deckjson', AS_STORE='autosave', AS_DELAY=1200;
+/* 記錄的鍵。平常只有一筆 'current'；DJ App 開機選了槽位後改成 'slot1'～'slot5'（見 ui/host-boot.js） */
+let AS_KEY='current';
 let asTimer=null, asDBP=null, asOff=false;   // asOff＝這個環境不支援／已失敗，停止再試
 function asDB(){
   if(asDBP) return asDBP;
@@ -36,7 +38,11 @@ function asSaveNow(){
   let fh=null;
   // 先試複製：萬一這個環境的 handle 不能結構化複製，寧可不記檔案，也不要讓自動存檔整條掛掉
   if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){} }
-  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now(),handle:fh};
+  /* srv：檔案在 AI 伺服器的資料夾裡（沒有 handle），連同資料夾一起記，還原時只在同一個資料夾才接回去——
+     port 會被下一個工作沿用，換了資料夾還接回去，Cmd/Ctrl+S 就會寫進別的資料夾裡的同名檔。
+     dirty：DJ App 的槽位選單據此提醒「這格有還沒存檔的變更」 */
+  const srv=APP.file&&APP.file.server&&HOST? {name:APP.file.name,folder:HOST.folder} : null;
+  const rec={deck:structuredClone(APP.deck),page:APP.page,at:Date.now(),handle:fh,srv,dirty:!!APP.dirty};
   return asTx('readwrite',st=>st.put(rec,AS_KEY))
     .then(()=>{ asHint(_t('已自動存檔 {0}',asStamp(rec.at))); return true; })
     .catch(err=>{
@@ -68,6 +74,7 @@ async function asRestore(){
       /* 「上次開的是哪個檔」就在同一筆記錄裡，與剛還原的內容必然成對（見上方〈檔案存檔〉的說明）。
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
+      else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
       try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
     }catch(err){ asHint(_t('⚠ 上次的自動存檔讀不回來：{0}',err.message),true); }
   }
