@@ -16,12 +16,25 @@ If the `references/` folder is missing, the same files are in the DeckJSON repos
 
 ## 1. Connect to the editor
 
-You need a browser tab with DeckJSON open and a way to run JavaScript in it (a browser extension or automation tool that can evaluate scripts in the page). Two setups work:
+You need a browser tab with DeckJSON open and a way to run JavaScript in it (a browser extension or automation tool that can evaluate scripts in the page). Pick the setup by what you can do:
 
-| Setup | How the page is opened | Reading files | Saving |
-|---|---|---|---|
-| The user's own browser | The user opens `deckjson.html` (downloaded from the Releases page) in Chrome or Edge, and opens their `.deck` there | Only what the page can fetch: web pictures whose server allows cross-origin reads (CORS), and pictures already in the deck. For files on the user's disk, ask the user to insert them, or use the development server | `DJ.save()` writes back to the file the user opened (see §6) |
-| Local development server | From a clone of the repository: `python3 tools/serve.py 8111 . --mount /files=<folder> --save <folder>`, then open `http://localhost:8111/src/index.html` | `fetch('/files/<path>')` reads anything in the mounted folder | `fetch('/save?n=<name>.deck', {method: 'POST', body: await DJ.toBlob()})` |
+| You can… | Setup |
+|---|---|
+| **Run shell commands on the user's computer** | Start the DeckJSON server (below) on the folder you work in, then open the address it prints. You read any file in that folder and `DJ.save()` writes to disk with no click from the user. **Do not write your own server.** |
+| Only drive the user's browser | The user opens their `.deck` in the DJ App (double-click) or opens `deckjson.html` in Chrome or Edge. You can read only what the page can fetch (pictures already in the deck, web pictures that allow cross-origin reads); for files on disk, ask the user to insert them. Saving needs one Cmd/Ctrl+S from the user (§6) |
+
+**Starting the server.** It is `deckjson-server.js` (Node 18 or newer, nothing to install). Look for it at `~/.deckjson/app/deckjson-server.js` (where the installer puts it), then next to `deckjson.html` in the user's download. If neither exists, ask the user to download `DeckJSON.zip` from <https://github.com/cks850711/DeckJSON/releases/latest> and run the installer, or to tell you where they unzipped it.
+
+```bash
+node ~/.deckjson/app/deckjson-server.js start <folder or file.deck>
+```
+
+- It starts in the background, prints the address (`http://127.0.0.1:<port>/…`) and returns. Open that exact address; always use `127.0.0.1`, not `localhost` (they are different sites with different autosaves).
+- Give it the user's `.deck` to open that file, or a new name such as `notes/talk.deck` to start a blank deck that is created on the first save. Give it a folder to start with whatever that port had last.
+- To open another file on the same port later, go to `http://127.0.0.1:<port>/?open=<path>`; it replaces what that port had (save first).
+- Files in the folder are at `/files/<path>`: `await fetch('/files/notes.md').then(r => r.text())`, `DJ.addImage(pageId, '/files/fig/a.png', {...})`.
+- Each job gets its own port (47111 to 47115). If all five are taken, the command fails and lists them; ask the user which to stop (`node <server> stop <port>`, or the page `http://127.0.0.1:<port>/__status`). Do not stop servers the user did not agree to.
+- It stops by itself 15 minutes after its last page closes. Tell the user the status page address when you hand back.
 
 First check that the page is ready:
 
@@ -29,7 +42,7 @@ First check that the page is ready:
 typeof DJ === 'object' ? DJ.info() : 'DJ missing'
 ```
 
-`DJ.info()` returns the title, page count, the page on screen, the open file name and whether there are unsaved changes. If `DJ` is missing, the page is not DeckJSON or the build is older than 0.3.0: ask the user to open the latest `deckjson.html`. If `DJ.save` is missing, the build predates it; use the other saving routes in §6.
+`DJ.info()` returns the title, page count, the page on screen, the open file name, whether there are unsaved changes, and `host`: `{mode: 'server', folder}` means you are on the DeckJSON server and `DJ.save()` writes to disk. If `DJ` is missing, the page is not DeckJSON or the build is older than 0.3.0: ask the user to open the latest `deckjson.html`. If `DJ.save` is missing, the build predates it; use the other saving routes in §6.
 
 Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportPptx`) cannot be returned through most tools; use it inside the same script.
 
@@ -92,15 +105,17 @@ Line breaks follow Unicode rules in both the browser and PowerPoint, and PowerPo
 
 | Situation | What to do |
 |---|---|
-| User's browser, file opened or saved before | `await DJ.save()` writes it back. If the file changed on disk since it was opened, it throws; ask before using `{force: true}` |
-| `DJ.save()` throws "no file is open" or "no write permission" | The browser needs the user's own click once. Ask them to press Cmd/Ctrl+S (the first time, choose where to save); after that `DJ.save()` works |
-| Local development server | `await fetch('/save?n=<name>.deck', {method: 'POST', body: await DJ.toBlob()})` |
-| PowerPoint file wanted | `DJ.exportPptx()` returns the `.pptx` as a Blob. On the development server, POST it to `/save?n=<name>.pptx`; in the user's browser, ask them to use the Export button |
+| On the DeckJSON server, a file is open (`DJ.info().file`) | `await DJ.save()` writes it to disk |
+| On the DeckJSON server, no file yet | `await DJ.save({as: 'talk.deck'})` saves into the server's folder (a path inside it is fine); later `DJ.save()` writes back to it |
+| `DJ.save()` throws "changed on disk" | Someone else changed the file since it was opened. Ask the user before passing `{force: true}`, or reload it |
+| User's browser or DJ App, file opened or saved before | `await DJ.save()` writes it back |
+| User's browser, `DJ.save()` throws "no file is open" or "no write permission" | The browser needs the user's own click once. Ask them to press Cmd/Ctrl+S (the first time, choose where to save); after that `DJ.save()` works |
+| PowerPoint file wanted | On the server: `await fetch('/save?n=talk.pptx', {method: 'POST', body: await DJ.exportPptx()})`. In the user's browser, ask them to use the Export button |
 
 Do not trigger downloads or open file dialogs from script: they either fail silently or leave files the user did not ask for. The editor also keeps an automatic backup in the browser, but that is not a saved file.
 
 ## 7. Hand back
 
-Tell the user which pages you changed, anything you could not do (with the `DJ:` error text), and whether the deck is saved. If it is not saved, say what they need to press.
+Tell the user which pages you changed, anything you could not do (with the `DJ:` error text), and whether the deck is saved (with its path). If it is not saved, say what they need to press. If you used the DeckJSON server, give the address of the deck and of its status page.
 
 If the slides came from a source, also list what you derived rather than copied (for example "slide 3: the total row is the sum of the four rows above", "slide 1: subtitle shortened from the first paragraph") and any placeholder you left for missing facts.

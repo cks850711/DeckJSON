@@ -39,7 +39,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 回傳 |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}`；`page` 是畫面上那一頁 |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, host}`；`page` 是畫面上那一頁。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字。表格的 `h` 是畫出來的實際高度：`rowH` 只是下限，字放不下的列會自己長高，直接加總 `rowH` 會少算 |
 | `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |
@@ -83,24 +83,33 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `fromTemplate(src, {pages?, title?})` | 從模板開新簡報：沿用模板的全部設定（投影片尺寸、預留區、字體、樣式模式、母版、頁碼…），只篩選頁面。`pages` 可為 `'shown'`（預設：沒有設為不放映的頁——模板慣例上會把說明頁、元件頁設為不放映）、`'all'`，或依想要順序排列的頁 id／頁名陣列。不沿用模板的標題，除非給 `title`。回傳 `{pages, dropped, warnings}`。和 `load` 一樣是一步復原，並清掉目前開啟的檔案 |
 | `load(src)` | 載入簡報：`Blob`／`File`／`ArrayBuffer`（`.deck` 容器或純 JSON）、JSON 字串或物件。會清掉「目前開啟的檔案」，之後按 Cmd/Ctrl+S 才不會把它寫進先前開著的那個檔 |
 | `toBlob()` | 整份簡報的 `.deck` 檔（`Blob`） |
-| `save({force?})` | 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但不開任何對話框。回傳 `{file, saved: true}`。做不到時拋錯並說明要請使用者做什麼：還沒開檔或還沒存過（請使用者按一次 Cmd/Ctrl+S 選位置）、重新整理後權限失效（請使用者按一次 Cmd/Ctrl+S）、瀏覽器不能就地寫檔（改用 `toBlob()`）。硬碟上的檔在開啟後被別處改過時也拋錯，確定要覆蓋才給 `{force: true}` |
+| `save({force?, as?})` | 存回開著的那個檔，等同 Cmd/Ctrl+S，但不開任何對話框。回傳 `{file, saved: true}`。**由 `deckjson-server.js` 提供時**（見下），檔案由伺服器寫，不需要使用者按任何東西；`{as: '名稱.deck'}` 存成伺服器資料夾裡的新檔，之後的 `save()` 就存回它。**直接從硬碟開、或在 DJ App 裡**，做不到時拋錯並說明要請使用者做什麼：還沒開檔或還沒存過（請使用者按一次 Cmd/Ctrl+S 選位置）、重新整理後權限失效（請使用者按一次 Cmd/Ctrl+S）、瀏覽器不能就地寫檔（改用 `toBlob()`）。兩種情況下，硬碟上的檔在開啟後被別處改過都會拋錯，確定要覆蓋才給 `{force: true}` |
 | `snapshot(pageId, {scale?, format?})` | 單頁的 PNG（或 `format: 'jpeg'`）圖片，`Blob` |
 | `exportPptx()` | 匯出的 `.pptx`（`Blob`），不觸發下載 |
 | `show(pageId)` | 把編輯器切到那一頁給旁觀的人看。唯一會改變畫面的呼叫 |
 
-網頁不經使用者親手選位置，不能自己寫檔：使用者開過或存過一次之後，`save()` 就能存回同一個檔；在那之前，存到磁碟由呼叫端負責。開發用的 `tools/serve.py` 兩頭都包了：`--mount /前綴=資料夾` 把別的資料夾唯讀掛進來，頁面直接 fetch 那裡的圖和簡報；`--save 資料夾` 接收存檔。
+### DeckJSON 伺服器
+
+網頁不經使用者親手選位置，不能自己寫檔。要讓腳本或 AI 代理自己讀寫檔案，用 `deckjson-server.js`（Node 18 以上，不必安裝套件）把 DeckJSON 連同一個資料夾一起提供：
 
 ```bash
-python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out
+node ~/.deckjson/app/deckjson-server.js start ~/notes/talk.deck   # 安裝過的話（README〈安裝 DJ App〉）
+node deckjson-server.js start ~/notes                              # 或在 deckjson.html 旁邊執行
 ```
+
+它在背景啟動，取 47111～47115 第一個空的 port（一個工作一個 port，自動存檔各自分開），印出網址就返回。給的是檔案時，網址結尾是 `?open=<檔名>`，頁面會載入它；檔名還不存在時開一份空白簡報，第一次存檔才建立。
 
 ```js
-await DJ.load(await fetch('/notes/talk.deck').then(r => r.blob()))
-await DJ.addImage(page, '/notes/figures/a.png', {x: 640, y: 120, w: 560, h: 420})
-await fetch('/save?n=talk.deck', {method: 'POST', body: await DJ.toBlob()})
+await DJ.addImage(page, '/files/figures/a.png', {x: 640, y: 120, w: 560, h: 420})   // 資料夾裡的任何檔
+const notes = await fetch('/files/notes.md').then(r => r.text())
+await DJ.save()                                     // 存回 talk.deck
+await DJ.save({as: 'talk-v2.deck'})                 // 資料夾裡的新檔
+await fetch('/save?n=talk.pptx', {method: 'POST', body: await DJ.exportPptx()})   // PowerPoint
 ```
 
-伺服器只聽 127.0.0.1、檢查 Host 與 Origin、不送 CORS 標頭，別的網站讀不到掛載的檔，也寫不進存檔資料夾。
+`node deckjson-server.js status` 列出執行中的伺服器，`stop <port|all>` 關閉；`http://127.0.0.1:<port>/__status` 是同樣內容的網頁，另列出每個 port 讀過與存過哪些簡報、開著哪些分頁。15 分鐘沒有請求就自行結束（開著的頁面每 20 秒回報一次）。只聽 127.0.0.1、檢查 Host 與 Origin、不送 CORS 標頭，只寫資料夾裡的 `.deck` 與 `.pptx`；已存在的檔要先經伺服器讀過，或帶 `force` 才能覆蓋。
+
+repo 裡的 `tools/serve.py` 是開發 DeckJSON 本身用的：它提供未打包的 `src/` 與 `tests/`。
 
 ## 換文字、不丟格式
 

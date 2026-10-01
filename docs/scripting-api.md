@@ -39,7 +39,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Returns |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty}` — `page` is the one on screen |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, host}` — `page` is the one on screen. `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text. A table's `h` is its drawn height: `rowH` is only a minimum, and a row whose text doesn't fit grows, so adding up `rowH` can come out short |
 | `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |
@@ -83,24 +83,33 @@ In `bbox`, `center`, `align`, `stack` and `distribute`, each entry of `ids` is a
 | `fromTemplate(src, {pages?, title?})` | Starts a new deck from a template: keeps all of the template's settings (slide size, reserved zones, fonts, style mode, master, page numbers…) and only filters its pages. `pages` is `'shown'` (default: pages not marked "skip" — templates conventionally hide their instruction and component pages), `'all'`, or an array of page ids/names in the order you want. The template's title is not reused unless you pass `title`. Returns `{pages, dropped, warnings}`. Like `load`, it is one undo step and clears the currently open file |
 | `load(src)` | Loads a deck from a `Blob`/`File`/`ArrayBuffer` (`.deck` container or plain JSON), a JSON string, or an object. Clears the "currently open file", so a later Cmd/Ctrl+S can't overwrite the file that was open before |
 | `toBlob()` | The deck as a `.deck` file (`Blob`) |
-| `save({force?})` | Saves back to the file the user has open, like Cmd/Ctrl+S, but never opens a dialog. Returns `{file, saved: true}`. When it can't, it throws and says what to ask the user: no file open or never saved (ask them to press Cmd/Ctrl+S once to pick a location), permission lost after a page reload (ask them to press Cmd/Ctrl+S once), or the browser can't write files in place (use `toBlob()`). It also throws if the file was changed on disk since it was opened; pass `{force: true}` only when overwriting is intended |
+| `save({force?, as?})` | Saves back to the file that is open, like Cmd/Ctrl+S, but never opens a dialog. Returns `{file, saved: true}`. **Served by `deckjson-server.js`** (see below), the server writes the file, so no click from the user is needed; `{as: 'name.deck'}` saves a new file into the server's folder, and later `save()` calls write back to it. **Opened from disk or in the DJ App**, when it can't save it throws and says what to ask the user: no file open or never saved (ask them to press Cmd/Ctrl+S once to pick a location), permission lost after a page reload (ask them to press Cmd/Ctrl+S once), or the browser can't write files in place (use `toBlob()`). Either way it throws if the file was changed on disk since it was opened; pass `{force: true}` only when overwriting is intended |
 | `snapshot(pageId, {scale?, format?})` | A PNG (or `format: 'jpeg'`) image of one page as a `Blob` |
 | `exportPptx()` | The exported `.pptx` as a `Blob`, without triggering a download |
 | `show(pageId)` | Switches the editor to that page, for the person watching. The only call that changes the view |
 
-A browser page can't write a file until the user has picked it: once the user has opened or saved a file, `save()` writes back to it; before that, saving to disk is up to the caller. The development server `tools/serve.py` covers both directions: `--mount /PREFIX=DIR` mounts another folder read-only so the page can fetch pictures and decks from it, and `--save DIR` accepts saved files.
+### The DeckJSON server
+
+A browser page can't write a file until the user has picked it. For a script or an AI agent that works on files by itself, `deckjson-server.js` (Node 18+, no packages to install) serves DeckJSON together with one folder:
 
 ```bash
-python3 tools/serve.py 8111 . --mount /notes=~/notes --save ~/notes/out
+node ~/.deckjson/app/deckjson-server.js start ~/notes/talk.deck   # after installing (README, "Install the DJ App")
+node deckjson-server.js start ~/notes                              # or next to deckjson.html
 ```
+
+It starts in the background on the first free port from 47111 to 47115 (one job per port, each with its own autosave), prints the address and returns. With a file, the address ends in `?open=<file>` and the page loads it; a name that doesn't exist yet opens a blank deck that is created on the first save.
 
 ```js
-await DJ.load(await fetch('/notes/talk.deck').then(r => r.blob()))
-await DJ.addImage(page, '/notes/figures/a.png', {x: 640, y: 120, w: 560, h: 420})
-await fetch('/save?n=talk.deck', {method: 'POST', body: await DJ.toBlob()})
+await DJ.addImage(page, '/files/figures/a.png', {x: 640, y: 120, w: 560, h: 420})   // anything in the folder
+const notes = await fetch('/files/notes.md').then(r => r.text())
+await DJ.save()                                     // back to talk.deck
+await DJ.save({as: 'talk-v2.deck'})                 // a new file in the folder
+await fetch('/save?n=talk.pptx', {method: 'POST', body: await DJ.exportPptx()})   // PowerPoint
 ```
 
-The server listens on 127.0.0.1 only, checks the Host and Origin headers and sends no CORS headers, so other websites can neither read the mounted files nor write into the save folder.
+`node deckjson-server.js status` lists the running servers and `stop <port|all>` stops them; `http://127.0.0.1:<port>/__status` shows the same in a page, with which decks each port read and saved and which tabs are open. A server stops by itself after 15 minutes without requests (an open page reports in every 20 seconds). It listens on 127.0.0.1 only, checks the Host and Origin headers, sends no CORS headers, and writes only `.deck` and `.pptx` files inside its folder; a file that already exists must have been read through the server first, or be saved with `force`.
+
+`tools/serve.py` in the repository is for developing DeckJSON itself: it serves the unbuilt `src/` and `tests/`.
 
 ## Changing text without losing its formatting
 
