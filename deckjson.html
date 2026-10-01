@@ -10737,7 +10737,8 @@ function hostPingStart(){
 function hostTitle(){
   if(!HOST) return;
   const name=APP.file? APP.file.name : (APP.deck.title||_t('未命名'));
-  document.title=(APP.dirty?'● ':'')+name+(APP_SLOT? ` [${APP_SLOT}]` : '')+' — DeckJSON';
+  // App 視窗的標題列由 Chrome 自己加上 App 名稱（「DeckJSON - …」），這裡再加就重複了；瀏覽器分頁才需要
+  document.title=(APP.dirty?'● ':'')+name+(APP_SLOT? ` [${APP_SLOT}]` : ' — DeckJSON');
 }
 /* ================= 自動存檔（IndexedDB） =================
    單檔工具沒有存檔最違反直覺：重新整理／當機／誤關分頁 = 全沒了。
@@ -12509,11 +12510,14 @@ function slotWhen(t){
 function slotPick(getFile){
   return new Promise(resolve=>{
     const modal=$('#slotModal'), list=$('#slotList');
-    let rows=[], busy=false;
+    let rows=[], busy=false, sig='';
     async function draw(){
       const h=getFile(), had=[...list.children].indexOf(document.activeElement);
       $('#slotTitle').textContent=h? _t('要把「{0}」開在哪個槽位？',h.name) : _t('選一個槽位');
-      rows=await slotInfo();
+      const next=await slotInfo(), s=JSON.stringify([h&&h.name,next]);
+      /* 內容沒變就不重建：按下與放開之間若剛好換掉按鈕，瀏覽器不算一次點擊 */
+      if(s===sig) return;
+      sig=s; rows=next;
       const free=rows.filter(r=>!r.busy);
       list.replaceChildren(...rows.map(r=>{
         const b=document.createElement('button');

@@ -60,5 +60,6 @@ function hostPingStart(){
 function hostTitle(){
   if(!HOST) return;
   const name=APP.file? APP.file.name : (APP.deck.title||_t('未命名'));
-  document.title=(APP.dirty?'● ':'')+name+(APP_SLOT? ` [${APP_SLOT}]` : '')+' — DeckJSON';
+  // App 視窗的標題列由 Chrome 自己加上 App 名稱（「DeckJSON - …」），這裡再加就重複了；瀏覽器分頁才需要
+  document.title=(APP.dirty?'● ':'')+name+(APP_SLOT? ` [${APP_SLOT}]` : ' — DeckJSON');
 }

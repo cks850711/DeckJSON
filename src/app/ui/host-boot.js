@@ -63,11 +63,14 @@ function slotWhen(t){
 function slotPick(getFile){
   return new Promise(resolve=>{
     const modal=$('#slotModal'), list=$('#slotList');
-    let rows=[], busy=false;
+    let rows=[], busy=false, sig='';
     async function draw(){
       const h=getFile(), had=[...list.children].indexOf(document.activeElement);
       $('#slotTitle').textContent=h? _t('要把「{0}」開在哪個槽位？',h.name) : _t('選一個槽位');
-      rows=await slotInfo();
+      const next=await slotInfo(), s=JSON.stringify([h&&h.name,next]);
+      /* 內容沒變就不重建：按下與放開之間若剛好換掉按鈕，瀏覽器不算一次點擊 */
+      if(s===sig) return;
+      sig=s; rows=next;
       const free=rows.filter(r=>!r.busy);
       list.replaceChildren(...rows.map(r=>{
         const b=document.createElement('button');
