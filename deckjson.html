@@ -12423,7 +12423,7 @@ function djOver(el){
   return VERT_MODES[el.vert]? f.w>el.w+2 : f.h>el.h+2;   // 容差同 markOverflow
 }
 function djOverIds(pid){ return djEls(APP.deck,pid).filter(djOver).map(el=>el.id); }
-/* ---- 排版（bbox／center／align／stack）----
+/* ---- 排版（bbox／center／align／stack／distribute）----
    ids 的每一項是元素 id 或軟群組 id（outline 的 group）：群組整組當一個單位移動，組內相對位置不變，
    例如圖和圖說。元素 id 只動那個元素，即使它屬於某個群組。
    外框不計旋轉；表格高度用畫出來的實際高度（rowH 只是下限，見 tableRowHeights）。
@@ -12750,6 +12750,9 @@ const DJ=Object.freeze({
   },
   /* 新增一頁，插在 after 那頁之後（省略＝最後）。回傳新頁 id */
   async addPage(json,after){
+    // 與 replacePage 一致收裸陣列。原本陣列會被 Object.assign 攤成 "0"、"1" 欄位，元素一個都沒進頁、也不報錯
+    if(Array.isArray(json)) json={elements:json};
+    if(json!=null&&typeof json!=='object') throw djErr('addPage(): page JSON must be an object or an elements array');
     const warnings=schemaCheck(json||{},'page','new page');
     const s=snapshot(), t=structuredClone(APP.deck);
     const pg=Object.assign(newPage(),structuredClone(json||{}));
@@ -12836,6 +12839,25 @@ const DJ=Object.freeze({
         if(next!=null) u['d'+axis]=next-u.box[axis];
         next=Math.round(u.box[axis]+u['d'+axis])+u.box[sz]+gap;
       }
+    });
+  },
+  /* 均分：照 ids 的順序排，相鄰單位之間的間距相等（同 PowerPoint「水平／垂直均分」）。
+     有 area：第一個貼齊 area 的起點、最後一個貼齊終點；沒有：保留這組現有外框的兩端。
+     順序跟 stack() 一樣以 ids 為準而非現有位置——並排卡片常是先疊在同一處再均分，按位置排會不確定。
+     axis：'x'（預設，水平）｜'y'。另一軸不動。放不下時照樣排（會重疊）並回 warning */
+  async distribute(pid,ids,opts){
+    const o=djOpts(opts,['area','axis'],'distribute');
+    const axis=o.axis==null? 'x' : o.axis;
+    if(axis!=='x'&&axis!=='y') throw djErr(`distribute(): axis must be 'x' or 'y'`);
+    const area= o.area==null? null : djArea(o.area,'distribute'), sz= axis==='x'? 'w' : 'h';
+    return djArrange(pid,ids,'distribute',units=>{
+      if(units.length<2) throw djErr('distribute() needs at least two elements or groups');
+      const b=djUnion(units.map(u=>u.box));
+      const start= area? area[axis] : b[axis], span= area? area[sz] : b[sz];
+      const used=units.reduce((a,u)=>a+u.box[sz],0), gap=(span-used)/(units.length-1);
+      let at=start;
+      for(const u of units){ u['d'+axis]=Math.round(at)-u.box[axis]; at+=u.box[sz]+gap; }
+      return gap<0? [`they don't fit: ${Math.round(used)}px of content in ${Math.round(span)}px, so they overlap by ${Math.round(-gap)}px each`] : [];
     });
   },
   /* 表格列高貼合內容（同畫布上的「列高貼合內容」）：每列＝裝下該列文字的最小高度＋pad。

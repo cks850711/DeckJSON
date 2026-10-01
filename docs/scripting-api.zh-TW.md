@@ -13,6 +13,7 @@ await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // 文字框縮放到剛好裝下文字
 await DJ.fitTable('p-abc', ['tb-1'])             // 表格列高貼合文字
 await DJ.center('p-abc', ['tb-1', 'g-fig'], {area: {x: 19, y: 132, w: 1242, h: 548}})   // 整組置中於某個區域
+await DJ.distribute('p-abc', ['c1', 'c2', 'c3'], {area: {x: 40, y: 0, w: 1200, h: 720}})   // 並排、間距相等
 const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 ```
 
@@ -55,7 +56,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `addImage(pageId, src, opts?)` | 加一張圖，轉碼、讀原始尺寸、算不變形的框都由它做。見下文〈圖片〉。回傳 `{page, id, natW, natH, kb, overflow, warnings}` |
 | `compress(pageId, ids?, preset?)` | 把已經放上去的圖按顯示尺寸重編碼，框、裁切、群組都不動。見下文〈圖片〉 |
 | `replacePage(pageId, json)` | 換掉該頁的元素（以及 `json` 裡有列出的頁面欄位）。沒列出的欄位沿用原值，頁 id 不變。`json` 也可以直接是元素陣列 |
-| `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。回傳 `{page, n, overflow}` |
+| `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。`json` 也可以直接是元素陣列。回傳 `{page, n, overflow}` |
 | `removePage(pageId)` | 刪除一頁。只剩一頁時不能刪 |
 
 ## 版面
@@ -69,10 +70,11 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `center(pageId, ids, opts?)` | 整組一起平移，讓共同外框落在 `area` 的正中央（預設整張投影片）。彼此的相對位置不變，不縮放。`opts`：`{area: {x, y, w, h}, axis: 'both' \| 'x' \| 'y'}`。外框比 area 大時回 warning |
 | `align(pageId, ids, edge)` | 每個元素或群組的某一邊，對齊到全體共同外框的同一邊，同 PowerPoint 的「對齊」。`edge`：`'left'`、`'center'`、`'right'`、`'top'`、`'middle'`、`'bottom'` |
 | `stack(pageId, ids, opts?)` | 照給的順序一個接一個排：第一個不動，之後每個從前一個的結尾再隔 `gap` 開始。另一軸不動，要對齊另外呼叫 `align()`。`opts`：`{gap: 0, axis: 'y' \| 'x'}` |
+| `distribute(pageId, ids, opts?)` | 照給的順序均分，相鄰之間的間距都相等（同 PowerPoint 的「均分」）。有 `area` 時第一個貼齊區域起點、最後一個貼齊終點；沒有時保留這組現有外框的兩端。另一軸不動。放不下（會重疊）時回 warning。`opts`：`{area: {x, y, w, h}, axis: 'x' \| 'y'}`（預設 `'x'`） |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
 | `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉）。可給單頁、`'master'`，省略則掃整份 |
 
-`bbox`、`center`、`align`、`stack` 的 `ids`，每一項可以是元素 id 或軟群組 id（`outline()` 的 `group` 欄位）。群組整組當一件移動，圖和圖說不會分開；給元素 id 只動那個元素，即使它屬於某個群組。同一個元素直接或透過群組列了兩次會報錯。外框不計旋轉，表格高度用畫出來的實際高度。三個會移動的動詞回傳 `{page, moved: [{id, dx, dy}], box, overflow, warnings}`。
+`bbox`、`center`、`align`、`stack`、`distribute` 的 `ids`，每一項可以是元素 id 或軟群組 id（`outline()` 的 `group` 欄位）。群組整組當一件移動，圖和圖說不會分開；給元素 id 只動那個元素，即使它屬於某個群組。同一個元素直接或透過群組列了兩次會報錯。外框不計旋轉，表格高度用畫出來的實際高度。四個會移動的動詞回傳 `{page, moved: [{id, dx, dy}], box, overflow, warnings}`。
 
 ## 檔案與輸出
 

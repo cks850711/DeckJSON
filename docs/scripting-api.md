@@ -13,6 +13,7 @@ await DJ.patch('p-abc', [{id: 'tx-1', set: {y: 120}}])
 await DJ.fit('p-abc', ['tx-1'])                  // shrink/grow the text box to fit its text
 await DJ.fitTable('p-abc', ['tb-1'])             // set table rows to fit their text
 await DJ.center('p-abc', ['tb-1', 'g-fig'], {area: {x: 19, y: 132, w: 1242, h: 548}})   // center the group in an area
+await DJ.distribute('p-abc', ['c1', 'c2', 'c3'], {area: {x: 40, y: 0, w: 1200, h: 720}})   // equal gaps, side by side
 const blob = await DJ.toBlob()                   // the .deck file, ready to save
 ```
 
@@ -55,7 +56,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `addImage(pageId, src, opts?)` | Adds a picture, doing the decoding, intrinsic size and undistorted box for you. See “Images” below. Returns `{page, id, natW, natH, kb, overflow, warnings}` |
 | `compress(pageId, ids?, preset?)` | Re-encodes pictures already on the slide down to what they are shown at; frame, crop and group stay as they are. See “Images” |
 | `replacePage(pageId, json)` | Replaces the page's elements (and any page fields present in `json`). Fields not given keep their current values; the page id never changes. `json` may also be a bare elements array |
-| `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). Returns `{page, n, overflow}` |
+| `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). `json` may also be a bare elements array. Returns `{page, n, overflow}` |
 | `removePage(pageId)` | Deletes a page. The last remaining page can't be removed |
 
 ## Layout
@@ -69,10 +70,11 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `center(pageId, ids, opts?)` | Moves the elements and groups together so the box around them sits in the middle of `area` (default: the whole slide). They keep their positions relative to each other; nothing is resized. `opts`: `{area: {x, y, w, h}, axis: 'both' \| 'x' \| 'y'}`. Warns when the box is bigger than the area |
 | `align(pageId, ids, edge)` | Lines up one edge of each element or group with the same edge of the box around all of them, as PowerPoint's Align does. `edge`: `'left'`, `'center'`, `'right'`, `'top'`, `'middle'`, `'bottom'` |
 | `stack(pageId, ids, opts?)` | Places them one after another in the order given: the first stays put, each next one starts `gap` after the previous one ends. The other axis is left alone; use `align()` for that. `opts`: `{gap: 0, axis: 'y' \| 'x'}` |
+| `distribute(pageId, ids, opts?)` | Spaces them evenly in the order given, as PowerPoint's Distribute does: the gaps between neighbours are all equal. With `area`, the first starts at the area's start and the last ends at its end; without it, the two ends of their current box stay put. The other axis is left alone. Warns when they don't fit (they would overlap). `opts`: `{area: {x, y, w, h}, axis: 'x' \| 'y'}` (default `'x'`) |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
 | `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below). One page, `'master'`, or the whole deck when omitted |
 
-In `bbox`, `center`, `align` and `stack`, each entry of `ids` is an element id or a soft-group id (the `group` field in `outline()`). A group moves as one piece, so a figure and its caption stay together; an element id moves only that element, even if it is in a group. Listing an element twice, directly or through its group, is an error. Boxes ignore rotation, and a table's height is its drawn height. The three movers return `{page, moved: [{id, dx, dy}], box, overflow, warnings}`.
+In `bbox`, `center`, `align`, `stack` and `distribute`, each entry of `ids` is an element id or a soft-group id (the `group` field in `outline()`). A group moves as one piece, so a figure and its caption stay together; an element id moves only that element, even if it is in a group. Listing an element twice, directly or through its group, is an error. Boxes ignore rotation, and a table's height is its drawn height. The four movers return `{page, moved: [{id, dx, dy}], box, overflow, warnings}`.
 
 ## Files and output
 

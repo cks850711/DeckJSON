@@ -144,6 +144,22 @@ export default async function run() {
     await throws('arrange: unknown edge', () => DJ.align('pB', ['L1'], 'up'));
     await DJ.patch('pB', ['L1', 'L2', 'L3'].map(id => ({id, remove: true})));
 
+    // ---- 均分：照給的順序、間距相等；有 area 貼齊兩端，沒有就保留現有兩端 ----
+    // 三張卡先疊在同一處（AI 常這樣先放再排），寬 100／200／100
+    await DJ.add('pB', [TEXT('D1', 50, 600, 100, 40, '1'), TEXT('D2', 50, 600, 200, 40, '2'), TEXT('D3', 50, 600, 100, 40, '3')]);
+    const dx3 = () => ['D1', 'D2', 'D3'].map(id => el('pB', id).x);
+    const ds = await DJ.distribute('pB', ['D1', 'D2', 'D3'], {area: {x: 40, y: 0, w: 1200, h: 720}});
+    // (1200 − 400) / 2 = 400 的間距：40、540、1140
+    ok('distribute: first and last meet the area ends, equal gaps', dx3().join() === '40,540,1140' && ds.warnings.length === 0, [dx3(), ds]);
+    ok('distribute: the other axis is left alone', ['D1', 'D2', 'D3'].every(id => el('pB', id).y === 600));
+    await DJ.patch('pB', [{id: 'D2', set: {x: 900}}]);
+    await DJ.distribute('pB', ['D1', 'D2', 'D3']);
+    ok('distribute: without area the two ends stay put', dx3().join() === '40,540,1140', dx3());
+    ok('distribute: warns when they cannot fit', (await DJ.distribute('pB', ['D1', 'D2', 'D3'], {area: {x: 0, y: 0, w: 300, h: 100}})).warnings.length === 1);
+    await throws('distribute: needs two or more', () => DJ.distribute('pB', ['D1']));
+    await throws('distribute: unknown axis', () => DJ.distribute('pB', ['D1', 'D2'], {axis: 'z'}));
+    await DJ.patch('pB', ['D1', 'D2', 'D3'].map(id => ({id, remove: true})));
+
     // ---- 複製：圖片位元組跟著走，群組換新 id ----
     const {page: pC} = await DJ.addPage({name: 'components', elements: [
       {id: 'ic', type: 'image', x: 10, y: 10, w: 20, h: 20, natW: 1, natH: 1, dataUrl: PX, groupId: 'gK'},
@@ -173,6 +189,10 @@ export default async function run() {
     ok('add: cross-page id kept', a2.ids[0] === 'only-b');
     const np = await DJ.addPage({name: 'C', elements: [TEXT('c1', 0, 0, 100, 30, 'C')]}, 'pA');
     ok('addPage: inserted after pA', DJ.list()[1].id === np.page && np.n === 2, DJ.list());
+    // 裸陣列與 replacePage 一致；原本會攤成 "0" 欄位、元素一個都沒進頁
+    const na = await DJ.addPage([TEXT('arr', 0, 0, 100, 30, 'A')]);
+    ok('addPage: bare elements array accepted', DJ.outline(na.page).map(o => o.id).join() === 'arr' && !('0' in DJ.get(na.page)), DJ.get(na.page));
+    await DJ.removePage(na.page);
     await DJ.replacePage(np.page, {elements: [TEXT('c2', 0, 0, 100, 30, 'C2')]});
     ok('replacePage: id kept, name falls back', DJ.list()[1].id === np.page && DJ.list()[1].name === 'C');
     ok('replacePage: elements replaced', DJ.outline(np.page).map(o => o.id).join() === 'c2');

@@ -67,7 +67,7 @@ Element JSON is in `references/deck-format.md`. The short version: coordinates i
 Let DeckJSON measure; do not compute text heights or positions by hand.
 
 1. **Size first.** `DJ.fit(pageId, [ids])` makes text boxes exactly as tall as their text. `DJ.fitTable(pageId, [ids])` sets table rows to fit their text (cells have no padding of their own). Run them again after changing text, font size or column widths. Do not refit boxes whose size is meant to be fixed, such as a template's title box.
-2. **Then position.** `DJ.stack(pageId, ids, {gap})` places items one after another; `DJ.align(pageId, ids, 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom')` lines them up; `DJ.center(pageId, ids, {area: {x, y, w, h}})` centres the whole group in the content area. `ids` may include group ids, so a picture and its caption move together.
+2. **Then position.** `DJ.stack(pageId, ids, {gap})` places items one after another; `DJ.distribute(pageId, ids, {area: {x, y, w, h}})` spreads side-by-side cards evenly across an area (add `axis: 'y'` for a column), so you never compute `x = left + i × step` yourself; `DJ.align(pageId, ids, 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom')` lines them up; `DJ.center(pageId, ids, {area: {x, y, w, h}})` centres the whole group in the content area. `ids` may include group ids, so a picture and its caption move together.
 3. A warning that a group is larger than the area means the content does not fit: shorten it or split the page.
 
 ## 5. Check
