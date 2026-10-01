@@ -86,7 +86,7 @@
 | `md` | 一行文字，可用行內 markdown，套用時展開成 `runs` |
 | `runs` | `[{"text": "…", "bold": true, "sizePt": 18, "color": "1A1A1A"}, …]`。沒設字級的文字是 18 點 |
 | `align` | `left`、`center`、`right`、`justify` |
-| `bullet` | `{"type": "bullet" \| "number", "level": 0}`；編號可加 `"startAt": 1` |
+| `bullet` | `{"type": "bullet" \| "number", "level": 0}`。編號規則同 PowerPoint：各層各自計數，進到較深的層從 1 數起、回到外層接著數；沒有符號的段落（或同層、外層的項目符號段落）會結束這組清單。編號可加 `"startAt": 9` 從 9 起，只寫在第一項，後面各項自動接著數（10、11…） |
 | `spaceBefore`、`spaceAfter` | 點 |
 
 文字片段（run）的欄位：`text`、`bold`、`italic`、`underline`、`strike`、`sizePt`、`color`、`highlight`（顏色）、`fontFace`、`charSpacing`（點）、`sub`、`sup`、`link`（`{"url"}` 或 `{"slide"}`）、`outline`（`{"size", "color"}`）、`glow`（`{"size", "color", "opacity"}`）。

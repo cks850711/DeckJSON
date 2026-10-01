@@ -19,12 +19,13 @@ function runPptxOpts(r,defSizePt){
   };
 }
 function parasToPptx(el){
-  const out=[];
-  for(const p of el.paras||[]){
+  const out=[], seqs=numberSeqs(el.paras);
+  (el.paras||[]).forEach((p,pi)=>{
     const rr=(p.runs&&p.runs.length)?p.runs:[{text:''}];
     // 段落級（bullet／段距）在 PptxGenJS 是掛在 run option 上，由該段第一個 run 帶頭寫進 <a:pPr>
+    // startAt 逐段寫「這組的起始值」而不是該段自己的欄位：PPT 看到相鄰同層段落 startAt 不同就重新起算
     const bu= p.bullet? (p.bullet.type==='number'
-        ? {type:'number',style:'arabicPeriod',startAt:Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
+        ? {type:'number',style:'arabicPeriod',startAt:seqs[pi]? seqs[pi].start : Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
         : {code:p.bullet.code||BULLET_CHAR,indent:BULLET_INDENT}) : undefined;
     rr.forEach((r,i)=>out.push({text:String(r.text??''),options:{
       ...runPptxOpts(r,18),
@@ -38,7 +39,7 @@ function parasToPptx(el){
         paraSpaceBefore:p.spaceBefore||undefined,paraSpaceAfter:p.spaceAfter||undefined} : {}),
       align:p.align||'left',
       breakLine:i===rr.length-1}}));
-  }
+  });
   return out.length?out:[{text:'',options:{fontSize:18}}];
 }
 const nvDowngrade=[];     // 匯出時填：勾了原生卻映射不過的圖表，匯出後明講，不靜默降級

@@ -87,7 +87,7 @@ function propsText(pp,el){
   pp.appendChild(btnRow([
     [_t('無'),()=>setBullet(null),_t('不使用清單'),!buType],
     [_t('• 符號'),()=>setBullet({type:'bullet',level:(b.bullet&&b.bullet.level)||0}),_t('項目符號清單'),buType==='bullet'],
-    [_t('1. 編號'),()=>setBullet({type:'number',level:(b.bullet&&b.bullet.level)||0,startAt:1}),_t('編號清單'),buType==='number'],
+    [_t('1. 編號'),()=>setBullet({type:'number',level:(b.bullet&&b.bullet.level)||0}),_t('編號清單'),buType==='number'],
   ]));
   if(buType){
     const lv=(b.bullet.level|0);

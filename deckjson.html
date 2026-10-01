@@ -3475,6 +3475,31 @@ function bulletMark(p,seq){ // 回傳畫布上要顯示的符號字串（number 
   if(b.type==='number') return (seq)+'.';
   return b.code? String.fromCodePoint(parseInt(b.code,16)) : '•';
 }
+/* 編號清單的流水號。畫布與匯出共用這一份，兩邊才不會各算各的（2026-10-01 前畫布一路往下數、
+   匯出逐段寫 startAt，同一份資料在 PPT 會變成 9. 1.）。規則照 PowerPoint 實測：
+   - 各層各自計數；進到較深的層從頭數，回到較淺的層接著數
+   - 無符號段落、同層或更淺的項目符號段落會中斷這組
+   - 有寫 startAt 且與這組的起始值不同才重新起算；沒寫就接著這組往下數
+   - 空段落不佔號
+   回傳與 paras 等長的陣列：編號段為 {seq, start}（start＝這組的起始值，匯出要逐段寫成 startAt
+   PPT 才會接著數），其餘為 null */
+function numberSeqs(paras){
+  const lv=[], out=[];
+  for(const p of paras||[]){
+    const b=p&&p.bullet;
+    if(!b){ lv.length=0; out.push(null); continue; }
+    const runs=p.runs||[];
+    if(!runs.length||runs.every(r=>!String(r.text))){ out.push(null); continue; }
+    const L=Math.max(0,Math.round(b.level)||0);
+    lv.length=L+1;
+    if(b.type!=='number'){ lv[L]=null; out.push(null); continue; }
+    const want=b.startAt>0? Math.round(b.startAt) : 0, c=lv[L];
+    if(c&&(!want||want===c.start)) c.n++;
+    else lv[L]={start:want||1, n:want||1};
+    out.push({seq:lv[L].n, start:lv[L].start});
+  }
+  return out;
+}
 function maxPt(el){
   let m=0;
   for(const p of el.paras||[]) for(const r of p.runs||[]) m=Math.max(m,r.sizePt||18);
@@ -4343,7 +4368,9 @@ function paraDiv(p,el,seq){
     const mk=document.createElement('span');
     mk.dataset.mk='1';   // 編輯器據此略過：符號是渲染產物，不屬於任何 run 的文字
     mk.textContent=bulletMark(p,seq);
-    mk.style.cssText=`display:inline-block;width:${ind}px;text-indent:0`;
+    // 寬度是「至少」一個 indent 且不換行：字大到「10.」比 indent 寬時，PPT 不拆符號，第一行文字緊接在符號後
+    // （2026-10-01 以 PowerPoint 實開確認）；寫死 width 會把「1.」折成「1」與「.」兩行
+    mk.style.cssText=`display:inline-block;min-width:${ind}px;white-space:nowrap;text-indent:0`;
     mk.style.fontSize=pt2px(runs[0].sizePt||18)+'px';
     mk.style.color='#'+(runs[0].color||'1A1A1A');
     div.appendChild(mk);
@@ -4363,13 +4390,10 @@ function txtBlock(el){
   if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
   // 直書：writing-mode 一改，.txt 的 flex-direction:column 自然沿著新的區塊軸堆疊段落，不必另外調
   if(VERT_MODES[el.vert]) Object.assign(t.style,VERT_MODES[el.vert].css);
-  let seq=0;   // 編號清單流水號：連續 number 段落累加，遇非 number 段落歸零（同 PPT）
-  const ps=el.paras||[];
+  const ps=el.paras||[], seqs=numberSeqs(ps);   // 編號清單流水號，規則見 numberSeqs
   for(let pi=0;pi<ps.length;pi++){
     const p=ps[pi];
-    const num=!!(p.bullet&&p.bullet.type==='number');
-    seq= !num? 0 : (seq? seq+1 : Math.max(1,Math.round(p.bullet.startAt)||1));
-    const d=paraDiv(p,el,seq);
+    const d=paraDiv(p,el,seqs[pi]? seqs[pi].seq : 0);
     d.dataset.p=pi;
     // data-r 升級成「段:run」絕對鍵：瀏覽器把 span 搬到別段（例如退格併段）後仍查得回原樣式
     for(const sp of d.querySelectorAll('[data-r]')) sp.dataset.r=pi+':'+sp.dataset.r;
@@ -6205,7 +6229,7 @@ function propsText(pp,el){
   pp.appendChild(btnRow([
     [_t('無'),()=>setBullet(null),_t('不使用清單'),!buType],
     [_t('• 符號'),()=>setBullet({type:'bullet',level:(b.bullet&&b.bullet.level)||0}),_t('項目符號清單'),buType==='bullet'],
-    [_t('1. 編號'),()=>setBullet({type:'number',level:(b.bullet&&b.bullet.level)||0,startAt:1}),_t('編號清單'),buType==='number'],
+    [_t('1. 編號'),()=>setBullet({type:'number',level:(b.bullet&&b.bullet.level)||0}),_t('編號清單'),buType==='number'],
   ]));
   if(buType){
     const lv=(b.bullet.level|0);
@@ -9456,7 +9480,8 @@ function normParaOpts(p){
   if('bullet' in p){ const b=p.bullet;
     if(b&&typeof b==='object'){
       const o={type: b.type==='number'?'number':'bullet', level:Math.max(0,Math.min(8,Math.round(+b.level)||0))};
-      if(o.type==='number') o.startAt=Math.max(1,Math.round(+b.startAt)||1);
+      // startAt 只在有寫時保留：沒寫＝接著這組往下數（見 numberSeqs）。補成 1 會讓「從 9 起」的下一段變成重新起算
+      if(o.type==='number'){ const s=Math.round(+b.startAt); if(s>=1) o.startAt=s; }
       else if(/^[0-9A-Fa-f]{4}$/.test(String(b.code||''))) o.code=String(b.code).toUpperCase();
       p.bullet=o;
     }else delete p.bullet; }
@@ -11631,12 +11656,13 @@ function runPptxOpts(r,defSizePt){
   };
 }
 function parasToPptx(el){
-  const out=[];
-  for(const p of el.paras||[]){
+  const out=[], seqs=numberSeqs(el.paras);
+  (el.paras||[]).forEach((p,pi)=>{
     const rr=(p.runs&&p.runs.length)?p.runs:[{text:''}];
     // 段落級（bullet／段距）在 PptxGenJS 是掛在 run option 上，由該段第一個 run 帶頭寫進 <a:pPr>
+    // startAt 逐段寫「這組的起始值」而不是該段自己的欄位：PPT 看到相鄰同層段落 startAt 不同就重新起算
     const bu= p.bullet? (p.bullet.type==='number'
-        ? {type:'number',style:'arabicPeriod',startAt:Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
+        ? {type:'number',style:'arabicPeriod',startAt:seqs[pi]? seqs[pi].start : Math.max(1,Math.round(p.bullet.startAt)||1),indent:BULLET_INDENT}
         : {code:p.bullet.code||BULLET_CHAR,indent:BULLET_INDENT}) : undefined;
     rr.forEach((r,i)=>out.push({text:String(r.text??''),options:{
       ...runPptxOpts(r,18),
@@ -11650,7 +11676,7 @@ function parasToPptx(el){
         paraSpaceBefore:p.spaceBefore||undefined,paraSpaceAfter:p.spaceAfter||undefined} : {}),
       align:p.align||'left',
       breakLine:i===rr.length-1}}));
-  }
+  });
   return out.length?out:[{text:'',options:{fontSize:18}}];
 }
 const nvDowngrade=[];     // 匯出時填：勾了原生卻映射不過的圖表，匯出後明講，不靜默降級

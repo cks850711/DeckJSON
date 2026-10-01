@@ -96,7 +96,9 @@ function paraDiv(p,el,seq){
     const mk=document.createElement('span');
     mk.dataset.mk='1';   // 編輯器據此略過：符號是渲染產物，不屬於任何 run 的文字
     mk.textContent=bulletMark(p,seq);
-    mk.style.cssText=`display:inline-block;width:${ind}px;text-indent:0`;
+    // 寬度是「至少」一個 indent 且不換行：字大到「10.」比 indent 寬時，PPT 不拆符號，第一行文字緊接在符號後
+    // （2026-10-01 以 PowerPoint 實開確認）；寫死 width 會把「1.」折成「1」與「.」兩行
+    mk.style.cssText=`display:inline-block;min-width:${ind}px;white-space:nowrap;text-indent:0`;
     mk.style.fontSize=pt2px(runs[0].sizePt||18)+'px';
     mk.style.color='#'+(runs[0].color||'1A1A1A');
     div.appendChild(mk);
@@ -116,13 +118,10 @@ function txtBlock(el){
   if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
   // 直書：writing-mode 一改，.txt 的 flex-direction:column 自然沿著新的區塊軸堆疊段落，不必另外調
   if(VERT_MODES[el.vert]) Object.assign(t.style,VERT_MODES[el.vert].css);
-  let seq=0;   // 編號清單流水號：連續 number 段落累加，遇非 number 段落歸零（同 PPT）
-  const ps=el.paras||[];
+  const ps=el.paras||[], seqs=numberSeqs(ps);   // 編號清單流水號，規則見 numberSeqs
   for(let pi=0;pi<ps.length;pi++){
     const p=ps[pi];
-    const num=!!(p.bullet&&p.bullet.type==='number');
-    seq= !num? 0 : (seq? seq+1 : Math.max(1,Math.round(p.bullet.startAt)||1));
-    const d=paraDiv(p,el,seq);
+    const d=paraDiv(p,el,seqs[pi]? seqs[pi].seq : 0);
     d.dataset.p=pi;
     // data-r 升級成「段:run」絕對鍵：瀏覽器把 span 搬到別段（例如退格併段）後仍查得回原樣式
     for(const sp of d.querySelectorAll('[data-r]')) sp.dataset.r=pi+':'+sp.dataset.r;

@@ -155,7 +155,8 @@ function normParaOpts(p){
   if('bullet' in p){ const b=p.bullet;
     if(b&&typeof b==='object'){
       const o={type: b.type==='number'?'number':'bullet', level:Math.max(0,Math.min(8,Math.round(+b.level)||0))};
-      if(o.type==='number') o.startAt=Math.max(1,Math.round(+b.startAt)||1);
+      // startAt 只在有寫時保留：沒寫＝接著這組往下數（見 numberSeqs）。補成 1 會讓「從 9 起」的下一段變成重新起算
+      if(o.type==='number'){ const s=Math.round(+b.startAt); if(s>=1) o.startAt=s; }
       else if(/^[0-9A-Fa-f]{4}$/.test(String(b.code||''))) o.code=String(b.code).toUpperCase();
       p.bullet=o;
     }else delete p.bullet; }

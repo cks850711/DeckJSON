@@ -133,6 +133,31 @@ function bulletMark(p,seq){ // 回傳畫布上要顯示的符號字串（number 
   if(b.type==='number') return (seq)+'.';
   return b.code? String.fromCodePoint(parseInt(b.code,16)) : '•';
 }
+/* 編號清單的流水號。畫布與匯出共用這一份，兩邊才不會各算各的（2026-10-01 前畫布一路往下數、
+   匯出逐段寫 startAt，同一份資料在 PPT 會變成 9. 1.）。規則照 PowerPoint 實測：
+   - 各層各自計數；進到較深的層從頭數，回到較淺的層接著數
+   - 無符號段落、同層或更淺的項目符號段落會中斷這組
+   - 有寫 startAt 且與這組的起始值不同才重新起算；沒寫就接著這組往下數
+   - 空段落不佔號
+   回傳與 paras 等長的陣列：編號段為 {seq, start}（start＝這組的起始值，匯出要逐段寫成 startAt
+   PPT 才會接著數），其餘為 null */
+function numberSeqs(paras){
+  const lv=[], out=[];
+  for(const p of paras||[]){
+    const b=p&&p.bullet;
+    if(!b){ lv.length=0; out.push(null); continue; }
+    const runs=p.runs||[];
+    if(!runs.length||runs.every(r=>!String(r.text))){ out.push(null); continue; }
+    const L=Math.max(0,Math.round(b.level)||0);
+    lv.length=L+1;
+    if(b.type!=='number'){ lv[L]=null; out.push(null); continue; }
+    const want=b.startAt>0? Math.round(b.startAt) : 0, c=lv[L];
+    if(c&&(!want||want===c.start)) c.n++;
+    else lv[L]={start:want||1, n:want||1};
+    out.push({seq:lv[L].n, start:lv[L].start});
+  }
+  return out;
+}
 function maxPt(el){
   let m=0;
   for(const p of el.paras||[]) for(const r of p.runs||[]) m=Math.max(m,r.sizePt||18);

@@ -86,7 +86,7 @@ After writing or changing text, call `DJ.fit(pageId, [id])` to make the box exac
 | `md` | One line of text with inline markdown, expanded into `runs` when applied |
 | `runs` | `[{"text": "…", "bold": true, "sizePt": 18, "color": "1A1A1A"}, …]`. Text without a size is 18 pt |
 | `align` | `left`, `center`, `right`, `justify` |
-| `bullet` | `{"type": "bullet" \| "number", "level": 0}`; numbers may add `"startAt": 1` |
+| `bullet` | `{"type": "bullet" \| "number", "level": 0}`. Numbering follows PowerPoint: each level counts on its own, a deeper level starts from 1 and the outer level carries on after it, and a paragraph without a bullet (or a bullet paragraph at the same or an outer level) ends the list. A number may add `"startAt": 9` to start from 9; put it on the first item only, and the following items continue (10, 11, …) |
 | `spaceBefore`, `spaceAfter` | Points |
 
 Run fields: `text`, `bold`, `italic`, `underline`, `strike`, `sizePt`, `color`, `highlight` (colour), `fontFace`, `charSpacing` (points), `sub`, `sup`, `link` (`{"url"}` or `{"slide"}`), `outline` (`{"size", "color"}`), `glow` (`{"size", "color", "opacity"}`).

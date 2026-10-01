@@ -346,6 +346,22 @@ export default async function run() {
     await DJ.add('iA', [TEXT('capt', 0, 0, 100, 20, 'caption')]);
     await throws('compress: non-image rejected', () => DJ.compress('iA', 'capt'));
     await throws('compress: unknown preset', () => DJ.compress('iA', i7.id, 'tiny'));
+
+    // ---- 編號清單：畫布與匯出同一套流水號（規則照 PowerPoint 實測）----
+    const NUM = (t, level, extra) => ({runs: [{text: t, sizePt: 40}], bullet: Object.assign({type: 'number', level}, extra || {})});
+    await DJ.load({pages: [{id: 'nA', elements: [{id: 'list', type: 'text', x: 40, y: 40, w: 600, h: 640, paras: [
+      NUM('a', 0, {startAt: 9}), NUM('b', 0), NUM('c', 1), NUM('d', 1), NUM('e', 0),
+      {runs: [{text: 'plain'}]}, NUM('f', 0), NUM('g', 0, {startAt: 100})]}]}]});
+    DJ.show('nA');
+    const marks = [...document.querySelectorAll('#stage [data-id="list"] [data-mk="1"]')];
+    ok('numbering: levels count separately, startAt only restarts',
+      marks.map(m => m.textContent).join(' ') === '9. 10. 1. 2. 11. 1. 100.', marks.map(m => m.textContent));
+    // 40pt 的「10.」比一層縮排寬：符號框要撐開而不是把「1」「0」「.」折成好幾行（一行約 64px）
+    ok('numbering: a wide number stays on one line', marks.every(m => m.offsetHeight < 100), marks.map(m => m.offsetHeight));
+    const nz = await JSZip.loadAsync(await (await DJ.exportPptx()).arrayBuffer());
+    const starts = [...(await nz.file('ppt/slides/slide1.xml').async('string')).matchAll(/buAutoNum[^>]*startAt="(\d+)"/g)].map(m => m[1]);
+    // PPT 看到相鄰同層段落 startAt 不同就重新起算，所以每段要寫「這組的起始值」
+    ok('numbering: export writes the list start on every item', starts.join() === '9,9,1,1,9,1,100', starts);
     await DJ.load(fixture());
 
     // ---- 進出 ----
