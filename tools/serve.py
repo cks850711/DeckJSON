@@ -2,6 +2,9 @@
 """開發用的本機伺服器：與 python3 -m http.server 相同，但每個回應都帶 Cache-Control: no-cache，
 並可選擇掛載其他資料夾（唯讀）與接收存檔。
 
+給使用者與 AI 代理用的正式伺服器是 repo 根目錄的 deckjson-server.js（Node，不必安裝套件）。
+這支只給開發 DeckJSON 本身用：它能直接提供 src/ 拆檔的開發版與 tests/。
+
     python3 tools/serve.py [port] [目錄] [--mount /前綴=資料夾 ...] [--save 資料夾]
 
     port、目錄       預設 8111、repo 根目錄

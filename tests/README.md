@@ -10,6 +10,7 @@ DeckJSON 以**夾具式驗收測試**為主，而非單元測試。本工具的�
 | `verify_pptx.py`  | 解開匯出的 `.pptx`，逐項比對 OOXML 結構與數值       |
 | `check-deck.py`   | 靜態檢查 `.deck` 的常見錯誤（顏色格式、缺漏欄位、不合法列舉值） |
 | `dj-smoke.js`     | 腳本介面 `window.DJ` 的冒煙測試：每個動詞呼叫一次，只經由 `DJ` 與畫布 DOM 驗證（已公開，在瀏覽器 console 執行） |
+| `server-test.js`  | `deckjson-server.js` 的測試：真的啟動伺服器、送 HTTP，驗證 port 分配、來源限制、寫入範圍、修改時間檢查與閒置結束（已公開，`node tests/server-test.js`） |
 
 `verify_pptx.py` 的輸出是純文字，所以重構時只要比對前後兩份輸出是否**逐字一致**，就知道有沒有動到匯出語義。這是改動內部結構（而非功能）時最可靠的護欄——例如更換儲存格式、重排程式碼，匯出結果都應該零差異。
 
