@@ -614,12 +614,16 @@ const DJ=Object.freeze({
   },
 
   /* 掃既有內容裡不認得的欄位（寫入類動詞只檢查這次傳進來的東西）。給 pid 只掃那一頁，省略掃整份 */
-  /* 不認得的欄位（model/schema.js），加上容易被換行拆開的寫法（model/textlint.js，只提醒）。
-     兩類訊息格式不同：前者「路徑.欄位: unknown field …」，後者「路徑: "片段": a line can break …」 */
+  /* 不認得的欄位（model/schema.js），加上容易被換行拆開的寫法（model/textlint.js，只提醒），
+     以及方程式段落轉不出來的地方（export/omml.js 的 mathLint）。
+     訊息格式各不同：「路徑.欄位: unknown field …」「路徑: "片段": a line can break …」「頁/元素: paragraph N: …」 */
   lint(pid){
-    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master').concat(breakCheck(djEls(APP.deck,'master'),'elements','master'));
-    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid).concat(breakCheck(djPage(APP.deck,pid),'page',pid));
-    return schemaCheck(APP.deck,'deck').concat(breakCheck(APP.deck,'deck'));
+    if(pid==='master') return schemaCheck(djEls(APP.deck,'master'),'elements','master').concat(breakCheck(djEls(APP.deck,'master'),'elements','master'),
+      mathLint(djEls(APP.deck,'master'),'master'));
+    if(pid!=null) return schemaCheck(djPage(APP.deck,pid),'page',pid).concat(breakCheck(djPage(APP.deck,pid),'page',pid),
+      mathLint(djPage(APP.deck,pid).elements,pid));
+    return schemaCheck(APP.deck,'deck').concat(breakCheck(APP.deck,'deck'),
+      ...APP.deck.pages.map(g=>mathLint(g.elements,g.id)));
   },
 
   /* ---------- 進出 ---------- */

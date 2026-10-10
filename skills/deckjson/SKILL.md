@@ -71,7 +71,7 @@ Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportP
 | Pictures | `DJ.addImage(pageId, url, {x, y, w, h, alt})`: keeps the aspect ratio. Never write `dataUrl` yourself. If it warns the picture is much larger than needed, `DJ.compress(pageId, [id])` |
 | Copy elements or a whole group to another page | `DJ.copy(fromPageId, ids, toPageId, {x, y})` |
 
-Element JSON is in `references/deck-format.md`. The short version: coordinates in pixels on a 1280 × 720 slide, font sizes in points, colours as six hex digits without `#`, paragraphs as `{md: 'text with **bold**, ==highlight== and H<sub>2</sub>O'}` (marks can nest), arrows as `{type: 'shape', shape: 'arrow', ...}`.
+Element JSON is in `references/deck-format.md`. The short version: coordinates in pixels on a 1280 × 720 slide, font sizes in points, colours as six hex digits without `#`, paragraphs as `{md: 'text with **bold**, ==highlight== and H<sub>2</sub>O'}` (marks can nest), an equation as a paragraph of its own `{md: '$$E=mc^2$$'}` (LaTeX; exported as an editable PowerPoint equation, best in a text box of its own), arrows as `{type: 'shape', shape: 'arrow', ...}`.
 
 ### Starting from a template
 

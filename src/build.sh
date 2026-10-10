@@ -86,6 +86,24 @@ def inline(m):
 
 out = re.sub(r'<script src="((?:vendor|i18n)/[^"]+)"></script>', inline, src)
 
+# vendor/ 的樣式表（目前只有 KaTeX）：換成 <style>，字型轉成 data: URL 一起內嵌，成品才能離線用。
+# KaTeX 的 @font-face 每個字型列 woff2、woff、ttf 三種，vendor 只帶 woff2，另外兩個 url() 刪掉
+import base64
+def inline_css(m):
+    path = pathlib.Path(m.group(1))
+    css = path.read_text(encoding='utf-8')
+    css = re.sub(r',\s*url\([^)]+\.(?:woff|ttf)\)\s*format\("(?:woff|truetype)"\)', '', css)
+    def font(f):
+        fp = path.parent / f.group(1)
+        if not fp.exists():
+            raise SystemExit(f'{path} 引用的字型不存在：{fp}')
+        return 'url(data:font/woff2;base64,' + base64.b64encode(fp.read_bytes()).decode() + ')'
+    css = re.sub(r'url\(([^)]+\.woff2)\)', font, css)
+    if re.search(r'url\((?!data:)', css):
+        raise SystemExit(f'{path} 還有沒內嵌的 url()')
+    return '<style>\n' + css.replace('</style>', '<\\/style>') + '\n</style>'
+out = re.sub(r'<link rel="stylesheet" href="(vendor/[^"]+\.css)">', inline_css, out)
+
 prof = os.environ.get('PROFILE') or ''
 if prof:
     data = json.loads(pathlib.Path(prof).read_text(encoding='utf-8'))

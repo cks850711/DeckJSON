@@ -118,6 +118,7 @@ function editDirty(){ const e=APP.edit; if(e&&!e.pushed){ e.pushed=true; commitU
 function editCommit(){
   const e=APP.edit; if(!e) return;
   editSync();
+  const el=editEl(); if(el) mathFold(el.paras);
   APP.edit=null; APP.editing=null;
   renderAll();
 }

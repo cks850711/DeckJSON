@@ -46,7 +46,9 @@ function breakHints(texts,where){
 function breakTexts(e){
   if(!e||typeof e!=='object'||e.hidden) return [];
   const paraText=p=>p&&typeof p==='object'? (Array.isArray(p.runs)? p.runs.map(r=>r&&r.text||'').join('') : '')+(typeof p.md==='string'? p.md : '') : '';
-  const texts=(Array.isArray(e.paras)?e.paras:[]).map(paraText);
+  // 方程式段落（math，或 md 整段是 $$…$$）不是會換行的文字，LaTeX 原文裡的「x-1」不該被提醒
+  const isMath=p=>p&&typeof p==='object'&&(p.math||(typeof p.md==='string'&&/^\s*\$\$[\s\S]*\$\$\s*$/.test(p.md)));
+  const texts=(Array.isArray(e.paras)?e.paras:[]).filter(p=>!isMath(p)).map(paraText);
   if(e.type==='table') for(const row of Array.isArray(e.cells)?e.cells:[]) for(const c of Array.isArray(row)?row:[]){
     if(!c||typeof c!=='object'||c.covered) continue;
     texts.push(Array.isArray(c.runs)? c.runs.map(r=>r&&r.text||'').join('') : String(c.md!=null? c.md : c.text||''));

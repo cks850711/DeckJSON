@@ -119,16 +119,24 @@ function buildDeckSettings(pp){
       syncPageJson(); renderDeckSettings(); };
     pp.appendChild(colorRow(_t('螢光色'),mdo.highlight,v=>mdEdit(m=>{
       if(v===MD_DEF.highlight) delete m.highlight; else m.highlight=v; }),false));
+    // 依語法的出處分組顯示，組內仍逐項開關（存檔也是逐項的 syntax 鍵）；組名只是標題，沒有整組的開關
+    pp.appendChild(subTitle('Obsidian'));
     pp.appendChild(checkRow([
       [_t('~~刪除線~~'),()=>mdo.syntax.strike,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'strike',v)); }],
       [_t('==螢光=='),()=>mdo.syntax.mark,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'mark',v)); }],
     ]));
     pp.appendChild(checkRow([
+      [_t('$$方程式$$'),()=>mdo.syntax.math,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'math',v)); },
+        _t('整段是 $$…$$ 時變成方程式（LaTeX），匯出成 PowerPoint 可編輯的方程式')],
+    ]));
+    pp.appendChild(subTitle('GitHub'));
+    pp.appendChild(checkRow([
       [_t('HTML 標籤'),()=>mdo.syntax.html,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'html',v)); },
         _t('<sub> 下標、<sup> 上標、<u> 底線、<mark> 螢光')],
     ]));
     const mdn=document.createElement('div'); mdn.className='row';
-    mdn.innerHTML='<span class="unit">'+_t('JSON 段落與儲存格的 <code>"md"</code> 簡寫照這裡展開：<code>**粗體**</code>、<code>*斜體*</code>、連結固定認得，上面三項可以關掉。')
+    mdn.innerHTML='<span class="unit">'+_t('JSON 段落與儲存格的 <code>"md"</code> 簡寫照這裡展開：<code>**粗體**</code>、<code>*斜體*</code>、連結固定認得，上面四項可以關掉。')
+      +_t('　在畫布上打字時，整段打成 <code>$$…$$</code> 也會變成方程式。')
       +_t('　設定只影響<b>之後寫進來</b>的字，改了不會重畫已經有的螢光。')+'</span>';
     pp.appendChild(mdn);
     // ── 投影片尺寸（整份簡報）：預設值或自訂 px；改尺寸不會搬動既有元素，需自行重排 ──

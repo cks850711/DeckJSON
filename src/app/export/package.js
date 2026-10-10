@@ -55,6 +55,61 @@ function injectHf(xml,{inherit,lang,pageIdx}){
     {box:dateBox(),text:dateText(),fixed:D.date.fmt==='fixed',lang,id:++id,inherit}));
   return add.length? xml.replace('</p:spTree>',add.join('')+'</p:spTree>') : xml;
 }
+/* 方程式段落 → PowerPoint 方程式。PptxGenJS 不支援方程式，先照一般段落寫出 LaTeX 原文，這裡再把那一段
+   換成 <a14:m><m:oMathPara>（OMML 由 mathmlToOmml 產生）。
+   包法依文字框的內容分兩種（2026-10-10 以 PowerPoint 16.78、LibreOffice 26.2 實測）：
+   - 整個框只有一段、而且是方程式：直接放 a14:m，不包 mc:AlternateContent、不附備用。PowerPoint 照常顯示，
+     LibreOffice 匯入成可編輯的公式；PowerPoint for Mac 另存時自己也寫成這樣
+   - 其他（兩段以上，或文字與方程式混排）：LibreOffice 只認「單獨一段」的方程式，混排的方程式會整段消失。
+     所以整個形狀包進 mc:AlternateContent：Choice 是含方程式的版本（PowerPoint 走這裡），Fallback 是原本
+     寫著 LaTeX 原文的版本，LibreOffice 至少看得到原文
+   LaTeX 解析不了或轉不出來時保留原文段落（DJ.lint 會先報）。 */
+const MATH_JC={left:'left',center:'center',right:'right',justify:'centerGroup'};
+function mathOmml(p,lang){
+  if(typeof katex==='undefined') return null;
+  let mml;
+  try{ mml=katex.renderToString(mathTex(p),{output:'mathml',displayMode:true,throwOnError:true}); }catch(err){ return null; }
+  const r=(p.runs||[])[0]||{}, sz=Math.round((r.sizePt||18)*100);
+  const rPr=`<a:rPr lang="${lang||'en-US'}" sz="${sz}"><a:solidFill><a:srgbClr val="${r.color||'1A1A1A'}"/></a:solidFill>`
+    +'<a:latin typeface="Cambria Math"/></a:rPr>';
+  const {omml}=mathmlToOmml(mml,rPr);
+  if(!omml) return null;
+  return {xml:'<a14:m xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main">'
+    +'<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+    +`<m:oMathParaPr><m:jc m:val="${MATH_JC[p.align]||'left'}"/></m:oMathParaPr>${omml}</m:oMathPara></a14:m>`,
+    end:`<a:endParaRPr lang="${lang||'en-US'}" sz="${sz}"/>`};
+}
+function injectMath(xml,els,lang){
+  for(const el of els||[]){
+    if(el.hidden||!Array.isArray(el.paras)||!el.paras.some(p=>p.math)) continue;
+    const at=xml.search(new RegExp(`<p:cNvPr id="\\d+" name="${reEsc(el.id)}"`));
+    if(at<0) continue;
+    const b0=xml.indexOf('<p:txBody>',at), b1=xml.indexOf('</p:txBody>',b0);
+    if(b0<0||b1<0) continue;
+    const s0=xml.lastIndexOf('<p:sp>',at), s1=xml.indexOf('</p:sp>',at)+'</p:sp>'.length;
+    if(s0<0||s1<b1) continue;
+    const orig=xml.slice(s0,s1);
+    let k=-1, n=0;
+    const body=xml.slice(b0,b1).replace(/<a:p>([\s\S]*?)<\/a:p>/g,(m,inner)=>{
+      const p=el.paras[++k];
+      if(!p||!p.math) return m;
+      const eq=mathOmml(p,lang); if(!eq) return m;
+      n++;
+      // 行距要拿掉：PptxGenJS 逐段寫固定點數（字級×1.2），分數、矩陣這種高的方程式會被上下段蓋住
+      const pPr=((inner.match(/^<a:pPr\b[^>]*\/>|^<a:pPr\b[^>]*>[\s\S]*?<\/a:pPr>/)||[''])[0])
+        .replace(/<a:lnSpc>[\s\S]*?<\/a:lnSpc>/,'');
+      return `<a:p>${pPr}${eq.xml}${eq.end}</a:p>`;
+    });
+    if(!n) continue;
+    const sp=xml.slice(s0,b0)+body+xml.slice(b1,s1);
+    const alone=el.paras.length===1;
+    xml=xml.slice(0,s0)+(alone? sp
+      : '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
+        +`<mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14">${sp}</mc:Choice>`
+        +`<mc:Fallback>${orig}</mc:Fallback></mc:AlternateContent>`)+xml.slice(s1);
+  }
+  return xml;
+}
 function patchFonts(xml,latinFont,mode,F,lang){
   const mk= mode==='inherit'
     ? '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>'
@@ -342,6 +397,8 @@ async function exportPptx(download=true){
       const isTbl=seg.startsWith('<p:graphicFrame>')&&seg.includes('<a:tbl>');
       return patchFonts(seg,isTbl?F.tableLatin:F.latin,mode,F,LANG);
     }).join('');
+    // 方程式段落：要排在 patchFonts 之後，否則數學 run 的 Cambria Math 會被全簡報的字體蓋掉
+    if(pgA) s=injectMath(s,pgA.elements,LANG);
     zip.file(name,s);
   }
   /* ---- 母版與版面配置的後製 ----

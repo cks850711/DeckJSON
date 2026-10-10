@@ -39,7 +39,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 回傳 |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}`；`page` 是畫面上那一頁。`markdown` 是 `md` 簡寫目前的設定 `{highlight, syntax:{strike, mark, html}}`（見〈md 簡寫的設定〉），`usedHighlight` 是整份簡報最常用的螢光色（沒有螢光時為 `null`）。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}`；`page` 是畫面上那一頁。`markdown` 是 `md` 簡寫目前的設定 `{highlight, syntax:{strike, mark, math, html}}`（見〈md 簡寫的設定〉），`usedHighlight` 是整份簡報最常用的螢光色（沒有螢光時為 `null`）。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字。表格的 `h` 是畫出來的實際高度：`rowH` 只是下限，字放不下的列會自己長高，直接加總 `rowH` 會少算 |
 | `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |
@@ -73,7 +73,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `stack(pageId, ids, opts?)` | 照給的順序一個接一個排：第一個不動，之後每個從前一個的結尾再隔 `gap` 開始。另一軸不動，要對齊另外呼叫 `align()`。`opts`：`{gap: 0, axis: 'y' \| 'x'}` |
 | `distribute(pageId, ids, opts?)` | 照給的順序均分，相鄰之間的間距都相等（同 PowerPoint 的「均分」）。有 `area` 時第一個貼齊區域起點、最後一個貼齊終點；沒有時保留這組現有外框的兩端。另一軸不動。放不下（會重疊）時回 warning。`opts`：`{area: {x, y, w, h}, axis: 'x' \| 'y'}`（預設 `'x'`） |
 | `overflow(pageId?)` | 放不下文字的文字框 id，也就是畫布上畫紅色虛線框的那些。不給頁 id 時回 `{頁id: [ids]}`，只列有溢出的頁 |
-| `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉）。可給單頁、`'master'`，省略則掃整份 |
+| `lint(pageId?)` | 簡報裡既有的不認得欄位（寫入呼叫只檢查這次傳進來的東西），加上容易被換行拆開的寫法（見下文〈換行提醒〉），以及轉不成 PowerPoint 方程式的 LaTeX（`頁id/元素id: paragraph N: …`）。可給單頁、`'master'`，省略則掃整份 |
 
 `bbox`、`center`、`align`、`stack`、`distribute` 的 `ids`，每一項可以是元素 id 或軟群組 id（`outline()` 的 `group` 欄位）。群組整組當一件移動，圖和圖說不會分開；給元素 id 只動那個元素，即使它屬於某個群組。同一個元素直接或透過群組列了兩次會報錯。外框不計旋轉，表格高度用畫出來的實際高度。四個會移動的動詞回傳 `{page, moved: [{id, dx, dy}], box, overflow, warnings}`。
 
@@ -134,6 +134,7 @@ await DJ.patch(page, [{id: 'box', md: '第一行 **粗體部分**\n第二行'}])
 | `highlight` | `"FFFF00"` | `==螢光==` 與 `<mark>` 用的顏色 |
 | `syntax.strike` | `true` | 認得 `~~刪除線~~` |
 | `syntax.mark` | `true` | 認得 `==螢光==` |
+| `syntax.math` | `true` | 整段是 `$$…$$` 時變成方程式（格式見 [deck-format.zh-TW.md](deck-format.zh-TW.md)〈段落與文字片段〉） |
 | `syntax.html` | `true` | 認得 `<sub>`、`<sup>`、`<u>`、`<mark>` |
 
 要讓新寫的螢光對齊簡報原本的顏色，先看 `DJ.info().usedHighlight`，再設進去：

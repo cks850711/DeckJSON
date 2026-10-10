@@ -24,6 +24,14 @@
 - 版權：Copyright (c) 2022 Niklas von Hertzen
 - 專案：https://github.com/niklasvh/html2canvas
 
+## KaTeX
+
+- 版本：0.18.9（含 `fonts/` 下 20 個 woff2 字型，打包時以 data: URL 內嵌）
+- 授權：MIT License
+- 版權：Copyright (c) 2013-2020 Khan Academy and other contributors
+- 專案：https://github.com/KaTeX/KaTeX
+- 用途：畫布上排版方程式段落（`$$…$$`），匯出時產生 MathML 再轉成 PowerPoint 方程式
+
 ## OOXML Preset Shape Definitions
 
 - 檔案：`src/vendor/preset-geom.js`（由 `tools/build-preset-geom.py` 從下列來源轉換而成）
@@ -44,7 +52,7 @@
 
 ---
 
-## MIT License 全文（適用於 PptxGenJS、JSZip、html2canvas）
+## MIT License 全文（適用於 PptxGenJS、JSZip、html2canvas、KaTeX）
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy

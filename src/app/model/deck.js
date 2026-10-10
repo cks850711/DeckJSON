@@ -112,8 +112,9 @@ function applyRange(el,sel,fn){
    配對照 CommonMark 的 delimiter run 演算法，但放寬左右側規則：只看「開頭後面、結尾前面不是空白」，
    不看標點。原規則在中文常常不成立——「**標籤｜**內文」的結尾 ** 前面是標點、後面是字，不算右側，
    粗體就失效。只認 ~~ 與 ==（剛好兩個）：單一 ~ 在各家 markdown 意思不同（刪除線、下標、底線），
-   一律照字面。HTML 只認上面四個、不帶屬性、成對的標籤，其餘照字面。 */
-const MD_DEF={highlight:'FFFF00',syntax:{strike:true,mark:true,html:true}};
+   一律照字面。HTML 只認上面四個、不帶屬性、成對的標籤，其餘照字面。
+   整段是 $$…$$ 時不走 runs，改成方程式段落（見 mdMath），同樣可由 deck.markdown.syntax.math 關掉。 */
+const MD_DEF={highlight:'FFFF00',syntax:{strike:true,mark:true,html:true,math:true}};
 let MD_OPTS=MD_DEF;   // 由 normalizeDeck 換成當前簡報的設定（見 mdOptsOf）；mdToRuns 只在 normalizeDeck 裡被呼叫
 function mdOptsOf(d){   // deck.markdown 只存與預設不同的鍵；這裡補成完整設定
   const m=(d&&d.markdown&&typeof d.markdown==='object')? d.markdown : {};
@@ -121,8 +122,29 @@ function mdOptsOf(d){   // deck.markdown 只存與預設不同的鍵；這裡補
   for(const k of Object.keys(syn)) if(m.syntax&&typeof m.syntax[k]==='boolean') syn[k]=m.syntax[k];
   return {highlight:hex6(m.highlight)||MD_DEF.highlight,syntax:syn};
 }
-const MD_ESC='*~=[]()\\<>';   // 可用反斜線跳脫的字元
-const mdUnesc=t=>t.replace(/\\([*~=[\]()\\<>])/g,'$1');
+const MD_ESC='*~=[]()\\<>$';   // 可用反斜線跳脫的字元
+const mdUnesc=t=>t.replace(/\\([*~=[\]()\\<>$])/g,'$1');
+/* ---- 方程式段落 ----
+   段落寫 math:true 時，runs 只留一個 run：text 是 LaTeX 原文，樣式（字級、顏色）是整條方程式的。
+   原文放在 run 而不放在 math 欄位，是因為「段落有沒有字」「前 40 字」「量高」這些地方都看 run 的 text，
+   放空殼 run 會被當成空段落（numberSeqs、paraDiv 都這樣判斷）。畫布用 KaTeX 畫，匯出轉 OMML。
+   寫入的三種入口：md 整段是 $$…$$、math 直接給 LaTeX 字串、math:true 加 runs，都收成同一個形式。 */
+const MATH_RE=/^\s*\$\$([\s\S]*?)\$\$\s*$/;
+function mdMath(s,o){   // 整段 $$…$$ → LaTeX 原文；不是就回 null。段落中間的 $$ 照字面
+  if(!(o||MD_OPTS).syntax.math) return null;
+  const m=MATH_RE.exec(String(s));
+  return m&&m[1].trim()&&!m[1].includes('$$')? m[1].trim() : null;
+}
+function mathPara(p,tex){   // 收成方程式段落：一個 run，樣式取原本第一個 run
+  p.runs=[{...runStyle((p.runs||[])[0]||{}),text:tex}];
+  p.math=true;
+}
+const mathTex=p=>(p.runs||[]).map(r=>String(r.text??'')).join('');
+/* 畫布打字的入口：就地編輯時方程式段落顯示成 $$原文$$ 純文字，編輯完整段仍是 $$…$$ 的收回方程式，
+   刪掉 $$ 的就變回一般段落。syntax.math 關掉時不收（照字面） */
+function mathFold(paras){
+  for(const p of paras||[]){ if(p.math) continue; const tex=mdMath(mathTex(p)); if(tex!=null) mathPara(p,tex); }
+}
 function mdToRuns(str,styleSrc,opts){
   const o=opts||MD_OPTS, base=runStyle(styleSrc||{}), runs=[];
   for(const it of mdItems(String(str),o)){

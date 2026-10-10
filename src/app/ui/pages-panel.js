@@ -186,10 +186,12 @@ function renderMasterSlot(){
 }
 function setPage(pid){
   if(!$('#chartModal').hidden) closeChartModal();   // 面板編輯的是原頁的圖表，換頁就失去意義
+  if(APP.edit) editCommit();   // 先收尾：方程式段落要從 $$原文$$ 收回（mathFold），不能直接丟掉編輯狀態
   APP.page=pid; setSel([]); APP.editing=null; APP.edit=null; renderAll(); syncPageJson(); }
 // 進出「編輯母版」。清乾淨編輯狀態再切，否則文字編輯游標會殘留在已經不在畫布上的元素
 function setMasterEdit(on){
   APP.masterEdit=!!on;
+  if(APP.edit) editCommit();
   if(APP.masterEdit) masterEls();   // 首次進入時把 deck.master 建起來
   APP.edit=null; APP.editing=null; APP.cellSel=null; APP.cellEdit=null; setSel([]);
   document.body.classList.toggle('masterEdit',APP.masterEdit);

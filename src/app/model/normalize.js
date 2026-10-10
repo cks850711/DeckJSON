@@ -405,8 +405,13 @@ function normEls(list,reserved){
     if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});
     if(Array.isArray(el.paras)) for(const p of el.paras){ normParaOpts(p);
       // markdown 輸入糖：展開成 runs 後刪鍵，存檔只留一種形式
-      if(typeof p.md==='string') p.runs=mdToRuns(p.md,(p.runs||[])[0]||{});
+      if(typeof p.md==='string'){ const tex=mdMath(p.md);
+        if(tex!=null) mathPara(p,tex); else{ p.runs=mdToRuns(p.md,(p.runs||[])[0]||{}); delete p.math; } }
       delete p.md;
+      // 方程式段落：math 給字串＝LaTeX 原文；math:true＝原文在 runs，併成一個 run（樣式取第一個）
+      if(typeof p.math==='string'&&p.math.trim()) mathPara(p,p.math.trim());
+      else if(p.math===true&&mathTex(p).trim()) mathPara(p,mathTex(p));
+      else delete p.math;
       if(Array.isArray(p.runs)) for(const r of p.runs) normRunOpts(r); }
     if(el.type==='chart'&&!el.option) el.option=structuredClone(SAMPLE_CHART);
     if(el.type==='chart'){

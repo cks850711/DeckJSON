@@ -19,7 +19,7 @@ const DECK_SCHEMA={
   "deck": ["format","version","title","fontMode","profileName","stage","zones","fonts","lang",
            "author","company","subject","pageNum","date","markdown","master","pages","maps","assetMode","generator"],
   "markdown": ["highlight","syntax"],
-  "mdSyntax": ["strike","mark","html"],
+  "mdSyntax": ["strike","mark","html","math"],
   "pageNum": ["pos","sizePt","color","skipFirst"],
   "date": ["pos","sizePt","color","skipFirst","fmt","text"],
   "master": ["on","flatten","elements"],
@@ -36,7 +36,7 @@ const DECK_SCHEMA={
     "video": ["mode","embed","cover","src"]
   },
   "tableNot": ["w","h","rot","link","shadow","alt"],
-  "para": ["runs","md","align","bullet","spaceBefore","spaceAfter"],
+  "para": ["runs","md","math","align","bullet","spaceBefore","spaceAfter"],
   "run": ["text","bold","italic","underline","strike","sizePt","color","highlight","fontFace","charSpacing",
           "sub","sup","link","outline","glow"],
   "cell": ["text","runs","md","bold","italic","color","sizePt","fill","align","valign","lineSpacing",

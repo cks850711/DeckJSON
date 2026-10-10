@@ -44,7 +44,7 @@
 
 ### 簡報層的 md 設定
 
-`"markdown": {"highlight": "E9C46A", "syntax": {"html": false}}` 決定 `md` 簡寫怎麼展開：`highlight` 是 `==…==` 與 `<mark>` 的顏色（預設 `FFFF00`），`syntax` 的 `strike`、`mark`、`html` 分別開關 `~~`、`==`、HTML 標籤（預設都是 `true`）。只寫與預設不同的鍵；沒有這個欄位就全用預設。用 `DJ.setDeck({markdown: {…}})` 改，或在編輯器的「全簡報設定 → Markdown 簡寫」。設定只影響之後寫入的 `md`，不會重畫已經有的字。
+`"markdown": {"highlight": "E9C46A", "syntax": {"html": false}}` 決定 `md` 簡寫怎麼展開：`highlight` 是 `==…==` 與 `<mark>` 的顏色（預設 `FFFF00`），`syntax` 的 `strike`、`mark`、`math`、`html` 分別開關 `~~`、`==`、`$$` 方程式、HTML 標籤（預設都是 `true`）。只寫與預設不同的鍵；沒有這個欄位就全用預設。用 `DJ.setDeck({markdown: {…}})` 改，或在編輯器的「全簡報設定 → Markdown 簡寫」。設定只影響之後寫入的 `md`，不會重畫已經有的字。
 
 ## 每種元素都有的欄位
 
@@ -87,7 +87,8 @@
 
 | 段落欄位 | 值 |
 |---|---|
-| `md` | 一行文字，可用行內 markdown，套用時展開成 `runs` |
+| `md` | 一行文字，可用行內 markdown，套用時展開成 `runs`；整行是 `$$…$$` 時變成方程式（見下方〈方程式〉） |
+| `math` | `true`＝這段是方程式，LaTeX 原文放在唯一的那個 run 的 `text`。寫入時也可以直接給字串：`"math": "E=mc^2"` |
 | `runs` | `[{"text": "…", "bold": true, "sizePt": 18, "color": "1A1A1A"}, …]`。沒設字級的文字是 18 點 |
 | `align` | `left`、`center`、`right`、`justify` |
 | `bullet` | `{"type": "bullet" \| "number", "level": 0}`。編號規則同 PowerPoint：各層各自計數，進到較深的層從 1 數起、回到外層接著數；沒有符號的段落（或同層、外層的項目符號段落）會結束這組清單。編號可加 `"startAt": 9` 從 9 起，只寫在第一項，後面各項自動接著數（10、11…） |
@@ -95,7 +96,9 @@
 
 文字片段（run）的欄位：`text`、`bold`、`italic`、`underline`、`strike`、`sizePt`、`color`、`highlight`（顏色）、`fontFace`、`charSpacing`（點）、`sub`、`sup`、`link`（`{"url"}` 或 `{"slide"}`）、`outline`（`{"size", "color"}`）、`glow`（`{"size", "color", "opacity"}`）。
 
-`md` 簡寫認得 `**粗體**`、`*斜體*`、`~~刪除線~~`、`==高亮==`、`<sub>下標</sub>`、`<sup>上標</sup>`、`<u>底線</u>`、`<mark>高亮</mark>`、`[文字](https://…)` 與 `[文字](#3)`（跳到第 3 頁），標記可以互相巢狀：`==**重點**==`、`**H<sub>2</sub>O**`。要字面的符號就加反斜線：`\*`、`\=`、`\<`。開頭的標記後面、結尾的標記前面不能是空白，所以 `a * b * c` 照字面。單一 `~` 一律照字面（各家 markdown 對它的意思不同）；HTML 只認這四個不帶屬性、成對的標籤。`~~`、`==`、HTML 標籤可以關掉，螢光色也可以換，見下方〈簡報層的 md 設定〉。
+`md` 簡寫認得 `**粗體**`、`*斜體*`、`~~刪除線~~`、`==高亮==`、`<sub>下標</sub>`、`<sup>上標</sup>`、`<u>底線</u>`、`<mark>高亮</mark>`、`[文字](https://…)` 與 `[文字](#3)`（跳到第 3 頁），標記可以互相巢狀：`==**重點**==`、`**H<sub>2</sub>O**`。要字面的符號就加反斜線：`\*`、`\=`、`\<`。開頭的標記後面、結尾的標記前面不能是空白，所以 `a * b * c` 照字面。單一 `~` 一律照字面（各家 markdown 對它的意思不同）；HTML 只認這四個不帶屬性、成對的標籤。`~~`、`==`、`$$`、HTML 標籤可以關掉，螢光色也可以換，見下方〈簡報層的 md 設定〉。反斜線也可以擋 `$`：`\$$` 照字面。
+
+**方程式**：一段寫成 `{"md": "$$x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$"}`（整段，前後只能有空白），或 `{"math": "…"}`，就是一條方程式：畫布用 KaTeX 畫，匯出成 PowerPoint 可以點進去編輯的方程式。存檔的形式是 `{"math": true, "runs": [{"text": "LaTeX 原文", "sizePt": 24, "color": "C00000"}]}`，字級與顏色取這個 run。段落中間的 `$$` 照字面，儲存格不支援。LaTeX 寫錯時畫布顯示紅字、`DJ.lint()` 會列出，匯出時保留原文。在畫布上編輯時方程式顯示成 `$$原文$$`，改完離開即重新排版；整段打成 `$$…$$` 也會變成方程式。LibreOffice 只認得「單獨佔一個文字框」的方程式，和其他段落放在同一框時，LibreOffice 會改顯示 LaTeX 原文（PowerPoint 不受影響）。
 
 用 `text` 寫的片段一律是字面文字，裡面的 `**` 照原樣保留。字級與顏色不在 `md` 裡；要換掉既有文字框的字並沿用原本的樣式，用 `DJ.patch(頁, [{id, md: "新文字"}])`，不要整個換掉 `paras`（同一段裡有不同顏色或字級時它會報錯，見 [scripting-api.zh-TW.md](scripting-api.zh-TW.md)）。
 

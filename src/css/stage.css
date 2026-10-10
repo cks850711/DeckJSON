@@ -64,6 +64,11 @@
   .el[data-type=text],.el[data-type=image],.el[data-type=shape],.el[data-type=chart]{outline:1px dashed rgba(150,152,160,.4)}
   :is(.el,.mel) .txt{width:100%;height:100%;display:flex;flex-direction:column;overflow:visible;line-height:1.2;word-break:break-word}
   :is(.el,.mel) .txt>div{white-space:pre-wrap}
+  /* 方程式段落（KaTeX）：段落對齊照 align，不用 KaTeX display 模式自帶的置中與上下 1em 外距；
+     --math-em 是 KaTeX 字級相對於段落字級的倍率，對齊 PowerPoint 裡同字級的 Cambria Math（見 mathInto） */
+  :is(.el,.mel) .txt>div.math{white-space:normal}
+  :is(.el,.mel) .txt>div.math .katex-display{margin:0;text-align:inherit}
+  :is(.el,.mel) .txt>div.math .katex-display>.katex{text-align:inherit;font-size:var(--math-em,1.21em)}
   .el.overflow{outline:1px dashed var(--danger)}
   :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
   :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}

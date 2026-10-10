@@ -44,7 +44,7 @@ Page fields are changed with `DJ.patch(pageId, [{id: pageId, set: {…}}])`. The
 
 ### Deck-level md settings
 
-`"markdown": {"highlight": "E9C46A", "syntax": {"html": false}}` sets how the `md` shorthand is expanded: `highlight` is the colour of `==…==` and `<mark>` (default `FFFF00`), and `strike`, `mark` and `html` under `syntax` switch `~~`, `==` and the HTML tags on or off (all `true` by default). Write only the keys that differ from the defaults; without the field, everything is default. Change it with `DJ.setDeck({markdown: {…}})` or in the editor under Deck settings → Markdown shorthand. The settings apply only to `md` written afterwards; existing text is not redrawn.
+`"markdown": {"highlight": "E9C46A", "syntax": {"html": false}}` sets how the `md` shorthand is expanded: `highlight` is the colour of `==…==` and `<mark>` (default `FFFF00`), and `strike`, `mark`, `math` and `html` under `syntax` switch `~~`, `==`, `$$` equations and the HTML tags on or off (all `true` by default). Write only the keys that differ from the defaults; without the field, everything is default. Change it with `DJ.setDeck({markdown: {…}})` or in the editor under Deck settings → Markdown shorthand. The settings apply only to `md` written afterwards; existing text is not redrawn.
 
 ## Fields every element has
 
@@ -87,7 +87,8 @@ After writing or changing text, call `DJ.fit(pageId, [id])` to make the box exac
 
 | Paragraph field | Values |
 |---|---|
-| `md` | One line of text with inline markdown, expanded into `runs` when applied |
+| `md` | One line of text with inline markdown, expanded into `runs` when applied; a line that is all `$$…$$` becomes an equation (see “Equations” below) |
+| `math` | `true` = this paragraph is an equation, with the LaTeX in the `text` of its single run. When writing you can also give the string directly: `"math": "E=mc^2"` |
 | `runs` | `[{"text": "…", "bold": true, "sizePt": 18, "color": "1A1A1A"}, …]`. Text without a size is 18 pt |
 | `align` | `left`, `center`, `right`, `justify` |
 | `bullet` | `{"type": "bullet" \| "number", "level": 0}`. Numbering follows PowerPoint: each level counts on its own, a deeper level starts from 1 and the outer level carries on after it, and a paragraph without a bullet (or a bullet paragraph at the same or an outer level) ends the list. A number may add `"startAt": 9` to start from 9; put it on the first item only, and the following items continue (10, 11, …) |
@@ -95,7 +96,9 @@ After writing or changing text, call `DJ.fit(pageId, [id])` to make the box exac
 
 Run fields: `text`, `bold`, `italic`, `underline`, `strike`, `sizePt`, `color`, `highlight` (colour), `fontFace`, `charSpacing` (points), `sub`, `sup`, `link` (`{"url"}` or `{"slide"}`), `outline` (`{"size", "color"}`), `glow` (`{"size", "color", "opacity"}`).
 
-The `md` shorthand understands `**bold**`, `*italic*`, `~~strike~~`, `==highlight==`, `<sub>subscript</sub>`, `<sup>superscript</sup>`, `<u>underline</u>`, `<mark>highlight</mark>`, `[text](https://…)` and `[text](#3)` (jump to slide 3), and the marks nest: `==**key point**==`, `**H<sub>2</sub>O**`. Put a backslash before a symbol to keep it literal: `\*`, `\=`, `\<`. An opening mark cannot be followed by a space and a closing mark cannot follow one, so `a * b * c` stays as typed. A single `~` is always literal (Markdown dialects disagree on what it means), and only those four HTML tags count, without attributes and in pairs. `~~`, `==` and the HTML tags can be turned off and the highlight colour changed; see “Deck-level md settings” below.
+The `md` shorthand understands `**bold**`, `*italic*`, `~~strike~~`, `==highlight==`, `<sub>subscript</sub>`, `<sup>superscript</sup>`, `<u>underline</u>`, `<mark>highlight</mark>`, `[text](https://…)` and `[text](#3)` (jump to slide 3), and the marks nest: `==**key point**==`, `**H<sub>2</sub>O**`. Put a backslash before a symbol to keep it literal: `\*`, `\=`, `\<`. An opening mark cannot be followed by a space and a closing mark cannot follow one, so `a * b * c` stays as typed. A single `~` is always literal (Markdown dialects disagree on what it means), and only those four HTML tags count, without attributes and in pairs. `~~`, `==`, `$$` and the HTML tags can be turned off and the highlight colour changed; see “Deck-level md settings” below. A backslash also keeps `$` literal: `\$$` stays as typed.
+
+**Equations**: a paragraph written as `{"md": "$$x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$"}` (the whole paragraph, only spaces around it) or `{"math": "…"}` is an equation: the canvas draws it with KaTeX and the export writes a PowerPoint equation you can click into and edit. It is saved as `{"math": true, "runs": [{"text": "the LaTeX", "sizePt": 24, "color": "C00000"}]}`; size and colour come from that run. `$$` in the middle of a paragraph stays literal, and table cells do not support equations. Broken LaTeX shows in red on the canvas, is listed by `DJ.lint()`, and is exported as its source text. While you edit on the canvas an equation shows as `$$source$$` and is laid out again when you leave; typing a whole paragraph as `$$…$$` also makes an equation. LibreOffice only understands an equation that has a text box to itself; in a box shared with other paragraphs it shows the LaTeX source instead (PowerPoint is not affected).
 
 Runs written with `text` are always literal, so `**` inside them stays as typed. Run-level `sizePt` and `color` are not part of `md`; to change the text of an existing box and keep its styling, use `DJ.patch(page, [{id, md: "new text"}])` instead of replacing `paras` (it throws when one paragraph mixes colours or sizes; see [scripting-api.md](scripting-api.md)).
 

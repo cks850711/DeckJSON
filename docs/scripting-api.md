@@ -39,7 +39,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Returns |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}` — `page` is the one on screen. `markdown` is the current setting for the `md` shorthand, `{highlight, syntax:{strike, mark, html}}` (see “Settings for the md shorthand”), and `usedHighlight` is the highlight color used most in the deck (`null` if there is none). `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}` — `page` is the one on screen. `markdown` is the current setting for the `md` shorthand, `{highlight, syntax:{strike, mark, math, html}}` (see “Settings for the md shorthand”), and `usedHighlight` is the highlight color used most in the deck (`null` if there is none). `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text. A table's `h` is its drawn height: `rowH` is only a minimum, and a row whose text doesn't fit grows, so adding up `rowH` can come out short |
 | `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |
@@ -73,7 +73,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `stack(pageId, ids, opts?)` | Places them one after another in the order given: the first stays put, each next one starts `gap` after the previous one ends. The other axis is left alone; use `align()` for that. `opts`: `{gap: 0, axis: 'y' \| 'x'}` |
 | `distribute(pageId, ids, opts?)` | Spaces them evenly in the order given, as PowerPoint's Distribute does: the gaps between neighbours are all equal. With `area`, the first starts at the area's start and the last ends at its end; without it, the two ends of their current box stay put. The other axis is left alone. Warns when they don't fit (they would overlap). `opts`: `{area: {x, y, w, h}, axis: 'x' \| 'y'}` (default `'x'`) |
 | `overflow(pageId?)` | Ids of text boxes whose text doesn't fit — the ones drawn with a red dashed frame. Without a page id: `{pageId: [ids]}` for every page that has any |
-| `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below). One page, `'master'`, or the whole deck when omitted |
+| `lint(pageId?)` | Unknown fields already in the deck (writes only check what you pass in), plus text likely to be split across lines (see “Line-break hints” below) and LaTeX that cannot become a PowerPoint equation (`pageId/elementId: paragraph N: …`). One page, `'master'`, or the whole deck when omitted |
 
 In `bbox`, `center`, `align`, `stack` and `distribute`, each entry of `ids` is an element id or a soft-group id (the `group` field in `outline()`). A group moves as one piece, so a figure and its caption stay together; an element id moves only that element, even if it is in a group. Listing an element twice, directly or through its group, is an error. Boxes ignore rotation, and a table's height is its drawn height. The four movers return `{page, moved: [{id, dx, dy}], box, overflow, warnings}`.
 
@@ -134,6 +134,7 @@ How `md` is expanded is set by the deck-level `markdown` field, which is saved w
 | `highlight` | `"FFFF00"` | The color used by `==highlight==` and `<mark>` |
 | `syntax.strike` | `true` | Recognize `~~strikethrough~~` |
 | `syntax.mark` | `true` | Recognize `==highlight==` |
+| `syntax.math` | `true` | A paragraph that is all `$$…$$` becomes an equation (format in [deck-format.md](deck-format.md), “Paragraphs and runs”) |
 | `syntax.html` | `true` | Recognize `<sub>`, `<sup>`, `<u>`, `<mark>` |
 
 To make new highlights match the deck's existing ones, read `DJ.info().usedHighlight` and set it:

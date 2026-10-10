@@ -78,6 +78,17 @@ function runSpan(r,defSizePt){
   if(r.link) sp.title=_t('超連結：{0}',linkLabel(r.link));
   return sp;
 }
+/* 方程式段落 → KaTeX。字級取段落那個 run，顏色同。只出 HTML（output:'html'）：
+   匯出用的 MathML 在匯出時另外產生，畫布上不必多掛一份隱藏的 <math>。
+   LaTeX 寫錯時 KaTeX 不丟例外，改用紅字顯示原文（throwOnError:false），DJ.lint 另外回報 */
+function mathInto(div,p){
+  const r=(p.runs||[])[0]||{};
+  div.classList.add('math');
+  div.style.fontSize=pt2px(r.sizePt||18)+'px';
+  div.style.color='#'+(r.color||'1A1A1A');
+  if(typeof katex==='undefined'){ div.textContent=mathTex(p); return; }
+  katex.render(mathTex(p),div,{displayMode:true,throwOnError:false,output:'html'});
+}
 function paraDiv(p,el,seq){
   const div=document.createElement('div');
   div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
@@ -85,7 +96,10 @@ function paraDiv(p,el,seq){
   if(el&&el.nowrap) div.style.whiteSpace='pre';
   if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
   if(p.spaceAfter>0) div.style.marginBottom=pt2px(p.spaceAfter)+'px';
-  const runs=p.runs||[];
+  // 方程式段落：平常用 KaTeX 畫；在就地編輯中改顯示 $$原文$$ 純文字，編輯完由 editCommit 收回（見 mathFold）
+  const editingThis=!!(el&&APP.editing===el.id);
+  if(p.math&&!editingThis){ mathInto(div,p); return div; }
+  const runs= p.math? [{...(p.runs||[])[0],text:'$$'+mathTex(p)+'$$'}] : (p.runs||[]);
   if(!runs.length||runs.every(r=>!String(r.text))){
     const br=document.createElement('br'); br.dataset.mk='1';   // 空段落佔位，非硬斷行（編輯器據此不誤判為分段）
     div.appendChild(br); return div;

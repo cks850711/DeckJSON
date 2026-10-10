@@ -143,7 +143,8 @@ var I18N_PACKS=I18N_PACKS||{};
       <h4>Shorthand for AI</h4>
       <ul>
         <li>A paragraph in the JSON can use <code>"md"</code> instead of <code>runs</code>, supporting <code>**bold**</code>, <code>*italic*</code>, <code>~~strikethrough~~</code>, <code>==highlight==</code>, <code>&lt;sub&gt;</code> subscript, <code>&lt;sup&gt;</code> superscript, <code>&lt;u&gt;</code> underline, <code>&lt;mark&gt;</code> highlight and <code>[text](url)</code>, where <code>[text](#3)</code> jumps to slide 3. Marks can be combined, as in <code>==**key point**==</code>.</li>
-        <li><code>~~</code>, <code>==</code> and the HTML tags can be turned off under <b>Deck settings → Markdown shorthand</b>, where the <code>==</code> highlight color is also set. The settings are saved with the deck and apply only to text written afterwards.</li>
+        <li><b>Equations</b>: a whole paragraph written as <code>$$x=\frac{a}{b}$$</code> (LaTeX) is an equation. The canvas lays it out, and the export writes a PowerPoint equation you can click into and edit. Typing a whole paragraph as <code>$$…$$</code> on the canvas works too; while editing you see the source, and it is laid out again when you leave. For LibreOffice to show it, give the equation a text box of its own.</li>
+        <li><code>~~</code>, <code>==</code>, <code>$$</code> and the HTML tags can be turned off under <b>Deck settings → Markdown shorthand</b>, where the <code>==</code> highlight color is also set. The settings are saved with the deck and apply only to text written afterwards.</li>
         <li>When applied it is expanded into proper <code>runs</code> and <code>md</code> is removed, so <b>no markdown is left in the saved file</b>.</li>
         <li>The <code>text</code> field is <b>always literal text and never parsed</b>, so content that happens to contain <code>**</code> won't get mangled.</li>
       </ul>

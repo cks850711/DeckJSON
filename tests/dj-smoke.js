@@ -415,6 +415,46 @@ export default async function run() {
     ok('numbering: export writes the list start on every item', starts.join() === '9,9,1,1,9,1,100', starts);
     await DJ.load(fixture());
 
+    // ---- 方程式段落：$$…$$、math 欄位、畫布 KaTeX、匯出 OMML、lint ----
+    const Q = String.raw`x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}`;
+    await DJ.load({pages: [{id: 'mA', elements: [
+      {id: 'solo', type: 'text', x: 40, y: 40, w: 600, h: 120, paras: [{md: '$$' + Q + '$$', runs: [{text: '', sizePt: 24, color: 'C00000'}]}]},
+      {id: 'mix', type: 'text', x: 40, y: 200, w: 900, h: 400, paras: [
+        {md: 'intro **text**'},
+        {math: String.raw`\sum_{n=1}^{\infty}\frac{1}{n^2}=\frac{\pi^2}{6}`},
+        {md: String.raw`$$\left(\frac{a}{b}\right)^2+\hat{x}+\text{in}$$`, align: 'center'},
+        {md: 'price NT$100 and $$ inside'},
+        {md: String.raw`$$\frac{a$$`}]}]}]});
+    DJ.show('mA');
+    const mp = DJ.get('mA', 'mix').paras, sq = DJ.get('mA', 'solo').paras[0];
+    ok('math: $$…$$ becomes an equation paragraph with the LaTeX in its run',
+      sq.math === true && sq.runs.length === 1 && sq.runs[0].text === Q && sq.runs[0].sizePt === 24 && sq.runs[0].color === 'C00000', sq);
+    ok('math: math given as a string is the same form', mp[1].math === true && mp[1].runs[0].text.startsWith(String.raw`\sum`), mp[1]);
+    ok('math: $$ in the middle of a paragraph stays literal', !mp[3].math && mp[3].runs.map(r => r.text).join('') === 'price NT$100 and $$ inside', mp[3]);
+    ok('math: canvas draws equations with KaTeX, a broken one in red', document.querySelectorAll('#stage [data-id="mix"] .katex').length === 2
+      && document.querySelectorAll('#stage [data-id="mix"] .katex-error').length === 1 && document.querySelector('#stage [data-id="solo"] .katex .mfrac'));
+    ok('math: outline shows the LaTeX', DJ.outline('mA').find(o => o.id === 'solo').text.startsWith('x=\\frac'));
+    const ml = DJ.lint('mA');
+    ok('lint: a broken equation is reported', ml.length === 1 && /mA\/mix: paragraph 5: the LaTeX cannot be parsed/.test(ml[0]), ml);
+    ok('lint: LaTeX is not checked for line breaks', !ml.some(w => /line can break/.test(w)));
+    const mz = await JSZip.loadAsync(await (await DJ.exportPptx()).arrayBuffer());
+    const mx1 = await mz.file('ppt/slides/slide1.xml').async('string');
+    const soloXml = mx1.slice(mx1.indexOf('name="solo"'), mx1.indexOf('</p:sp>', mx1.indexOf('name="solo"')));
+    ok('export: a lone equation is a bare a14:m with a fraction and a radical',
+      /<a14:m [^>]*><m:oMathPara/.test(soloXml) && soloXml.includes('<m:f>') && soloXml.includes('<m:rad>') && !mx1.slice(0, mx1.indexOf('name="solo"')).includes('<mc:Choice'), soloXml.slice(0, 300));
+    ok('export: equation runs carry size and color, no italic flag', soloXml.includes('sz="2400"') && soloXml.includes('val="C00000"') && !/<m:r>(<m:rPr>.*?<\/m:rPr>)?<a:rPr[^>]* i="/.test(soloXml));
+    ok('export: no fixed line spacing on equation paragraphs', !/<a:lnSpc>/.test(soloXml.slice(0, soloXml.indexOf('<a14:m'))));
+    ok('export: a mixed box is wrapped with a LaTeX fallback', mx1.includes('Requires="a14"') && /<mc:Fallback>[\s\S]*\\sum_\{n=1\}/.test(mx1));
+    ok('export: sum body goes inside m:nary', /<m:nary>[\s\S]*?<m:e><m:f>/.test(mx1));
+    ok('export: \\left( \\right) becomes a stretching m:d', /<m:d><m:dPr><m:begChr m:val="\("\/><m:endChr m:val="\)"\/>/.test(mx1));
+    ok('export: \\hat is an accent, \\text is normal text', /<m:acc><m:accPr><m:chr m:val="\u0302"\/>/.test(mx1) && /<m:rPr><m:nor\/><\/m:rPr><a:rPr[^>]*>[\s\S]*?<m:t>in<\/m:t>/.test(mx1));
+    ok('export: a broken equation stays as text', mx1.includes(String.raw`\frac{a</a:t>`));
+    await DJ.setDeck({markdown: {syntax: {math: false}}});
+    await DJ.patch('mA', [{id: 'solo', set: {paras: [{md: '$$x^2$$'}]}}]);
+    ok('math: switched off keeps $$ literal', !DJ.get('mA', 'solo').paras[0].math && DJ.get('mA', 'solo').paras[0].runs[0].text === '$$x^2$$');
+    await DJ.setDeck({markdown: null});
+    await DJ.load(fixture());
+
     // ---- 進出 ----
     const blob = await DJ.toBlob();
     const snapA = JSON.stringify(DJ.outline('pA'));
