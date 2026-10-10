@@ -109,6 +109,28 @@ function buildDeckSettings(pp){
     const mn2=document.createElement('div'); mn2.className='row';
     mn2.innerHTML=_t('<span class="unit">標題取自頂端的「簡報標題」欄。下面三欄留空的話，那一欄就不寫進檔案屬性。</span>');
     pp.appendChild(mn2);
+    /* ── md 簡寫（整份簡報）：JSON 與 DJ 寫進來的 "md" 怎麼展開。存進簡報檔，AI 讀得到、套範本時跟著走。
+       只存與預設不同的鍵（同 normalizeDeck），沒動過的簡報不多出 markdown 欄位 ── */
+    pp.appendChild(secTitle(_t('Markdown 簡寫')));
+    const mdo=mdOptsOf(APP.deck);
+    const mdEdit=fn=>{ const m=APP.deck.markdown||{}; fn(m);
+      if(m.syntax&&!Object.keys(m.syntax).length) delete m.syntax;
+      if(Object.keys(m).length) APP.deck.markdown=m; else delete APP.deck.markdown;
+      syncPageJson(); renderDeckSettings(); };
+    pp.appendChild(colorRow(_t('螢光色'),mdo.highlight,v=>mdEdit(m=>{
+      if(v===MD_DEF.highlight) delete m.highlight; else m.highlight=v; }),false));
+    pp.appendChild(checkRow([
+      [_t('~~刪除線~~'),()=>mdo.syntax.strike,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'strike',v)); }],
+      [_t('==螢光=='),()=>mdo.syntax.mark,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'mark',v)); }],
+    ]));
+    pp.appendChild(checkRow([
+      [_t('HTML 標籤'),()=>mdo.syntax.html,v=>{ commitUndo(); mdEdit(m=>mdSyn(m,'html',v)); },
+        _t('<sub> 下標、<sup> 上標、<u> 底線、<mark> 螢光')],
+    ]));
+    const mdn=document.createElement('div'); mdn.className='row';
+    mdn.innerHTML='<span class="unit">'+_t('JSON 段落與儲存格的 <code>"md"</code> 簡寫照這裡展開：<code>**粗體**</code>、<code>*斜體*</code>、連結固定認得，上面三項可以關掉。')
+      +_t('　設定只影響<b>之後寫進來</b>的字，改了不會重畫已經有的螢光。')+'</span>';
+    pp.appendChild(mdn);
     // ── 投影片尺寸（整份簡報）：預設值或自訂 px；改尺寸不會搬動既有元素，需自行重排 ──
     pp.appendChild(secTitle(_t('投影片尺寸')));
     const st=APP.deck.stage, pre=stagePresetOf(st.w,st.h);
@@ -202,6 +224,10 @@ function buildDeckSettings(pp){
 
 /* 面板每次開啟都重建：裡頭多數區塊會依當前 deck 狀態長不一樣（有沒有背景圖、
    母版開了沒），沿用 renderProps 的「全量重建」作法最不容易對不上。 */
+function mdSyn(m,k,v){   // 語法開關：與預設相同就刪鍵
+  const syn=m.syntax||(m.syntax={});
+  if(v===MD_DEF.syntax[k]) delete syn[k]; else syn[k]=v;
+}
 function renderDeckSettings(){
   const b=$('#deckBody'); if(!b||$('#deckModal').hidden) return;
   b.innerHTML=''; buildDeckSettings(b);

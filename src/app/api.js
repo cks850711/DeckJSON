@@ -65,6 +65,26 @@ function djRestyle(old,md){
     return p;
   });
 }
+/* md 換字會不會丟格式：djRestyle 每段只留一種字元樣式，md 寫得出來的（粗斜體、刪除線、螢光、
+   上下標、底線、連結）由呼叫端在 md 裡標回去；寫不出來的（顏色、字級、字型…）同段裡有兩種以上，
+   換完就只剩一種。以前這裡不吭聲照換（灰色小字的註腳、深色粗體的段首標籤被抹平），現在直接拒絕。
+   回傳原因字串，沒問題回 null */
+const DJ_MD_KEYS=['bold','italic','strike','highlight','underline','sub','sup','link'];
+function djMdLoss(paras){
+  for(const [pi,p] of (paras||[]).entries()){
+    const seen=new Map();
+    for(const r of p.runs||[]){
+      if(!String(r.text||'').length) continue;
+      const st=runStyle(r); for(const k of DJ_MD_KEYS) delete st[k];
+      seen.set(JSON.stringify(st),st);
+    }
+    if(seen.size<2) continue;
+    const all=[...seen.values()], diff=[...new Set(all.flatMap(Object.keys))]
+      .filter(k=>new Set(all.map(st=>JSON.stringify(st[k]??null))).size>1);
+    return `paragraph ${pi+1} mixes ${seen.size} text styles that md cannot write (they differ in ${diff.join(', ')})`;
+  }
+  return null;
+}
 const DJ_CHANGE_KEYS=['id','set','unset','remove','md'];
 function djIds(ids){ return ids==null? null : (Array.isArray(ids)? ids : [ids]); }
 /* 等排版穩定。刻意不用 requestAnimationFrame：分頁或面板不在前景時 rAF 會暫停（規格行為），
@@ -148,6 +168,17 @@ function djOpts(o,allowed,verb){
   return o;
 }
 const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
+const DJ_DECK_KEYS=['title','author','company','subject','pageNum','date','markdown'];
+/* 整份簡報最常用的螢光色（頁面、母版、表格儲存格的 run 都算），給 AI 對齊 markdown.highlight 用 */
+function djTopHighlight(d){
+  const n=new Map(), add=r=>{ if(r&&r.highlight) n.set(r.highlight,(n.get(r.highlight)||0)+1); };
+  for(const els of [...d.pages.map(p=>p.elements),((d.master||{}).elements||[])]) for(const el of els){
+    for(const p of el.paras||[]) for(const r of p.runs||[]) add(r);
+    if(el.type==='table') for(const row of el.cells||[]) for(const c of row) for(const r of c.runs||[]) add(r);
+  }
+  let best=null; for(const [k,v] of n) if(!best||v>n.get(best)) best=k;
+  return best;
+}
 const DJ_IMG_OPTS=['x','y','w','h','fit','compress','id','alt'];
 const djBlobUrl=b=>new Promise((res,rej)=>{ const rd=new FileReader();
   rd.onload=()=>res(rd.result); rd.onerror=()=>rej(djErr('could not read the image bytes')); rd.readAsDataURL(b); });
@@ -192,6 +223,7 @@ const DJ=Object.freeze({
     return {version:DJ_VERSION, app:APP_VERSION, title:APP.deck.title, pages:APP.deck.pages.length,
       page:APP.page, stage:{w:APP.deck.stage.w,h:APP.deck.stage.h}, master:masterOn(),
       file:APP.file? APP.file.name : null, dirty:!!APP.dirty,
+      markdown:mdOptsOf(APP.deck), usedHighlight:djTopHighlight(APP.deck),
       host:!HOST? null : HOST.mode==='server'? {mode:'server',port:HOST.port,folder:HOST.folder} : {mode:'app',slot:APP_SLOT||null}};
   },
   list(){
@@ -265,6 +297,8 @@ const DJ=Object.freeze({
         if(!(els[i].type==='text'||(els[i].type==='shape'&&!LINE_KINDS[els[i].shape])))
           throw djErr(`"${c.id}" is a ${els[i].type}; md only replaces the text of a text box or shape`);
         if(c.set&&'paras' in c.set) throw djErr('give either md or set.paras, not both');
+        const loss=djMdLoss(els[i].paras);
+        if(loss) throw djErr(`"${c.id}": ${loss}, so md would flatten them into one; read the paragraphs with get() and write them back with set:{paras} instead`);
         els[i].paras=djRestyle(els[i].paras,c.md);
       }
       if(c.set&&('id' in c.set||'type' in c.set)) throw djErr('id and type cannot be changed; remove and add instead');
@@ -275,6 +309,23 @@ const DJ=Object.freeze({
     const d=normalizeDeck(resolveAssets(t));
     djCommit(d,s); await djSettle();
     return {page:pid,changed:n,overflow:djOverIds(pid),warnings};
+  },
+  /* 簡報層的欄位：標題、檔案屬性、頁碼、日期、md 輸入糖的設定（螢光色、語法開關）。
+     fields 是 {欄位: 值}，值整個換掉（同 set 的淺層合併）；值給 null＝刪掉該欄、回到預設。
+     不在白名單的欄位一律報錯：頁面、母版、尺寸這類會牽動版面的，各有自己的動詞或要人來改 */
+  async setDeck(fields){
+    if(!fields||typeof fields!=='object'||Array.isArray(fields)) throw djErr('setDeck() needs an object of deck fields');
+    for(const k of Object.keys(fields)) if(!DJ_DECK_KEYS.includes(k))
+      throw djErr(`deck field "${k}" cannot be set here (allowed: ${DJ_DECK_KEYS.join(', ')})`);
+    const warnings=schemaCheck(fields,'deck');
+    const s=snapshot(), t=structuredClone(APP.deck);
+    for(const [k,v] of Object.entries(fields)){ if(v===null) delete t[k]; else t[k]=structuredClone(v); }
+    const d=normalizeDeck(t);
+    djCommit(d,s); await djSettle();
+    const out={changed:Object.keys(fields)};
+    for(const k of Object.keys(fields)) out[k]= k==='markdown'? mdOptsOf(d) : (d[k]===undefined? null : d[k]);
+    out.warnings=warnings;
+    return out;
   },
   /* 加元素到該頁最上層。沒給 id 或與本頁（含母版）撞號的自動配，回傳實際的 id（順序同輸入）。
      與**別頁**同 id 是刻意允許的：那是 Morph 配對的方式 */

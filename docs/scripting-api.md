@@ -39,7 +39,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Returns |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, host}` — `page` is the one on screen. `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}` — `page` is the one on screen. `markdown` is the current setting for the `md` shorthand, `{highlight, syntax:{strike, mark, html}}` (see “Settings for the md shorthand”), and `usedHighlight` is the highlight color used most in the deck (`null` if there is none). `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text. A table's `h` is its drawn height: `rowH` is only a minimum, and a row whose text doesn't fit grows, so adding up `rowH` can come out short |
 | `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |
@@ -50,7 +50,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Does |
 |---|---|
-| `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape **while keeping its formatting** (see below). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
+| `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape and reuses its styling (see “Changing text, keeping the style” below; it throws when a paragraph mixes styles md cannot write). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
 | `add(pageId, elements)` | Adds elements on top of the page. Missing ids, or ids already used on that page, get a fresh one. Group ids are kept as given, so a `groupId` already used on that page joins that group (a warning says so; use `copy()` to duplicate a group). Returns `{page, ids, overflow}` with the ids actually used, in input order |
 | `copy(fromPageId, ids, toPageId, opts?)` | Copies elements to a page (the same page is fine). Pictures travel as bytes, not placeholders, so the copy no longer depends on its source — the source page can be removed afterwards. Every copy gets new element ids, and new group ids: a group copied twice becomes two groups; a lone member copied without its group loses the group. `ids` as in `center()`; source stacking order is kept. `opts`: `{x, y}` for the top-left of the copied set, or `{dx, dy}` to shift it; neither keeps the original position. Returns `{page, ids, map: {old: new}, groups: {old: new}, overflow}` |
 | `addImage(pageId, src, opts?)` | Adds a picture, doing the decoding, intrinsic size and undistorted box for you. See “Images” below. Returns `{page, id, natW, natH, kb, overflow, warnings}` |
@@ -58,6 +58,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | `replacePage(pageId, json)` | Replaces the page's elements (and any page fields present in `json`). Fields not given keep their current values; the page id never changes. `json` may also be a bare elements array |
 | `addPage(json?, afterPageId?)` | Inserts a page after `afterPageId` (default: at the end). `json` may also be a bare elements array. Returns `{page, n, overflow}` |
 | `removePage(pageId)` | Deletes a page. The last remaining page can't be removed |
+| `setDeck(fields)` | Sets deck-level fields, given as `{field: value}`: `title`, `author`, `company`, `subject`, `pageNum`, `date`, `markdown`. Each value replaces the old one; `null` deletes the field and returns it to its default. Any other field is an error. Returns `{changed, <the new value of each field>, warnings}` |
 
 ## Layout
 
@@ -111,7 +112,7 @@ await fetch('/save?n=talk.pptx', {method: 'POST', body: await DJ.exportPptx()}) 
 
 `tools/serve.py` in the repository is for developing DeckJSON itself: it serves the unbuilt `src/` and `tests/`.
 
-## Changing text without losing its formatting
+## Changing text, keeping the style
 
 Replacing `paras` through `set` replaces the formatting too: a 44 pt colored title becomes default 18 pt black text. To change only the words, use `md`:
 
@@ -121,6 +122,28 @@ await DJ.patch(page, [{id: 'box', md: 'First line **bold part**\nSecond line'}])
 ```
 
 Each line becomes a paragraph. Line *k* takes the paragraph settings (alignment, bullet, spacing) and the character style of the longest run of the old paragraph *k* (so a bold label at the start of a paragraph doesn't make the whole new paragraph bold); extra lines reuse the last old paragraph. Inline markdown (`**bold**`, `*italic*`, `==highlight==`…) still applies on top.
+
+**Each paragraph keeps one character style.** Bold, italic, strikethrough, highlight, sub/superscript, underline and links can be written in md, so you mark them again in the md; color, size and font cannot. When one paragraph mixes two or more of those (say a dark label followed by grey body text, or a small footnote inside a paragraph), `md` throws and changes nothing, because only one style would survive. For such paragraphs, read `paras` with `get()`, change the text inside `runs`, and write them back with `set: {paras}`.
+
+## Settings for the md shorthand
+
+How `md` is expanded is set by the deck-level `markdown` field, which is saved with the deck (and carried over by templates). Without it, the defaults apply:
+
+| Key | Default | Effect |
+|---|---|---|
+| `highlight` | `"FFFF00"` | The color used by `==highlight==` and `<mark>` |
+| `syntax.strike` | `true` | Recognize `~~strikethrough~~` |
+| `syntax.mark` | `true` | Recognize `==highlight==` |
+| `syntax.html` | `true` | Recognize `<sub>`, `<sup>`, `<u>`, `<mark>` |
+
+To make new highlights match the deck's existing ones, read `DJ.info().usedHighlight` and set it:
+
+```js
+const {usedHighlight} = DJ.info()
+if (usedHighlight) await DJ.setDeck({markdown: {highlight: usedHighlight}})
+```
+
+The settings apply only to `md` written **from then on**: `md` becomes `runs` as it is written and the file stores only the color, so changing `highlight` does not recolor existing highlights. For the syntax itself, see [deck-format.md](deck-format.md).
 
 To start a page from a template page, copy it and then replace its text: `const {page} = await DJ.addPage(DJ.get(examplePageId), examplePageId)`.
 

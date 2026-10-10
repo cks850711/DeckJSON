@@ -101,30 +101,108 @@ function applyRange(el,sel,fn){
   }
 }
 /* ---- markdown 輸入糖 ----
-   段落可寫 "md":"這是**粗體**與==標記=="，套用時展開成 runs 並**刪掉 md 鍵**，存檔中不留 markdown。
+   段落與儲存格可寫 "md":"這是**粗體**與==標記=="，套用時展開成 runs 並**刪掉 md 鍵**，存檔中不留 markdown。
    純粹是給 AI 與手寫 JSON 用的簡寫。run 的 text 欄位**永遠是字面文字、絕不解析**——
-   否則內容本來就含 ** 的簡報（程式教材、數學、檔名）會被改壞。 */
-const MD_HL='FFFF00';   // == 高亮沒有顏色參數，固定用這個色（要別的顏色請直接寫 runs）
-const MD_RE=/\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|~~([^~\n]+)~~|==([^=\n]+)==|\[([^\]\n]+)\]\(([^)\n]+)\)/g;
-function mdToRuns(str,styleSrc){
-  const base=runStyle(styleSrc||{}), ESC='';
-  // 先把跳脫字元（\* \~ \= \[ …）換成私用區暫存，避免被當成標記
-  const s=String(str).replace(/\\([*~=[\]()\\])/g,(m,c)=>ESC+c.charCodeAt(0).toString(16).padStart(4,'0')+ESC);
-  const un=t=>t.replace(new RegExp(ESC+'([0-9a-f]{4})'+ESC,'g'),(m,h)=>String.fromCharCode(parseInt(h,16)));
-  const runs=[], push=(t,x)=>{ const v=un(t); if(v) runs.push({...base,...(x||{}),text:v}); };
-  let i=0,m; MD_RE.lastIndex=0;
-  while((m=MD_RE.exec(s))){
-    push(s.slice(i,m.index));
-    if(m[1]!=null) push(m[1],{bold:true});
-    else if(m[2]!=null) push(m[2],{italic:true});
-    else if(m[3]!=null) push(m[3],{strike:true});
-    else if(m[4]!=null) push(m[4],{highlight:MD_HL});
-    else push(m[5], m[6][0]==='#'? {link:{slide:Math.max(1,Math.round(+m[6].slice(1))||1)}} : {link:{url:un(m[6])}});
-    i=m.index+m[0].length;
+   否則內容本來就含 ** 的簡報（程式教材、數學、檔名）會被改壞。
+
+   認得的寫法：**粗**、*斜*、[字](網址)、[字](#3)（跳頁）固定認；~~刪除~~、==螢光==、
+   <sub> <sup> <u> <mark> 可由簡報層的 deck.markdown.syntax 關掉（預設都開）。螢光色取 deck.markdown.highlight。
+   標記可以任意巢狀（==**重點**==、**H<sub>2</sub>O**）。
+
+   配對照 CommonMark 的 delimiter run 演算法，但放寬左右側規則：只看「開頭後面、結尾前面不是空白」，
+   不看標點。原規則在中文常常不成立——「**標籤｜**內文」的結尾 ** 前面是標點、後面是字，不算右側，
+   粗體就失效。只認 ~~ 與 ==（剛好兩個）：單一 ~ 在各家 markdown 意思不同（刪除線、下標、底線），
+   一律照字面。HTML 只認上面四個、不帶屬性、成對的標籤，其餘照字面。 */
+const MD_DEF={highlight:'FFFF00',syntax:{strike:true,mark:true,html:true}};
+let MD_OPTS=MD_DEF;   // 由 normalizeDeck 換成當前簡報的設定（見 mdOptsOf）；mdToRuns 只在 normalizeDeck 裡被呼叫
+function mdOptsOf(d){   // deck.markdown 只存與預設不同的鍵；這裡補成完整設定
+  const m=(d&&d.markdown&&typeof d.markdown==='object')? d.markdown : {};
+  const syn={...MD_DEF.syntax};
+  for(const k of Object.keys(syn)) if(m.syntax&&typeof m.syntax[k]==='boolean') syn[k]=m.syntax[k];
+  return {highlight:hex6(m.highlight)||MD_DEF.highlight,syntax:syn};
+}
+const MD_ESC='*~=[]()\\<>';   // 可用反斜線跳脫的字元
+const mdUnesc=t=>t.replace(/\\([*~=[\]()\\<>])/g,'$1');
+function mdToRuns(str,styleSrc,opts){
+  const o=opts||MD_OPTS, base=runStyle(styleSrc||{}), runs=[];
+  for(const it of mdItems(String(str),o)){
+    const r={...base,...it.st,text:it.ch}, last=runs[runs.length-1];
+    if(last&&sameStyle(last,r)) last.text+=it.ch; else runs.push(r);
   }
-  push(s.slice(i));
   if(!runs.length) runs.push({...base,text:''});
   return runs;
+}
+/* 字串 → [{ch, st}]，st 是這個字要疊上的樣式。逐字記錄樣式，所以標記可以任意交疊：
+   每一對配到的標記只記成「第 a 到 b 個字加某樣式」的範圍，最後一次套上。 */
+function mdItems(s,o){
+  const items=[], delims=[], tags=[], ranges=[];
+  const ws=c=>c===undefined||/\s/.test(c);
+  let i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(c==='\\'&&MD_ESC.includes(s[i+1]||'\0')){ items.push({ch:s[i+1],st:{}}); i+=2; continue; }
+    if(c==='['){
+      const m=/^\[((?:\\.|[^\]\\\n])+)\]\(((?:\\.|[^)\\\n])+)\)/.exec(s.slice(i));
+      if(m){
+        const u=m[2].trim();
+        const link=u[0]==='#'? {slide:Math.max(1,Math.round(+u.slice(1))||1)} : {url:mdUnesc(u)};
+        // 連結文字裡的標記自己配對，不和外面的配（CommonMark 的連結也比強調優先）
+        for(const it of mdItems(m[1],o)) items.push({ch:it.ch,st:{...it.st,link}});
+        i+=m[0].length; continue;
+      }
+    }
+    if(c==='<'&&o.syntax.html){
+      const m=/^<(\/?)(sub|sup|u|mark)>/i.exec(s.slice(i));
+      if(m){ tags.push({at:items.length,name:m[2].toLowerCase(),close:!!m[1]});
+        items.push({ch:m[0],st:{}}); i+=m[0].length; continue; }
+    }
+    if(c==='*'||(c==='~'&&o.syntax.strike)||(c==='='&&o.syntax.mark)){
+      let j=i; while(s[j]===c) j++;
+      const len=j-i;
+      if(c==='*'||len===2){
+        const d={c,idx:[],lo:0,hi:len,canOpen:!ws(s[j]),canClose:!ws(s[i-1]),active:true};
+        for(let k=0;k<len;k++){ d.idx.push(items.length); items.push({ch:c,st:{}}); }
+        delims.push(d);
+      }else for(let k=0;k<len;k++) items.push({ch:c,st:{}});
+      i=j; continue;
+    }
+    items.push({ch:c,st:{}}); i++;
+  }
+  // 由左往右找結尾，往回找最近的同種開頭；配到後中間沒配上的標記一律作廢（照字面）
+  for(let k=0;k<delims.length;k++){
+    const cl=delims[k];
+    if(!cl.canClose) continue;
+    while(cl.active&&cl.hi>cl.lo){
+      let f=k-1;
+      while(f>=0&&!(delims[f].active&&delims[f].c===cl.c&&delims[f].canOpen&&delims[f].hi>delims[f].lo)) f--;
+      if(f<0) break;
+      const op=delims[f];
+      const n=cl.c!=='*'? 2 : (op.hi-op.lo>=2&&cl.hi-cl.lo>=2? 2 : 1);
+      const a=op.idx[op.hi-1]+1, b=cl.idx[cl.lo];
+      for(let q=0;q<n;q++){ items[op.idx[op.hi-1-q]].drop=true; items[cl.idx[cl.lo+q]].drop=true; }
+      op.hi-=n; cl.lo+=n;
+      for(let q=f+1;q<k;q++) delims[q].active=false;
+      ranges.push({a,b,st: cl.c==='~'? {strike:true} : cl.c==='='? {highlight:o.highlight} : n===2? {bold:true} : {italic:true}});
+    }
+  }
+  const TAG_ST={sub:{sub:true},sup:{sup:true},u:{underline:true},mark:{highlight:o.highlight}};
+  const open={};
+  for(const t of tags){
+    if(!t.close){ (open[t.name]=open[t.name]||[]).push(t); continue; }
+    const op=(open[t.name]||[]).pop();
+    if(!op) continue;   // 沒有開頭的結束標籤照字面
+    items[op.at].drop=true; items[t.at].drop=true;
+    ranges.push({a:op.at+1,b:t.at,st:TAG_ST[t.name]});
+  }
+  // 外層先套、內層後套：上下標互斥，內層的說了算
+  ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
+  for(const r of ranges) for(let q=r.a;q<r.b;q++){
+    const st=items[q].st;
+    if(r.st.sub) delete st.sup;
+    if(r.st.sup) delete st.sub;
+    Object.assign(st,r.st);
+  }
+  return items.filter(it=>!it.drop);
 }
 // 項目符號：level 每層縮排 BULLET_INDENT pt（＝PPT 預設 0.25 吋），懸掛縮排讓第二行對齊文字而非符號
 const BULLET_INDENT=18, BULLET_CHAR='2022';   // 2022＝•（OOXML buChar 用 4 位 unicode）

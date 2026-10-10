@@ -42,6 +42,10 @@ The fastest way to get a shape right is to copy one: `DJ.get(pageId, elementId)`
 
 Page fields are changed with `DJ.patch(pageId, [{id: pageId, set: {…}}])`. The master (elements shared by every page) is addressed as page id `"master"`.
 
+### Deck-level md settings
+
+`"markdown": {"highlight": "E9C46A", "syntax": {"html": false}}` sets how the `md` shorthand is expanded: `highlight` is the colour of `==…==` and `<mark>` (default `FFFF00`), and `strike`, `mark` and `html` under `syntax` switch `~~`, `==` and the HTML tags on or off (all `true` by default). Write only the keys that differ from the defaults; without the field, everything is default. Change it with `DJ.setDeck({markdown: {…}})` or in the editor under Deck settings → Markdown shorthand. The settings apply only to `md` written afterwards; existing text is not redrawn.
+
 ## Fields every element has
 
 | Field | Meaning |
@@ -91,7 +95,9 @@ After writing or changing text, call `DJ.fit(pageId, [id])` to make the box exac
 
 Run fields: `text`, `bold`, `italic`, `underline`, `strike`, `sizePt`, `color`, `highlight` (colour), `fontFace`, `charSpacing` (points), `sub`, `sup`, `link` (`{"url"}` or `{"slide"}`), `outline` (`{"size", "color"}`), `glow` (`{"size", "color", "opacity"}`).
 
-The `md` shorthand understands `**bold**`, `*italic*`, `~~strike~~`, `==highlight==`, `[text](https://…)` and `[text](#3)` (jump to slide 3). Runs written with `text` are always literal, so `**` inside them stays as typed. Run-level `sizePt` and `color` are not part of `md`; to change the text of an existing box **without losing its styling**, use `DJ.patch(page, [{id, md: "new text"}])` instead of replacing `paras`.
+The `md` shorthand understands `**bold**`, `*italic*`, `~~strike~~`, `==highlight==`, `<sub>subscript</sub>`, `<sup>superscript</sup>`, `<u>underline</u>`, `<mark>highlight</mark>`, `[text](https://…)` and `[text](#3)` (jump to slide 3), and the marks nest: `==**key point**==`, `**H<sub>2</sub>O**`. Put a backslash before a symbol to keep it literal: `\*`, `\=`, `\<`. An opening mark cannot be followed by a space and a closing mark cannot follow one, so `a * b * c` stays as typed. A single `~` is always literal (Markdown dialects disagree on what it means), and only those four HTML tags count, without attributes and in pairs. `~~`, `==` and the HTML tags can be turned off and the highlight colour changed; see “Deck-level md settings” below.
+
+Runs written with `text` are always literal, so `**` inside them stays as typed. Run-level `sizePt` and `color` are not part of `md`; to change the text of an existing box and keep its styling, use `DJ.patch(page, [{id, md: "new text"}])` instead of replacing `paras` (it throws when one paragraph mixes colours or sizes; see [scripting-api.md](scripting-api.md)).
 
 ## Shape
 

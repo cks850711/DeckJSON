@@ -271,6 +271,19 @@ function normalizeDeck(d){
     const t=String(d.date.text||'').trim().slice(0,60);
     if(t) d.date.text=t; else{ delete d.date.text; d.date.fmt='auto'; }
   }
+  /* md 輸入糖的設定（螢光色、語法開關）：只存與預設不同的鍵，沒改過的簡報不多出這個欄位。
+     要在 normMaster／頁面之前換上，底下展開 md 時才用得到這份簡報的設定 */
+  if(d.markdown&&typeof d.markdown==='object'){
+    const m=d.markdown, h=hex6(m.highlight);
+    if(h&&h!==MD_DEF.highlight) m.highlight=h; else delete m.highlight;
+    if(m.syntax&&typeof m.syntax==='object'){
+      for(const k of Object.keys(MD_DEF.syntax)) if(k in m.syntax){
+        const v=!!m.syntax[k]; if(v===MD_DEF.syntax[k]) delete m.syntax[k]; else m.syntax[k]=v; }
+      if(!Object.keys(m.syntax).length) delete m.syntax;
+    }else delete m.syntax;
+    if(!Object.keys(m).length) delete d.markdown;
+  }else delete d.markdown;
+  MD_OPTS=mdOptsOf(d);
   {const m=normMaster(d.master); if(m) d.master=m; else delete d.master;}
   const mstIds=new Set(((d.master||{}).elements||[]).map(e=>e.id));
   const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）

@@ -64,13 +64,14 @@ Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportP
 | New page | `DJ.addPage({name, elements: [...]}, afterPageId)`; to reuse a layout, `DJ.addPage(DJ.get(examplePageId), afterPageId)` and change its text |
 | Replace a page's content | `DJ.replacePage(pageId, {elements: [...]})` |
 | Add elements | `DJ.add(pageId, [...])`; it returns the ids actually used |
-| Change text, keep formatting | `DJ.patch(pageId, [{id, md: 'New title'}])`. Do not replace `paras` just to change words; that resets size and colour |
+| Change text, keep the style | `DJ.patch(pageId, [{id, md: 'New title'}])`: each paragraph keeps one character style, and you mark bold, highlight and the like again in the md. If one paragraph mixes colours or sizes, it throws instead of flattening them; then read `paras` with `DJ.get`, change the text in `runs` and write back with `set: {paras}`. Do not replace `paras` just to change words; that resets size and colour |
+| Deck settings (title, file properties, md highlight colour) | `DJ.setDeck({...})`. Before writing highlights, align them with the deck: `const {usedHighlight} = DJ.info(); if (usedHighlight) await DJ.setDeck({markdown: {highlight: usedHighlight}})` |
 | Change fields | `DJ.patch(pageId, [{id, set: {...}}, {id, unset: ['fill']}, {id, remove: true}])` |
 | Page settings (notes, background, hidden) | `DJ.patch(pageId, [{id: pageId, set: {notes: '...'}}])` |
 | Pictures | `DJ.addImage(pageId, url, {x, y, w, h, alt})`: keeps the aspect ratio. Never write `dataUrl` yourself. If it warns the picture is much larger than needed, `DJ.compress(pageId, [id])` |
 | Copy elements or a whole group to another page | `DJ.copy(fromPageId, ids, toPageId, {x, y})` |
 
-Element JSON is in `references/deck-format.md`. The short version: coordinates in pixels on a 1280 × 720 slide, font sizes in points, colours as six hex digits without `#`, paragraphs as `{md: 'text with **bold**'}`, arrows as `{type: 'shape', shape: 'arrow', ...}`.
+Element JSON is in `references/deck-format.md`. The short version: coordinates in pixels on a 1280 × 720 slide, font sizes in points, colours as six hex digits without `#`, paragraphs as `{md: 'text with **bold**, ==highlight== and H<sub>2</sub>O'}` (marks can nest), arrows as `{type: 'shape', shape: 'arrow', ...}`.
 
 ### Starting from a template
 

@@ -142,7 +142,8 @@ var I18N_PACKS=I18N_PACKS||{};
       </details>
       <h4>給 AI 的簡寫</h4>
       <ul>
-        <li>JSON 的段落可以只寫 <code>"md"</code> 代替 <code>runs</code>，支援 <code>**粗體**</code>、<code>*斜體*</code>、<code>~~刪除線~~</code>、<code>==高亮==</code>、<code>[文字](網址)</code>，其中 <code>[文字](#3)</code> 是跳到第 3 頁。</li>
+        <li>JSON 的段落可以只寫 <code>"md"</code> 代替 <code>runs</code>，支援 <code>**粗體**</code>、<code>*斜體*</code>、<code>~~刪除線~~</code>、<code>==高亮==</code>、<code>&lt;sub&gt;</code> 下標、<code>&lt;sup&gt;</code> 上標、<code>&lt;u&gt;</code> 底線、<code>&lt;mark&gt;</code> 高亮、<code>[文字](網址)</code>，其中 <code>[文字](#3)</code> 是跳到第 3 頁。標記可以疊在一起，例如 <code>==**重點**==</code>。</li>
+        <li><code>~~</code>、<code>==</code> 與 HTML 標籤可以在<b>全簡報設定 → Markdown 簡寫</b>關掉，<code>==</code> 的螢光色也在那裡換；設定跟著簡報檔走，只影響之後寫進來的字。</li>
         <li>套用時會展開成正式的 <code>runs</code> 並把 <code>md</code> 移除，<b>存檔裡不會留下 markdown</b>。</li>
         <li><code>text</code> 欄位<b>永遠是字面文字，不會被解析</b>。所以內容本來就含 <code>**</code> 也不會被改壞。</li>
       </ul>

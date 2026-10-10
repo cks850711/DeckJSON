@@ -39,7 +39,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 回傳 |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, host}`；`page` 是畫面上那一頁。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}`；`page` 是畫面上那一頁。`markdown` 是 `md` 簡寫目前的設定 `{highlight, syntax:{strike, mark, html}}`（見〈md 簡寫的設定〉），`usedHighlight` 是整份簡報最常用的螢光色（沒有螢光時為 `null`）。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字。表格的 `h` 是畫出來的實際高度：`rowH` 只是下限，字放不下的列會自己長高，直接加總 `rowH` 會少算 |
 | `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |
@@ -50,7 +50,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 作用 |
 |---|---|
-| `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字**但保留格式**（見下文）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
+| `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字並沿用原本的樣式（見下文〈換文字、留樣式〉；同一段裡有 md 寫不出來的樣式差異時會報錯）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
 | `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、或 id 已被該頁用掉的，自動配新的。群組 id 照原樣保留，所以帶了該頁已有的 `groupId` 就會併進那一組（會回 warning；要複製一整組請用 `copy()`）。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
 | `copy(fromPageId, ids, toPageId, opts?)` | 把元素複製到某一頁（同一頁也可以）。圖片直接帶位元組、不經佔位，複製完就與來源無關，之後可以刪掉來源頁。元素一律換新 id，群組 id 也換新：同一組複製兩次是兩組；只複製群組裡的一個成員，它就不再帶群組。`ids` 同 `center()`，保留來源頁的前後順序。`opts`：`{x, y}` 是複製後整組的左上角，或 `{dx, dy}` 位移；都不給＝原座標。回傳 `{page, ids, map: {舊: 新}, groups: {舊: 新}, overflow}` |
 | `addImage(pageId, src, opts?)` | 加一張圖，轉碼、讀原始尺寸、算不變形的框都由它做。見下文〈圖片〉。回傳 `{page, id, natW, natH, kb, overflow, warnings}` |
@@ -58,6 +58,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | `replacePage(pageId, json)` | 換掉該頁的元素（以及 `json` 裡有列出的頁面欄位）。沒列出的欄位沿用原值，頁 id 不變。`json` 也可以直接是元素陣列 |
 | `addPage(json?, afterPageId?)` | 在 `afterPageId` 之後插入一頁（省略＝最後）。`json` 也可以直接是元素陣列。回傳 `{page, n, overflow}` |
 | `removePage(pageId)` | 刪除一頁。只剩一頁時不能刪 |
+| `setDeck(fields)` | 改簡報層的欄位，`fields` 是 `{欄位: 值}`：`title`、`author`、`company`、`subject`、`pageNum`、`date`、`markdown`。值整個換掉；給 `null` 刪掉該欄、回到預設。其他欄位一律報錯。回傳 `{changed, <各欄位的新值>, warnings}` |
 
 ## 版面
 
@@ -111,7 +112,7 @@ await fetch('/save?n=talk.pptx', {method: 'POST', body: await DJ.exportPptx()}) 
 
 repo 裡的 `tools/serve.py` 是開發 DeckJSON 本身用的：它提供未打包的 `src/` 與 `tests/`。
 
-## 換文字、不丟格式
+## 換文字、留樣式
 
 用 `set` 換 `paras` 會連格式一起換掉：44pt 的彩色標題會變成預設的 18pt 黑字。只想換字就用 `md`：
 
@@ -121,6 +122,28 @@ await DJ.patch(page, [{id: 'box', md: '第一行 **粗體部分**\n第二行'}])
 ```
 
 每一行成為一個段落。第 *k* 行沿用原本第 *k* 段的段落設定（對齊、項目符號、段距）與文字最長的那個片段的字元樣式（段首若是粗體標籤，新段落不會整段變粗）；多出來的行沿用原本最後一段。行內 markdown（`**粗體**`、`*斜體*`、`==標記==`…）照樣疊加上去。
+
+**每一段只留一種字元樣式。** 粗斜體、刪除線、螢光、上下標、底線、連結寫得進 md，由你在 md 裡標回去；顏色、字級、字型寫不進 md。同一段裡有兩種以上這類樣式時（例如深色的段首標籤接灰色內文、一段裡夾著小字註腳），`md` 會報錯、不改任何東西，因為換下去只會剩一種。這種段落請用 `get()` 讀出 `paras`、改好 `runs` 的文字，再用 `set: {paras}` 寫回。
+
+## md 簡寫的設定
+
+`md` 簡寫怎麼展開由簡報層的 `markdown` 欄位決定，跟著簡報檔走（套範本時一起帶過去）。沒設就是預設值：
+
+| 鍵 | 預設 | 作用 |
+|---|---|---|
+| `highlight` | `"FFFF00"` | `==螢光==` 與 `<mark>` 用的顏色 |
+| `syntax.strike` | `true` | 認得 `~~刪除線~~` |
+| `syntax.mark` | `true` | 認得 `==螢光==` |
+| `syntax.html` | `true` | 認得 `<sub>`、`<sup>`、`<u>`、`<mark>` |
+
+要讓新寫的螢光對齊簡報原本的顏色，先看 `DJ.info().usedHighlight`，再設進去：
+
+```js
+const {usedHighlight} = DJ.info()
+if (usedHighlight) await DJ.setDeck({markdown: {highlight: usedHighlight}})
+```
+
+設定只影響**之後寫入**的 `md`：`md` 寫入時就展開成 `runs`，存檔裡只有色碼，所以改了 `highlight` 不會讓已經有的螢光變色。語法本身見 [deck-format.zh-TW.md](deck-format.zh-TW.md)。
 
 要以模板裡的某一頁為起點，先複製再換字：`const {page} = await DJ.addPage(DJ.get(範例頁id), 範例頁id)`。
 

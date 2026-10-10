@@ -17,7 +17,9 @@
    所以這個檔只能用到 JS 本身，不能引用 DOM 或其他檔的名稱。 */
 const DECK_SCHEMA={
   "deck": ["format","version","title","fontMode","profileName","stage","zones","fonts","lang",
-           "author","company","subject","pageNum","date","master","pages","maps","assetMode","generator"],
+           "author","company","subject","pageNum","date","markdown","master","pages","maps","assetMode","generator"],
+  "markdown": ["highlight","syntax"],
+  "mdSyntax": ["strike","mark","html"],
   "pageNum": ["pos","sizePt","color","skipFirst"],
   "date": ["pos","sizePt","color","skipFirst","fmt","text"],
   "master": ["on","flatten","elements"],
@@ -148,6 +150,8 @@ function schemaCheck(obj,kind,path){
     keys(obj,S.deck,'deck','the deck'); if(!obj||typeof obj!=='object') return out;
     if(obj.pageNum&&typeof obj.pageNum==='object') keys(obj.pageNum,S.pageNum,'deck.pageNum','pageNum');
     if(obj.date&&typeof obj.date==='object') keys(obj.date,S.date,'deck.date','date');
+    if(obj.markdown&&typeof obj.markdown==='object'){ keys(obj.markdown,S.markdown,'deck.markdown','markdown');
+      if(obj.markdown.syntax&&typeof obj.markdown.syntax==='object') keys(obj.markdown.syntax,S.mdSyntax,'deck.markdown.syntax','markdown syntax'); }
     if(obj.master&&typeof obj.master==='object'){ keys(obj.master,S.master,'master','the master'); elsOf(obj.master.elements,'master.elements'); }
     (Array.isArray(obj.pages)?obj.pages:[]).forEach((g,i)=>page(g,g&&g.id? g.id : 'pages['+i+']'));
   }

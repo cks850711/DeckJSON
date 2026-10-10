@@ -207,7 +207,8 @@ export default async function run() {
     await DJ.patch('pB', [{id: 'styled', md: '新標題 **重點**\n第二行'}]);
     const sp = DJ.get('pB', 'styled').paras;
     ok('md: keeps size, color and paragraph align', sp[0].runs[0].sizePt === 44 && sp[0].runs[0].color === '5E3687' && sp[0].align === 'center', sp);
-    ok('md: inline markdown still applies', sp[0].runs.some(r => r.text === '重點' && r.bold));
+    // 原本就是粗體的標題：**重點** 與前文同樣式，會併成一個 run，所以看「重點」所在的 run 是否粗體
+    ok('md: inline markdown still applies', sp[0].runs.some(r => r.text.includes('重點') && r.bold), sp[0].runs);
     ok('md: extra lines reuse the last paragraph style', sp.length === 2 && sp[1].runs[0].sizePt === 44, sp);
     ok('md: element fields untouched', DJ.get('pB', 'styled').valign === 'middle');
     // 段首粗體標籤：字元樣式取最長的 run（內文），不取第一個（標籤），否則整段變粗
@@ -219,6 +220,36 @@ export default async function run() {
       lbl.some(r => r.text === '方法' && r.bold) && lbl.some(r => /換過的內文/.test(r.text) && !r.bold) && lbl.every(r => r.sizePt === 14), lbl);
     await DJ.patch('pB', [{id: 'label', remove: true}]);
     await throws('md: not on a table', () => DJ.patch('pA', [{id: 'tbl', md: 'x'}]));
+    // 同一段裡顏色或字級不同：md 只留得下一種，所以報錯、簡報不動
+    await DJ.add('pB', [{id: 'mixed', type: 'text', x: 0, y: 200, w: 900, h: 40, paras: [{runs: [
+      {text: 'Tag | ', bold: true, color: '1F3A5F', sizePt: 14}, {text: 'grey body text', color: '666666', sizePt: 14}]}]}]);
+    const mixedBefore = JSON.stringify(DJ.get('pB', 'mixed'));
+    await throws('md: refuses to flatten mixed colors', () => DJ.patch('pB', [{id: 'mixed', md: 'new text'}]));
+    ok('md: refused change leaves the element as it was', JSON.stringify(DJ.get('pB', 'mixed')) === mixedBefore);
+    await DJ.patch('pB', [{id: 'mixed', remove: true}]);
+
+    // ---- md 簡寫：巢狀、HTML 標籤、簡報層設定 ----
+    await DJ.add('pB', [{id: 'mdx', type: 'text', x: 0, y: 300, w: 900, h: 40,
+      paras: [{md: '==**key**== **H<sub>2</sub>O** 10<sup>3</sup> <u>under</u> \\*lit\\* a * b * c'}]}]);
+    const mx = DJ.get('pB', 'mdx').paras[0].runs, mxRun = t => mx.find(r => r.text === t) || {};
+    const mxText = mx.map(r => r.text).join('');
+    ok('md: nested marks', mxRun('key').bold && mxRun('key').highlight === 'FFFF00', mx);
+    ok('md: html tags, also inside bold', mxRun('2').sub && mxRun('2').bold && mxRun('3').sup && mxRun('under').underline, mx);
+    ok('md: escapes and spaced asterisks stay literal', mxText.includes('*lit*') && mxText.includes('a * b * c'), mxText);
+    ok('info: usedHighlight', DJ.info().usedHighlight === 'FFFF00', DJ.info().usedHighlight);
+    const sd = await DJ.setDeck({markdown: {highlight: '#e9c46a', syntax: {html: false}}});
+    ok('setDeck: markdown normalised and filled in', sd.markdown.highlight === 'E9C46A' && sd.markdown.syntax.html === false && sd.markdown.syntax.mark === true, sd);
+    ok('info: markdown settings', DJ.info().markdown.highlight === 'E9C46A');
+    ok('setDeck: existing highlights keep their color', mxRun('key').highlight === 'FFFF00' && DJ.get('pB', 'mdx').paras[0].runs.find(r => r.text === 'key').highlight === 'FFFF00');
+    await DJ.patch('pB', [{id: 'mdx', set: {paras: [{md: '==new== <sub>x</sub>'}]}}]);
+    const my = DJ.get('pB', 'mdx').paras[0].runs;
+    ok('md: new highlights use the deck color', (my.find(r => r.text === 'new') || {}).highlight === 'E9C46A', my);
+    ok('md: html switched off keeps tags literal', my.map(r => r.text).join('').includes('<sub>x</sub>'), my);
+    await throws('setDeck: fields outside the list', () => DJ.setDeck({stage: {w: 100, h: 100}}));
+    await throws('setDeck: needs an object', () => DJ.setDeck('x'));
+    const sd2 = await DJ.setDeck({markdown: null});
+    ok('setDeck: null returns to the defaults', sd2.markdown.highlight === 'FFFF00' && sd2.markdown.syntax.html === true, sd2);
+    await DJ.patch('pB', [{id: 'mdx', remove: true}]);
     await throws('change keys are strict (typo "sett")', () => DJ.patch('pB', [{id: 'styled', sett: {x: 1}}]));
     await DJ.patch('pB', [{id: 'styled', remove: true}]);
 
