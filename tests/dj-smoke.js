@@ -422,7 +422,7 @@ export default async function run() {
       {id: 'mix', type: 'text', x: 40, y: 200, w: 900, h: 400, paras: [
         {md: 'intro **text**'},
         {math: String.raw`\sum_{n=1}^{\infty}\frac{1}{n^2}=\frac{\pi^2}{6}`},
-        {md: String.raw`$$\left(\frac{a}{b}\right)^2+\hat{x}+\text{in}$$`, align: 'center'},
+        {md: String.raw`$$\left(\frac{a}{b}\right)^2+\hat{x}+\text{in}+\sin h$$`, align: 'center'},
         {md: 'price NT$100 and $$ inside'},
         {md: String.raw`$$\frac{a$$`}]}]}]});
     DJ.show('mA');
@@ -448,6 +448,7 @@ export default async function run() {
     ok('export: sum body goes inside m:nary', /<m:nary>[\s\S]*?<m:e><m:f>/.test(mx1));
     ok('export: \\left( \\right) becomes a stretching m:d', /<m:d><m:dPr><m:begChr m:val="\("\/><m:endChr m:val="\)"\/>/.test(mx1));
     ok('export: \\hat is an accent, \\text is normal text', /<m:acc><m:accPr><m:chr m:val="\u0302"\/>/.test(mx1) && /<m:rPr><m:nor\/><\/m:rPr><a:rPr[^>]*>[\s\S]*?<m:t>in<\/m:t>/.test(mx1));
+    ok('export: \\sin h is a function, so the name does not run into h', /<m:func><m:funcPr>[\s\S]*?<m:fName>[\s\S]*?<m:t>sin<\/m:t>[\s\S]*?<\/m:fName><m:e>[\s\S]*?<m:t>h<\/m:t>/.test(mx1));
     ok('export: a broken equation stays as text', mx1.includes(String.raw`\frac{a</a:t>`));
     await DJ.setDeck({markdown: {syntax: {math: false}}});
     await DJ.patch('mA', [{id: 'solo', set: {paras: [{md: '$$x^2$$'}]}}]);

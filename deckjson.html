@@ -11993,7 +11993,7 @@ function mathmlToOmml(mml,rPr){
   const rp=rPr||'';
   const kids=n=>[...n.childNodes].filter(c=>c.nodeType===1&&c.localName!=='annotation'&&c.localName!=='annotation-xml');
   const txt=n=>(n.textContent||'').replace(/[⁡-⁤]/g,'');   // 函數套用、隱形乘號：PowerPoint 會畫成方框
-  const isMo=(n,ch)=>n&&n.localName==='mo'&&(ch==null||txt(n).trim()===ch);
+  const isMo=(n,ch)=>!!n&&n.localName==='mo'&&(ch==null||(ch==='\u2061'? n.textContent : txt(n)).trim()===ch);
   const isFence=n=>isMo(n)&&n.getAttribute('fence')==='true';
   const run=(t,sty,scr,nor)=>{
     if(!t) return '';
@@ -12039,6 +12039,12 @@ function mathmlToOmml(mml,rPr){
     }
     let out='';
     for(let i=0;i<ns.length;i++){
+      /* \sin x：KaTeX 在函數名後放隱形的 U+2061（函數套用），txt() 會濾掉它，名字就跟引數黏成「sinx」。
+         改寫成 m:func，PowerPoint 會在名字與引數之間留空。引數是「(」開頭時不必（tan(βl) 本來就分得開） */
+      if(isMo(ns[i+1],'\u2061')&&ns[i+2]&&!isMo(ns[i+2],'(')){
+        out+=`<m:func><m:funcPr>${ctrl}</m:funcPr><m:fName>${conv(ns[i])}</m:fName>${e(conv(ns[i+2]))}</m:func>`;
+        i+=2; continue;
+      }
       const nr=naryOf(ns[i]);
       if(nr){
         let k=i+1; while(k<ns.length&&!(ns[k].localName==='mo'&&OMML_STOP.has(txt(ns[k]).trim()))) k++;
