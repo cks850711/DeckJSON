@@ -22,6 +22,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 - **一律用 id 指定目標，不看「目前這一頁」。** 每個呼叫都指名要動哪一頁（與哪個元素）。除了 `show()`，沒有呼叫會改變使用者正在看的頁。
 - **全有或全無。** 寫入先在副本上做完並驗證；任何一步失敗就拋例外，簡報原封不動。
 - **可以復原。** 每次寫入都是一步復原，使用者按 Cmd/Ctrl+Z 就能撤銷。
+- **寫入會等開機完成。** 頁面打開時會先還原自動存檔（或開啟指定的檔），DJ App 還要等使用者選槽位。每個 `async` 呼叫都會等這段做完，所以頁面一開就 `load` 的簡報不會被還原出來的那份蓋掉。同步的讀取（`info`、`list`、`outline`、`get`…）沒辦法等：頁面剛打開時先 `await DJ.ready()`。
 - **回傳時版面已穩定。** 會重繪的呼叫是 `async`，等排版（與網頁字型）穩定才回傳，緊接著量測也是準的。
 - **回傳值很小。** 讀取預設回摘要；需要完整 JSON 時才另外要。
 - **錯誤**以 `Error` 拋出，訊息以 `DJ:` 開頭。
@@ -39,7 +40,8 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 | 呼叫 | 回傳 |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}`；`page` 是畫面上那一頁。`markdown` 是 `md` 簡寫目前的設定 `{highlight, syntax:{strike, mark, math, html}}`（見〈md 簡寫的設定〉），`usedHighlight` 是整份簡報最常用的螢光色（沒有螢光時為 `null`）。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
+| `ready()` | 開機做完（見〈保證〉）才 resolve，回傳 `info()`。DJ App 裡要等使用者選好槽位 |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, ready, markdown, usedHighlight, host}`；`page` 是畫面上那一頁，`ready` 在開機還沒做完時是 `false`。`markdown` 是 `md` 簡寫目前的設定 `{highlight, syntax:{strike, mark, math, html}}`（見〈md 簡寫的設定〉），`usedHighlight` 是整份簡報最常用的螢光色（沒有螢光時為 `null`）。`host`：直接從硬碟開的頁面是 `null`，由 `deckjson-server.js` 提供時是 `{mode: 'server', port, folder}`，DJ App 裡是 `{mode: 'app', slot}` |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`，每頁一筆 |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]`；`text` 取前 40 字，`overflow: true` 表示文字框放不下文字。表格的 `h` 是畫出來的實際高度：`rowH` 只是下限，字放不下的列會自己長高，直接加總 `rowH` 會少算 |
 | `get(pageId)` | 整頁完整 JSON。圖片位元組換成 `@asset:<雜湊>` 佔位（按圖片內容編號），寫入時自動還原 |

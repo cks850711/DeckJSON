@@ -53,6 +53,10 @@ export default async function run() {
   const original = await DJ.toBlob();
   try {
     ok('version is 1', DJ.version === 1);
+    // 開機（還原自動存檔等）做完才放行寫入：ready() 回 info()，之後 info().ready 為 true
+    const rd = await DJ.ready();
+    ok('ready: resolves to info()', rd && rd.version === 1 && typeof rd.pages === 'number', rd);
+    ok('info: ready after boot', DJ.info().ready === true);
     const lr = await DJ.load(fixture());
     ok('load: two pages', DJ.list().length === 2);
     ok('load: clean fixture has no warnings', lr.warnings.length === 0, lr.warnings);

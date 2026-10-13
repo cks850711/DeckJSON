@@ -22,6 +22,7 @@ const blob = await DJ.toBlob()                   // the .deck file, ready to sav
 - **Targets are ids, never "the current page".** Every call names the page (and element) it acts on. Nothing except `show()` changes the page the user is looking at.
 - **All or nothing.** A write is prepared on a copy and validated; if any part fails, it throws and the deck is untouched.
 - **Undoable.** Each write is one undo step, so the person at the keyboard can press Cmd/Ctrl+Z.
+- **Writes wait for startup.** When the page opens it restores its autosave (or opens the file it was asked to), and in the DJ App the user first picks a slot. Every `async` call waits for that to finish, so a deck you `load` right after the page opens is not replaced by the restored one. Synchronous reads (`info`, `list`, `outline`, `get`…) can't wait: right after opening, `await DJ.ready()` first.
 - **Settled on return.** Calls that re-render are `async` and resolve after layout (and web fonts) have settled, so a measurement taken right after is accurate.
 - **Small results.** Reads return summaries by default; ask for full JSON only when you need it.
 - **Errors** are thrown as `Error` with a message starting `DJ:`.
@@ -39,7 +40,8 @@ The same element id **may appear on different pages** — that is how Morph tran
 
 | Call | Returns |
 |---|---|
-| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, markdown, usedHighlight, host}` — `page` is the one on screen. `markdown` is the current setting for the `md` shorthand, `{highlight, syntax:{strike, mark, math, html}}` (see “Settings for the md shorthand”), and `usedHighlight` is the highlight color used most in the deck (`null` if there is none). `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
+| `ready()` | Resolves once startup has finished (see “Guarantees”) and returns `info()`. In the DJ App that is after the user has picked a slot |
+| `info()` | `{version, app, title, pages, page, stage:{w,h}, master, file, dirty, ready, markdown, usedHighlight, host}` — `page` is the one on screen; `ready` is `false` while startup is still running. `markdown` is the current setting for the `md` shorthand, `{highlight, syntax:{strike, mark, math, html}}` (see “Settings for the md shorthand”), and `usedHighlight` is the highlight color used most in the deck (`null` if there is none). `host` is `null` for a page opened from disk, `{mode: 'server', port, folder}` when served by `deckjson-server.js`, `{mode: 'app', slot}` in the DJ App |
 | `list()` | `[{n, id, name, els, section?, skip?, current?}]`, one per page |
 | `outline(pageId)` | `[{id, type, x, y, w, h, text?, shape?, grid?, hidden?, locked?, group?, overflow?}]` — `text` is the first 40 characters; `overflow: true` marks a text box too small for its text. A table's `h` is its drawn height: `rowH` is only a minimum, and a row whose text doesn't fit grows, so adding up `rowH` can come out short |
 | `get(pageId)` | The full page JSON. Image bytes are replaced by `@asset:<hash>` placeholders (named after the image content), which writes resolve back |

@@ -39,10 +39,10 @@ node ~/.deckjson/app/deckjson-server.js start <folder or file.deck>
 First check that the page is ready:
 
 ```js
-typeof DJ === 'object' ? DJ.info() : 'DJ missing'
+typeof DJ !== 'object' ? 'DJ missing' : DJ.ready ? await DJ.ready() : DJ.info()
 ```
 
-`DJ.info()` returns the title, page count, the page on screen, the open file name, whether there are unsaved changes, and `host`: `{mode: 'server', folder}` means you are on the DeckJSON server and `DJ.save()` writes to disk. If `DJ` is missing, the page is not DeckJSON or the build is older than 0.3.0: ask the user to open the latest `deckjson.html`. If `DJ.save` is missing, the build predates it; use the other saving routes in §6.
+`DJ.ready()` waits until the page has finished opening (restoring its autosave, or in the DJ App until the user picks a slot) and returns `DJ.info()`: the title, page count, the page on screen, the open file name, whether there are unsaved changes, and `host`: `{mode: 'server', folder}` means you are on the DeckJSON server and `DJ.save()` writes to disk. If `DJ` is missing, the page is not DeckJSON or the build is older than 0.3.0: ask the user to open the latest `deckjson.html`. If `DJ.save` is missing, the build predates it; use the other saving routes in §6.
 
 Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportPptx`) cannot be returned through most tools; use it inside the same script.
 

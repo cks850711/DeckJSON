@@ -215,14 +215,27 @@ async function djHostSave(rel,force){
   }
 }
 
-const DJ=Object.freeze({
+/* 所有 async 動詞先等開機做完（見 host-boot.js 的 HOST_BOOTING）。統一在這裡包，新加的 async 動詞自動受保護；
+   同步的讀取動詞沒辦法等，開機前呼叫讀到的是空白簡報，所以另給 ready() 讓呼叫端先等 */
+function djBooted(){ return HOST_BOOTING||Promise.resolve(); }
+function djAfterBoot(verbs){
+  const AsyncFn=(async()=>{}).constructor;
+  for(const [k,f] of Object.entries(verbs)) if(f instanceof AsyncFn)
+    verbs[k]=async function(...a){ await djBooted(); return f.apply(this,a); };
+  return verbs;
+}
+
+const DJ=Object.freeze(djAfterBoot({
   version:DJ_VERSION,
+
+  /* 開機做完（DJ App 是使用者選好槽位）才 resolve，回傳 info()。頁面剛開就要讀的話先 await 它 */
+  async ready(){ return DJ.info(); },
 
   /* ---------- 讀：回摘要，不回整份 ---------- */
   info(){
     return {version:DJ_VERSION, app:APP_VERSION, title:APP.deck.title, pages:APP.deck.pages.length,
       page:APP.page, stage:{w:APP.deck.stage.w,h:APP.deck.stage.h}, master:masterOn(),
-      file:APP.file? APP.file.name : null, dirty:!!APP.dirty,
+      file:APP.file? APP.file.name : null, dirty:!!APP.dirty, ready:!HOST_BOOTING||HOST_BOOTED,
       markdown:mdOptsOf(APP.deck), usedHighlight:djTopHighlight(APP.deck),
       host:!HOST? null : HOST.mode==='server'? {mode:'server',port:HOST.port,folder:HOST.folder} : {mode:'app',slot:APP_SLOT||null}};
   },
@@ -661,7 +674,7 @@ const DJ=Object.freeze({
     await djSettle();
     return {pages:DJ.list().map(({n,id,name})=>({n,id,name})),dropped,warnings};
   },
-  toBlob(){ return deckToBlob(); },
+  async toBlob(){ return deckToBlob(); },
   /* 存回使用者開著的那個檔，等同 Cmd/Ctrl+S，但**不開任何對話框**：選檔器與權限詢問都只能由使用者
      親手觸發（requestPermission 要 user gesture），代理從程式呼叫一定被擋。做不到時拋錯並說明
      要請使用者做什麼，而不是退到下載——下載會在使用者不知情時多出一個檔。
@@ -698,5 +711,5 @@ const DJ=Object.freeze({
   },
   /* 唯一會改變使用者畫面的動詞：切到那一頁給人看 */
   show(pid){ djPage(APP.deck,pid); setPage(pid); return {page:pid}; },
-});
+}));
 window.DJ=DJ;
