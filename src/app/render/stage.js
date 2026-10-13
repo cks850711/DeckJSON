@@ -293,6 +293,59 @@ function renderShapeInto(box,el){
     box.appendChild(t);
   }
 }
+/* 網址被解析時實際的開頭。照 WHATWG URL 的解析規則：開頭的空白與控制字元（U+0000–U+0020）略過，
+   Tab 與換行（U+0009、U+000A、U+000D）夾在任何位置都略過，所以 " java\tscript:…" 一樣是 javascript: 網址。
+   檢查網址的開頭之前先過這一道，只比對原字串會被這兩種寫法繞過。貼上的 HTML 也用它（edit/clipboard.js）。 */
+function urlForCheck(v){
+  const s=String(v).replace(/[\t\n\r]/g,'');
+  let i=0;
+  while(i<s.length&&s.charCodeAt(i)<=0x20) i++;
+  return s.slice(i);
+}
+/* 畫布與頁面縮圖交給 ECharts 之前的 option 防線。option 來自簡報檔，原樣交給 ECharts 時，
+   下列選項裡的字串會被當成 HTML 放進頁面、或當成網址開啟。2026-10-13 以 vendor 的 ECharts 5.6.0
+   在畫布上實測，每一項都讓字串裡的程式碼執行；經過這裡之後同一批內容都不再執行：
+   - 提示框：renderMode 沒寫時是 html，formatter 字串原樣進 DOM。凡是叫 tooltip 的物件一律改成 'richText'
+     （畫在 canvas 上），簡報自己寫 'html' 也蓋掉。實測過的寫法：頂層、陣列、baseOption、media[].option、
+     時間軸 options[]、series 與資料項層的 formatter、legend.tooltip。
+     依讀碼，ECharts 只在建立提示框時讀一次全域 tooltip 元件合併後的 renderMode，所以每一處都得改，漏一處就可能被它蓋回 html
+   - toolbox.feature.dataView：按下後 lang 三個字串以 innerHTML 寫進資料檢視面板，lang[0] 是空的就改用 title。
+     兩者都換成跳脫後的文字；lang 不是陣列的（寫成物件 {0:…} 一樣會被當成 lang[0] 讀）整個拿掉，title 不是字串的也拿掉
+   - title.link／sublink，以及 treemap、sunburst 資料項的 link（nodeClick:'link'）：點下去以 window.open 開啟，
+     javascript: 網址配 target 'self'／'_self' 就在本頁執行，網址中間夾 Tab 或開頭帶控制字元也一樣。
+     先過 urlForCheck 再比對，只留 http(s) 網址；陣列值會被轉成字串再開，所以元素不是物件的陣列也拿掉
+     （axisPointer.link 也叫 link，但它是物件陣列，留著）
+   沒有處理的：toolbox.feature.saveAsImage 依讀碼只在 IE／舊 Edge 才以 document.write 開新視窗，
+   其他瀏覽器是下載圖檔；optionToContent 這類要給函式的選項，JSON 寫不出函式。
+   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
+   op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
+const CHART_URL_OK=/^https?:/i;
+function chartSafeOption(op){
+  // dataView 的字串是放進元素內文，跳脫 & < > 就夠，不必處理引號
+  const txt=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const badLink=v=>typeof v==='string'
+    ? !CHART_URL_OK.test(urlForCheck(v))
+    : Array.isArray(v)&&v.some(x=>!x||typeof x!=='object'||Array.isArray(x));
+  const objs=v=>(Array.isArray(v)? v : [v]).filter(x=>x&&typeof x==='object'&&!Array.isArray(x));
+  const walk=node=>{
+    if(Array.isArray(node)){ node.forEach(walk); return; }
+    if(!node||typeof node!=='object') return;
+    for(const k of Object.keys(node)){
+      const v=node[k];
+      if(k==='tooltip') for(const t of objs(v)) t.renderMode='richText';
+      if(k==='toolbox') for(const t of objs(v)){
+        const dv=t.feature&&t.feature.dataView;
+        if(!dv||typeof dv!=='object') continue;
+        if('lang' in dv){ if(Array.isArray(dv.lang)) dv.lang=dv.lang.map(txt); else delete dv.lang; }
+        if('title' in dv){ if(typeof dv.title==='string') dv.title=txt(dv.title); else delete dv.title; }
+      }
+      if((k==='link'||k==='sublink')&&badLink(v)){ delete node[k]; continue; }
+      walk(v);
+    }
+  };
+  walk(op);
+  return op;
+}
 function renderChartInto(box,el){
   box.innerHTML='';
   const cd=document.createElement('div');
@@ -309,7 +362,7 @@ function renderChartInto(box,el){
   let inst=CHARTS.get(el.id);
   if(inst){ inst.dispose(); }
   inst=echarts.init(cd,null,{renderer:'canvas'});
-  try{ inst.setOption(structuredClone(el.option),true); }catch(e){ cd.textContent=_t('option 錯誤：{0}',e.message); }
+  try{ inst.setOption(chartSafeOption(structuredClone(el.option)),true); }catch(e){ cd.textContent=_t('option 錯誤：{0}',e.message); }
   CHARTS.set(el.id,inst);
 }
 // 旋轉套在整個 box（文字隨形狀轉，同 PPT）；圖片翻轉也在 box。

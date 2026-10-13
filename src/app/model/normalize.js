@@ -284,7 +284,8 @@ function normalizeDeck(d){
     if(!Object.keys(m).length) delete d.markdown;
   }else delete d.markdown;
   MD_OPTS=mdOptsOf(d);
-  {const m=normMaster(d.master); if(m) d.master=m; else delete d.master;}
+  const idMap=new Map();   // 不合法的元素 id → 新 id，整份簡報共用一張（見 safeElId）
+  {const m=normMaster(d.master,idMap); if(m) d.master=m; else delete d.master;}
   const mstIds=new Set(((d.master||{}).elements||[]).map(e=>e.id));
   const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）
   for(const pg of d.pages){
@@ -300,7 +301,7 @@ function normalizeDeck(d){
     pg.notes= pg.notes==null? '' : String(pg.notes);
     if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）
     if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
-    pg.elements=normEls(pg.elements,mstIds);
+    pg.elements=normEls(pg.elements,mstIds,idMap);
   }
   // console 一律留痕（含自動存檔還原這條靜默路徑）；要不要跳視窗由呼叫端決定
   if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
@@ -326,14 +327,37 @@ function reportChartIssues(){
     +'\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）',r.mapNameBad.join(_t('、'))));
   if(msg.length) alert(msg.join('\n\n'));
 }
+/* 元素 id 只收英數、底線與連字號。id 會被拼進畫布的 `.el[data-id="…"]` 選擇器，也會顯示在屬性面板；
+   外來簡報的 id 帶引號時選擇器直接拋錯，帶標籤時曾在點選元素時被當成 HTML 執行。
+   不合法的換新 id，且同一份簡報裡相同的舊 id 換成同一個新 id（idMap 由 normalizeDeck 建、
+   母版與各頁共用）：跨頁同 id 是 Morph 配對的依據，各自換成不同的新 id 會讓配對斷掉。
+   數字 id 轉成字串：畫布的 dataset 一律是字串，留著數字的話以 === 比對會對不上。
+   物件、陣列這類值沒有可比的「同一個舊 id」，每個各配一個新 id。 */
+const EL_ID_OK=/^[A-Za-z0-9_-]+$/;
+function safeElId(id,idMap){
+  if(id==null||id==='') return uid('e');
+  if(typeof id!=='string'&&typeof id!=='number') return uid('e');
+  const s=String(id);
+  if(EL_ID_OK.test(s)) return s;
+  if(!idMap.has(s)) idMap.set(s,uid('e'));
+  return idMap.get(s);
+}
+/* 元素型別只收 DECK_SCHEMA.element 列出的那幾種，其餘整份拒絕，不是丟掉那個元素：
+   - 丟掉是靜默的。較新版本加了新型別的簡報拿到這裡開，存檔一次那些元素就不見了，使用者不會知道。
+     這與 normalizeDeck 其他地方「缺 dataUrl 的圖片、缺 cells 的表格就報錯」是同一個取捨
+   - 拒絕不動到原檔，錯誤訊息指出是哪個元素，要修要換版本都有線索
+   type 不是字串的（缺鍵、數字、物件）一律算不認得。 */
+const elTypeOk=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
    撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
    母版是共用的，所以改名一律改頁面這一邊。 */
-function normEls(list,reserved){
+function normEls(list,reserved,idMap){
   const arr=Array.isArray(list)?list:[];
   const seenIds=new Set(reserved||[]);   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
+  idMap=idMap||new Map();
   for(const el of arr){
-    el.id=el.id||uid('e');
+    el.id=safeElId(el.id,idMap);
+    if(!elTypeOk(el.type)) throw new Error(_t('元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞',el.id,String(el.type).slice(0,40)));
     if(seenIds.has(el.id)) el.id=uid('e');
     seenIds.add(el.id);
     el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
@@ -426,8 +450,8 @@ function normEls(list,reserved){
 }
 /* 母版（「信紙」）：一份共用元素，套用到所有沒關閉的頁。
    on＝啟用；flatten＝匯出時畫進每一頁（而非放在母版上——畫進每頁的單張投影片複製到別的簡報也帶得走，代價是圖片位元組每頁各存一份）。 */
-function normMaster(m){
+function normMaster(m,idMap){
   if(!m||typeof m!=='object') return null;
-  const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements)};
+  const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements,null,idMap)};
   return (o.on||o.elements.length)? o : null;
 }

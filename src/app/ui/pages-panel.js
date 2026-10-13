@@ -18,7 +18,7 @@ function chartThumbCanvas(el){
   let out=null;
   try{
     const inst=echarts.init(div,null,{renderer:'canvas'});
-    inst.setOption(Object.assign(structuredClone(el.option),{animation:false}),true);
+    inst.setOption(Object.assign(chartSafeOption(structuredClone(el.option)),{animation:false}),true);
     // 取 ECharts 自己的 canvas 拷一份：dispose() 會把 DOM 連同 canvas 清掉，
     // 而 getDataURL() 回傳的字串要再經 Image 非同步解碼，縮圖就得等一輪。
     const src=div.querySelector('canvas');

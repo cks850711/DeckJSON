@@ -458,6 +458,77 @@ export default async function run() {
     await DJ.patch('mA', [{id: 'solo', set: {paras: [{md: '$$x^2$$'}]}}]);
     ok('math: switched off keeps $$ literal', !DJ.get('mA', 'solo').paras[0].math && DJ.get('mA', 'solo').paras[0].runs[0].text === '$$x^2$$');
     await DJ.setDeck({markdown: null});
+
+    // ---- 安全：簡報檔與貼上的內容不會被當成程式碼執行 ----
+    // 每段攻擊內容一旦執行，就在 window.__djx 留下自己的標記。觸發方式比照使用者：
+    // 點選元素、在圖表上移動與點擊、貼上表格。圖表的事件直接送給 ECharts 的 canvas，不經畫布上的遮罩
+    window.__djx = [];
+    const X = tag => `(window.__djx=window.__djx||[]).push('${tag}')`;
+    const ATK = tag => `<img src=x onerror="${X(tag)}">`;
+    const tick = ms => new Promise(r => setTimeout(r, ms));
+    const pick = async id => {
+      const b = document.querySelector(`#stage .el[data-id="${id}"]`), rc = b.getBoundingClientRect();
+      const o = {clientX: rc.left + 3, clientY: rc.top + 3, bubbles: true, button: 0, pointerId: 1, isPrimary: true};
+      b.dispatchEvent(new PointerEvent('pointerdown', o)); document.dispatchEvent(new PointerEvent('pointerup', o));
+      await tick(100);
+    };
+    const BAD_ID = 'x"><img src=x onerror="' + X('id') + '">';
+    await DJ.load({title: 'sec', pages: [
+      {id: 'sA', elements: [TEXT(BAD_ID, 40, 40, 300, 40, 'a'), TEXT(7, 40, 120, 300, 40, 'n'),
+        {id: 'img', type: 'image', x: 40, y: 200, w: 40, h: 40, dataUrl: PX},
+        {id: 'ch', type: 'chart', x: 400, y: 40, w: 600, h: 400, option: {
+          title: {text: 'TITLE', link: 'java\tscript:' + X('title.link'), target: 'self',
+            subtext: 'SUBTEXT', sublink: 'javascript:' + X('title.sublink'), subtarget: 'self'},
+          toolbox: {feature: {dataView: {lang: [ATK('dataView0'), ATK('dataView1'), ATK('dataView2')]}}},
+          tooltip: {trigger: 'item', renderMode: 'html', formatter: ATK('tooltip')},
+          xAxis: {type: 'category', data: ['a', 'b', 'c']}, yAxis: {},
+          series: [{type: 'bar', data: [3, {value: 2, tooltip: {formatter: ATK('tooltip.item')}}, 4]}]}},
+        {id: 'ch2', type: 'chart', x: 400, y: 460, w: 400, h: 240, option: {
+          baseOption: {tooltip: {renderMode: 'html', formatter: ATK('tooltip.base')}, xAxis: {type: 'category', data: ['a']}, yAxis: {}},
+          media: [{option: {tooltip: {renderMode: 'html'}, series: [{type: 'bar', data: [1]}]}}]}}]},
+      {id: 'sB', elements: [TEXT(BAD_ID, 40, 40, 300, 40, 'b')]}]});
+    const idA = DJ.get('sA').elements[0].id, idB = DJ.get('sB').elements[0].id;
+    ok('security: an element id outside [A-Za-z0-9_-] is replaced', /^[A-Za-z0-9_-]+$/.test(idA), idA);
+    ok('security: the same bad id on two slides gets the same new id (Morph pairing)', idA === idB, [idA, idB]);
+    ok('security: a numeric id becomes a string', DJ.get('sA').elements[1].id === '7', DJ.get('sA').elements[1].id);
+    DJ.show('sA'); await tick(100);
+    for (const e of DJ.get('sA').elements) await pick(e.id);
+    await pick(idA);
+    ok('security: the property panel shows the replaced id', document.querySelector('#propPanel h4 .unit').textContent === idA);
+    for (const id of ['ch', 'ch2']) {
+      const cv = document.querySelector(`#stage .el[data-id="${id}"] canvas`), rc = cv.getBoundingClientRect();
+      const fire = (t, x, y) => cv.dispatchEvent(new MouseEvent(t, {clientX: rc.left + x * rc.width, clientY: rc.top + y * rc.height, bubbles: true}));
+      for (let y = 0.01; y < 1; y += 0.04) for (let x = 0.01; x < 1; x += 0.03) fire('mousemove', x, y);
+      // 上緣是標題、副標題與工具列（資料檢視鈕）
+      for (let y = 0.005; y < 0.16; y += 0.012) for (let x = 0.005; x < 1; x += 0.01) for (const t of ['mousedown', 'mouseup', 'click']) fire(t, x, y);
+      // 提示框再用 ECharts 自己的公開 API 逐點叫出一次。只靠上面的滑鼠移動會漏測：
+      // 2026-10-13 實測，同一段移動在分頁不在前景時常常叫不出提示框，攻擊內容沒機會執行，測試卻照樣通過
+      const inst = echarts.getInstanceByDom(cv.parentNode.parentNode);
+      for (let i = 0; i < 3; i++) inst.dispatchAction({type: 'showTip', seriesIndex: 0, dataIndex: i});
+    }
+    await tick(300);
+    ok('security: chart tooltip, dataView and title links do not run', window.__djx.length === 0, window.__djx);
+    let unknown = null;
+    const keep = JSON.stringify(DJ.get('sA'));
+    try { await DJ.load({title: 't', pages: [{id: 'u', elements: [{id: 'u1', type: ATK('type'), x: 0, y: 0, w: 10, h: 10}]}]}); }
+    catch (e) { unknown = e.message; }
+    ok('security: an unknown element type rejects the whole deck', !!unknown && unknown.includes('u1'), unknown);
+    ok('security: the rejected deck leaves the open one untouched', JSON.stringify(DJ.get('sA')) === keep);
+    const nBefore = DJ.get('sA').elements.length;
+    const dt = new DataTransfer();
+    // 用 <img onerror> 以外的寫法：載入失敗的 <img> 會被當成「沒收進來的格內圖片」跳出提示，卡住測試
+    dt.setData('text/html', `<html><head><style onload="${X('paste.style')}">.hl{font-weight:700}</style></head><body><table><tr>`
+      + `<td class="hl"><svg><image href="x" onerror="${X('paste.svg')}"/></svg>A</td>`
+      + `<td><details open ontoggle="${X('paste.details')}">B</details></td></tr><tr>`
+      + `<td><video><source src="x" onerror="${X('paste.video')}"></video>C</td>`
+      + `<td><img src="${PX}" width="20" height="20"></td></tr></table></body></html>`);
+    document.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true, cancelable: true}));
+    await tick(1500);
+    const added = DJ.get('sA').elements.slice(nBefore);
+    ok('security: pasted HTML does not run', window.__djx.length === 0, window.__djx);
+    ok('security: the pasted table still arrives, with its embedded image and class-based bold',
+      added.length === 2 && added[0].type === 'table' && added[1].type === 'image' && added[0].cells[0][0].bold === true, added.map(e => e.type));
+    delete window.__djx;
     await DJ.load(fixture());
 
     // ---- 進出 ----

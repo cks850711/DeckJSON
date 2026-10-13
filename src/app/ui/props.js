@@ -213,7 +213,10 @@ function renderPropsBody(){
   if(!el&&APP.masterEdit){ propsMasterPage(pp); return; }
   if(!el){ propsPage(pp); return; }
   const names={text:_t('文字框'),table:_t('表格'),image:_t('圖片'),shape:_t('形狀'),chart:_t('圖表'),video:_t('影片')};
-  pp.innerHTML=`<h4>${names[el.type]||el.type} <span class="unit" style="font-weight:400">${el.id}</span></h4>`;
+  // 型別與 id 都來自簡報檔，以文字節點放入：外來簡報的 id 帶 HTML 時，寫成 innerHTML 會在點選時執行
+  const h4=document.createElement('h4'); h4.textContent=(names[el.type]||el.type)+' ';
+  const idTag=document.createElement('span'); idTag.className='unit'; idTag.textContent=el.id;
+  h4.appendChild(idTag); pp.appendChild(h4);
   const sz=elSize(el);
   pp.appendChild(secTitle(_t('位置尺寸'),true));
   pp.appendChild(dimUnitRow());

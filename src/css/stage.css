@@ -72,6 +72,21 @@
   .el.overflow{outline:1px dashed var(--danger)}
   :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
   :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+  /* 貼上表格的離屏量測框（edit/clipboard.js 的 htmlToTableEl），用本工具渲染表格的同一組度量去量來源 HTML。
+     字級要用 !important 壓過來源的 inline style：輸出固定 PASTE_TBL_PT，量測就必須在同一個字級下進行，
+     否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。字級值是量測框自己的
+     （clipboard.js 依 PASTE_TBL_PT 寫在框上），子孫一律繼承。欄寬屬性（Excel 的 width=）
+     不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。 */
+  #pasteMeasure table{border-collapse:collapse}
+  #pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}
+  /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
+     來源那邊的列高就是在這個規則下量出來的，這裡若讓 <img> 退回 inline，會多出一段基線
+     下墜空間，同一張表在兩邊量到不同的列高。順帶讓「圖片置中於格內」這個放置模型
+     在量測階段就成立，不是事後硬套。margin 要 !important，否則被下面的 * 規則歸零。 */
+  #pasteMeasure img{display:block!important;margin:2px auto!important}
+  /* margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
+     會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。 */
+  #pasteMeasure *{font-size:inherit!important;line-height:1.2!important;margin:0!important}
   :is(.el,.mel) svg{display:block;overflow:visible}
   :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
   /* 圖片裁切：外層開視窗（overflow:hidden），內層 img 被放大並偏移，只露出 crop 指定的區域。

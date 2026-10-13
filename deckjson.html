@@ -244,6 +244,21 @@
   .el.overflow{outline:1px dashed var(--danger)}
   :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
   :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+  /* 貼上表格的離屏量測框（edit/clipboard.js 的 htmlToTableEl），用本工具渲染表格的同一組度量去量來源 HTML。
+     字級要用 !important 壓過來源的 inline style：輸出固定 PASTE_TBL_PT，量測就必須在同一個字級下進行，
+     否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。字級值是量測框自己的
+     （clipboard.js 依 PASTE_TBL_PT 寫在框上），子孫一律繼承。欄寬屬性（Excel 的 width=）
+     不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。 */
+  #pasteMeasure table{border-collapse:collapse}
+  #pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}
+  /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
+     來源那邊的列高就是在這個規則下量出來的，這裡若讓 <img> 退回 inline，會多出一段基線
+     下墜空間，同一張表在兩邊量到不同的列高。順帶讓「圖片置中於格內」這個放置模型
+     在量測階段就成立，不是事後硬套。margin 要 !important，否則被下面的 * 規則歸零。 */
+  #pasteMeasure img{display:block!important;margin:2px auto!important}
+  /* margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
+     會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。 */
+  #pasteMeasure *{font-size:inherit!important;line-height:1.2!important;margin:0!important}
   :is(.el,.mel) svg{display:block;overflow:visible}
   :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
   /* 圖片裁切：外層開視窗（overflow:hidden），內層 img 被放大並偏移，只露出 crop 指定的區域。
@@ -370,6 +385,7 @@
   #propFoot button.danger{flex:none;color:var(--warn);border-color:rgba(224,93,93,.35)}
   .propPane[hidden]{display:none}
   #propPanel h4{margin:0;color:var(--fg);font-size:13px;font-weight:650}
+  #propPanel h4 .unit{font-weight:400}
   /* ── 面板控件：一律 26px 高、圓角 var(--r-sm)，標籤欄固定 40px 讓各列數值對齊同一條軸 ── */
   :is(#propPanel,.ppctl) .row{display:flex;align-items:center;gap:6px;margin:7px 0;flex-wrap:wrap}
   :is(#propPanel,.ppctl) .row label{color:var(--fg-mute);min-width:40px;white-space:nowrap}
@@ -2254,6 +2270,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n{0}\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）": "These map region names aren't in the GeoJSON, so those regions keep the base color:\n{0}\n(The names must match the GeoJSON's properties.name exactly.)",
   "表格 {0} 缺 colW/rowH/cells": "Table {0} is missing colW/rowH/cells",
   "圖片 {0} 缺 dataUrl": "Image {0} is missing dataUrl",
+  "元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞": "Element {0} has an unknown type “{1}”. This deck may come from a newer version, or it is damaged",
   "容器內缺少資產檔：{0}": "Asset file missing from the container: {0}",
   "這是「{0}」格式的 .deck，不是 DeckJSON 的。\n副檔名相同但內容規格不同，請用產生它的工具開啟。": "This is a .deck in the “{0}” format, not DeckJSON's.\nSame extension, different format — open it with the tool that made it.",
   "這個 .deck 的 manifest 叫 manifest.json，不是 DeckJSON 的格式（DeckJSON 讀 deck.json）。": "This .deck's manifest is called manifest.json, which isn't DeckJSON's format (DeckJSON reads deck.json).",
@@ -4732,6 +4749,59 @@ function renderShapeInto(box,el){
     box.appendChild(t);
   }
 }
+/* 網址被解析時實際的開頭。照 WHATWG URL 的解析規則：開頭的空白與控制字元（U+0000–U+0020）略過，
+   Tab 與換行（U+0009、U+000A、U+000D）夾在任何位置都略過，所以 " java\tscript:…" 一樣是 javascript: 網址。
+   檢查網址的開頭之前先過這一道，只比對原字串會被這兩種寫法繞過。貼上的 HTML 也用它（edit/clipboard.js）。 */
+function urlForCheck(v){
+  const s=String(v).replace(/[\t\n\r]/g,'');
+  let i=0;
+  while(i<s.length&&s.charCodeAt(i)<=0x20) i++;
+  return s.slice(i);
+}
+/* 畫布與頁面縮圖交給 ECharts 之前的 option 防線。option 來自簡報檔，原樣交給 ECharts 時，
+   下列選項裡的字串會被當成 HTML 放進頁面、或當成網址開啟。2026-10-13 以 vendor 的 ECharts 5.6.0
+   在畫布上實測，每一項都讓字串裡的程式碼執行；經過這裡之後同一批內容都不再執行：
+   - 提示框：renderMode 沒寫時是 html，formatter 字串原樣進 DOM。凡是叫 tooltip 的物件一律改成 'richText'
+     （畫在 canvas 上），簡報自己寫 'html' 也蓋掉。實測過的寫法：頂層、陣列、baseOption、media[].option、
+     時間軸 options[]、series 與資料項層的 formatter、legend.tooltip。
+     依讀碼，ECharts 只在建立提示框時讀一次全域 tooltip 元件合併後的 renderMode，所以每一處都得改，漏一處就可能被它蓋回 html
+   - toolbox.feature.dataView：按下後 lang 三個字串以 innerHTML 寫進資料檢視面板，lang[0] 是空的就改用 title。
+     兩者都換成跳脫後的文字；lang 不是陣列的（寫成物件 {0:…} 一樣會被當成 lang[0] 讀）整個拿掉，title 不是字串的也拿掉
+   - title.link／sublink，以及 treemap、sunburst 資料項的 link（nodeClick:'link'）：點下去以 window.open 開啟，
+     javascript: 網址配 target 'self'／'_self' 就在本頁執行，網址中間夾 Tab 或開頭帶控制字元也一樣。
+     先過 urlForCheck 再比對，只留 http(s) 網址；陣列值會被轉成字串再開，所以元素不是物件的陣列也拿掉
+     （axisPointer.link 也叫 link，但它是物件陣列，留著）
+   沒有處理的：toolbox.feature.saveAsImage 依讀碼只在 IE／舊 Edge 才以 document.write 開新視窗，
+   其他瀏覽器是下載圖檔；optionToContent 這類要給函式的選項，JSON 寫不出函式。
+   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
+   op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
+const CHART_URL_OK=/^https?:/i;
+function chartSafeOption(op){
+  // dataView 的字串是放進元素內文，跳脫 & < > 就夠，不必處理引號
+  const txt=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const badLink=v=>typeof v==='string'
+    ? !CHART_URL_OK.test(urlForCheck(v))
+    : Array.isArray(v)&&v.some(x=>!x||typeof x!=='object'||Array.isArray(x));
+  const objs=v=>(Array.isArray(v)? v : [v]).filter(x=>x&&typeof x==='object'&&!Array.isArray(x));
+  const walk=node=>{
+    if(Array.isArray(node)){ node.forEach(walk); return; }
+    if(!node||typeof node!=='object') return;
+    for(const k of Object.keys(node)){
+      const v=node[k];
+      if(k==='tooltip') for(const t of objs(v)) t.renderMode='richText';
+      if(k==='toolbox') for(const t of objs(v)){
+        const dv=t.feature&&t.feature.dataView;
+        if(!dv||typeof dv!=='object') continue;
+        if('lang' in dv){ if(Array.isArray(dv.lang)) dv.lang=dv.lang.map(txt); else delete dv.lang; }
+        if('title' in dv){ if(typeof dv.title==='string') dv.title=txt(dv.title); else delete dv.title; }
+      }
+      if((k==='link'||k==='sublink')&&badLink(v)){ delete node[k]; continue; }
+      walk(v);
+    }
+  };
+  walk(op);
+  return op;
+}
 function renderChartInto(box,el){
   box.innerHTML='';
   const cd=document.createElement('div');
@@ -4748,7 +4818,7 @@ function renderChartInto(box,el){
   let inst=CHARTS.get(el.id);
   if(inst){ inst.dispose(); }
   inst=echarts.init(cd,null,{renderer:'canvas'});
-  try{ inst.setOption(structuredClone(el.option),true); }catch(e){ cd.textContent=_t('option 錯誤：{0}',e.message); }
+  try{ inst.setOption(chartSafeOption(structuredClone(el.option)),true); }catch(e){ cd.textContent=_t('option 錯誤：{0}',e.message); }
   CHARTS.set(el.id,inst);
 }
 // 旋轉套在整個 box（文字隨形狀轉，同 PPT）；圖片翻轉也在 box。
@@ -5062,7 +5132,7 @@ function chartThumbCanvas(el){
   let out=null;
   try{
     const inst=echarts.init(div,null,{renderer:'canvas'});
-    inst.setOption(Object.assign(structuredClone(el.option),{animation:false}),true);
+    inst.setOption(Object.assign(chartSafeOption(structuredClone(el.option)),{animation:false}),true);
     // 取 ECharts 自己的 canvas 拷一份：dispose() 會把 DOM 連同 canvas 清掉，
     // 而 getDataURL() 回傳的字串要再經 Image 非同步解碼，縮圖就得等一輪。
     const src=div.querySelector('canvas');
@@ -6094,7 +6164,10 @@ function renderPropsBody(){
   if(!el&&APP.masterEdit){ propsMasterPage(pp); return; }
   if(!el){ propsPage(pp); return; }
   const names={text:_t('文字框'),table:_t('表格'),image:_t('圖片'),shape:_t('形狀'),chart:_t('圖表'),video:_t('影片')};
-  pp.innerHTML=`<h4>${names[el.type]||el.type} <span class="unit" style="font-weight:400">${el.id}</span></h4>`;
+  // 型別與 id 都來自簡報檔，以文字節點放入：外來簡報的 id 帶 HTML 時，寫成 innerHTML 會在點選時執行
+  const h4=document.createElement('h4'); h4.textContent=(names[el.type]||el.type)+' ';
+  const idTag=document.createElement('span'); idTag.className='unit'; idTag.textContent=el.id;
+  h4.appendChild(idTag); pp.appendChild(h4);
   const sz=elSize(el);
   pp.appendChild(secTitle(_t('位置尺寸'),true));
   pp.appendChild(dimUnitRow());
@@ -9103,6 +9176,34 @@ function waitImgs(box){
     setTimeout(done,PASTE_IMG_WAIT);
   })));
 }
+/* 剪貼簿的 HTML 先解析、消毒，才放進量測框。量測框掛在 document 上（要讀 computed style），
+   直接把字串寫進去的話，事件屬性會照樣觸發：從網頁複製的表格只要帶一個 <img onerror>，
+   貼上時就會執行。
+   用 DOMParser 解析：產生的文件沒有瀏覽環境，解析時不執行腳本、不載入圖片；
+   消毒完把節點本身搬進量測框，不再序列化回字串、也不重新解析，解析與實際放進去的是同一棵樹。
+   拿掉的：會執行或載入程式的元素（script、iframe、object、embed 這類）、meta／link／base
+   （能換頁、載入外部資源、改掉整頁相對網址的基準）、SVG 的動畫元素（能把 href 改成 javascript: 網址）、
+   template（內容不在樹上，消毒走不到）、
+   所有 on* 屬性、值是 javascript:／vbscript: 網址或非圖片 data: 網址的屬性。值先過 urlForCheck 再比對：
+   實體在解析時已經還原，`java&Tab;script:` 到這裡是夾了 Tab 的字串，網址解析會略過那個 Tab。
+   留下的：style 元素。Excel 的字色、粗體寫在 class 規則裡（.xl65{…}），量測讀的 computed style 要靠它；
+   CSS 不能執行程式碼。圖片照留，格內圖片由後面只收 data:image/ 的那一步挑。 */
+const PASTE_DROP='script,iframe,frame,frameset,object,embed,applet,portal,template,meta,link,base,'
+  +'set,animate,animateMotion,animateTransform';
+const PASTE_BAD_URL=/^(javascript|vbscript):|^data:(?!image\/)/i;
+function pasteHtmlNodes(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const nodes=[...doc.head.querySelectorAll('style'),...doc.body.childNodes];
+  for(const n of nodes){
+    if(n.nodeType!==1) continue;
+    for(const x of [...n.querySelectorAll(PASTE_DROP)]) x.remove();
+    for(const el of [n,...n.querySelectorAll('*')])
+      for(const a of [...el.attributes])
+        if(/^on/i.test(a.name)||PASTE_BAD_URL.test(urlForCheck(a.value)))
+          el.removeAttribute(a.name);
+  }
+  return nodes.filter(n=>!(n.nodeType===1&&n.matches(PASTE_DROP)));
+}
 /* 格內圖片走「浮動圖片＋軟群組」（缺口總表 §I.7 的路線乙）。
    DrawingML 的 <a:tc> 只有 <a:txBody> 與 <a:tcPr>，**沒有圖片的容身處**；PowerPoint 自己
    在格子裡「插入圖片」時，那張圖也是浮在表格上方的獨立物件。所以這不是把圖片塞進儲存格，
@@ -9124,24 +9225,13 @@ async function htmlToTableEl(html){
   box.style.cssText='position:fixed;left:-99999px;top:0;width:'+STAGE_W+'px;visibility:hidden;'
     +'color:#000;font:'+pt2px(PASTE_TBL_PT)+'px/1.2 "Roboto","Noto Sans TC",sans-serif;font-weight:400;font-style:normal;'
     +'text-align:left;text-decoration:none;background:transparent';
-  const sty=document.createElement('style');
-  /* 字級要用 !important 壓過來源的 inline style：既然輸出固定 PASTE_TBL_PT，量測就必須也在同一個字級下進行，
-     否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。欄寬屬性（Excel 的 width=）
-     不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。*/
-  sty.textContent='#pasteMeasure table{border-collapse:collapse}'
-    +'#pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}'
-    /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
-       來源那邊的列高就是在這個規則下量出來的，這裡若讓 <img> 退回 inline，會多出一段基線
-       下墜空間，同一張表在兩邊量到不同的列高。順帶讓「圖片置中於格內」這個放置模型
-       在量測階段就成立，不是事後硬套。margin 要 !important，否則被下面的 * 規則歸零。*/
-    +'#pasteMeasure img{display:block!important;margin:2px auto!important}'
-    // margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
-    // 會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。
-    +'#pasteMeasure *{font-size:'+pt2px(PASTE_TBL_PT)+'px!important;line-height:1.2!important;margin:0!important}';
-  box.appendChild(sty);
-  document.body.appendChild(box);
+  /* 其餘量測規則（子孫字級一律繼承上面這個框的字級、儲存格內距、格內圖片置中、margin 歸零）
+     寫在 css/stage.css 的 #pasteMeasure，各條的理由在那裡。
+     容器掛在 <main> 的上一層，不直接掛 document.body：瀏覽器版兩者是同一個元素，但嵌進別的頁面時，
+     本工具的樣式表只作用在自己的根容器底下，掛在 body 上就量不到那幾條規則。 */
+  $('main').parentNode.appendChild(box);
   try{
-    box.insertAdjacentHTML('beforeend',html);
+    box.append(...pasteHtmlNodes(html));
     const tbl=box.querySelector('table'); if(!tbl) return null;
     const trs=[...tbl.querySelectorAll('tr')].filter(tr=>tr.querySelector('td,th'));
     if(!trs.length) return null;
@@ -9827,7 +9917,8 @@ function normalizeDeck(d){
     if(!Object.keys(m).length) delete d.markdown;
   }else delete d.markdown;
   MD_OPTS=mdOptsOf(d);
-  {const m=normMaster(d.master); if(m) d.master=m; else delete d.master;}
+  const idMap=new Map();   // 不合法的元素 id → 新 id，整份簡報共用一張（見 safeElId）
+  {const m=normMaster(d.master,idMap); if(m) d.master=m; else delete d.master;}
   const mstIds=new Set(((d.master||{}).elements||[]).map(e=>e.id));
   const secSeen=new Set();   // 章節標題去重（同名會被 PptxGenJS 併成同一章，見 uniqTitle）
   for(const pg of d.pages){
@@ -9843,7 +9934,7 @@ function normalizeDeck(d){
     pg.notes= pg.notes==null? '' : String(pg.notes);
     if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）
     if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
-    pg.elements=normEls(pg.elements,mstIds);
+    pg.elements=normEls(pg.elements,mstIds,idMap);
   }
   // console 一律留痕（含自動存檔還原這條靜默路徑）；要不要跳視窗由呼叫端決定
   if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
@@ -9869,14 +9960,37 @@ function reportChartIssues(){
     +'\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）',r.mapNameBad.join(_t('、'))));
   if(msg.length) alert(msg.join('\n\n'));
 }
+/* 元素 id 只收英數、底線與連字號。id 會被拼進畫布的 `.el[data-id="…"]` 選擇器，也會顯示在屬性面板；
+   外來簡報的 id 帶引號時選擇器直接拋錯，帶標籤時曾在點選元素時被當成 HTML 執行。
+   不合法的換新 id，且同一份簡報裡相同的舊 id 換成同一個新 id（idMap 由 normalizeDeck 建、
+   母版與各頁共用）：跨頁同 id 是 Morph 配對的依據，各自換成不同的新 id 會讓配對斷掉。
+   數字 id 轉成字串：畫布的 dataset 一律是字串，留著數字的話以 === 比對會對不上。
+   物件、陣列這類值沒有可比的「同一個舊 id」，每個各配一個新 id。 */
+const EL_ID_OK=/^[A-Za-z0-9_-]+$/;
+function safeElId(id,idMap){
+  if(id==null||id==='') return uid('e');
+  if(typeof id!=='string'&&typeof id!=='number') return uid('e');
+  const s=String(id);
+  if(EL_ID_OK.test(s)) return s;
+  if(!idMap.has(s)) idMap.set(s,uid('e'));
+  return idMap.get(s);
+}
+/* 元素型別只收 DECK_SCHEMA.element 列出的那幾種，其餘整份拒絕，不是丟掉那個元素：
+   - 丟掉是靜默的。較新版本加了新型別的簡報拿到這裡開，存檔一次那些元素就不見了，使用者不會知道。
+     這與 normalizeDeck 其他地方「缺 dataUrl 的圖片、缺 cells 的表格就報錯」是同一個取捨
+   - 拒絕不動到原檔，錯誤訊息指出是哪個元素，要修要換版本都有線索
+   type 不是字串的（缺鍵、數字、物件）一律算不認得。 */
+const elTypeOk=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
    撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
    母版是共用的，所以改名一律改頁面這一邊。 */
-function normEls(list,reserved){
+function normEls(list,reserved,idMap){
   const arr=Array.isArray(list)?list:[];
   const seenIds=new Set(reserved||[]);   // 同頁 id 去重（JSON 手貼複製元素常忘了改 id → 點選/屬性面板會認錯對象）；跨頁同 id 合法且是 Morph 配對依據
+  idMap=idMap||new Map();
   for(const el of arr){
-    el.id=el.id||uid('e');
+    el.id=safeElId(el.id,idMap);
+    if(!elTypeOk(el.type)) throw new Error(_t('元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞',el.id,String(el.type).slice(0,40)));
     if(seenIds.has(el.id)) el.id=uid('e');
     seenIds.add(el.id);
     el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
@@ -9969,9 +10083,9 @@ function normEls(list,reserved){
 }
 /* 母版（「信紙」）：一份共用元素，套用到所有沒關閉的頁。
    on＝啟用；flatten＝匯出時畫進每一頁（而非放在母版上——畫進每頁的單張投影片複製到別的簡報也帶得走，代價是圖片位元組每頁各存一份）。 */
-function normMaster(m){
+function normMaster(m,idMap){
   if(!m||typeof m!=='object') return null;
-  const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements)};
+  const o={on:!!m.on,flatten:!!m.flatten,elements:normEls(m.elements,null,idMap)};
   return (o.on||o.elements.length)? o : null;
 }
 /* ================= 欄位白名單 =================

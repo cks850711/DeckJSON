@@ -114,6 +114,34 @@ function waitImgs(box){
     setTimeout(done,PASTE_IMG_WAIT);
   })));
 }
+/* 剪貼簿的 HTML 先解析、消毒，才放進量測框。量測框掛在 document 上（要讀 computed style），
+   直接把字串寫進去的話，事件屬性會照樣觸發：從網頁複製的表格只要帶一個 <img onerror>，
+   貼上時就會執行。
+   用 DOMParser 解析：產生的文件沒有瀏覽環境，解析時不執行腳本、不載入圖片；
+   消毒完把節點本身搬進量測框，不再序列化回字串、也不重新解析，解析與實際放進去的是同一棵樹。
+   拿掉的：會執行或載入程式的元素（script、iframe、object、embed 這類）、meta／link／base
+   （能換頁、載入外部資源、改掉整頁相對網址的基準）、SVG 的動畫元素（能把 href 改成 javascript: 網址）、
+   template（內容不在樹上，消毒走不到）、
+   所有 on* 屬性、值是 javascript:／vbscript: 網址或非圖片 data: 網址的屬性。值先過 urlForCheck 再比對：
+   實體在解析時已經還原，`java&Tab;script:` 到這裡是夾了 Tab 的字串，網址解析會略過那個 Tab。
+   留下的：style 元素。Excel 的字色、粗體寫在 class 規則裡（.xl65{…}），量測讀的 computed style 要靠它；
+   CSS 不能執行程式碼。圖片照留，格內圖片由後面只收 data:image/ 的那一步挑。 */
+const PASTE_DROP='script,iframe,frame,frameset,object,embed,applet,portal,template,meta,link,base,'
+  +'set,animate,animateMotion,animateTransform';
+const PASTE_BAD_URL=/^(javascript|vbscript):|^data:(?!image\/)/i;
+function pasteHtmlNodes(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const nodes=[...doc.head.querySelectorAll('style'),...doc.body.childNodes];
+  for(const n of nodes){
+    if(n.nodeType!==1) continue;
+    for(const x of [...n.querySelectorAll(PASTE_DROP)]) x.remove();
+    for(const el of [n,...n.querySelectorAll('*')])
+      for(const a of [...el.attributes])
+        if(/^on/i.test(a.name)||PASTE_BAD_URL.test(urlForCheck(a.value)))
+          el.removeAttribute(a.name);
+  }
+  return nodes.filter(n=>!(n.nodeType===1&&n.matches(PASTE_DROP)));
+}
 /* 格內圖片走「浮動圖片＋軟群組」（缺口總表 §I.7 的路線乙）。
    DrawingML 的 <a:tc> 只有 <a:txBody> 與 <a:tcPr>，**沒有圖片的容身處**；PowerPoint 自己
    在格子裡「插入圖片」時，那張圖也是浮在表格上方的獨立物件。所以這不是把圖片塞進儲存格，
@@ -135,24 +163,13 @@ async function htmlToTableEl(html){
   box.style.cssText='position:fixed;left:-99999px;top:0;width:'+STAGE_W+'px;visibility:hidden;'
     +'color:#000;font:'+pt2px(PASTE_TBL_PT)+'px/1.2 "Roboto","Noto Sans TC",sans-serif;font-weight:400;font-style:normal;'
     +'text-align:left;text-decoration:none;background:transparent';
-  const sty=document.createElement('style');
-  /* 字級要用 !important 壓過來源的 inline style：既然輸出固定 PASTE_TBL_PT，量測就必須也在同一個字級下進行，
-     否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。欄寬屬性（Excel 的 width=）
-     不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。*/
-  sty.textContent='#pasteMeasure table{border-collapse:collapse}'
-    +'#pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}'
-    /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
-       來源那邊的列高就是在這個規則下量出來的，這裡若讓 <img> 退回 inline，會多出一段基線
-       下墜空間，同一張表在兩邊量到不同的列高。順帶讓「圖片置中於格內」這個放置模型
-       在量測階段就成立，不是事後硬套。margin 要 !important，否則被下面的 * 規則歸零。*/
-    +'#pasteMeasure img{display:block!important;margin:2px auto!important}'
-    // margin 歸零：Word／PowerPoint 把每一行包成 <p class=MsoNormal>，<p> 的預設上下 margin 各 1em
-    // 會被量成列高的一部分（實測一行的格子量到 65px），但本工具渲染儲存格沒有段落邊界。
-    +'#pasteMeasure *{font-size:'+pt2px(PASTE_TBL_PT)+'px!important;line-height:1.2!important;margin:0!important}';
-  box.appendChild(sty);
-  document.body.appendChild(box);
+  /* 其餘量測規則（子孫字級一律繼承上面這個框的字級、儲存格內距、格內圖片置中、margin 歸零）
+     寫在 css/stage.css 的 #pasteMeasure，各條的理由在那裡。
+     容器掛在 <main> 的上一層，不直接掛 document.body：瀏覽器版兩者是同一個元素，但嵌進別的頁面時，
+     本工具的樣式表只作用在自己的根容器底下，掛在 body 上就量不到那幾條規則。 */
+  $('main').parentNode.appendChild(box);
   try{
-    box.insertAdjacentHTML('beforeend',html);
+    box.append(...pasteHtmlNodes(html));
     const tbl=box.querySelector('table'); if(!tbl) return null;
     const trs=[...tbl.querySelectorAll('tr')].filter(tr=>tr.querySelector('td,th'));
     if(!trs.length) return null;

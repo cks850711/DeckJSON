@@ -671,6 +671,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n{0}\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）": "These map region names aren't in the GeoJSON, so those regions keep the base color:\n{0}\n(The names must match the GeoJSON's properties.name exactly.)",
   "表格 {0} 缺 colW/rowH/cells": "Table {0} is missing colW/rowH/cells",
   "圖片 {0} 缺 dataUrl": "Image {0} is missing dataUrl",
+  "元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞": "Element {0} has an unknown type “{1}”. This deck may come from a newer version, or it is damaged",
   "容器內缺少資產檔：{0}": "Asset file missing from the container: {0}",
   "這是「{0}」格式的 .deck，不是 DeckJSON 的。\n副檔名相同但內容規格不同，請用產生它的工具開啟。": "This is a .deck in the “{0}” format, not DeckJSON's.\nSame extension, different format — open it with the tool that made it.",
   "這個 .deck 的 manifest 叫 manifest.json，不是 DeckJSON 的格式（DeckJSON 讀 deck.json）。": "This .deck's manifest is called manifest.json, which isn't DeckJSON's format (DeckJSON reads deck.json).",

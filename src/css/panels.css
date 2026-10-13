@@ -75,6 +75,7 @@
   #propFoot button.danger{flex:none;color:var(--warn);border-color:rgba(224,93,93,.35)}
   .propPane[hidden]{display:none}
   #propPanel h4{margin:0;color:var(--fg);font-size:13px;font-weight:650}
+  #propPanel h4 .unit{font-weight:400}
   /* ── 面板控件：一律 26px 高、圓角 var(--r-sm)，標籤欄固定 40px 讓各列數值對齊同一條軸 ── */
   :is(#propPanel,.ppctl) .row{display:flex;align-items:center;gap:6px;margin:7px 0;flex-wrap:wrap}
   :is(#propPanel,.ppctl) .row label{color:var(--fg-mute);min-width:40px;white-space:nowrap}
