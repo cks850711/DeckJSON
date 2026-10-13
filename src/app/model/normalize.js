@@ -383,6 +383,10 @@ function normEls(list,reserved,idMap){
     if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
     if(el.type==='video') normVideo(el);
     if(el.type==='image'){
+      /* 原圖像素尺寸：只收正整數。屬性面板的壓縮資訊會把它拼進 HTML 顯示，
+         外來簡報寫成字串時，點選圖片就會被當成 HTML 執行；不是正數的一律刪鍵，
+         沒有原圖尺寸的情況 media/image.js 本來就以 natW>0 判斷 */
+      for(const k of ['natW','natH']) if(k in el){ const n=Math.round(+el[k]); if(Number.isFinite(n)&&n>0) el[k]=n; else delete el[k]; }
       if(el.fit!=='cover') delete el.fit;
       if(el.round) el.round=true; else delete el.round;
       normCrop(el);

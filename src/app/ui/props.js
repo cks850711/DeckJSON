@@ -6,8 +6,11 @@ function renderMultiProps(pp){
   const els=selEls();
   const gid=els[0]&&els[0].groupId;
   const isGroup=!!gid&&els.every(el=>el.groupId===gid)&&groupMembers(els[0]).length===els.length;
-  pp.innerHTML=`<h4>${isGroup?_t('軟群組 {0} 個物件',els.length):_t('多選 {0} 個物件',els.length)}`
-    +(isGroup?` <span class="unit" style="font-weight:400">${gid}</span>`:'')+`</h4>`;
+  // 群組 id 來自簡報檔，以文字節點放入（同 renderPropsBody 的單一元素標題）
+  const h4=document.createElement('h4');
+  h4.textContent=isGroup?_t('軟群組 {0} 個物件',els.length):_t('多選 {0} 個物件',els.length);
+  if(isGroup){ const gTag=document.createElement('span'); gTag.className='unit'; gTag.textContent=gid; h4.append(' ',gTag); }
+  pp.appendChild(h4);
   /* 位置尺寸：軟群組沒有自己的 x/y/w/h（成員各自獨立，匯出時攤平），這裡顯示的是**包圍盒**。
      改 X／Y＝整組平移；改寬／高＝以包圍盒左上角為不動點縮放整組，與拖四角把手同一個模型。 */
   pp.appendChild(secTitle(_t('位置尺寸（包圍盒）'),true));

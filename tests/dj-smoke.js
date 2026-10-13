@@ -473,9 +473,11 @@ export default async function run() {
       await tick(100);
     };
     const BAD_ID = 'x"><img src=x onerror="' + X('id') + '">';
+    const BAD_GID = 'g"><img src=x onerror="' + X('groupId') + '">';
     await DJ.load({title: 'sec', pages: [
       {id: 'sA', elements: [TEXT(BAD_ID, 40, 40, 300, 40, 'a'), TEXT(7, 40, 120, 300, 40, 'n'),
-        {id: 'img', type: 'image', x: 40, y: 200, w: 40, h: 40, dataUrl: PX},
+        {id: 'img', type: 'image', x: 40, y: 200, w: 40, h: 40, dataUrl: PX, natW: ATK('natW'), natH: ATK('natH')},
+        TEXT('g1', 40, 560, 100, 40, 'g1', {groupId: BAD_GID}), TEXT('g2', 160, 560, 100, 40, 'g2', {groupId: BAD_GID}),
         {id: 'ch', type: 'chart', x: 400, y: 40, w: 600, h: 400, option: {
           title: {text: 'TITLE', link: 'java\tscript:' + X('title.link'), target: 'self',
             subtext: 'SUBTEXT', sublink: 'javascript:' + X('title.sublink'), subtarget: 'self'},
@@ -491,10 +493,14 @@ export default async function run() {
     ok('security: an element id outside [A-Za-z0-9_-] is replaced', /^[A-Za-z0-9_-]+$/.test(idA), idA);
     ok('security: the same bad id on two slides gets the same new id (Morph pairing)', idA === idB, [idA, idB]);
     ok('security: a numeric id becomes a string', DJ.get('sA').elements[1].id === '7', DJ.get('sA').elements[1].id);
+    ok('security: non-numeric natW/natH are dropped', !('natW' in DJ.get('sA', 'img')) && !('natH' in DJ.get('sA', 'img')), DJ.get('sA', 'img'));
     DJ.show('sA'); await tick(100);
     for (const e of DJ.get('sA').elements) await pick(e.id);
     await pick(idA);
     ok('security: the property panel shows the replaced id', document.querySelector('#propPanel h4 .unit').textContent === idA);
+    await pick('g1');
+    ok('security: the group panel shows the group id as text', document.querySelector('#propPanel h4 .unit').textContent === BAD_GID);
+    ok('security: selecting elements runs nothing', window.__djx.length === 0, window.__djx);
     for (const id of ['ch', 'ch2']) {
       const cv = document.querySelector(`#stage .el[data-id="${id}"] canvas`), rc = cv.getBoundingClientRect();
       const fire = (t, x, y) => cv.dispatchEvent(new MouseEvent(t, {clientX: rc.left + x * rc.width, clientY: rc.top + y * rc.height, bubbles: true}));
