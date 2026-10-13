@@ -42,6 +42,8 @@ You need **Chrome or Edge** (Safari and Firefox can't install web apps), plus **
    - Or run it from a terminal: `node deckjson-server.js install`
 3. Chrome opens an install page that walks you through the rest: press **Install DeckJSON**, then double-click a `.deck`. The first time, the browser asks whether to open it in this app — tick **Remember my choice** and choose **Open**. Then pick a slot.
 
+**Prefer Chrome tabs to separate windows?** Open `chrome://app-settings/lnglegmncciaelonbmmmhehgdbccjmdd` (the DeckJSON settings page) in Chrome and turn off **Open in window**. Double-clicking a `.deck` still opens it in DeckJSON, in a Chrome tab, and Cmd/Ctrl+S still saves back to the file.
+
 The installer copies `deckjson.html` and `deckjson-server.js` to `~/.deckjson/app/`. It is only needed while installing or updating; the app runs without it. **To update**, run the installer from the new version. **To remove**, choose **Uninstall DeckJSON** in the app window's menu (⋮), then run `node ~/.deckjson/app/deckjson-server.js uninstall`.
 
 ---

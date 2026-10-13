@@ -754,7 +754,8 @@ a{color:var(--accent)}
   <details><summary data-k="s2more"></summary><p data-k="s2manual"></p></details></div>
 <div class="step"><h2><span class="num">3</span><span data-k="s3"></span></h2><p data-k="s3p"></p>
   <details><summary data-k="s3more"></summary><p data-k="s3mac"></p><p data-k="s3win"></p></details></div>
-<div class="step"><h2><span class="num">4</span><span data-k="s4"></span></h2><p data-k="s4p"></p></div>
+<div class="step"><h2><span class="num">4</span><span data-k="s4"></span></h2><p data-k="s4p"></p>
+  <details><summary data-k="s4more"></summary><p data-k="s4tab"></p></details></div>
 <div class="step"><h2><span class="num">5</span><span data-k="s5"></span></h2><p data-k="s5p"></p>
   <details><summary data-k="s5more"></summary><p data-k="s5un"></p></details></div>
 </main><script>
@@ -778,6 +779,8 @@ const STR={
   s3win:'<b>Windows：</b>在 .deck 上按右鍵 →「開啟檔案」→「選擇其他應用程式」→ DeckJSON，勾「一律使用此應用程式」。',
   s4:'槽位',
   s4p:'App 有 <b>5 個槽位</b>，各自保留一份自動存檔：當機、誤關視窗都救得回來。同一個槽位不能在兩個視窗同時開；要同時編兩份簡報，就開在不同槽位。直接從 Dock 打開 App 時，可以選一個槽位接著做。',
+  s4more:'想開在 Chrome 分頁，不要另開視窗？',
+  s4tab:'在 Chrome 網址列打開 <code>chrome://app-settings/lnglegmncciaelonbmmmhehgdbccjmdd</code>（DeckJSON 的設定頁），關掉「<b>在視窗中開啟</b>」。雙擊 .deck 照樣會用 DeckJSON 開，只是開在 Chrome 的分頁裡；槽位與 Cmd/Ctrl+S 存回原檔都不變。',
   s5:'之後',
   s5p:'裝好後這個安裝程式可以關掉（閒置 10 分鐘也會自己結束），App 照樣能開。要更新 DeckJSON，下載新版後再執行一次安裝程式。',
   s5more:'怎麼移除？',
@@ -800,6 +803,8 @@ const STR={
   s3win:'<b>Windows:</b> right-click the .deck → Open with → Choose another app → DeckJSON, and tick “Always use this app”.',
   s4:'Slots',
   s4p:'The app has <b>5 slots</b>, each with its own autosave, so a crash or a closed window loses nothing. One slot cannot be open in two windows at once; to edit two decks side by side, use two slots. Opening the app from the Dock lets you pick a slot to continue.',
+  s4more:'Rather open decks in Chrome tabs than in separate windows?',
+  s4tab:'Open <code>chrome://app-settings/lnglegmncciaelonbmmmhehgdbccjmdd</code> (the DeckJSON settings page) in the address bar and turn off “<b>Open in window</b>”. Double-clicking a .deck still opens it in DeckJSON, just in a Chrome tab; slots and Cmd/Ctrl+S saving back to the file stay the same.',
   s5:'Afterwards',
   s5p:'You can close this installer now (it also stops by itself after 10 idle minutes); the app keeps working without it. To update DeckJSON, download the new version and run the installer again.',
   s5more:'How do I remove it?',

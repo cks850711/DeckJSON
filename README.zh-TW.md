@@ -42,6 +42,8 @@
    - 也可以在終端機執行：`node deckjson-server.js install`
 3. Chrome 會打開安裝頁，照著做完：按「**安裝 DeckJSON**」，再雙擊一個 `.deck`。第一次瀏覽器會問要不要在這個 App 裡開啟——**勾「記住我的選擇」**再按「**開啟**」，接著選一個槽位
 
+**想開在 Chrome 分頁、不要另開視窗？** 在 Chrome 打開 `chrome://app-settings/lnglegmncciaelonbmmmhehgdbccjmdd`（DeckJSON 的設定頁），關掉「**在視窗中開啟**」。雙擊 `.deck` 照樣用 DeckJSON 開，只是開在 Chrome 分頁裡，Cmd/Ctrl+S 也照樣存回原檔。
+
 安裝程式會把 `deckjson.html` 與 `deckjson-server.js` 複製到 `~/.deckjson/app/`，只在安裝與更新時需要，App 本身不靠它執行。**更新**：執行新版的安裝程式。**移除**：在 App 視窗的選單（⋮）選「**解除安裝 DeckJSON**」，再執行 `node ~/.deckjson/app/deckjson-server.js uninstall`。
 
 ---
