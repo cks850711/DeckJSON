@@ -164,7 +164,7 @@ async function appBoot(){
 
 /* 開機做完之前（還原自動存檔、開 ?open= 的檔、等使用者選槽位），DJ 的非同步動詞先等它（見 api.js 的 djAfterBoot）。
    不等的話，頁面一載入就 DJ.load，還原晚一步完成會把剛載入的簡報整份換掉，之後的寫入落在上一份簡報上，
-   而且不報錯（2026-10-11 實際發生）。外掛不呼叫 hostBoot（檔案由宿主管），HOST_BOOTING 維持 null，DJ 不必等 */
+   而且不報錯（2026-10-11 實際發生）。自己管檔案、不呼叫 hostBoot 的宿主，HOST_BOOTING 維持 null，DJ 不必等 */
 let HOST_BOOTING=null, HOST_BOOTED=false;
 function hostBoot(){
   HOST_BOOTED=false;
