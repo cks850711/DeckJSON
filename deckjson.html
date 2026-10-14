@@ -8182,7 +8182,7 @@ stage.addEventListener('pointerdown',e=>{
     if(cel){
       drag={type:'crop',el:cel,sx:e.clientX,sy:e.clientY,n:cropNorm(cel)};
       e.preventDefault(); pendingUndo=snapshot();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
       return;
     }
     endCrop();
@@ -8201,7 +8201,7 @@ stage.addEventListener('pointerdown',e=>{
   if(ah&&el&&el.type==='shape'&&adjDots(el).length){
     drag={type:'adj',el,i:+ah.dataset.i,sx:e.clientX,sy:e.clientY};
     e.preventDefault(); pendingUndo=snapshot();
-    try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+    try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
     return;
   }
   // 群組比例縮放把手（多選）
@@ -8270,7 +8270,7 @@ stage.addEventListener('pointerdown',e=>{
           APP.cellSel=normalizeCellSel(tel,rc.r,rc.c,rc.r,rc.c);
           updateSelBox(); syncProps();   // 逐格設定（底色／字級／對齊）要跟著選到的格子走
           e.preventDefault();
-          try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+          try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
           return;
         }
       }
@@ -8281,14 +8281,14 @@ stage.addEventListener('pointerdown',e=>{
         if(!same){ setSel(ids); updateSelBox(); renderProps(); syncPageJson(); }
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
         return;
       }
       // 已在多選內且直接拖 → 整組移動
       if(APP.selIds.length>1&&APP.selIds.includes(tel.id)){
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
         return;
       }
       if(APP.sel!==tel.id){ setSel([tel.id]); updateSelBox(); renderProps(); syncPageJson(); }
@@ -8299,13 +8299,13 @@ stage.addEventListener('pointerdown',e=>{
       drag={type:'marquee',ox:(e.clientX-r.left)/APP.zoom,oy:(e.clientY-r.top)/APP.zoom,add:e.shiftKey,base:[...APP.selIds]};
       if(!e.shiftKey&&APP.selIds.length){ setSel([]); updateSelBox(); renderProps(); syncPageJson(); }
       e.preventDefault();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
       return;
     }
   }
   e.preventDefault();
   pendingUndo=snapshot();
-  try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
+  try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，但指標移出畫布後收不到移動事件，也收不到放開事件：在畫布外放開滑鼠，拖曳不會結束（沒有檢查按鍵狀態），指標回到畫布內時，沒按鍵也會繼續拖動，要等下一次在畫布內放開滑鼠才結束 */ }
 });
 // 拖欄/列尺寸的懸浮數值（px 為內部單位；cm/pt 換算供對照，1px=1/96in）
 let dragTip=null;
