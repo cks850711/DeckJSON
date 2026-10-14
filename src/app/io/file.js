@@ -19,10 +19,10 @@ const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.sho
    於是 FS_OK 為 true → 走 FSA → 退到另存 → 選檔器又截斷一個檔，形成毀檔迴圈。
    在真正嘗試寫入之前無從得知會被拒（要查權限得先有 handle，要 handle 得先過選檔器，而選檔器已經截斷了），
    所以只能「撞過一次就記住」，把代價從每次一個檔壓到總共一個檔。 */
-let fsaDenied=false; try{ fsaDenied=localStorage.getItem('dj.fsaDenied')==='1'; }catch(e){}
+let fsaDenied=false; try{ fsaDenied=localStorage.getItem('dj.fsaDenied')==='1'; }catch(e){ /* localStorage 被擋時當作沒被拒絕過；撞到時 fsaGiveUp 仍會在這次載入期間記住 */ }
 const fsUsable=()=>FS_OK&&!fsaDenied;
 function fsaGiveUp(){
-  fsaDenied=true; try{ localStorage.setItem('dj.fsaDenied','1'); }catch(e){}
+  fsaDenied=true; try{ localStorage.setItem('dj.fsaDenied','1'); }catch(e){ /* 記不進 localStorage 時，這次載入期間仍已記住（fsaDenied=true），只是重載後要再撞一次 */ }
   $('#btnSave').title=_t('存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾');
   $('#btnSaveAs').title=_t('另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾');
 }
@@ -77,7 +77,7 @@ async function writeBlobTo(h,blob){
      失敗時刻意什麼都不做：不清 APP.dirty（檔名前的 ● 留著）、不更新 APP.file（下次存檔不會沿用
      這次的時間戳去比對）、不呼叫 asSaveNow（自動存檔保留上一份完好的），再往外丟給
      saveDeck／saveDeckAs 的 catch 印紅字。alert 是刻意的——這是資料遺失，不該只留一行提示。 */
-  let f=null; try{ f=await h.getFile(); }catch(e){}
+  let f=null; try{ f=await h.getFile(); }catch(e){ /* 讀不回來時 f 維持 null，下面當成回讀失敗處理：alert 並拋錯 */ }
   if(!f||f.size!==blob.size){
     const got=f? _t('{0} 位元組',f.size) : _t('讀不回來');
     alert(_t('⚠ 存檔沒有成功：「{0}」\n\n'+

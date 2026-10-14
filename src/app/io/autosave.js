@@ -44,7 +44,7 @@ function asSaveNow(){
   if(asOff) return Promise.resolve(false);
   let fh=null;
   // 先試複製：萬一這個環境的 handle 不能結構化複製，寧可不記檔案，也不要讓自動存檔整條掛掉
-  if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){} }
+  if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){ /* handle 不能結構化複製時不記檔案，理由見上一行 */ } }
   /* srv：檔案在 AI 伺服器的資料夾裡（沒有 handle），連同資料夾一起記，還原時只在同一個資料夾才接回去——
      port 會被下一個工作沿用，換了資料夾還接回去，Cmd/Ctrl+S 就會寫進別的資料夾裡的同名檔。
      dirty：DJ App 的槽位選單據此提醒「這格有還沒存檔的變更」 */
@@ -93,7 +93,7 @@ async function asRestore(){
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
       else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
-      try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
+      try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){ /* sessionStorage 被擋時無從得知重載前有沒有未存的修改，● 不會出現 */ }
     }catch(err){
       /* 還原失敗（任何原因）就停用自動存檔，原記錄留在原鍵不動。不停用的話畫面留在空白簡報，
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。

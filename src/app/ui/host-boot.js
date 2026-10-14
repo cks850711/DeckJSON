@@ -42,10 +42,10 @@ function slotTake(n){
 }
 async function slotInfo(){
   let held=new Set();
-  try{ if(navigator.locks) held=new Set(((await navigator.locks.query()).held||[]).map(l=>l.name)); }catch(e){}
+  try{ if(navigator.locks) held=new Set(((await navigator.locks.query()).held||[]).map(l=>l.name)); }catch(e){ /* 查不到鎖的狀態時當作沒有槽位被其他視窗佔用；真的選槽位時 slotTake 還會再搶一次鎖 */ }
   const out=[];
   for(let n=1;n<=SLOT_N;n++){
-    let rec=null; try{ rec=await asTx('readonly',st=>st.get(slotKey(n))); }catch(e){}
+    let rec=null; try{ rec=await asTx('readonly',st=>st.get(slotKey(n))); }catch(e){ /* 讀不到該槽位的紀錄時顯示為空槽位 */ }
     const d=rec&&rec.deck;
     out.push({n, busy:held.has(slotLockName(n)), used:!!d, title:d? d.title||'' : '', pages:d&&d.pages? d.pages.length : 0,
       file:rec&&rec.handle? rec.handle.name : '', at:rec? rec.at : 0, dirty:!!(rec&&rec.dirty)});
@@ -134,7 +134,7 @@ async function appBoot(){
 
   // 重新整理：沿用這個分頁原本的槽位。舊頁面的鎖在卸載時才放開，稍等幾次
   let n=0;
-  try{ n=+sessionStorage.getItem('deckjson.slot')||0; }catch(e){}
+  try{ n=+sessionStorage.getItem('deckjson.slot')||0; }catch(e){ /* sessionStorage 被擋時當作沒有記住的槽位，改出選單 */ }
   if(n){
     let ok=false;
     for(let i=0;i<10&&!(ok=await slotTake(n));i++) await new Promise(r=>setTimeout(r,100));
@@ -145,7 +145,7 @@ async function appBoot(){
     n=await slotPick(()=>launched);
   }
   APP_SLOT=n; AS_KEY=slotKey(n);
-  try{ sessionStorage.setItem('deckjson.slot',String(n)); }catch(e){}
+  try{ sessionStorage.setItem('deckjson.slot',String(n)); }catch(e){ /* 記不住槽位時，重新整理要再選一次 */ }
   if(launched){
     const h=launched; launched=null;
     try{

@@ -18,7 +18,7 @@ function hostSetFile(rel){ APP.file={server:true,name:rel,stale:false}; }
    exists＝已存在但不是從這裡開的），讓呼叫端決定要不要帶 force 再試 */
 async function hostWrite(rel,blob,force){
   const r=await fetch('/save?n='+encodeURIComponent(rel)+(force?'&force=1':''),{method:'POST',body:blob});
-  let j=null; try{ j=await r.json(); }catch(e){}
+  let j=null; try{ j=await r.json(); }catch(e){ /* 伺服器回的不是 JSON 時 j 維持 null，下面依 HTTP 狀態或回報的位元組數報錯 */ }
   if(!r.ok) throw Object.assign(new Error(j&&j.error||('HTTP '+r.status)),{code:j&&j.code,status:r.status});
   // 同 writeBlobTo 的回讀驗證：伺服器回報寫了幾個位元組，對不上就不當作存好了
   if(!j||j.bytes!==blob.size) throw new Error(_t('寫入後大小對不上：{0}，應為 {1} 位元組',j&&j.bytes,blob.size));

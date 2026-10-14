@@ -8,7 +8,7 @@ function fontAvailable(name){
 async function checkFonts(){
   const F=APP.deck.fonts||FONTS;
   const names=[...new Set([F.ea,F.latin,F.tableLatin])];
-  try{ await document.fonts.ready; }catch(e){}
+  try{ await document.fonts.ready; }catch(e){ /* fonts.ready 失敗時不再等，照樣檢查字體是否可用 */ }
   const missing=names.filter(n=>!fontAvailable(n));
   // 明講後果：未安裝只影響「畫布預覽用替代字體」，匯出仍寫原字體名（在裝有該字體的電腦上就正確）
   $('#fontWarn').textContent= missing.length

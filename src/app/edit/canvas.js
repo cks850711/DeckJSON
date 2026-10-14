@@ -37,7 +37,7 @@ stage.addEventListener('pointerdown',e=>{
     if(cel){
       drag={type:'crop',el:cel,sx:e.clientX,sy:e.clientY,n:cropNorm(cel)};
       e.preventDefault(); pendingUndo=snapshot();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
       return;
     }
     endCrop();
@@ -56,7 +56,7 @@ stage.addEventListener('pointerdown',e=>{
   if(ah&&el&&el.type==='shape'&&adjDots(el).length){
     drag={type:'adj',el,i:+ah.dataset.i,sx:e.clientX,sy:e.clientY};
     e.preventDefault(); pendingUndo=snapshot();
-    try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+    try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
     return;
   }
   // 群組比例縮放把手（多選）
@@ -125,7 +125,7 @@ stage.addEventListener('pointerdown',e=>{
           APP.cellSel=normalizeCellSel(tel,rc.r,rc.c,rc.r,rc.c);
           updateSelBox(); syncProps();   // 逐格設定（底色／字級／對齊）要跟著選到的格子走
           e.preventDefault();
-          try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+          try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
           return;
         }
       }
@@ -136,14 +136,14 @@ stage.addEventListener('pointerdown',e=>{
         if(!same){ setSel(ids); updateSelBox(); renderProps(); syncPageJson(); }
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
         return;
       }
       // 已在多選內且直接拖 → 整組移動
       if(APP.selIds.length>1&&APP.selIds.includes(tel.id)){
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
         return;
       }
       if(APP.sel!==tel.id){ setSel([tel.id]); updateSelBox(); renderProps(); syncPageJson(); }
@@ -154,13 +154,13 @@ stage.addEventListener('pointerdown',e=>{
       drag={type:'marquee',ox:(e.clientX-r.left)/APP.zoom,oy:(e.clientY-r.top)/APP.zoom,add:e.shiftKey,base:[...APP.selIds]};
       if(!e.shiftKey&&APP.selIds.length){ setSel([]); updateSelBox(); renderProps(); syncPageJson(); }
       e.preventDefault();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
       return;
     }
   }
   e.preventDefault();
   pendingUndo=snapshot();
-  try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+  try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
 });
 // 拖欄/列尺寸的懸浮數值（px 為內部單位；cm/pt 換算供對照，1px=1/96in）
 let dragTip=null;
@@ -477,7 +477,7 @@ stage.addEventListener('dblclick',e=>{
 });
 function editableDiv(){
   const ed=document.createElement('div');
-  try{ ed.contentEditable='plaintext-only'; }catch(err){}
+  try{ ed.contentEditable='plaintext-only'; }catch(err){ /* 不支援 plaintext-only 的瀏覽器會丟錯；下一行檢查後退回 true */ }
   if(ed.contentEditable!=='plaintext-only') ed.contentEditable='true';
   return ed;
 }

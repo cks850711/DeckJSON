@@ -90,7 +90,7 @@ function djIds(ids){ return ids==null? null : (Array.isArray(ids)? ids : [ids]);
 /* 等排版穩定。刻意不用 requestAnimationFrame：分頁或面板不在前景時 rAF 會暫停（規格行為），
    外部腳本等不到回呼就整個卡住（2026-09-17 實際遇過：瀏覽器面板不在前景時，等 rAF 的呼叫一直沒有回來）。字體載完才量得準，所以也等 fonts.ready（上限 1.5 秒）。 */
 async function djSettle(){
-  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){ /* fonts.ready 失敗時不再等字體，照樣往下量 */ }
   await new Promise(r=>setTimeout(r,0));
 }
 /* 換上新的 deck。保留使用者目前的頁（還在的話）與選取，只收掉進行中的文字編輯——

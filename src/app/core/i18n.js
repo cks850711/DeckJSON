@@ -19,7 +19,7 @@ const UI_LANG=(()=>{
   /* 網址參數優先：localStorage 在某些 file:// 環境寫不進去，那時語言就靠 ?lang= 帶過重載 */
   const q=new URLSearchParams(location.search).get('lang');
   if(ok(q)) return q;
-  try{ const v=localStorage.getItem(UI_LANG_KEY); if(ok(v)) return v; }catch(e){}
+  try{ const v=localStorage.getItem(UI_LANG_KEY); if(ok(v)) return v; }catch(e){ /* localStorage 被擋時往下照瀏覽器語言挑 */ }
   /* 第一次開啟：照瀏覽器語言挑；都對不上就用英文（沒有英文包時才用中文） */
   const nav=navigator.language||'';
   return LANGS.find(l=>I18N_PACKS[l].match&&I18N_PACKS[l].match.test(nav)) || (ok('en')? 'en' : 'zh');

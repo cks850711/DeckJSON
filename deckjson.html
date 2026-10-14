@@ -3245,7 +3245,7 @@ const UI_LANG=(()=>{
   /* 網址參數優先：localStorage 在某些 file:// 環境寫不進去，那時語言就靠 ?lang= 帶過重載 */
   const q=new URLSearchParams(location.search).get('lang');
   if(ok(q)) return q;
-  try{ const v=localStorage.getItem(UI_LANG_KEY); if(ok(v)) return v; }catch(e){}
+  try{ const v=localStorage.getItem(UI_LANG_KEY); if(ok(v)) return v; }catch(e){ /* localStorage 被擋時往下照瀏覽器語言挑 */ }
   /* 第一次開啟：照瀏覽器語言挑；都對不上就用英文（沒有英文包時才用中文） */
   const nav=navigator.language||'';
   return LANGS.find(l=>I18N_PACKS[l].match&&I18N_PACKS[l].match.test(nav)) || (ok('en')? 'en' : 'zh');
@@ -5571,7 +5571,7 @@ function buildDeckSettings(pp){
         _t('存進這台瀏覽器，之後新建簡報自動帶入')],
     ]));
     if(lsGet(PROFILE_KEY)) pp.appendChild(btnRow([[_t('清除已記住的預設'),()=>{
-      try{ localStorage.removeItem(PROFILE_KEY); }catch(e){}
+      try{ localStorage.removeItem(PROFILE_KEY); }catch(e){ /* 讀得到卻刪不掉時預設會留著，而且沒有提示：下面的 renderProps 不重畫這個面板，成功或失敗按鈕都不會消失 */ }
       renderProps(); },_t('恢復中性出廠值')]]));
     const pfn=document.createElement('div'); pfn.className='row';
     pfn.innerHTML='<span class="unit">'+_t('目前設定檔：<b>{0}</b>。',(APP.deck.profileName||_t('預設')).replace(/</g,'&lt;'))
@@ -5704,7 +5704,7 @@ function buildCopyPalWin(){
   head.appendChild(title); head.appendChild(toast); w.appendChild(head);
   const fmt=c=>(forChart?'#':'')+String(c).replace('#','').toUpperCase();
   const copy=async c=>{ const hex=fmt(c);
-    try{ await navigator.clipboard.writeText(hex); }catch(e){}
+    try{ await navigator.clipboard.writeText(hex); }catch(e){ /* 剪貼簿權限被拒時複製不到；下一行的提示仍會顯示「已複製」 */ }
     toast.textContent=_t('已複製 {0}',hex);
     setTimeout(()=>{ if(toast.textContent===_t('已複製 {0}',hex)) toast.textContent=''; },1600); };
   const tabs=document.createElement('div'); tabs.style.cssText='display:flex;gap:4px;margin-bottom:6px;';
@@ -8169,7 +8169,7 @@ stage.addEventListener('pointerdown',e=>{
     if(cel){
       drag={type:'crop',el:cel,sx:e.clientX,sy:e.clientY,n:cropNorm(cel)};
       e.preventDefault(); pendingUndo=snapshot();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
       return;
     }
     endCrop();
@@ -8188,7 +8188,7 @@ stage.addEventListener('pointerdown',e=>{
   if(ah&&el&&el.type==='shape'&&adjDots(el).length){
     drag={type:'adj',el,i:+ah.dataset.i,sx:e.clientX,sy:e.clientY};
     e.preventDefault(); pendingUndo=snapshot();
-    try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+    try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
     return;
   }
   // 群組比例縮放把手（多選）
@@ -8257,7 +8257,7 @@ stage.addEventListener('pointerdown',e=>{
           APP.cellSel=normalizeCellSel(tel,rc.r,rc.c,rc.r,rc.c);
           updateSelBox(); syncProps();   // 逐格設定（底色／字級／對齊）要跟著選到的格子走
           e.preventDefault();
-          try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+          try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
           return;
         }
       }
@@ -8268,14 +8268,14 @@ stage.addEventListener('pointerdown',e=>{
         if(!same){ setSel(ids); updateSelBox(); renderProps(); syncPageJson(); }
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
         return;
       }
       // 已在多選內且直接拖 → 整組移動
       if(APP.selIds.length>1&&APP.selIds.includes(tel.id)){
         drag={type:'gmove',sx:e.clientX,sy:e.clientY,bb:groupBBox(selEls()),orig:selEls().map(el=>({id:el.id,x:el.x,y:el.y}))};
         e.preventDefault(); pendingUndo=snapshot();
-        try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+        try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
         return;
       }
       if(APP.sel!==tel.id){ setSel([tel.id]); updateSelBox(); renderProps(); syncPageJson(); }
@@ -8286,13 +8286,13 @@ stage.addEventListener('pointerdown',e=>{
       drag={type:'marquee',ox:(e.clientX-r.left)/APP.zoom,oy:(e.clientY-r.top)/APP.zoom,add:e.shiftKey,base:[...APP.selIds]};
       if(!e.shiftKey&&APP.selIds.length){ setSel([]); updateSelBox(); renderProps(); syncPageJson(); }
       e.preventDefault();
-      try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
       return;
     }
   }
   e.preventDefault();
   pendingUndo=snapshot();
-  try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+  try{ stage.setPointerCapture(e.pointerId); }catch(err){ /* 拿不到指標捕捉時拖曳照樣進行，只是指標移出畫布後收不到移動事件 */ }
 });
 // 拖欄/列尺寸的懸浮數值（px 為內部單位；cm/pt 換算供對照，1px=1/96in）
 let dragTip=null;
@@ -8609,7 +8609,7 @@ stage.addEventListener('dblclick',e=>{
 });
 function editableDiv(){
   const ed=document.createElement('div');
-  try{ ed.contentEditable='plaintext-only'; }catch(err){}
+  try{ ed.contentEditable='plaintext-only'; }catch(err){ /* 不支援 plaintext-only 的瀏覽器會丟錯；下一行檢查後退回 true */ }
   if(ed.contentEditable!=='plaintext-only') ed.contentEditable='true';
   return ed;
 }
@@ -9513,9 +9513,9 @@ async function setUiLang(v){
   if((asOff||!APP.ready)&&!confirm(_t('自動存檔目前無法使用，切換語言會重新載入頁面，還沒存成檔案的內容會不見。確定要切換嗎？'))) return;
   clearTimeout(asTimer);
   if(APP.ready&&!asOff) await asSaveNow();
-  try{ if(APP.dirty) sessionStorage.setItem('deckjson.dirty','1'); }catch(e){}
+  try{ if(APP.dirty) sessionStorage.setItem('deckjson.dirty','1'); }catch(e){ /* sessionStorage 被擋時重載後少了未存檔記號（●） */ }
   let stored=false;
-  try{ localStorage.setItem(UI_LANG_KEY,v); stored=localStorage.getItem(UI_LANG_KEY)===v; }catch(e){}
+  try{ localStorage.setItem(UI_LANG_KEY,v); stored=localStorage.getItem(UI_LANG_KEY)===v; }catch(e){ /* localStorage 被擋時 stored 維持 false，下面改用網址參數 ?lang= 帶過重載 */ }
   const u=new URL(location.href);
   if(stored) u.searchParams.delete('lang'); else u.searchParams.set('lang',v);
   /* 不可用 location.replace(新網址)：那是一般導覽，會直接拿 HTTP 快取。拿掉 ?lang= 後的網址
@@ -11081,7 +11081,7 @@ function hostSetFile(rel){ APP.file={server:true,name:rel,stale:false}; }
    exists＝已存在但不是從這裡開的），讓呼叫端決定要不要帶 force 再試 */
 async function hostWrite(rel,blob,force){
   const r=await fetch('/save?n='+encodeURIComponent(rel)+(force?'&force=1':''),{method:'POST',body:blob});
-  let j=null; try{ j=await r.json(); }catch(e){}
+  let j=null; try{ j=await r.json(); }catch(e){ /* 伺服器回的不是 JSON 時 j 維持 null，下面依 HTTP 狀態或回報的位元組數報錯 */ }
   if(!r.ok) throw Object.assign(new Error(j&&j.error||('HTTP '+r.status)),{code:j&&j.code,status:r.status});
   // 同 writeBlobTo 的回讀驗證：伺服器回報寫了幾個位元組，對不上就不當作存好了
   if(!j||j.bytes!==blob.size) throw new Error(_t('寫入後大小對不上：{0}，應為 {1} 位元組',j&&j.bytes,blob.size));
@@ -11171,7 +11171,7 @@ function asSaveNow(){
   if(asOff) return Promise.resolve(false);
   let fh=null;
   // 先試複製：萬一這個環境的 handle 不能結構化複製，寧可不記檔案，也不要讓自動存檔整條掛掉
-  if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){} }
+  if(APP.file&&APP.file.handle){ try{ structuredClone(APP.file.handle); fh=APP.file.handle; }catch(e){ /* handle 不能結構化複製時不記檔案，理由見上一行 */ } }
   /* srv：檔案在 AI 伺服器的資料夾裡（沒有 handle），連同資料夾一起記，還原時只在同一個資料夾才接回去——
      port 會被下一個工作沿用，換了資料夾還接回去，Cmd/Ctrl+S 就會寫進別的資料夾裡的同名檔。
      dirty：DJ App 的槽位選單據此提醒「這格有還沒存檔的變更」 */
@@ -11220,7 +11220,7 @@ async function asRestore(){
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
       else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
-      try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
+      try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){ /* sessionStorage 被擋時無從得知重載前有沒有未存的修改，● 不會出現 */ }
     }catch(err){
       /* 還原失敗（任何原因）就停用自動存檔，原記錄留在原鍵不動。不停用的話畫面留在空白簡報，
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
@@ -11255,10 +11255,10 @@ const FS_OK = typeof window.showSaveFilePicker==='function' && typeof window.sho
    於是 FS_OK 為 true → 走 FSA → 退到另存 → 選檔器又截斷一個檔，形成毀檔迴圈。
    在真正嘗試寫入之前無從得知會被拒（要查權限得先有 handle，要 handle 得先過選檔器，而選檔器已經截斷了），
    所以只能「撞過一次就記住」，把代價從每次一個檔壓到總共一個檔。 */
-let fsaDenied=false; try{ fsaDenied=localStorage.getItem('dj.fsaDenied')==='1'; }catch(e){}
+let fsaDenied=false; try{ fsaDenied=localStorage.getItem('dj.fsaDenied')==='1'; }catch(e){ /* localStorage 被擋時當作沒被拒絕過；撞到時 fsaGiveUp 仍會在這次載入期間記住 */ }
 const fsUsable=()=>FS_OK&&!fsaDenied;
 function fsaGiveUp(){
-  fsaDenied=true; try{ localStorage.setItem('dj.fsaDenied','1'); }catch(e){}
+  fsaDenied=true; try{ localStorage.setItem('dj.fsaDenied','1'); }catch(e){ /* 記不進 localStorage 時，這次載入期間仍已記住（fsaDenied=true），只是重載後要再撞一次 */ }
   $('#btnSave').title=_t('存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾');
   $('#btnSaveAs').title=_t('另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾');
 }
@@ -11313,7 +11313,7 @@ async function writeBlobTo(h,blob){
      失敗時刻意什麼都不做：不清 APP.dirty（檔名前的 ● 留著）、不更新 APP.file（下次存檔不會沿用
      這次的時間戳去比對）、不呼叫 asSaveNow（自動存檔保留上一份完好的），再往外丟給
      saveDeck／saveDeckAs 的 catch 印紅字。alert 是刻意的——這是資料遺失，不該只留一行提示。 */
-  let f=null; try{ f=await h.getFile(); }catch(e){}
+  let f=null; try{ f=await h.getFile(); }catch(e){ /* 讀不回來時 f 維持 null，下面當成回讀失敗處理：alert 並拋錯 */ }
   if(!f||f.size!==blob.size){
     const got=f? _t('{0} 位元組',f.size) : _t('讀不回來');
     alert(_t('⚠ 存檔沒有成功：「{0}」\n\n'+
@@ -13174,10 +13174,10 @@ function slotTake(n){
 }
 async function slotInfo(){
   let held=new Set();
-  try{ if(navigator.locks) held=new Set(((await navigator.locks.query()).held||[]).map(l=>l.name)); }catch(e){}
+  try{ if(navigator.locks) held=new Set(((await navigator.locks.query()).held||[]).map(l=>l.name)); }catch(e){ /* 查不到鎖的狀態時當作沒有槽位被其他視窗佔用；真的選槽位時 slotTake 還會再搶一次鎖 */ }
   const out=[];
   for(let n=1;n<=SLOT_N;n++){
-    let rec=null; try{ rec=await asTx('readonly',st=>st.get(slotKey(n))); }catch(e){}
+    let rec=null; try{ rec=await asTx('readonly',st=>st.get(slotKey(n))); }catch(e){ /* 讀不到該槽位的紀錄時顯示為空槽位 */ }
     const d=rec&&rec.deck;
     out.push({n, busy:held.has(slotLockName(n)), used:!!d, title:d? d.title||'' : '', pages:d&&d.pages? d.pages.length : 0,
       file:rec&&rec.handle? rec.handle.name : '', at:rec? rec.at : 0, dirty:!!(rec&&rec.dirty)});
@@ -13266,7 +13266,7 @@ async function appBoot(){
 
   // 重新整理：沿用這個分頁原本的槽位。舊頁面的鎖在卸載時才放開，稍等幾次
   let n=0;
-  try{ n=+sessionStorage.getItem('deckjson.slot')||0; }catch(e){}
+  try{ n=+sessionStorage.getItem('deckjson.slot')||0; }catch(e){ /* sessionStorage 被擋時當作沒有記住的槽位，改出選單 */ }
   if(n){
     let ok=false;
     for(let i=0;i<10&&!(ok=await slotTake(n));i++) await new Promise(r=>setTimeout(r,100));
@@ -13277,7 +13277,7 @@ async function appBoot(){
     n=await slotPick(()=>launched);
   }
   APP_SLOT=n; AS_KEY=slotKey(n);
-  try{ sessionStorage.setItem('deckjson.slot',String(n)); }catch(e){}
+  try{ sessionStorage.setItem('deckjson.slot',String(n)); }catch(e){ /* 記不住槽位時，重新整理要再選一次 */ }
   if(launched){
     const h=launched; launched=null;
     try{
@@ -13408,7 +13408,7 @@ function djIds(ids){ return ids==null? null : (Array.isArray(ids)? ids : [ids]);
 /* 等排版穩定。刻意不用 requestAnimationFrame：分頁或面板不在前景時 rAF 會暫停（規格行為），
    外部腳本等不到回呼就整個卡住（2026-09-17 實際遇過：瀏覽器面板不在前景時，等 rAF 的呼叫一直沒有回來）。字體載完才量得準，所以也等 fonts.ready（上限 1.5 秒）。 */
 async function djSettle(){
-  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){ /* fonts.ready 失敗時不再等字體，照樣往下量 */ }
   await new Promise(r=>setTimeout(r,0));
 }
 /* 換上新的 deck。保留使用者目前的頁（還在的話）與選取，只收掉進行中的文字編輯——
@@ -14050,7 +14050,7 @@ function fontAvailable(name){
 async function checkFonts(){
   const F=APP.deck.fonts||FONTS;
   const names=[...new Set([F.ea,F.latin,F.tableLatin])];
-  try{ await document.fonts.ready; }catch(e){}
+  try{ await document.fonts.ready; }catch(e){ /* fonts.ready 失敗時不再等，照樣檢查字體是否可用 */ }
   const missing=names.filter(n=>!fontAvailable(n));
   // 明講後果：未安裝只影響「畫布預覽用替代字體」，匯出仍寫原字體名（在裝有該字體的電腦上就正確）
   $('#fontWarn').textContent= missing.length

@@ -102,7 +102,7 @@ function buildCopyPalWin(){
   head.appendChild(title); head.appendChild(toast); w.appendChild(head);
   const fmt=c=>(forChart?'#':'')+String(c).replace('#','').toUpperCase();
   const copy=async c=>{ const hex=fmt(c);
-    try{ await navigator.clipboard.writeText(hex); }catch(e){}
+    try{ await navigator.clipboard.writeText(hex); }catch(e){ /* 剪貼簿權限被拒時複製不到；下一行的提示仍會顯示「已複製」 */ }
     toast.textContent=_t('已複製 {0}',hex);
     setTimeout(()=>{ if(toast.textContent===_t('已複製 {0}',hex)) toast.textContent=''; },1600); };
   const tabs=document.createElement('div'); tabs.style.cssText='display:flex;gap:4px;margin-bottom:6px;';

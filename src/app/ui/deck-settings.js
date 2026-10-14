@@ -222,7 +222,7 @@ function buildDeckSettings(pp){
         _t('存進這台瀏覽器，之後新建簡報自動帶入')],
     ]));
     if(lsGet(PROFILE_KEY)) pp.appendChild(btnRow([[_t('清除已記住的預設'),()=>{
-      try{ localStorage.removeItem(PROFILE_KEY); }catch(e){}
+      try{ localStorage.removeItem(PROFILE_KEY); }catch(e){ /* 讀得到卻刪不掉時預設會留著，而且沒有提示：下面的 renderProps 不重畫這個面板，成功或失敗按鈕都不會消失 */ }
       renderProps(); },_t('恢復中性出廠值')]]));
     const pfn=document.createElement('div'); pfn.className='row';
     pfn.innerHTML='<span class="unit">'+_t('目前設定檔：<b>{0}</b>。',(APP.deck.profileName||_t('預設')).replace(/</g,'&lt;'))

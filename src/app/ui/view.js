@@ -50,9 +50,9 @@ async function setUiLang(v){
   if((asOff||!APP.ready)&&!confirm(_t('自動存檔目前無法使用，切換語言會重新載入頁面，還沒存成檔案的內容會不見。確定要切換嗎？'))) return;
   clearTimeout(asTimer);
   if(APP.ready&&!asOff) await asSaveNow();
-  try{ if(APP.dirty) sessionStorage.setItem('deckjson.dirty','1'); }catch(e){}
+  try{ if(APP.dirty) sessionStorage.setItem('deckjson.dirty','1'); }catch(e){ /* sessionStorage 被擋時重載後少了未存檔記號（●） */ }
   let stored=false;
-  try{ localStorage.setItem(UI_LANG_KEY,v); stored=localStorage.getItem(UI_LANG_KEY)===v; }catch(e){}
+  try{ localStorage.setItem(UI_LANG_KEY,v); stored=localStorage.getItem(UI_LANG_KEY)===v; }catch(e){ /* localStorage 被擋時 stored 維持 false，下面改用網址參數 ?lang= 帶過重載 */ }
   const u=new URL(location.href);
   if(stored) u.searchParams.delete('lang'); else u.searchParams.set('lang',v);
   /* 不可用 location.replace(新網址)：那是一般導覽，會直接拿 HTTP 快取。拿掉 ?lang= 後的網址
