@@ -71,12 +71,23 @@ async function asRestore(){
       UNDO.length=0; REDO.length=0;   // 還原＝重新開始，不繼承上一場的復原堆疊
       setSel([]); renderAll(); syncPageJson();
       asHint(_t('已還原上次內容（{0}）',asStamp(rec.at)));
+      /* 還原平常不跳視窗（圖表顏色之類的提示只進 console）。有型別不認得的元素時例外：
+         它們畫布上看不到，不講使用者不會知道，所以跳 reportChartIssues，圖表的提示也一起帶出 */
+      if(NORM_REPORT.unknown.length) reportChartIssues();
       /* 「上次開的是哪個檔」就在同一筆記錄裡，與剛還原的內容必然成對（見上方〈檔案存檔〉的說明）。
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
       else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
       try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
-    }catch(err){ asHint(_t('⚠ 上次的自動存檔讀不回來：{0}',err.message),true); }
+    }catch(err){
+      /* 還原失敗（任何原因）就停用自動存檔，原記錄留在原鍵不動。不停用的話畫面留在空白簡報，
+         下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
+         選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
+         不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
+         「開新簡報」會清除自動存檔，那裡同樣看 asOff（io/file.js）。 */
+      asOff=true;
+      asHint(_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err),true);
+    }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
 }

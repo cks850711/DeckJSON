@@ -315,8 +315,10 @@ function urlForCheck(v){
      javascript: 網址配 target 'self'／'_self' 就在本頁執行，網址中間夾 Tab 或開頭帶控制字元也一樣。
      先過 urlForCheck 再比對，只留 http(s) 網址；陣列值會被轉成字串再開，所以元素不是物件的陣列也拿掉
      （axisPointer.link 也叫 link，但它是物件陣列，留著）
-   沒有處理的：toolbox.feature.saveAsImage 依讀碼只在 IE／舊 Edge 才以 document.write 開新視窗，
-   其他瀏覽器是下載圖檔；optionToContent 這類要給函式的選項，JSON 寫不出函式。
+   另外整個拿掉 toolbox.feature.saveAsImage。它不執行程式碼，但按一下就下載圖檔、檔名由簡報決定，
+   等於讓別人給的簡報一點就往使用者的電腦寫檔；要圖請用工具列的快照或匯出。依讀碼，它在 IE／舊 Edge
+   還會以 document.write 開新視窗。
+   沒有處理的：optionToContent 這類要給函式的選項，JSON 寫不出函式。
    匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
    op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
 const CHART_URL_OK=/^https?:/i;
@@ -334,6 +336,7 @@ function chartSafeOption(op){
       const v=node[k];
       if(k==='tooltip') for(const t of objs(v)) t.renderMode='richText';
       if(k==='toolbox') for(const t of objs(v)){
+        if(t.feature&&typeof t.feature==='object') delete t.feature.saveAsImage;
         const dv=t.feature&&t.feature.dataView;
         if(!dv||typeof dv!=='object') continue;
         if('lang' in dv){ if(Array.isArray(dv.lang)) dv.lang=dv.lang.map(txt); else delete dv.lang; }
@@ -439,12 +442,13 @@ function renderStage(){
   const liveIds=new Set();
   /* 母版元素墊在最底下，且刻意不給 .el（不可選、不可拖、不進圖層、不算超界）——
      它們不屬於這一頁，要改請按「編輯母版」，否則在某頁改動會無聲影響全部頁面。 */
+  // 型別不認得的元素不畫（見 model/normalize.js 的 elTypeOk），母版與本頁都一樣
   for(const el of pageMasterEls(pg)){
-    if(el.hidden) continue;
+    if(el.hidden||!elTypeOk(el.type)) continue;
     liveIds.add(el.id);
     const b=renderEl(el); b.classList.remove('el'); b.classList.add('mel'); stage.appendChild(b);
   }
-  for(const el of curEls()){ if(el.hidden) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
+  for(const el of curEls()){ if(el.hidden||!elTypeOk(el.type)) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
   for(const [id,inst] of CHARTS) if(!liveIds.has(id)){ inst.dispose(); CHARTS.delete(id); }
   renderPageNum(pg);
   markOverflow();

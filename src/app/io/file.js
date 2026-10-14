@@ -176,7 +176,7 @@ $('#btnNew').onclick=()=>{
   // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
   if(!confirm(_t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
   if(!confirm(_t('再確認一次：真的要放棄目前內容？'))) return;
-  asClear();
+  if(!asOff) asClear();   // 自動存檔停用時（例如還原失敗），留著的那筆記錄不能在這裡被刪掉
   commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
   setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪

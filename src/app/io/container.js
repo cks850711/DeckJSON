@@ -220,6 +220,7 @@ function resolveAssets(obj){
   return obj;
 }
 function loadDeck(obj){
+  UNKNOWN_SHOWN.clear();   // 換一份簡報：型別不認得的元素要重新提示一次
   const c=resolveAssets(structuredClone(obj));
   const d=normalizeDeck(c);
   commitUndo();

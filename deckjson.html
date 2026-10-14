@@ -2270,7 +2270,9 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n{0}\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）": "These map region names aren't in the GeoJSON, so those regions keep the base color:\n{0}\n(The names must match the GeoJSON's properties.name exactly.)",
   "表格 {0} 缺 colW/rowH/cells": "Table {0} is missing colW/rowH/cells",
   "圖片 {0} 缺 dataUrl": "Image {0} is missing dataUrl",
-  "元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞": "Element {0} has an unknown type “{1}”. This deck may come from a newer version, or it is damaged",
+  "以下元素的型別不認得，畫布上不顯示、匯出時略過，存檔時原樣保留（可能來自較新的版本）：\n{0}": "These elements have a type this version doesn't know. They aren't drawn on the canvas or exported, and are kept as they are when you save (the deck may come from a newer version):\n{0}",
+  "• 母版 {0}：{1}": "• Master {0}: {1}",
+  "以下元素的型別不認得，沒有匯出：\n{0}": "These elements have an unknown type and were not exported:\n{0}",
   "容器內缺少資產檔：{0}": "Asset file missing from the container: {0}",
   "這是「{0}」格式的 .deck，不是 DeckJSON 的。\n副檔名相同但內容規格不同，請用產生它的工具開啟。": "This is a .deck in the “{0}” format, not DeckJSON's.\nSame extension, different format — open it with the tool that made it.",
   "這個 .deck 的 manifest 叫 manifest.json，不是 DeckJSON 的格式（DeckJSON 讀 deck.json）。": "This .deck's manifest is called manifest.json, which isn't DeckJSON's format (DeckJSON reads deck.json).",
@@ -2315,7 +2317,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "⚠ 自動存檔停用：{0}": "⚠ Autosave disabled: {0}",
   "存檔中…": "Saving…",
   "已還原上次內容（{0}）": "Restored your last session ({0})",
-  "⚠ 上次的自動存檔讀不回來：{0}": "⚠ Couldn't read back the last autosave: {0}",
+  "⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}": "⚠ Couldn't read back the last autosave, so autosave is off and that record is left untouched. Use Save or Save As to keep this session's changes. Reason: {0}",
   "存檔（Cmd/Ctrl+S）：此環境無法就地覆寫，會下載一份副本到下載資料夾": "Save (Cmd/Ctrl+S): this environment can't overwrite files in place, so a copy is downloaded to your Downloads folder",
   "另存新檔：此環境無法就地覆寫，會下載一份副本到下載資料夾": "Save as: this environment can't overwrite files in place, so a copy is downloaded to your Downloads folder",
   "DeckJSON 簡報": "DeckJSON deck",
@@ -4771,8 +4773,10 @@ function urlForCheck(v){
      javascript: 網址配 target 'self'／'_self' 就在本頁執行，網址中間夾 Tab 或開頭帶控制字元也一樣。
      先過 urlForCheck 再比對，只留 http(s) 網址；陣列值會被轉成字串再開，所以元素不是物件的陣列也拿掉
      （axisPointer.link 也叫 link，但它是物件陣列，留著）
-   沒有處理的：toolbox.feature.saveAsImage 依讀碼只在 IE／舊 Edge 才以 document.write 開新視窗，
-   其他瀏覽器是下載圖檔；optionToContent 這類要給函式的選項，JSON 寫不出函式。
+   另外整個拿掉 toolbox.feature.saveAsImage。它不執行程式碼，但按一下就下載圖檔、檔名由簡報決定，
+   等於讓別人給的簡報一點就往使用者的電腦寫檔；要圖請用工具列的快照或匯出。依讀碼，它在 IE／舊 Edge
+   還會以 document.write 開新視窗。
+   沒有處理的：optionToContent 這類要給函式的選項，JSON 寫不出函式。
    匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
    op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
 const CHART_URL_OK=/^https?:/i;
@@ -4790,6 +4794,7 @@ function chartSafeOption(op){
       const v=node[k];
       if(k==='tooltip') for(const t of objs(v)) t.renderMode='richText';
       if(k==='toolbox') for(const t of objs(v)){
+        if(t.feature&&typeof t.feature==='object') delete t.feature.saveAsImage;
         const dv=t.feature&&t.feature.dataView;
         if(!dv||typeof dv!=='object') continue;
         if('lang' in dv){ if(Array.isArray(dv.lang)) dv.lang=dv.lang.map(txt); else delete dv.lang; }
@@ -4895,12 +4900,13 @@ function renderStage(){
   const liveIds=new Set();
   /* 母版元素墊在最底下，且刻意不給 .el（不可選、不可拖、不進圖層、不算超界）——
      它們不屬於這一頁，要改請按「編輯母版」，否則在某頁改動會無聲影響全部頁面。 */
+  // 型別不認得的元素不畫（見 model/normalize.js 的 elTypeOk），母版與本頁都一樣
   for(const el of pageMasterEls(pg)){
-    if(el.hidden) continue;
+    if(el.hidden||!elTypeOk(el.type)) continue;
     liveIds.add(el.id);
     const b=renderEl(el); b.classList.remove('el'); b.classList.add('mel'); stage.appendChild(b);
   }
-  for(const el of curEls()){ if(el.hidden) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
+  for(const el of curEls()){ if(el.hidden||!elTypeOk(el.type)) continue; liveIds.add(el.id); stage.appendChild(renderEl(el)); }
   for(const [id,inst] of CHARTS) if(!liveIds.has(id)){ inst.dispose(); CHARTS.delete(id); }
   renderPageNum(pg);
   markOverflow();
@@ -9812,7 +9818,7 @@ function normParaOpts(p){
    - 長度限 6／8 位。實測 'fade'／'beef' 這種英文單字補上 # 之後是合法的 4 位 hex 色，
      只靠 CSS.supports 會把它們改成顏色。裸碼慣例本來就是 6 位，3／4 位一律歸類為無法辨識並回報 */
 const CHART_COLOR_KEY=/^(color|borderColor|backgroundColor|shadowColor|textBorderColor|textShadowColor|areaColor|fill|stroke)$/;
-const NORM_REPORT={colorFixed:0,colorBad:[],mapMissing:[],mapNameBad:[]};
+const NORM_REPORT={colorFixed:0,colorBad:[],mapMissing:[],mapNameBad:[],unknown:[]};
 function fixChartColor(v,k,out){
   if(!CHART_COLOR_KEY.test(k||'')||!v) return undefined;
   if(CSS.supports('color',v)) return undefined;                 // 已合法（含具名色、rgba()、漸層關鍵字）
@@ -9879,7 +9885,7 @@ function registerMaps(d){
    正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
 const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function normalizeDeck(d){
-  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
+  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[]; NORM_REPORT.unknown=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error(_t('不是有效的 DeckJSON（缺 pages）'));
   // 地圖要在 normEls 之前註冊：那裡會檢查 map series 引用的名稱在不在
   {const mp=normMaps(d.maps); if(mp){ d.maps=mp; registerMaps(d); } else delete d.maps;}
@@ -9939,6 +9945,9 @@ function normalizeDeck(d){
     if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
     pg.elements=normEls(pg.elements,mstIds,idMap);
   }
+  // 型別不認得的元素（見 elTypeOk）：記下位置，畫布、匯出、提示都靠這份清單
+  for(const e of (d.master||{}).elements||[]) if(!elTypeOk(e.type)) NORM_REPORT.unknown.push({page:0,id:e.id,type:String(e.type)});
+  d.pages.forEach((pg,i)=>{ for(const e of pg.elements) if(!elTypeOk(e.type)) NORM_REPORT.unknown.push({page:i+1,id:e.id,type:String(e.type)}); });
   // console 一律留痕（含自動存檔還原這條靜默路徑）；要不要跳視窗由呼叫端決定
   if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
     console.warn('[deckjson] chart.option 顏色：自動補 # '+NORM_REPORT.colorFixed+' 處'
@@ -9947,6 +9956,8 @@ function normalizeDeck(d){
     console.warn('[deckjson] map series 引用了 deck.maps 沒有的地圖：'+NORM_REPORT.mapMissing.join(_t('、')));
   if(NORM_REPORT.mapNameBad.length)
     console.warn('[deckjson] map series 的區域名稱在 GeoJSON 找不到：'+NORM_REPORT.mapNameBad.join(_t('、')));
+  if(NORM_REPORT.unknown.length)
+    console.warn('[deckjson] 型別不認得的元素（不畫、不匯出、存檔保留）：'+NORM_REPORT.unknown.map(unknownElLine).join(' '));
   return d;
 }
 // 開檔與套用 JSON 這兩個「人剛貼進來一份東西」的時機才跳視窗——
@@ -9961,8 +9972,20 @@ function reportChartIssues(){
     +'\n請在圖表的「option JSON」分頁按「匯入地圖 GeoJSON」補上，名稱要與 series.map 相同。',r.mapMissing.join(_t('、'))));
   if(r.mapNameBad.length) msg.push(_t('以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n{0}'
     +'\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）',r.mapNameBad.join(_t('、'))));
+  const um=unknownElNotice(); if(um) msg.push(um);
   if(msg.length) alert(msg.join('\n\n'));
 }
+/* 型別不認得的元素的提示文字；沒有要講的回 ''。同一份簡報只講一次：它們會一直留在檔案裡，
+   而 reportChartIssues 在每次貼上、改圖表之後都會跑。換一份簡報時 loadDeck 清空 UNKNOWN_SHOWN。 */
+const UNKNOWN_SHOWN=new Set();
+function unknownElNotice(){
+  const unk=NORM_REPORT.unknown.filter(u=>!UNKNOWN_SHOWN.has(u.page+'|'+u.id+'|'+u.type));
+  for(const u of unk) UNKNOWN_SHOWN.add(u.page+'|'+u.id+'|'+u.type);
+  return unk.length? _t('以下元素的型別不認得，畫布上不顯示、匯出時略過，存檔時原樣保留（可能來自較新的版本）：\n{0}',
+    unk.map(unknownElLine).join('\n')) : '';
+}
+// 提示清單的一行。型別是簡報檔裡的原字串，只放進 alert 與 console，都是純文字
+const unknownElLine=u=>u.page? _t('• 第 {0} 頁 {1}：{2}',u.page,u.id,u.type.slice(0,40)) : _t('• 母版 {0}：{1}',u.id,u.type.slice(0,40));
 /* 元素 id 只收英數、底線與連字號。id 會被拼進畫布的 `.el[data-id="…"]` 選擇器，也會顯示在屬性面板；
    外來簡報的 id 帶引號時選擇器直接拋錯，帶標籤時曾在點選元素時被當成 HTML 執行。
    不合法的換新 id，且同一份簡報裡相同的舊 id 換成同一個新 id（idMap 由 normalizeDeck 建、
@@ -9978,11 +10001,12 @@ function safeElId(id,idMap){
   if(!idMap.has(s)) idMap.set(s,uid('e'));
   return idMap.get(s);
 }
-/* 元素型別只收 DECK_SCHEMA.element 列出的那幾種，其餘整份拒絕，不是丟掉那個元素：
-   - 丟掉是靜默的。較新版本加了新型別的簡報拿到這裡開，存檔一次那些元素就不見了，使用者不會知道。
-     這與 normalizeDeck 其他地方「缺 dataUrl 的圖片、缺 cells 的表格就報錯」是同一個取捨
-   - 拒絕不動到原檔，錯誤訊息指出是哪個元素，要修要換版本都有線索
-   type 不是字串的（缺鍵、數字、物件）一律算不認得。 */
+/* 認得的元素型別＝DECK_SCHEMA.element 列出的那幾種；type 不是字串的（缺鍵、數字、物件）一律算不認得。
+   不認得的元素原樣保留：只照常換掉不合法的 id，其餘欄位一個都不動。畫布與縮圖不畫、匯出跳過，
+   開檔、套用 JSON 與自動存檔還原時以 reportChartIssues 列出是哪些元素，存檔時照原樣寫回。
+   不丟掉：較新版本加了新型別的簡報拿到這裡開，存一次檔那些元素就不見了，使用者不會知道。
+   不整份拒絕：檔案開不了，自動存檔也還原不了（還原失敗時怎麼保住記錄見 io/autosave.js）；
+   而且舊版的 DJ.add 對未知型別只給警告、照樣存進去，這種檔案確實存在。 */
 const elTypeOk=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
    撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
@@ -9993,9 +10017,9 @@ function normEls(list,reserved,idMap){
   idMap=idMap||new Map();
   for(const el of arr){
     el.id=safeElId(el.id,idMap);
-    if(!elTypeOk(el.type)) throw new Error(_t('元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞',el.id,String(el.type).slice(0,40)));
     if(seenIds.has(el.id)) el.id=uid('e');
     seenIds.add(el.id);
+    if(!elTypeOk(el.type)) continue;   // 不認得的型別：id 之外原樣保留（見 elTypeOk 上方說明）
     el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
     if(el.opacity!=null){ const o=Math.round(+el.opacity); el.opacity=(isFinite(o)&&o>=0&&o<100)?o:undefined; if(el.opacity===undefined) delete el.opacity; }
     if(el.groupId!=null) el.groupId=String(el.groupId); else delete el.groupId;
@@ -10744,6 +10768,7 @@ function resolveAssets(obj){
   return obj;
 }
 function loadDeck(obj){
+  UNKNOWN_SHOWN.clear();   // 換一份簡報：型別不認得的元素要重新提示一次
   const c=resolveAssets(structuredClone(obj));
   const d=normalizeDeck(c);
   commitUndo();
@@ -11136,12 +11161,23 @@ async function asRestore(){
       UNDO.length=0; REDO.length=0;   // 還原＝重新開始，不繼承上一場的復原堆疊
       setSel([]); renderAll(); syncPageJson();
       asHint(_t('已還原上次內容（{0}）',asStamp(rec.at)));
+      /* 還原平常不跳視窗（圖表顏色之類的提示只進 console）。有型別不認得的元素時例外：
+         它們畫布上看不到，不講使用者不會知道，所以跳 reportChartIssues，圖表的提示也一起帶出 */
+      if(NORM_REPORT.unknown.length) reportChartIssues();
       /* 「上次開的是哪個檔」就在同一筆記錄裡，與剛還原的內容必然成對（見上方〈檔案存檔〉的說明）。
          權限不跨頁面重載，故標 stale，等使用者按存檔（那時才有 user gesture）再要權限。 */
       if(rec.handle){ APP.file={handle:rec.handle,name:rec.handle.name,stamp:0,stale:true}; fileHint(); }
       else if(rec.srv&&hostServer()&&rec.srv.folder===HOST.folder){ hostSetFile(rec.srv.name); fileHint(); }
       try{ if(sessionStorage.getItem('deckjson.dirty')){ sessionStorage.removeItem('deckjson.dirty'); APP.dirty=true; fileHint(); } }catch(e){}
-    }catch(err){ asHint(_t('⚠ 上次的自動存檔讀不回來：{0}',err.message),true); }
+    }catch(err){
+      /* 還原失敗（任何原因）就停用自動存檔，原記錄留在原鍵不動。不停用的話畫面留在空白簡報，
+         下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
+         選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
+         不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
+         「開新簡報」會清除自動存檔，那裡同樣看 asOff（io/file.js）。 */
+      asOff=true;
+      asHint(_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err),true);
+    }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
 }
@@ -11322,7 +11358,7 @@ $('#btnNew').onclick=()=>{
   // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
   if(!confirm(_t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
   if(!confirm(_t('再確認一次：真的要放棄目前內容？'))) return;
-  asClear();
+  if(!asOff) asClear();   // 自動存檔停用時（例如還原失敗），留著的那筆記錄不能在這裡被刪掉
   commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
   setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪
@@ -12727,7 +12763,11 @@ async function exportPptx(download=true){
      改用「借一張暫時投影片跑既有的 addElToSlide，再把成果移植到 layout 上」——
      母版因此自動享有一般元素的全部能力，也不必維護第二套寫入器。 */
   const MST=APP.deck.master;
-  const mstEls=(MST&&MST.on)? MST.elements.filter(e=>!e.hidden) : [];
+  // 型別不認得的元素一律不匯出（見 model/normalize.js 的 elTypeOk）。從工具列匯出時列給使用者看，DJ.exportPptx 不跳視窗
+  const unkSkip=[];
+  if(MST&&MST.on) for(const e of MST.elements) if(!e.hidden&&!elTypeOk(e.type)) unkSkip.push({page:0,id:e.id,type:String(e.type)});
+  APP.deck.pages.forEach((pg,i)=>{ for(const e of pg.elements) if(!e.hidden&&!elTypeOk(e.type)) unkSkip.push({page:i+1,id:e.id,type:String(e.type)}); });
+  const mstEls=(MST&&MST.on)? MST.elements.filter(e=>!e.hidden&&elTypeOk(e.type)) : [];
   const useMasterLayout=mstEls.length&&!MST.flatten;
   // 展開模式下這一頁要併進來的母版元素（匯出與匯出後製都要用同一份，否則後製會漏掉母版形狀）
   const mstForPage=pg=>(mstEls.length&&MST.flatten&&!pg.noMaster)? mstEls : [];
@@ -12752,7 +12792,7 @@ async function exportPptx(download=true){
       slide.background={data:pg.bgImage,path:'bg.'+((m&&m[1].toLowerCase()==='jpeg')?'jpeg':'png')};
     }else slide.background={color:pg.bg||'FFFFFF'};
     const pend=[];   // 本頁的「待插入影片」清單（本機影片只放了封面圖佔位）
-    for(const el of [...mstForPage(pg),...pg.elements]) if(!el.hidden) await addElToSlide(slide,el,pend);
+    for(const el of [...mstForPage(pg),...pg.elements]) if(!el.hidden&&elTypeOk(el.type)) await addElToSlide(slide,el,pend);
     if(pg.skip) slide.hidden=true;   // 不放映此頁 → <p:sld show="0">
     /* 講者備忘稿。待插入影片的提示在這裡「只附加到輸出字串」，刻意不寫回 pg.notes——
        否則每次匯出都會再累加一份，還得做去重，而且動到了使用者自己的資料。 */
@@ -13011,12 +13051,15 @@ async function exportPptx(download=true){
       $('#pendModal').hidden=false;
     }
     // 原生圖表降級：勾選當下能過、之後改了 option 才會發生。必須明講，
-    // 否則使用者拿到的是一張圖片卻以為是可編輯圖表。
+    // 否則使用者拿到的是一張圖片卻以為是可編輯圖表。型別不認得而沒匯出的元素也在同一則裡講
+    const notes=[];
     if(nvDowngrade.length){
       const pgOf=id=>APP.deck.pages.findIndex(p=>p.elements.some(e=>e.id===id))+1;
-      alert(_t('以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}',
+      notes.push(_t('以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}',
         nvDowngrade.map(d=>_t('• 第 {0} 頁 {1}：{2}',pgOf(d.id),d.id,d.reason)).join('\n')));
     }
+    if(unkSkip.length) notes.push(_t('以下元素的型別不認得，沒有匯出：\n{0}',unkSkip.map(unknownElLine).join('\n')));
+    if(notes.length) alert(notes.join('\n\n'));
   }
   return b64;
 }

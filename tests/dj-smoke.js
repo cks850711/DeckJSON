@@ -481,7 +481,7 @@ export default async function run() {
         {id: 'ch', type: 'chart', x: 400, y: 40, w: 600, h: 400, option: {
           title: {text: 'TITLE', link: 'java\tscript:' + X('title.link'), target: 'self',
             subtext: 'SUBTEXT', sublink: 'javascript:' + X('title.sublink'), subtarget: 'self'},
-          toolbox: {feature: {dataView: {lang: [ATK('dataView0'), ATK('dataView1'), ATK('dataView2')]}}},
+          toolbox: {feature: {dataView: {lang: [ATK('dataView0'), ATK('dataView1'), ATK('dataView2')]}, saveAsImage: {name: 'smoke-download'}}},
           tooltip: {trigger: 'item', renderMode: 'html', formatter: ATK('tooltip')},
           xAxis: {type: 'category', data: ['a', 'b', 'c']}, yAxis: {},
           series: [{type: 'bar', data: [3, {value: 2, tooltip: {formatter: ATK('tooltip.item')}}, 4]}]}},
@@ -501,25 +501,37 @@ export default async function run() {
     await pick('g1');
     ok('security: the group panel shows the group id as text', document.querySelector('#propPanel h4 .unit').textContent === BAD_GID);
     ok('security: selecting elements runs nothing', window.__djx.length === 0, window.__djx);
-    for (const id of ['ch', 'ch2']) {
-      const cv = document.querySelector(`#stage .el[data-id="${id}"] canvas`), rc = cv.getBoundingClientRect();
-      const fire = (t, x, y) => cv.dispatchEvent(new MouseEvent(t, {clientX: rc.left + x * rc.width, clientY: rc.top + y * rc.height, bubbles: true}));
-      for (let y = 0.01; y < 1; y += 0.04) for (let x = 0.01; x < 1; x += 0.03) fire('mousemove', x, y);
-      // 上緣是標題、副標題與工具列（資料檢視鈕）
-      for (let y = 0.005; y < 0.16; y += 0.012) for (let x = 0.005; x < 1; x += 0.01) for (const t of ['mousedown', 'mouseup', 'click']) fire(t, x, y);
-      // 提示框再用 ECharts 自己的公開 API 逐點叫出一次。只靠上面的滑鼠移動會漏測：
-      // 2026-10-13 實測，同一段移動在分頁不在前景時常常叫不出提示框，攻擊內容沒機會執行，測試卻照樣通過
-      const inst = echarts.getInstanceByDom(cv.parentNode.parentNode);
-      for (let i = 0; i < 3; i++) inst.dispatchAction({type: 'showTip', seriesIndex: 0, dataIndex: i});
-    }
+    // 點圖表上緣會點到工具列。下載鈕還在的版本會真的下載（ECharts 對一個帶 download 的 <a> 送 click），先攔住
+    const downloads = [];
+    const realDispatch = EventTarget.prototype.dispatchEvent, realClick = HTMLAnchorElement.prototype.click;
+    EventTarget.prototype.dispatchEvent = function (ev) {
+      if (this instanceof HTMLAnchorElement && this.hasAttribute('download')) { downloads.push(this.download); return true; }
+      return realDispatch.call(this, ev);
+    };
+    HTMLAnchorElement.prototype.click = function () {
+      if (this.hasAttribute('download')) { downloads.push(this.download); return; }
+      return realClick.call(this);
+    };
+    try {
+      for (const id of ['ch', 'ch2']) {
+        const cv = document.querySelector(`#stage .el[data-id="${id}"] canvas`), rc = cv.getBoundingClientRect();
+        const fire = (t, x, y) => cv.dispatchEvent(new MouseEvent(t, {clientX: rc.left + x * rc.width, clientY: rc.top + y * rc.height, bubbles: true}));
+        for (let y = 0.01; y < 1; y += 0.04) for (let x = 0.01; x < 1; x += 0.03) fire('mousemove', x, y);
+        // 上緣是標題、副標題與工具列（資料檢視鈕、下載鈕）
+        for (let y = 0.005; y < 0.16; y += 0.012) for (let x = 0.005; x < 1; x += 0.01) for (const t of ['mousedown', 'mouseup', 'click']) fire(t, x, y);
+        // 提示框再用 ECharts 自己的公開 API 逐點叫出一次。只靠上面的滑鼠移動會漏測：
+        // 2026-10-13 實測，同一段移動在分頁不在前景時常常叫不出提示框，攻擊內容沒機會執行，測試卻照樣通過
+        const inst = echarts.getInstanceByDom(cv.parentNode.parentNode);
+        for (let i = 0; i < 3; i++) inst.dispatchAction({type: 'showTip', seriesIndex: 0, dataIndex: i});
+      }
+    } finally { EventTarget.prototype.dispatchEvent = realDispatch; HTMLAnchorElement.prototype.click = realClick; }
     await tick(300);
     ok('security: chart tooltip, dataView and title links do not run', window.__djx.length === 0, window.__djx);
-    let unknown = null;
-    const keep = JSON.stringify(DJ.get('sA'));
-    try { await DJ.load({title: 't', pages: [{id: 'u', elements: [{id: 'u1', type: ATK('type'), x: 0, y: 0, w: 10, h: 10}]}]}); }
-    catch (e) { unknown = e.message; }
-    ok('security: an unknown element type rejects the whole deck', !!unknown && unknown.includes('u1'), unknown);
-    ok('security: the rejected deck leaves the open one untouched', JSON.stringify(DJ.get('sA')) === keep);
+    const tbFeat = ((echarts.getInstanceByDom(document.querySelector('#stage .el[data-id="ch"] canvas').parentNode.parentNode)
+      .getOption().toolbox || [])[0] || {}).feature || {};
+    ok('security: the canvas chart has no saveAsImage button, other toolbox features stay',
+      !('saveAsImage' in tbFeat) && 'dataView' in tbFeat, Object.keys(tbFeat));
+    ok('security: clicking the chart toolbar downloads nothing', downloads.length === 0, downloads);
     const nBefore = DJ.get('sA').elements.length;
     const dt = new DataTransfer();
     // 用 <img onerror> 以外的寫法：載入失敗的 <img> 會被當成「沒收進來的格內圖片」跳出提示，卡住測試
@@ -534,6 +546,24 @@ export default async function run() {
     ok('security: pasted HTML does not run', window.__djx.length === 0, window.__djx);
     ok('security: the pasted table still arrives, with its embedded image and class-based bold',
       added.length === 2 && added[0].type === 'table' && added[1].type === 'image' && added[0].cells[0][0].bold === true, added.map(e => e.type));
+    // 型別不認得的元素：原樣保留、畫布不畫，型別只以文字出現在提示、圖層與屬性面板。載入時的提示是 alert，先攔下來
+    const alerts = [], realAlert = window.alert;
+    const UNK = {id: 'u1', type: ATK('type'), x: 40, y: 40, w: 100, h: 40, extra: {deep: [1, 2]}};
+    window.alert = m => alerts.push(String(m));
+    try { await DJ.load({title: 'unknown', pages: [{id: 'u', elements: [structuredClone(UNK), TEXT('t1', 40, 120, 200, 40, 't')]}]}); }
+    finally { window.alert = realAlert; }
+    ok('security: an unknown element type is kept with every field', JSON.stringify(DJ.get('u', 'u1')) === JSON.stringify(UNK), DJ.get('u', 'u1'));
+    DJ.show('u'); await tick(100);
+    ok('security: an unknown element type is not drawn', !document.querySelector('#stage [data-id="u1"]'));
+    ok('security: loading names the unknown element', alerts.some(m => m.includes('u1')), alerts);
+    const layersBtn = document.querySelector('#btnLayers');
+    layersBtn.click(); await tick(100);
+    const row = document.querySelector('#layerList .layerRow[data-id="u1"]');
+    row.click(); await tick(100);
+    ok('security: the layer list and property panel show the type as text',
+      row.querySelector('.lname').textContent === UNK.type && document.querySelector('#propPanel h4').textContent.startsWith(UNK.type));
+    layersBtn.click();
+    ok('security: the unknown type runs nothing', window.__djx.length === 0, window.__djx);
     delete window.__djx;
     await DJ.load(fixture());
 

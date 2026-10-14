@@ -176,7 +176,7 @@ function normParaOpts(p){
    - 長度限 6／8 位。實測 'fade'／'beef' 這種英文單字補上 # 之後是合法的 4 位 hex 色，
      只靠 CSS.supports 會把它們改成顏色。裸碼慣例本來就是 6 位，3／4 位一律歸類為無法辨識並回報 */
 const CHART_COLOR_KEY=/^(color|borderColor|backgroundColor|shadowColor|textBorderColor|textShadowColor|areaColor|fill|stroke)$/;
-const NORM_REPORT={colorFixed:0,colorBad:[],mapMissing:[],mapNameBad:[]};
+const NORM_REPORT={colorFixed:0,colorBad:[],mapMissing:[],mapNameBad:[],unknown:[]};
 function fixChartColor(v,k,out){
   if(!CHART_COLOR_KEY.test(k||'')||!v) return undefined;
   if(CSS.supports('color',v)) return undefined;                 // 已合法（含具名色、rgba()、漸層關鍵字）
@@ -243,7 +243,7 @@ function registerMaps(d){
    正常路徑不會走到——hydrate 跑在 normalizeDeck 之前，那時已經全是 data URL。 */
 const looksLikeAssetRef=v=>/^[0-9a-f]{16}(-\d+)?\.[a-z0-9]{2,5}$/i.test(v);
 function normalizeDeck(d){
-  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[];
+  NORM_REPORT.colorFixed=0; NORM_REPORT.colorBad=[]; NORM_REPORT.mapMissing=[]; NORM_REPORT.mapNameBad=[]; NORM_REPORT.unknown=[];
   if(!d||typeof d!=='object'||!Array.isArray(d.pages)||!d.pages.length) throw new Error(_t('不是有效的 DeckJSON（缺 pages）'));
   // 地圖要在 normEls 之前註冊：那裡會檢查 map series 引用的名稱在不在
   {const mp=normMaps(d.maps); if(mp){ d.maps=mp; registerMaps(d); } else delete d.maps;}
@@ -303,6 +303,9 @@ function normalizeDeck(d){
     if(pg.noMaster) pg.noMaster=true; else delete pg.noMaster;   // 這一頁不套母版（如封面）
     pg.elements=normEls(pg.elements,mstIds,idMap);
   }
+  // 型別不認得的元素（見 elTypeOk）：記下位置，畫布、匯出、提示都靠這份清單
+  for(const e of (d.master||{}).elements||[]) if(!elTypeOk(e.type)) NORM_REPORT.unknown.push({page:0,id:e.id,type:String(e.type)});
+  d.pages.forEach((pg,i)=>{ for(const e of pg.elements) if(!elTypeOk(e.type)) NORM_REPORT.unknown.push({page:i+1,id:e.id,type:String(e.type)}); });
   // console 一律留痕（含自動存檔還原這條靜默路徑）；要不要跳視窗由呼叫端決定
   if(NORM_REPORT.colorFixed||NORM_REPORT.colorBad.length)
     console.warn('[deckjson] chart.option 顏色：自動補 # '+NORM_REPORT.colorFixed+' 處'
@@ -311,6 +314,8 @@ function normalizeDeck(d){
     console.warn('[deckjson] map series 引用了 deck.maps 沒有的地圖：'+NORM_REPORT.mapMissing.join(_t('、')));
   if(NORM_REPORT.mapNameBad.length)
     console.warn('[deckjson] map series 的區域名稱在 GeoJSON 找不到：'+NORM_REPORT.mapNameBad.join(_t('、')));
+  if(NORM_REPORT.unknown.length)
+    console.warn('[deckjson] 型別不認得的元素（不畫、不匯出、存檔保留）：'+NORM_REPORT.unknown.map(unknownElLine).join(' '));
   return d;
 }
 // 開檔與套用 JSON 這兩個「人剛貼進來一份東西」的時機才跳視窗——
@@ -325,8 +330,20 @@ function reportChartIssues(){
     +'\n請在圖表的「option JSON」分頁按「匯入地圖 GeoJSON」補上，名稱要與 series.map 相同。',r.mapMissing.join(_t('、'))));
   if(r.mapNameBad.length) msg.push(_t('以下地圖區域名稱在 GeoJSON 內找不到，該區會維持底色：\n{0}'
     +'\n（名稱要與 GeoJSON 的 properties.name 逐字相同。）',r.mapNameBad.join(_t('、'))));
+  const um=unknownElNotice(); if(um) msg.push(um);
   if(msg.length) alert(msg.join('\n\n'));
 }
+/* 型別不認得的元素的提示文字；沒有要講的回 ''。同一份簡報只講一次：它們會一直留在檔案裡，
+   而 reportChartIssues 在每次貼上、改圖表之後都會跑。換一份簡報時 loadDeck 清空 UNKNOWN_SHOWN。 */
+const UNKNOWN_SHOWN=new Set();
+function unknownElNotice(){
+  const unk=NORM_REPORT.unknown.filter(u=>!UNKNOWN_SHOWN.has(u.page+'|'+u.id+'|'+u.type));
+  for(const u of unk) UNKNOWN_SHOWN.add(u.page+'|'+u.id+'|'+u.type);
+  return unk.length? _t('以下元素的型別不認得，畫布上不顯示、匯出時略過，存檔時原樣保留（可能來自較新的版本）：\n{0}',
+    unk.map(unknownElLine).join('\n')) : '';
+}
+// 提示清單的一行。型別是簡報檔裡的原字串，只放進 alert 與 console，都是純文字
+const unknownElLine=u=>u.page? _t('• 第 {0} 頁 {1}：{2}',u.page,u.id,u.type.slice(0,40)) : _t('• 母版 {0}：{1}',u.id,u.type.slice(0,40));
 /* 元素 id 只收英數、底線與連字號。id 會被拼進畫布的 `.el[data-id="…"]` 選擇器，也會顯示在屬性面板；
    外來簡報的 id 帶引號時選擇器直接拋錯，帶標籤時曾在點選元素時被當成 HTML 執行。
    不合法的換新 id，且同一份簡報裡相同的舊 id 換成同一個新 id（idMap 由 normalizeDeck 建、
@@ -342,11 +359,12 @@ function safeElId(id,idMap){
   if(!idMap.has(s)) idMap.set(s,uid('e'));
   return idMap.get(s);
 }
-/* 元素型別只收 DECK_SCHEMA.element 列出的那幾種，其餘整份拒絕，不是丟掉那個元素：
-   - 丟掉是靜默的。較新版本加了新型別的簡報拿到這裡開，存檔一次那些元素就不見了，使用者不會知道。
-     這與 normalizeDeck 其他地方「缺 dataUrl 的圖片、缺 cells 的表格就報錯」是同一個取捨
-   - 拒絕不動到原檔，錯誤訊息指出是哪個元素，要修要換版本都有線索
-   type 不是字串的（缺鍵、數字、物件）一律算不認得。 */
+/* 認得的元素型別＝DECK_SCHEMA.element 列出的那幾種；type 不是字串的（缺鍵、數字、物件）一律算不認得。
+   不認得的元素原樣保留：只照常換掉不合法的 id，其餘欄位一個都不動。畫布與縮圖不畫、匯出跳過，
+   開檔、套用 JSON 與自動存檔還原時以 reportChartIssues 列出是哪些元素，存檔時照原樣寫回。
+   不丟掉：較新版本加了新型別的簡報拿到這裡開，存一次檔那些元素就不見了，使用者不會知道。
+   不整份拒絕：檔案開不了，自動存檔也還原不了（還原失敗時怎麼保住記錄見 io/autosave.js）；
+   而且舊版的 DJ.add 對未知型別只給警告、照樣存進去，這種檔案確實存在。 */
 const elTypeOk=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 /* reserved：不得撞名的既有 id（頁面元素不可與母版元素同名）。
    撞名會讓畫布的 [data-id] 查詢、匯出後製的 name="<id>" 正則、以及 Morph 配對三處同時認錯對象；
@@ -357,9 +375,9 @@ function normEls(list,reserved,idMap){
   idMap=idMap||new Map();
   for(const el of arr){
     el.id=safeElId(el.id,idMap);
-    if(!elTypeOk(el.type)) throw new Error(_t('元素 {0} 的型別「{1}」不認得。這份簡報可能來自較新的版本，或內容已損壞',el.id,String(el.type).slice(0,40)));
     if(seenIds.has(el.id)) el.id=uid('e');
     seenIds.add(el.id);
+    if(!elTypeOk(el.type)) continue;   // 不認得的型別：id 之外原樣保留（見 elTypeOk 上方說明）
     el.x=Math.round(el.x||0); el.y=Math.round(el.y||0);
     if(el.opacity!=null){ const o=Math.round(+el.opacity); el.opacity=(isFinite(o)&&o>=0&&o<100)?o:undefined; if(el.opacity===undefined) delete el.opacity; }
     if(el.groupId!=null) el.groupId=String(el.groupId); else delete el.groupId;

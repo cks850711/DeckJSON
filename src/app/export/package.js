@@ -163,7 +163,11 @@ async function exportPptx(download=true){
      改用「借一張暫時投影片跑既有的 addElToSlide，再把成果移植到 layout 上」——
      母版因此自動享有一般元素的全部能力，也不必維護第二套寫入器。 */
   const MST=APP.deck.master;
-  const mstEls=(MST&&MST.on)? MST.elements.filter(e=>!e.hidden) : [];
+  // 型別不認得的元素一律不匯出（見 model/normalize.js 的 elTypeOk）。從工具列匯出時列給使用者看，DJ.exportPptx 不跳視窗
+  const unkSkip=[];
+  if(MST&&MST.on) for(const e of MST.elements) if(!e.hidden&&!elTypeOk(e.type)) unkSkip.push({page:0,id:e.id,type:String(e.type)});
+  APP.deck.pages.forEach((pg,i)=>{ for(const e of pg.elements) if(!e.hidden&&!elTypeOk(e.type)) unkSkip.push({page:i+1,id:e.id,type:String(e.type)}); });
+  const mstEls=(MST&&MST.on)? MST.elements.filter(e=>!e.hidden&&elTypeOk(e.type)) : [];
   const useMasterLayout=mstEls.length&&!MST.flatten;
   // 展開模式下這一頁要併進來的母版元素（匯出與匯出後製都要用同一份，否則後製會漏掉母版形狀）
   const mstForPage=pg=>(mstEls.length&&MST.flatten&&!pg.noMaster)? mstEls : [];
@@ -188,7 +192,7 @@ async function exportPptx(download=true){
       slide.background={data:pg.bgImage,path:'bg.'+((m&&m[1].toLowerCase()==='jpeg')?'jpeg':'png')};
     }else slide.background={color:pg.bg||'FFFFFF'};
     const pend=[];   // 本頁的「待插入影片」清單（本機影片只放了封面圖佔位）
-    for(const el of [...mstForPage(pg),...pg.elements]) if(!el.hidden) await addElToSlide(slide,el,pend);
+    for(const el of [...mstForPage(pg),...pg.elements]) if(!el.hidden&&elTypeOk(el.type)) await addElToSlide(slide,el,pend);
     if(pg.skip) slide.hidden=true;   // 不放映此頁 → <p:sld show="0">
     /* 講者備忘稿。待插入影片的提示在這裡「只附加到輸出字串」，刻意不寫回 pg.notes——
        否則每次匯出都會再累加一份，還得做去重，而且動到了使用者自己的資料。 */
@@ -447,12 +451,15 @@ async function exportPptx(download=true){
       $('#pendModal').hidden=false;
     }
     // 原生圖表降級：勾選當下能過、之後改了 option 才會發生。必須明講，
-    // 否則使用者拿到的是一張圖片卻以為是可編輯圖表。
+    // 否則使用者拿到的是一張圖片卻以為是可編輯圖表。型別不認得而沒匯出的元素也在同一則裡講
+    const notes=[];
     if(nvDowngrade.length){
       const pgOf=id=>APP.deck.pages.findIndex(p=>p.elements.some(e=>e.id===id))+1;
-      alert(_t('以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}',
+      notes.push(_t('以下圖表勾了「匯出為原生圖表」，但 option 目前映射不過，已改以 PNG 匯出：\n\n{0}',
         nvDowngrade.map(d=>_t('• 第 {0} 頁 {1}：{2}',pgOf(d.id),d.id,d.reason)).join('\n')));
     }
+    if(unkSkip.length) notes.push(_t('以下元素的型別不認得，沒有匯出：\n{0}',unkSkip.map(unknownElLine).join('\n')));
+    if(notes.length) alert(notes.join('\n\n'));
   }
   return b64;
 }
