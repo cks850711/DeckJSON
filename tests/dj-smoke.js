@@ -420,6 +420,49 @@ export default async function run() {
     ok('numbering: export writes the list start on every item', starts.join() === '9,9,1,1,9,1,100', starts);
     await DJ.load(fixture());
 
+    // ---- 表格匯出：格內換行、整列都被合併蓋住的列 ----
+    await DJ.load({pages: [{id: 'tX', elements: [
+      {id: 'nl', type: 'table', x: 40, y: 40, colW: [160, 160, 160], rowH: [60], cells: [[
+        {text: '氧化鐵黑\nFe3O4', runs: [{text: '氧化鐵黑\nFe'}, {text: '3', sub: true}, {text: 'O'}, {text: '4', sub: true}]},
+        {text: 'a\n\nb2c\n', runs: [{text: 'a\n\nb'}, {text: '2', sub: true}, {text: 'c\n', bold: true}]},
+        {text: 'x\ny'}]]},
+      // JSON 或 DJ 寫進來的 \r\n（貼上的路徑會先正規化成 \n）
+      {id: 'cr', type: 'table', x: 600, y: 200, colW: [100, 100], rowH: [40], cells: [[
+        {text: 'xa\r\nb', runs: [{text: 'x', bold: true}, {text: 'a\r\nb'}]},
+        {text: 'a\r\nbc', runs: [{text: 'a\r\nb', bold: true}, {text: 'c'}]}]]},
+      {id: 'one', type: 'table', x: 40, y: 200, colW: [120], rowH: [24, 24, 24, 24], cells: [
+        [{text: 'r0'}], [{text: 'r1', rowspan: 2}], [{text: '', covered: true}], [{text: 'r3'}]]},
+      {id: 'two', type: 'table', x: 300, y: 200, colW: [80, 80], rowH: [24, 24, 24, 24], cells: [
+        [{text: 'a'}, {text: 'b'}], [{text: 'L', rowspan: 3}, {text: 'R', rowspan: 2}],
+        [{text: '', covered: true}, {text: '', covered: true}], [{text: '', covered: true}, {text: 'd'}]]}]}]});
+    DJ.show('tX');
+    const tz = await (await JSZip.loadAsync(await (await DJ.exportPptx()).arrayBuffer())).file('ppt/slides/slide1.xml').async('string');
+    const tFrame = id => tz.slice(tz.indexOf(`name="${id}"`), tz.indexOf('</p:graphicFrame>', tz.indexOf(`name="${id}"`)));
+    const tParas = tc => [...tc.matchAll(/<a:p>[\s\S]*?<\/a:p>/g)].map(p => [...p[0].matchAll(/<a:t>([^<]*)<\/a:t>/g)].map(m => m[1]).join(''));
+    const tCells = id => [...tFrame(id).matchAll(/<a:tc[ >][\s\S]*?<\/a:tc>/g)].map(m => m[0]);
+    const tRowH = id => [...tFrame(id).matchAll(/<a:tr h="(\d+)"/g)].map(m => +m[1]);
+    const tDomH = id => [...document.querySelectorAll(`#stage [data-id="${id}"] tr`)].map(t => t.offsetHeight * 9525);
+    // PptxGenJS 自己拆含 \n 的 run 時每段都收段，同一行後面的 run 會被擠到下一段
+    ok('table export: a line break inside a run keeps the rest of the line in one paragraph',
+      JSON.stringify(tParas(tCells('nl')[0])) === '["氧化鐵黑","Fe3O4"]', tParas(tCells('nl')[0]));
+    ok('table export: a blank line stays, a single trailing line break adds no paragraph (as on the canvas)',
+      JSON.stringify(tParas(tCells('nl')[1])) === '["a","","b2c"]', tParas(tCells('nl')[1]));
+    ok('table export: plain cells still split on line breaks', JSON.stringify(tParas(tCells('nl')[2])) === '["x","y"]', tParas(tCells('nl')[2]));
+    ok('table export: \\r\\n splits like \\n',
+      JSON.stringify(tCells('cr').map(tParas)) === '[["xa","b"],["a","bc"]]', tCells('cr').map(tParas));
+    ok('table export: no raw line break (\\r or \\n) left inside <a:t>', !/<a:t>[^<]*[\r\n]/.test(tFrame('nl') + tFrame('cr')));
+    // 整列被蓋住的列：PowerPoint 自己合併時會把它併進上一列；照寫的話單欄表格在 PowerPoint 合併失效
+    const oh = tDomH('one');
+    ok('table export: a fully covered row is folded into the row above, height added',
+      JSON.stringify(tRowH('one')) === JSON.stringify([oh[0], oh[1] + oh[2], oh[3]]) && !/rowSpan|vMerge/.test(tFrame('one')), [tRowH('one'), oh]);
+    const th = tDomH('two');
+    ok('table export: spans over a folded row shrink by one, others keep their merge',
+      JSON.stringify(tRowH('two')) === JSON.stringify([th[0], th[1] + th[2], th[3]])
+      && /<a:tc rowSpan="2">[\s\S]*?>L</.test(tFrame('two')) && (tFrame('two').match(/rowSpan=/g) || []).length === 1
+      && (tFrame('two').match(/vMerge="1"/g) || []).length === 1, [tRowH('two'), th, tCells('two').map(c => c.match(/<a:tc[^>]*>/)[0])]);
+    ok('table export: the frame height is unchanged', +tFrame('one').match(/<a:ext cx="\d+" cy="(\d+)"/)[1] === oh.reduce((a, b) => a + b, 0));
+    await DJ.load(fixture());
+
     // ---- 方程式段落：$$…$$、math 欄位、畫布 KaTeX、匯出 OMML、lint ----
     const Q = String.raw`x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}`;
     await DJ.load({pages: [{id: 'mA', elements: [

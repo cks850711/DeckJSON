@@ -8,8 +8,8 @@ function defCell(){ return {text:'',bold:false,italic:false,color:'1A1A1A',sizeP
    normCell 會把與格層級相同的鍵刪掉——不這樣做的話，大表格逐格長出整套樣式會讓 JSON 膨脹到吃 token
    ——整份 JSON 要能貼給 AI，膨脹就是直接成本。
 
-   換行沿用扁平時代的作法：`\n` 留在 run 的 text 裡，不拆段。PptxGenJS 的表格儲存格會自己把含 \n 的
-   run 拆成多筆並補 breakLine，畫布則靠 `white-space:pre-wrap`，兩邊都不必另立段落模型。 */
+   換行沿用扁平時代的作法：`\n` 留在 run 的 text 裡，不拆段。匯出時由 cellRunsPptx 依 \n 切成段落
+   （PptxGenJS 自己拆會拆錯，見該函式），畫布則靠 `white-space:pre-wrap`，兩邊都不必另立段落模型。 */
 const CELL_STYLE_KEYS=['bold','italic','color','sizePt'];
 const cellRunKey=r=>JSON.stringify([...CELL_STYLE_KEYS,...RUN_OPT_KEYS].map(k=>r[k]??null));
 function cellBase(cell){ return {bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',sizePt:cell.sizePt||12}; }

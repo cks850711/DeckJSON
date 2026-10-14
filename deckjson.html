@@ -7018,8 +7018,8 @@ function defCell(){ return {text:'',bold:false,italic:false,color:'1A1A1A',sizeP
    normCell 會把與格層級相同的鍵刪掉——不這樣做的話，大表格逐格長出整套樣式會讓 JSON 膨脹到吃 token
    ——整份 JSON 要能貼給 AI，膨脹就是直接成本。
 
-   換行沿用扁平時代的作法：`\n` 留在 run 的 text 裡，不拆段。PptxGenJS 的表格儲存格會自己把含 \n 的
-   run 拆成多筆並補 breakLine，畫布則靠 `white-space:pre-wrap`，兩邊都不必另立段落模型。 */
+   換行沿用扁平時代的作法：`\n` 留在 run 的 text 裡，不拆段。匯出時由 cellRunsPptx 依 \n 切成段落
+   （PptxGenJS 自己拆會拆錯，見該函式），畫布則靠 `white-space:pre-wrap`，兩邊都不必另立段落模型。 */
 const CELL_STYLE_KEYS=['bold','italic','color','sizePt'];
 const cellRunKey=r=>JSON.stringify([...CELL_STYLE_KEYS,...RUN_OPT_KEYS].map(k=>r[k]??null));
 function cellBase(cell){ return {bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',sizePt:cell.sizePt||12}; }
@@ -12600,11 +12600,52 @@ async function chartPng(el){
   inst.dispose(); div.remove();
   return url;
 }
+/* 格內混排 → PptxGenJS 的 run 陣列。換行（\n 或 \r\n）在這裡自己切，交出去的 text 一律不含換行字元。
+   不能把含 \n 的 run 原樣交給 PptxGenJS：它會把該 run 依 \n 拆成幾段，但**每一段**都標上
+   breakLine，連最後一段也是——於是換行後的那一小段一結束就收段，同一行接下來的 run 被擠到新段。
+   實測「氧化鐵黑\nFe」＋下標「3」＋「O」＋下標「4」匯出成三段：氧化鐵黑／Fe／₃O₄。
+   而以 \n 結尾的 run 它又整段不拆，\r\n 直接寫進 <a:t>，交給各家閱讀器自己解讀。
+   所以先切成「行」，只有每行（最後一行除外）的最後一個 run 帶 breakLine。
+   空行補一個空字串 run，只為了讓 PptxGenJS 寫出這一段（breakLine 要掛在 run 上，少了它這段就消失）；
+   PptxGenJS 不寫出空字串 run，這個 run 的樣式不會進 XML，空行的高度由整格的 lnSpc 決定（見 addTableToSlide）。
+   \r\n 也要切：JSON 或 DJ 寫進來的 \r 若留在 <a:t> 裡，PowerPoint 會多顯示一行。
+   結尾單一個 \n 在畫布（pre-wrap）上不多佔一行，這裡同樣不產生空段。
+   沒有 \n 的格不受影響：空 run 已在 normCell 丟掉，每個 run 仍是一筆、選項內容相同，XML 不變。 */
+function cellRunsPptx(cell){
+  const lines=[];
+  let cur=null;
+  for(const r of cellRuns(cell)){
+    const opts=runPptxOpts(r,12);
+    String(r.text||'').split(/\r?\n/).forEach((t,i)=>{
+      if(i||!cur) lines.push(cur={opts,runs:[]});
+      if(t) cur.runs.push({text:t,options:{...opts}});   // 每筆各自一份 options：PptxGenJS 會就地改寫它
+    });
+  }
+  if(lines.length>1&&!lines[lines.length-1].runs.length) lines.pop();
+  const out=[];
+  lines.forEach((ln,li)=>{
+    const rs=ln.runs.length? ln.runs : [{text:'',options:{...ln.opts}}];
+    if(li<lines.length-1) rs[rs.length-1].options.breakLine=true;
+    out.push(...rs);
+  });
+  return out;
+}
 function addTableToSlide(slide,el){
   const tr=(el.opacity!=null&&el.opacity<100)? 100-el.opacity : 0;
   const dom=tableDom(el.id);
   const trH=dom? [...dom.querySelectorAll('tr')].map(t=>t.offsetHeight) : el.rowH;
-  const rows=el.cells.map(row=>{
+  /* 整列都被上方合併蓋住的列（例：單欄表格把兩列合併）不寫進 pptx，高度併進上一列。
+     PowerPoint 自己合併時從不留這種列：實測在 PowerPoint 裡合併單欄表格的兩列、或雙欄表格兩列的
+     左右兩格，存檔都是「併成一列、列高相加、沒有 rowSpan」。照字面寫出 rowSpan＋整列 vMerge 的話，
+     PowerPoint 在單欄表格會把延續列畫成一格預設樣式的空白格（合併失效、表格變高），LibreOffice 更是
+     不分欄數，整張表被移到投影片左上角、還少一列內容。
+     covered 由 tableMerge 與跨度同步維護，所以這種列的每一欄都被上方的某一格跨過，那一格也跨過上一列
+     ——高度加給上一列，所有格的外框都不變；跨過它的格 rowspan 各減一。只動匯出，畫布與資料都不變。 */
+  const dead=el.cells.map(row=>row.length>0&&row.every(c=>c.covered));
+  const liveSpan=(r,n)=>{ let k=0; for(let i=r;i<r+n&&i<dead.length;i++) if(!dead[i]) k++; return k; };
+  const rowH=[];
+  trH.forEach((h,i)=>{ if(dead[i]&&rowH.length) rowH[rowH.length-1]+=h; else rowH.push(h); });
+  const rows=el.cells.map((row,ri)=>{
     const arr=[];
     row.forEach(cell=>{
       if(cell.covered) return;
@@ -12621,9 +12662,10 @@ function addTableToSlide(slide,el){
         return s? {type:s.dash?'dash':'solid',pt:s.pt,color:s.color} : {type:'none'}; });
       if(cell.fill) o.fill={color:cell.fill,...(tr?{transparency:tr}:{})};
       if(cell.colspan>1) o.colspan=cell.colspan;
-      if(cell.rowspan>1) o.rowspan=cell.rowspan;
+      const rs=cell.rowspan>1? liveSpan(ri,cell.rowspan) : 1;
+      if(rs>1) o.rowspan=rs;
       /* 格內混排：PptxGenJS 的儲存格 text 本來就吃 {text,options} 陣列（和文字框共用 jt()），
-         所以這裡只要把 runs 攤成陣列即可，每個 run 都寫全樣式。
+         所以這裡只要把 runs 攤成陣列即可（換行由 cellRunsPptx 切），每個 run 都寫全樣式。
          ⚠ 有 runs 時**必須把四個文字樣式鍵從儲存格層級拿掉**：PptxGenJS 只在值為真時才寫
          `b="1"`／`i="1"`（原始碼 `null!=t&&t.bold? ' b="1"':''`），**沒有 `b="0"` 這條路**。
          於是「整格粗體、某幾個字不粗」的 run 因為 bold:false 什麼都沒寫，反而被格層級的
@@ -12631,13 +12673,13 @@ function addTableToSlide(slide,el){
          扁平格仍走單一字串那條路：XML 一模一樣，舊簡報的匯出結果因此逐位元組不變。 */
       if(Array.isArray(cell.runs)&&cell.runs.length){
         for(const k of ['bold','italic','color','fontSize']) delete o[k];
-        arr.push({text:cellRuns(cell).map(r=>({text:String(r.text||''),options:runPptxOpts(r,12)})),options:o});
+        arr.push({text:cellRunsPptx(cell),options:o});
       }else arr.push({text:String(cell.text||''),options:o});
     });
     return arr;
-  });
+  }).filter((_,ri)=>!dead[ri]);
   slide.addTable(rows,{x:px2in(el.x),y:px2in(el.y),
-    colW:el.colW.map(px2in),rowH:trH.map(px2in),autoPage:false,objectName:el.id});
+    colW:el.colW.map(px2in),rowH:rowH.map(px2in),autoPage:false,objectName:el.id});
 }
 // 原生陰影：只用 outer（PptxGenJS 3.12 對 inner 的收尾標籤寫死成 </a:outerShdw>，會產出不合法 XML）
 function shadowOpt(el){
