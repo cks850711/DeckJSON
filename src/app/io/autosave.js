@@ -67,7 +67,7 @@ function scheduleAutosave(){
   asTimer=setTimeout(asSaveNow,AS_DELAY);
 }
 function asClear(){ return asTx('readwrite',st=>st.delete(AS_KEY)).catch(()=>{}); }
-/* 還原失敗後，使用者確認放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
+/* 還原失敗後，使用者打出確認字放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
    asRestoreFailed 只在還原失敗時為真；瀏覽器擋 IndexedDB、容量已滿這類停用不走這裡，恢復了也存不進去 */
 let asRestoreFailed=false;
 function asDropFailed(){
@@ -99,7 +99,7 @@ async function asRestore(){
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
          選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
          不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
-         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外確認放棄這筆記錄時才刪（asDropFailed）。
+         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外打出確認字放棄這筆記錄時才刪（asDropFailed）。
          記錄若是真的壞了，任何版本都讀不回來，沒有這條路的話這個網址每次載入都會停用自動存檔。 */
       asOff=true; asRestoreFailed=true;
       asWarn=_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err);

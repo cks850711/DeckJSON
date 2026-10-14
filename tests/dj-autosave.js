@@ -9,7 +9,8 @@
  *
  * 測試會改寫這個網址的自動存檔（IndexedDB 的 deckjson／autosave／current），結束時放回原本那一筆；
  * **不要在平常編簡報的網址上跑**，換一個 port。頁面放在 iframe 裡載入，載入前先攔住 alert／confirm／prompt
- * 與帶 download 的連結點擊（confirm 預設回答「確定」，測「開新簡報」時逐道指定），整個過程不跳視窗、不下載檔案。
+ * 與帶 download 的連結點擊（confirm 預設回答「確定」、prompt 預設取消，測「開新簡報」時逐道指定），
+ * 整個過程不跳視窗、不下載檔案。
  */
 const DB = 'deckjson', STORE = 'autosave', KEY = 'current';
 
@@ -98,29 +99,37 @@ export default async function autosaveTest(page = '/deckjson.html') {
       const want = JSON.stringify(await getRec());
       const {w} = await boot(page);
       const hint = w.document.querySelector('#saveHint'), warn = hint.textContent;
-      // 「開新簡報」的幾道確認依序回答 answers；問過什麼記在 asked
-      const newDeck = async answers => {
+      // 「開新簡報」的 confirm 依序回答 answers、prompt 回答 typed（null＝取消）；問過什麼記在 asked
+      const newDeck = async (answers, typed = null) => {
         const asked = [];
         w.confirm = m => { asked.push(String(m)); return answers.length ? answers.shift() : false; };
+        w.prompt = m => { asked.push('prompt:' + String(m)); return typed; };
         w.document.querySelector('#btnNew').click();
         await tick(500);
         return asked;
       };
+      const word = w.document.documentElement.lang === 'en' ? 'DELETE' : '刪除';
       ok('failed restore: the page opens on a blank deck', w.DJ.list().length === 1, w.DJ.list().length);
       ok('failed restore: the save hint turns into a warning', hint.classList.contains('bad') && warn.length > 0, warn);
       await w.DJ.add(w.DJ.list()[0].id, [TEXT('n', 'new work')]);
       await tick(1800);
       ok('failed restore: editing afterwards leaves the record untouched', JSON.stringify(await getRec()) === want);
-      // 開新簡報但不放棄記錄：前兩道確定、第三道取消
-      const asked = await newDeck([true, true, false]);
+      // 開新簡報但不放棄記錄：兩道 confirm 確定，要輸入確認字的那道按取消
+      const asked = await newDeck([true, true, true], null);
       ok('failed restore: the new-deck confirm does not claim the autosave is cleared',
         asked.length > 0 && !/一併清除|and the autosave too/.test(asked[0]), asked[0]);
-      ok('failed restore: new deck asks separately whether to drop the unreadable record', asked.length === 3, asked);
+      ok('failed restore: new deck asks separately whether to drop the unreadable record, by typing a word',
+        asked.length === 3 && asked[2].startsWith('prompt:') && asked[2].includes(word), asked);
       ok('failed restore: keeping it leaves the record untouched', JSON.stringify(await getRec()) === want);
+      // 一路按 Enter（confirm 都確定、prompt 空字串）或打錯字：都保留
+      await newDeck([true, true, true], '');
+      ok('failed restore: pressing Enter through every question keeps the record', JSON.stringify(await getRec()) === want);
+      await newDeck([true, true, true], 'yes');
+      ok('failed restore: typing anything but the word keeps the record', JSON.stringify(await getRec()) === want);
       ok('failed restore: the warning stays visible after other hints', hint.classList.contains('bad') && hint.textContent.includes(warn),
         hint.textContent);
       // 這次確認放棄：記錄刪掉、自動存檔恢復，新簡報接著自動存檔
-      await newDeck([true, true, true]);
+      await newDeck([true, true], ' ' + word + ' ');
       await tick(1800);
       const after = await getRec();
       ok('failed restore: dropping it resumes autosave with the new deck',

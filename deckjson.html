@@ -2344,7 +2344,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+' and the autosave too.\n\nAnything not saved to a file can\'t be recovered. Continue?',
   "再確認一次：真的要放棄目前內容？": "One more time: really discard the current content?",
   "開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+'. Autosave is off right now, so it is not cleared.\n\nAnything not saved to a file can\'t be recovered. Continue?',
-  "上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。": "The autosave that couldn't be read back is still kept. Delete it and turn autosave back on?\n\nOnce deleted it can't be recovered. Cancel keeps it, and autosave stays off.",
+  "上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔的話，請輸入「{0}」。\n\n刪掉之後就救不回來了。輸入其他內容或按「取消」則保留它，自動存檔維持停用。": "The autosave that couldn't be read back is still kept. To delete it and turn autosave back on, type {0}.\n\nOnce deleted it can't be recovered. Anything else, or Cancel, keeps it and autosave stays off.",
   "這不是 profile 檔（format 應為 deckjson-profile）": "This isn't a profile file (format should be deckjson-profile)",
   "已套用設定檔「{0}」。\n要同時設為「新簡報預設」嗎？": "Applied profile “{0}”.\nAlso set it as the default for new decks?",
   "這個瀏覽器環境不允許寫入 localStorage，無法記住預設（本簡報仍已套用）。": "This browser environment doesn't allow writing to localStorage, so the default can't be remembered (it's still applied to this deck).",
@@ -11167,7 +11167,7 @@ function scheduleAutosave(){
   asTimer=setTimeout(asSaveNow,AS_DELAY);
 }
 function asClear(){ return asTx('readwrite',st=>st.delete(AS_KEY)).catch(()=>{}); }
-/* 還原失敗後，使用者確認放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
+/* 還原失敗後，使用者打出確認字放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
    asRestoreFailed 只在還原失敗時為真；瀏覽器擋 IndexedDB、容量已滿這類停用不走這裡，恢復了也存不進去 */
 let asRestoreFailed=false;
 function asDropFailed(){
@@ -11199,7 +11199,7 @@ async function asRestore(){
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
          選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
          不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
-         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外確認放棄這筆記錄時才刪（asDropFailed）。
+         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外打出確認字放棄這筆記錄時才刪（asDropFailed）。
          記錄若是真的壞了，任何版本都讀不回來，沒有這條路的話這個網址每次載入都會停用自動存檔。 */
       asOff=true; asRestoreFailed=true;
       asWarn=_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err);
@@ -11382,7 +11382,7 @@ if(!fsUsable()){   // 講明白比靜默降級重要：按鈕上就要看得出�
 }
 $('#btnNew').onclick=()=>{
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
-  // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
+  // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」（還原失敗時另有第三關，見下）
   // 自動存檔停用時不會清除它（例如還原失敗後留著的那筆記錄），確認文字照實講
   if(!confirm(asOff
     ? _t('開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n)
@@ -11390,8 +11390,14 @@ $('#btnNew').onclick=()=>{
   if(!confirm(_t('再確認一次：真的要放棄目前內容？'))) return;
   if(!asOff) asClear();
   /* 還原失敗而停用的，在這裡給一條出路：另外問一次要不要放棄那筆讀不回來的記錄、恢復自動存檔。
-     預設（取消）是保留——那筆記錄可能只是這個版本讀不懂，換版本就讀得回來 */
-  else if(asRestoreFailed&&confirm(_t('上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。'))) asDropFailed();
+     要使用者打出確認字才刪（中文「刪除」，英文「DELETE」：沿用刪除按鈕的譯名轉大寫），
+     前後的空白不計；輸入其他內容、什麼都不輸入、按取消或 Esc 都是保留——那筆記錄可能只是這個版本讀不懂，換版本就讀得回來。
+     不用 confirm：前兩道已經是 confirm，連按三次 Enter 不該刪掉東西 */
+  else if(asRestoreFailed){
+    const word=_t('刪除').toUpperCase();
+    const typed=prompt(_t('上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔的話，請輸入「{0}」。\n\n刪掉之後就救不回來了。輸入其他內容或按「取消」則保留它，自動存檔維持停用。',word),'');
+    if(typeof typed==='string'&&typed.trim()===word) asDropFailed();
+  }
   commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔就算清了，本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
   setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪
@@ -13454,10 +13460,12 @@ function djOpts(o,allowed,verb){
 }
 const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
 const DJ_DECK_KEYS=['title','author','company','subject','pageNum','date','markdown'];
-/* 整份簡報最常用的螢光色（頁面、母版、表格儲存格的 run 都算），給 AI 對齊 markdown.highlight 用 */
+/* 整份簡報最常用的螢光色（頁面、母版、表格儲存格的 run 都算），給 AI 對齊 markdown.highlight 用。
+   型別不認得的元素不算：它的欄位原樣保留、形狀未知（paras 可能不是陣列），同 outline */
 function djTopHighlight(d){
   const n=new Map(), add=r=>{ if(r&&r.highlight) n.set(r.highlight,(n.get(r.highlight)||0)+1); };
   for(const els of [...d.pages.map(p=>p.elements),((d.master||{}).elements||[])]) for(const el of els){
+    if(!elTypeOk(el.type)) continue;
     for(const p of el.paras||[]) for(const r of p.runs||[]) add(r);
     if(el.type==='table') for(const row of el.cells||[]) for(const c of row) for(const r of c.runs||[]) add(r);
   }

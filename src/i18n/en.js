@@ -745,7 +745,7 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+' and the autosave too.\n\nAnything not saved to a file can\'t be recovered. Continue?',
   "再確認一次：真的要放棄目前內容？": "One more time: really discard the current content?",
   "開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+'. Autosave is off right now, so it is not cleared.\n\nAnything not saved to a file can\'t be recovered. Continue?',
-  "上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。": "The autosave that couldn't be read back is still kept. Delete it and turn autosave back on?\n\nOnce deleted it can't be recovered. Cancel keeps it, and autosave stays off.",
+  "上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔的話，請輸入「{0}」。\n\n刪掉之後就救不回來了。輸入其他內容或按「取消」則保留它，自動存檔維持停用。": "The autosave that couldn't be read back is still kept. To delete it and turn autosave back on, type {0}.\n\nOnce deleted it can't be recovered. Anything else, or Cancel, keeps it and autosave stays off.",
   "這不是 profile 檔（format 應為 deckjson-profile）": "This isn't a profile file (format should be deckjson-profile)",
   "已套用設定檔「{0}」。\n要同時設為「新簡報預設」嗎？": "Applied profile “{0}”.\nAlso set it as the default for new decks?",
   "這個瀏覽器環境不允許寫入 localStorage，無法記住預設（本簡報仍已套用）。": "This browser environment doesn't allow writing to localStorage, so the default can't be remembered (it's still applied to this deck).",

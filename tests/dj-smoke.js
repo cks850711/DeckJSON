@@ -590,6 +590,10 @@ export default async function run() {
     let qo = null, qerr = null;
     try { qo = DJ.outline('q'); DJ.bbox('q', ['q0', 'qt']); DJ.overflow(); DJ.lint(); } catch (e) { qerr = e.message; }
     ok('security: outline, bbox, overflow and lint accept unknown elements as they are', !qerr && qo[0].unknown === true && qo[0].x === 40, qerr || qo[0]);
+    // info（ready 回傳的也是它）掃整份的螢光色：未知元素的 paras 不是陣列也不拋錯
+    let qi = null;
+    try { DJ.info(); qi = await DJ.ready(); } catch (e) { qi = e.message; }
+    ok('security: info and ready accept unknown elements as they are', qi && qi.pages === 1, qi);
     // 複製這幾個再貼上：不認得的型別一個都不進來
     const qdt = new DataTransfer();
     layersBtn.click(); await tick(100);

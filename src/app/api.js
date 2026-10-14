@@ -169,10 +169,12 @@ function djOpts(o,allowed,verb){
 }
 const DJ_PAGE_KEYS=['name','bg','bgImage','notes','section','skip','transition','noMaster'];
 const DJ_DECK_KEYS=['title','author','company','subject','pageNum','date','markdown'];
-/* 整份簡報最常用的螢光色（頁面、母版、表格儲存格的 run 都算），給 AI 對齊 markdown.highlight 用 */
+/* 整份簡報最常用的螢光色（頁面、母版、表格儲存格的 run 都算），給 AI 對齊 markdown.highlight 用。
+   型別不認得的元素不算：它的欄位原樣保留、形狀未知（paras 可能不是陣列），同 outline */
 function djTopHighlight(d){
   const n=new Map(), add=r=>{ if(r&&r.highlight) n.set(r.highlight,(n.get(r.highlight)||0)+1); };
   for(const els of [...d.pages.map(p=>p.elements),((d.master||{}).elements||[])]) for(const el of els){
+    if(!elTypeOk(el.type)) continue;
     for(const p of el.paras||[]) for(const r of p.runs||[]) add(r);
     if(el.type==='table') for(const row of el.cells||[]) for(const c of row) for(const r of c.runs||[]) add(r);
   }
