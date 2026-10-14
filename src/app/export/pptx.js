@@ -48,7 +48,7 @@ async function chartPng(el){
   div.style.cssText=`position:fixed;left:-10000px;top:0;width:${el.w}px;height:${el.h}px;`;
   document.body.appendChild(div);
   const inst=echarts.init(div,null,{renderer:'canvas'});
-  inst.setOption(Object.assign(structuredClone(el.option),{animation:false}),true);
+  inst.setOption(Object.assign(chartDropProtoTypes(structuredClone(el.option)),{animation:false}),true);
   const url=inst.getDataURL({type:'png',pixelRatio:3,backgroundColor:'rgba(255,255,255,0)'});
   inst.dispose(); div.remove();
   return url;
@@ -62,7 +62,7 @@ function addTableToSlide(slide,el){
     row.forEach(cell=>{
       if(cell.covered) return;
       const o={align:cell.align||'left',
-        valign:{top:'top',middle:'middle',bottom:'bottom'}[cell.valign||'middle'],
+        valign:ownVal({top:'top',middle:'middle',bottom:'bottom'},cell.valign||'middle'),
         bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',
         fontSize:cell.sizePt||12,
         margin:[0,0.03,0,0.03],   // 單位是「吋」！0.03in ≈ 2.2pt ≈ 預覽 3px（xlsx2pptx 踩坑 #10）
@@ -144,7 +144,7 @@ const _expMediaPath=new Map();
 function exportMediaPath(dataUrl){
   if(typeof dataUrl!=='string'||!dataUrl.startsWith('data:')) return null;
   const mime=(dataUrl.slice(0,dataUrl.indexOf(',')).match(/^data:([^;,]+)/)||[])[1]||'';
-  const ext=MIME2EXT[mime];
+  const ext=ownVal(MIME2EXT,mime);
   if(!ext||ext==='svg') return null;
   let v=_expMediaPath.get(dataUrl);
   if(!v){ v=assetHash(dataUrlDecode(dataUrl).bytes)+'.'+ext; _expMediaPath.set(dataUrl,v); }
@@ -239,7 +239,7 @@ async function addElToSlide(slide,el,pend){
   }
   // 文字框與含文字／純色形狀：一律走 addText（關 autofit、行距鎖定）
   // margin 這裡的單位是「點」（PptxGenJS 對 addText 走 R()＝pt→EMU；表格儲存格的 margin 才是吋）
-  const o={...common,valign:{top:'top',middle:'middle',bottom:'bottom'}[el.valign||'top'],
+  const o={...common,valign:ownVal({top:'top',middle:'middle',bottom:'bottom'},el.valign||'top'),
     margin:el.inset||0,fit:'none',wrap:!el.nowrap,
     // 元素層行距只是退路：有段落時 parasToPptx 會逐段覆蓋掉它（PptxGenJS 取 run 的 options 優先）
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
@@ -285,7 +285,7 @@ function transitionXml(tr){
   if(!tr||!ownVal(TRANSITIONS,tr.type)) return '';
   if(tr.type==='morph'){
     const dur=Math.max(100,Math.min(10000,Math.round(tr.dur||600)));
-    const opt={byObject:1,byWord:1,byChar:1}[tr.option]? tr.option:'byObject';
+    const opt=ownVal({byObject:1,byWord:1,byChar:1},tr.option)? tr.option:'byObject';
     return '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
       +'<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">'
       +`<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="slow" p14:dur="${dur}"><p159:morph option="${opt}"/></p:transition>`

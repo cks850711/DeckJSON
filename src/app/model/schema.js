@@ -105,8 +105,10 @@ const SCHEMA_TABLE_HINTS={w:'a table is sized by colW (column widths)',h:'a tabl
 function schemaCheck(obj,kind,path){
   const out=[];
   const warn=(p,key,allowed,level)=>{
-    let why= level==='table element'? (SCHEMA_TABLE_HINTS[key]||(DECK_SCHEMA.tableNot.includes(key)? 'not supported on tables' : null)) : null;
-    why=why||SCHEMA_HINTS[key];
+    // 欄位名來自簡報，查提示表只認表自己的鍵（同 schemaKnownType 的理由）：欄位叫 constructor 時不會取到函式
+    const hint=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)? o[k] : null;
+    let why= level==='table element'? (hint(SCHEMA_TABLE_HINTS,key)||(DECK_SCHEMA.tableNot.includes(key)? 'not supported on tables' : null)) : null;
+    why=why||hint(SCHEMA_HINTS,key);
     if(!why){ const where=schemaWhereValid(key).filter(w=>w!==level);
       if(where.length) why='valid on '+where.join(', ')+', not on '+level; }
     if(!why){ const n=schemaNear(key,allowed); if(n) why='did you mean "'+n+'"?'; }

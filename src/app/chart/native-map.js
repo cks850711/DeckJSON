@@ -82,8 +82,8 @@ function nativeMap(op){
     showValue:ss.some(s=>s.label&&s.label.show),
     dataLabelFontSize:lb0.fontSize,
     dataLabelColor:nvHex(lb0.color)||undefined,
-    dataLabelPosition:({top:'t',inside:'ctr',insideTop:'inEnd',insideBottom:'inBase',
-      outside:'outEnd',center:'ctr'})[lb0.position]||undefined,
+    dataLabelPosition:ownVal({top:'t',inside:'ctr',insideTop:'inEnd',insideBottom:'inBase',
+      outside:'outEnd',center:'ctr'},lb0.position)||undefined,
     legendFontSize:(op.legend&&op.legend.textStyle||{}).fontSize,
     legendColor:nvHex((op.legend&&op.legend.textStyle||{}).color)||undefined,
     ...(bw>0? {dataBorder:{pct:bw,color:nvHex((ss[0].itemStyle||{}).borderColor)||'FFFFFF'}} : {}),
@@ -91,7 +91,7 @@ function nativeMap(op){
       {chartArea:{fill:{color:nvHex(op.backgroundColor)}}} : {}),
     // 視覺編輯面板改的外觀要能一路帶到原生圖表，否則面板只對 PNG 有效
     ...(ti&&ti.text? {showTitle:true,title:String(ti.text),
-      titleAlign:({left:'left',center:'center',right:'right'}[ti.left])||'center',
+      titleAlign:ownVal({left:'left',center:'center',right:'right'},ti.left)||'center',
       ...(nvHex(ti.textStyle&&ti.textStyle.color)? {titleColor:nvHex(ti.textStyle.color)}:{}),
       ...(ti.textStyle&&ti.textStyle.fontSize? {titleFontSize:ti.textStyle.fontSize}:{})} : {showTitle:false}),
   };

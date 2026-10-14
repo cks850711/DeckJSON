@@ -395,10 +395,10 @@ function normEls(list,reserved,idMap){
       if(el.inset!=null){ const n=+el.inset;
         if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
       if(el.nowrap) el.nowrap=true; else delete el.nowrap;
-      if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
+      if(!ownVal(VERT_MODES,el.vert)) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
     }else{ delete el.inset; delete el.nowrap; delete el.vert; }
     // 漸層填色：只有走 addText 那條路（文字框／非線條形狀）才有 spPr 可注入
-    if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
+    if(el.type==='text'||(el.type==='shape'&&!ownVal(LINE_KINDS,el.shape))) normGrad(el); else delete el.grad;
     if(el.type==='video') normVideo(el);
     if(el.type==='image'){
       /* 原圖像素尺寸：只收正整數。屬性面板的壓縮資訊會把它拼進 HTML 顯示，
@@ -445,7 +445,8 @@ function normEls(list,reserved,idMap){
         el.pathH=Math.max(1,Math.round(+el.pathH>0? +el.pathH : el.h));
         el.points=normPoints(el.points,el.pathW,el.pathH);
       }else{ delete el.points; delete el.pathW; delete el.pathH;
-        if(!SHAPES[el.shape]&&!LINE_KINDS[el.shape]) el.shape='rect'; }
+        // 只認表自己的鍵（見 core/config.js 的 ownVal）：'constructor' 這類原型鍵與其他不認得的名字一樣換成 rect
+        if(!ownVal(SHAPES,el.shape)&&!ownVal(LINE_KINDS,el.shape)) el.shape='rect'; }
     }
     if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
     if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});

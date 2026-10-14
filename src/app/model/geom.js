@@ -351,8 +351,9 @@ const ADJ_LABELS={   // 沿用既有的好名字，其餘一律「調整 N」
   plus:[_t('臂寬')], teardrop:[_t('尖角')], plaque:[_t('切角')], noSmoking:[_t('斜槓寬')],
 };
 // 形狀 key → preset key。線條類（elbow…）自己不是 preset，幾何借它對應的連接器（bentConnector3）
-const geomKey=k=>(LINE_KINDS[k]? LINE_KINDS[k].pptx : k);
-const geomDef=k=>PRESET_GEOM[geomKey(k)];
+// 只認表自己的鍵：normalizeDeck 在把不認得的形狀換成 rect 之前就會用原值呼叫（adjCount）
+const geomKey=k=>{ const l=ownVal(LINE_KINDS,k); return l? l.pptx : k; };
+const geomDef=k=>ownVal(PRESET_GEOM,geomKey(k));
 // 該形狀有幾個可調值（＝preset avLst 的長度）
 const adjCount=key=>((geomDef(key)||[])[0]||[]).length;
 const adjLabel=(key,i)=>(ADJ_LABELS[key]||[])[i]||_t('調整 {0}',i+1);

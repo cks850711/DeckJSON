@@ -606,6 +606,48 @@ export default async function run() {
     ok('security: copy and paste does not bring in prototype-key types', qdt.getData('text/plain').includes('toString') && DJ.get('q').elements.length === qn,
       DJ.get('q').elements.map(e => e.type));
     ok('security: prototype-key types run nothing', window.__djx.length === 0, window.__djx);
+    // 其他欄位的值是原型鍵：與不認得的值走同一條路，匯出不拋錯、不寫出不合法的值
+    const PK = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const pkChart = (id, op) => ({id, type: 'chart', x: 600, y: 40, w: 300, h: 200,
+      option: Object.assign({xAxis: {type: 'category', data: ['a']}, yAxis: {}, series: [{type: 'bar', data: [1]}]}, op)});
+    await DJ.load({title: 'proto values', pages: [
+      {id: 'k1', elements: [
+        TEXT('kv', 40, 40, 200, 40, 'v', {vert: 'constructor', valign: 'toString', constructor: 1}),   // 最後一個是欄位名
+        {id: 'ks', type: 'shape', shape: 'constructor', x: 40, y: 120, w: 60, h: 60},
+        {id: 'kl', type: 'shape', shape: '__proto__', x: 140, y: 120, w: 60, h: 60},
+        {id: 'kt', type: 'table', x: 40, y: 220, colW: [100], rowH: [30], cells: [[{text: 'c', valign: 'constructor'}]]},
+        {id: 'km', type: 'text', x: 300, y: 40, w: 200, h: 40, paras: [{align: 'constructor', math: 'x^2'}]},
+        {id: 'ki', type: 'image', x: 300, y: 120, w: 10, h: 10, natW: 1, natH: 1, dataUrl: 'data:constructor;base64,' + PK},
+        pkChart('kc1', {series: [{type: 'constructor', data: [1]}]}),
+      ]},
+      {id: 'k2', transition: {type: 'morph', option: 'constructor'}, elements: [
+        pkChart('kc2', {series: [{type: 'toString', data: [1]}, {type: 'bar', data: [2]}]}),
+        pkChart('kc3', {toolbox: {feature: {magicType: {type: ['constructor', 'line']}}}}),
+      ]},
+    ]});
+    const kp = DJ.get('k1');
+    ok('security: prototype-key shapes become rect like any unknown shape',
+      ['ks', 'kl'].every(id => kp.elements.find(e => e.id === id).shape === 'rect'), kp.elements.map(e => e.shape));
+    ok('security: a prototype-key vert is dropped', !('vert' in kp.elements.find(e => e.id === 'kv')));
+    DJ.show('k2'); await tick(200);
+    ok('security: prototype-key chart types still draw on the canvas',
+      ['kc2', 'kc3'].every(id => !/option/.test(document.querySelector(`#stage [data-id="${id}"]`).textContent)));
+    let kx = null, kz = null;
+    try { kz = await JSZip.loadAsync(await DJ.exportPptx()); } catch (e) { kx = e.message; }
+    ok('security: export survives prototype-key shape, valign, chart and toolbox types', !kx, kx);
+    if (kz) {
+      const kall = (await Promise.all(Object.keys(kz.files).filter(n => /\.xml$/.test(n)).map(n => kz.file(n).async('string')))).join('\n');
+      const kbad = kall.match(/="[^"]*(constructor|native code)[^"]*"/g) || [];
+      ok('security: export writes no prototype-key values (morph option, math alignment, image type)', !kbad.length, kbad.slice(0, 3));
+      ok('security: export names no media file after a prototype key', !Object.keys(kz.files).some(n => /constructor|function/.test(n)),
+        Object.keys(kz.files).filter(n => /media/.test(n)));
+    }
+    const kd = await JSZip.loadAsync(await DJ.toBlob());
+    ok('security: the saved deck names no asset after a prototype key', !Object.keys(kd.files).some(n => /constructor|function/.test(n)),
+      Object.keys(kd.files));
+    const kw = DJ.lint('k1');
+    ok('security: lint hints never show a function for a prototype-key field name',
+      kw.some(w => w.startsWith('kv.constructor')) && !kw.some(w => /native code|function/.test(w)), kw.filter(w => /constructor/.test(w)));
     delete window.__djx;
     await DJ.load(fixture());
 

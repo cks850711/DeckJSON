@@ -42,7 +42,7 @@ function dataUrlDecode(u){
   const mime=(u.slice(0,i).match(/^data:([^;,]+)/)||[])[1]||'application/octet-stream';
   const bin=atob(u.slice(i+1)), a=new Uint8Array(bin.length);
   for(let k=0;k<bin.length;k++) a[k]=bin.charCodeAt(k);
-  return {bytes:a, ext:MIME2EXT[mime]||'bin'};
+  return {bytes:a, ext:ownVal(MIME2EXT,mime)||'bin'};
 }
 /* 位元組抽出來 → 欄位換成檔名。只收被引用到的資產，刪掉的元素不留孤兒檔。 */
 function dehydrate(deck){
@@ -70,7 +70,7 @@ async function hydrate(deck,zip){
       const f=zip.file(ASSET_DIR+name);
       if(!f) throw new Error(_t('容器內缺少資產檔：{0}',ASSET_DIR+name));
       const ext=(name.split('.').pop()||'').toLowerCase();
-      cache.set(name,'data:'+(EXT2MIME[ext]||'application/octet-stream')+';base64,'+await f.async('base64'));
+      cache.set(name,'data:'+(ownVal(EXT2MIME,ext)||'application/octet-stream')+';base64,'+await f.async('base64'));
     }
     s.o[s.k]=cache.get(name);
   }

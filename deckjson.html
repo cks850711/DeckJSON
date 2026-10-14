@@ -4089,8 +4089,9 @@ const ADJ_LABELS={   // 沿用既有的好名字，其餘一律「調整 N」
   plus:[_t('臂寬')], teardrop:[_t('尖角')], plaque:[_t('切角')], noSmoking:[_t('斜槓寬')],
 };
 // 形狀 key → preset key。線條類（elbow…）自己不是 preset，幾何借它對應的連接器（bentConnector3）
-const geomKey=k=>(LINE_KINDS[k]? LINE_KINDS[k].pptx : k);
-const geomDef=k=>PRESET_GEOM[geomKey(k)];
+// 只認表自己的鍵：normalizeDeck 在把不認得的形狀換成 rect 之前就會用原值呼叫（adjCount）
+const geomKey=k=>{ const l=ownVal(LINE_KINDS,k); return l? l.pptx : k; };
+const geomDef=k=>ownVal(PRESET_GEOM,geomKey(k));
 // 該形狀有幾個可調值（＝preset avLst 的長度）
 const adjCount=key=>((geomDef(key)||[])[0]||[]).length;
 const adjLabel=(key,i)=>(ADJ_LABELS[key]||[])[i]||_t('調整 {0}',i+1);
@@ -4555,7 +4556,7 @@ function mathInto(div,p){
 }
 function paraDiv(p,el,seq){
   const div=document.createElement('div');
-  div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
+  div.style.textAlign=ownVal({left:'left',center:'center',right:'right',justify:'justify'},p.align||'left');
   // 不換行要下在段落 div 上：CSS 的 `:is(.el,.mel) .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
   if(el&&el.nowrap) div.style.whiteSpace='pre';
   if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
@@ -4590,7 +4591,7 @@ function paraDiv(p,el,seq){
 }
 function txtBlock(el){
   const t=document.createElement('div'); t.className='txt';
-  t.style.justifyContent={top:'flex-start',middle:'center',bottom:'flex-end'}[el.valign||'top'];
+  t.style.justifyContent=ownVal({top:'flex-start',middle:'center',bottom:'flex-end'},el.valign||'top');
   t.style.lineHeight=el.lineSpacing||1.2;
   if(el.inset>0) t.style.padding=pt2px(el.inset)+'px';   // 文字框內距（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）
   if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
@@ -4626,7 +4627,7 @@ function renderTableInto(box,el){
       td.dataset.r=r; td.dataset.c=c;
       if(cell.fill) td.style.background='#'+cell.fill;
       td.style.textAlign=cell.align||'left';
-      td.style.verticalAlign={top:'top',middle:'middle',bottom:'bottom'}[cell.valign||'middle'];
+      td.style.verticalAlign=ownVal({top:'top',middle:'middle',bottom:'bottom'},cell.valign||'middle');
       td.style.fontSize=pt2px(cell.sizePt||12)+'px';
       td.style.lineHeight=cell.lineSpacing||1.2;
       td.style.color='#'+(cell.color||'1A1A1A');
@@ -4783,7 +4784,7 @@ function urlForCheck(v){
    等於讓別人給的簡報一點就往使用者的電腦寫檔；要圖請用工具列的快照或匯出。依讀碼，它在 IE／舊 Edge
    還會以 document.write 開新視窗。
    沒有處理的：optionToContent 這類要給函式的選項，JSON 寫不出函式。
-   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
+   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到；它只經過下方的 chartDropProtoTypes。
    op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
 const CHART_URL_OK=/^https?:/i;
 function chartSafeOption(op){
@@ -4808,6 +4809,29 @@ function chartSafeOption(op){
       }
       if((k==='link'||k==='sublink')&&badLink(v)){ delete node[k]; continue; }
       walk(v);
+    }
+  };
+  walk(op);
+  return chartDropProtoTypes(op);
+}
+/* ECharts 拿 series.type 與 toolbox.feature.magicType.type 的字串去查它自己的類別表，那張表的查法會經原型鏈：
+   'constructor'、'toString'、'__proto__' 這類 Object.prototype 自己的屬性名會取到函式或物件，
+   ECharts 拿去當類別用就拋錯——畫布顯示 option 錯誤，匯出整份失敗。
+   這裡把型別是這類名字的 series、magicType 項目拿掉，當成 ECharts 查不到；其他不認得的名字不動，照舊交給 ECharts。
+   畫布與縮圖經 chartSafeOption 呼叫，匯出的 chartPng 直接呼叫。op 必須已經是複本，這裡直接改它。 */
+const chartProtoName=v=>typeof v==='string'&&Object.prototype.hasOwnProperty.call(Object.prototype,v);
+function chartDropProtoTypes(op){
+  const walk=node=>{
+    if(Array.isArray(node)){ node.forEach(walk); return; }
+    if(!node||typeof node!=='object') return;
+    for(const k of Object.keys(node)){
+      const v=node[k];
+      if(k==='series'){
+        if(Array.isArray(v)) node[k]=v.filter(s=>!(s&&typeof s==='object'&&chartProtoName(s.type)));
+        else if(v&&typeof v==='object'&&chartProtoName(v.type)){ delete node[k]; continue; }
+      }
+      if(k==='magicType'&&v&&typeof v==='object'&&Array.isArray(v.type)) v.type=v.type.filter(t=>!chartProtoName(t));
+      walk(node[k]);
     }
   };
   walk(op);
@@ -10043,10 +10067,10 @@ function normEls(list,reserved,idMap){
       if(el.inset!=null){ const n=+el.inset;
         if(isFinite(n)&&n>0) el.inset=Math.min(72,n); else delete el.inset; }
       if(el.nowrap) el.nowrap=true; else delete el.nowrap;
-      if(!VERT_MODES[el.vert]) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
+      if(!ownVal(VERT_MODES,el.vert)) delete el.vert;   // 白名單外一律丟掉：亂值會讓 PowerPoint 開不了檔
     }else{ delete el.inset; delete el.nowrap; delete el.vert; }
     // 漸層填色：只有走 addText 那條路（文字框／非線條形狀）才有 spPr 可注入
-    if(el.type==='text'||(el.type==='shape'&&!LINE_KINDS[el.shape])) normGrad(el); else delete el.grad;
+    if(el.type==='text'||(el.type==='shape'&&!ownVal(LINE_KINDS,el.shape))) normGrad(el); else delete el.grad;
     if(el.type==='video') normVideo(el);
     if(el.type==='image'){
       /* 原圖像素尺寸：只收正整數。屬性面板的壓縮資訊會把它拼進 HTML 顯示，
@@ -10093,7 +10117,8 @@ function normEls(list,reserved,idMap){
         el.pathH=Math.max(1,Math.round(+el.pathH>0? +el.pathH : el.h));
         el.points=normPoints(el.points,el.pathW,el.pathH);
       }else{ delete el.points; delete el.pathW; delete el.pathH;
-        if(!SHAPES[el.shape]&&!LINE_KINDS[el.shape]) el.shape='rect'; }
+        // 只認表自己的鍵（見 core/config.js 的 ownVal）：'constructor' 這類原型鍵與其他不認得的名字一樣換成 rect
+        if(!ownVal(SHAPES,el.shape)&&!ownVal(LINE_KINDS,el.shape)) el.shape='rect'; }
     }
     if(el.type==='image'||el.type==='shape') el.rot=((parseFloat(el.rot)||0)%360+360)%360;
     if(el.type==='text'&&!el.paras) el.paras=mkParas(el.text||'',{sizePt:el.sizePt||18});
@@ -10231,8 +10256,10 @@ const SCHEMA_TABLE_HINTS={w:'a table is sized by colW (column widths)',h:'a tabl
 function schemaCheck(obj,kind,path){
   const out=[];
   const warn=(p,key,allowed,level)=>{
-    let why= level==='table element'? (SCHEMA_TABLE_HINTS[key]||(DECK_SCHEMA.tableNot.includes(key)? 'not supported on tables' : null)) : null;
-    why=why||SCHEMA_HINTS[key];
+    // 欄位名來自簡報，查提示表只認表自己的鍵（同 schemaKnownType 的理由）：欄位叫 constructor 時不會取到函式
+    const hint=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)? o[k] : null;
+    let why= level==='table element'? (hint(SCHEMA_TABLE_HINTS,key)||(DECK_SCHEMA.tableNot.includes(key)? 'not supported on tables' : null)) : null;
+    why=why||hint(SCHEMA_HINTS,key);
     if(!why){ const where=schemaWhereValid(key).filter(w=>w!==level);
       if(where.length) why='valid on '+where.join(', ')+', not on '+level; }
     if(!why){ const n=schemaNear(key,allowed); if(n) why='did you mean "'+n+'"?'; }
@@ -10453,8 +10480,8 @@ function nativeMap(op){
     showValue:ss.some(s=>s.label&&s.label.show),
     dataLabelFontSize:lb0.fontSize,
     dataLabelColor:nvHex(lb0.color)||undefined,
-    dataLabelPosition:({top:'t',inside:'ctr',insideTop:'inEnd',insideBottom:'inBase',
-      outside:'outEnd',center:'ctr'})[lb0.position]||undefined,
+    dataLabelPosition:ownVal({top:'t',inside:'ctr',insideTop:'inEnd',insideBottom:'inBase',
+      outside:'outEnd',center:'ctr'},lb0.position)||undefined,
     legendFontSize:(op.legend&&op.legend.textStyle||{}).fontSize,
     legendColor:nvHex((op.legend&&op.legend.textStyle||{}).color)||undefined,
     ...(bw>0? {dataBorder:{pct:bw,color:nvHex((ss[0].itemStyle||{}).borderColor)||'FFFFFF'}} : {}),
@@ -10462,7 +10489,7 @@ function nativeMap(op){
       {chartArea:{fill:{color:nvHex(op.backgroundColor)}}} : {}),
     // 視覺編輯面板改的外觀要能一路帶到原生圖表，否則面板只對 PNG 有效
     ...(ti&&ti.text? {showTitle:true,title:String(ti.text),
-      titleAlign:({left:'left',center:'center',right:'right'}[ti.left])||'center',
+      titleAlign:ownVal({left:'left',center:'center',right:'right'},ti.left)||'center',
       ...(nvHex(ti.textStyle&&ti.textStyle.color)? {titleColor:nvHex(ti.textStyle.color)}:{}),
       ...(ti.textStyle&&ti.textStyle.fontSize? {titleFontSize:ti.textStyle.fontSize}:{})} : {showTitle:false}),
   };
@@ -10600,7 +10627,7 @@ function dataUrlDecode(u){
   const mime=(u.slice(0,i).match(/^data:([^;,]+)/)||[])[1]||'application/octet-stream';
   const bin=atob(u.slice(i+1)), a=new Uint8Array(bin.length);
   for(let k=0;k<bin.length;k++) a[k]=bin.charCodeAt(k);
-  return {bytes:a, ext:MIME2EXT[mime]||'bin'};
+  return {bytes:a, ext:ownVal(MIME2EXT,mime)||'bin'};
 }
 /* 位元組抽出來 → 欄位換成檔名。只收被引用到的資產，刪掉的元素不留孤兒檔。 */
 function dehydrate(deck){
@@ -10628,7 +10655,7 @@ async function hydrate(deck,zip){
       const f=zip.file(ASSET_DIR+name);
       if(!f) throw new Error(_t('容器內缺少資產檔：{0}',ASSET_DIR+name));
       const ext=(name.split('.').pop()||'').toLowerCase();
-      cache.set(name,'data:'+(EXT2MIME[ext]||'application/octet-stream')+';base64,'+await f.async('base64'));
+      cache.set(name,'data:'+(ownVal(EXT2MIME,ext)||'application/octet-stream')+';base64,'+await f.async('base64'));
     }
     s.o[s.k]=cache.get(name);
   }
@@ -12392,7 +12419,7 @@ async function chartPng(el){
   div.style.cssText=`position:fixed;left:-10000px;top:0;width:${el.w}px;height:${el.h}px;`;
   document.body.appendChild(div);
   const inst=echarts.init(div,null,{renderer:'canvas'});
-  inst.setOption(Object.assign(structuredClone(el.option),{animation:false}),true);
+  inst.setOption(Object.assign(chartDropProtoTypes(structuredClone(el.option)),{animation:false}),true);
   const url=inst.getDataURL({type:'png',pixelRatio:3,backgroundColor:'rgba(255,255,255,0)'});
   inst.dispose(); div.remove();
   return url;
@@ -12406,7 +12433,7 @@ function addTableToSlide(slide,el){
     row.forEach(cell=>{
       if(cell.covered) return;
       const o={align:cell.align||'left',
-        valign:{top:'top',middle:'middle',bottom:'bottom'}[cell.valign||'middle'],
+        valign:ownVal({top:'top',middle:'middle',bottom:'bottom'},cell.valign||'middle'),
         bold:!!cell.bold,italic:!!cell.italic,color:cell.color||'1A1A1A',
         fontSize:cell.sizePt||12,
         margin:[0,0.03,0,0.03],   // 單位是「吋」！0.03in ≈ 2.2pt ≈ 預覽 3px（xlsx2pptx 踩坑 #10）
@@ -12488,7 +12515,7 @@ const _expMediaPath=new Map();
 function exportMediaPath(dataUrl){
   if(typeof dataUrl!=='string'||!dataUrl.startsWith('data:')) return null;
   const mime=(dataUrl.slice(0,dataUrl.indexOf(',')).match(/^data:([^;,]+)/)||[])[1]||'';
-  const ext=MIME2EXT[mime];
+  const ext=ownVal(MIME2EXT,mime);
   if(!ext||ext==='svg') return null;
   let v=_expMediaPath.get(dataUrl);
   if(!v){ v=assetHash(dataUrlDecode(dataUrl).bytes)+'.'+ext; _expMediaPath.set(dataUrl,v); }
@@ -12583,7 +12610,7 @@ async function addElToSlide(slide,el,pend){
   }
   // 文字框與含文字／純色形狀：一律走 addText（關 autofit、行距鎖定）
   // margin 這裡的單位是「點」（PptxGenJS 對 addText 走 R()＝pt→EMU；表格儲存格的 margin 才是吋）
-  const o={...common,valign:{top:'top',middle:'middle',bottom:'bottom'}[el.valign||'top'],
+  const o={...common,valign:ownVal({top:'top',middle:'middle',bottom:'bottom'},el.valign||'top'),
     margin:el.inset||0,fit:'none',wrap:!el.nowrap,
     // 元素層行距只是退路：有段落時 parasToPptx 會逐段覆蓋掉它（PptxGenJS 取 run 的 options 優先）
     lineSpacing:Math.round(maxPt(el)*(el.lineSpacing||1.2)*10)/10};
@@ -12629,7 +12656,7 @@ function transitionXml(tr){
   if(!tr||!ownVal(TRANSITIONS,tr.type)) return '';
   if(tr.type==='morph'){
     const dur=Math.max(100,Math.min(10000,Math.round(tr.dur||600)));
-    const opt={byObject:1,byWord:1,byChar:1}[tr.option]? tr.option:'byObject';
+    const opt=ownVal({byObject:1,byWord:1,byChar:1},tr.option)? tr.option:'byObject';
     return '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
       +'<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">'
       +`<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="slow" p14:dur="${dur}"><p159:morph option="${opt}"/></p:transition>`
@@ -12715,7 +12742,7 @@ function mathOmml(p,lang){
   if(!omml) return null;
   return {xml:'<a14:m xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main">'
     +'<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
-    +`<m:oMathParaPr><m:jc m:val="${MATH_JC[p.align]||'left'}"/></m:oMathParaPr>${omml}</m:oMathPara></a14:m>`,
+    +`<m:oMathParaPr><m:jc m:val="${ownVal(MATH_JC,p.align)||'left'}"/></m:oMathParaPr>${omml}</m:oMathPara></a14:m>`,
     end:`<a:endParaRPr lang="${lang||'en-US'}" sz="${sz}"/>`};
 }
 function injectMath(xml,els,lang){

@@ -76,7 +76,7 @@ function mathOmml(p,lang){
   if(!omml) return null;
   return {xml:'<a14:m xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main">'
     +'<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
-    +`<m:oMathParaPr><m:jc m:val="${MATH_JC[p.align]||'left'}"/></m:oMathParaPr>${omml}</m:oMathPara></a14:m>`,
+    +`<m:oMathParaPr><m:jc m:val="${ownVal(MATH_JC,p.align)||'left'}"/></m:oMathParaPr>${omml}</m:oMathPara></a14:m>`,
     end:`<a:endParaRPr lang="${lang||'en-US'}" sz="${sz}"/>`};
 }
 function injectMath(xml,els,lang){

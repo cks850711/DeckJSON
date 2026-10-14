@@ -91,7 +91,7 @@ function mathInto(div,p){
 }
 function paraDiv(p,el,seq){
   const div=document.createElement('div');
-  div.style.textAlign={left:'left',center:'center',right:'right',justify:'justify'}[p.align||'left'];
+  div.style.textAlign=ownVal({left:'left',center:'center',right:'right',justify:'justify'},p.align||'left');
   // 不換行要下在段落 div 上：CSS 的 `:is(.el,.mel) .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
   if(el&&el.nowrap) div.style.whiteSpace='pre';
   if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
@@ -126,7 +126,7 @@ function paraDiv(p,el,seq){
 }
 function txtBlock(el){
   const t=document.createElement('div'); t.className='txt';
-  t.style.justifyContent={top:'flex-start',middle:'center',bottom:'flex-end'}[el.valign||'top'];
+  t.style.justifyContent=ownVal({top:'flex-start',middle:'center',bottom:'flex-end'},el.valign||'top');
   t.style.lineHeight=el.lineSpacing||1.2;
   if(el.inset>0) t.style.padding=pt2px(el.inset)+'px';   // 文字框內距（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）
   if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
@@ -162,7 +162,7 @@ function renderTableInto(box,el){
       td.dataset.r=r; td.dataset.c=c;
       if(cell.fill) td.style.background='#'+cell.fill;
       td.style.textAlign=cell.align||'left';
-      td.style.verticalAlign={top:'top',middle:'middle',bottom:'bottom'}[cell.valign||'middle'];
+      td.style.verticalAlign=ownVal({top:'top',middle:'middle',bottom:'bottom'},cell.valign||'middle');
       td.style.fontSize=pt2px(cell.sizePt||12)+'px';
       td.style.lineHeight=cell.lineSpacing||1.2;
       td.style.color='#'+(cell.color||'1A1A1A');
@@ -319,7 +319,7 @@ function urlForCheck(v){
    等於讓別人給的簡報一點就往使用者的電腦寫檔；要圖請用工具列的快照或匯出。依讀碼，它在 IE／舊 Edge
    還會以 document.write 開新視窗。
    沒有處理的：optionToContent 這類要給函式的選項，JSON 寫不出函式。
-   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到。
+   匯出的 chartPng 不經這裡：離屏繪製後立刻 dispose，沒有滑鼠事件，上面幾項都觸發不到；它只經過下方的 chartDropProtoTypes。
    op 必須已經是複本（呼叫端都先 structuredClone），這裡直接改它。 */
 const CHART_URL_OK=/^https?:/i;
 function chartSafeOption(op){
@@ -344,6 +344,29 @@ function chartSafeOption(op){
       }
       if((k==='link'||k==='sublink')&&badLink(v)){ delete node[k]; continue; }
       walk(v);
+    }
+  };
+  walk(op);
+  return chartDropProtoTypes(op);
+}
+/* ECharts 拿 series.type 與 toolbox.feature.magicType.type 的字串去查它自己的類別表，那張表的查法會經原型鏈：
+   'constructor'、'toString'、'__proto__' 這類 Object.prototype 自己的屬性名會取到函式或物件，
+   ECharts 拿去當類別用就拋錯——畫布顯示 option 錯誤，匯出整份失敗。
+   這裡把型別是這類名字的 series、magicType 項目拿掉，當成 ECharts 查不到；其他不認得的名字不動，照舊交給 ECharts。
+   畫布與縮圖經 chartSafeOption 呼叫，匯出的 chartPng 直接呼叫。op 必須已經是複本，這裡直接改它。 */
+const chartProtoName=v=>typeof v==='string'&&Object.prototype.hasOwnProperty.call(Object.prototype,v);
+function chartDropProtoTypes(op){
+  const walk=node=>{
+    if(Array.isArray(node)){ node.forEach(walk); return; }
+    if(!node||typeof node!=='object') return;
+    for(const k of Object.keys(node)){
+      const v=node[k];
+      if(k==='series'){
+        if(Array.isArray(v)) node[k]=v.filter(s=>!(s&&typeof s==='object'&&chartProtoName(s.type)));
+        else if(v&&typeof v==='object'&&chartProtoName(v.type)){ delete node[k]; continue; }
+      }
+      if(k==='magicType'&&v&&typeof v==='object'&&Array.isArray(v.type)) v.type=v.type.filter(t=>!chartProtoName(t));
+      walk(node[k]);
     }
   };
   walk(op);
