@@ -1,10 +1,6 @@
 'use strict';
 /* ================= 字體可用性提示 ================= */
-function fontAvailable(name){
-  const c=document.createElement('canvas').getContext('2d'), t=/*zh*/'0mW中永19';
-  const w=f=>{ c.font=`400 100px ${f}`; return c.measureText(t).width; };
-  return w(`"${name}", monospace`)!==w('monospace')||w(`"${name}", serif`)!==w('serif');
-}
+/* fontAvailable 在 core/config.js（預設中文字體也用它挑） */
 async function checkFonts(){
   const F=APP.deck.fonts||FONTS;
   const names=[...new Set([F.ea,F.latin,F.tableLatin])];

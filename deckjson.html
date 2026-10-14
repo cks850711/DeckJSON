@@ -3339,11 +3339,24 @@ function dateText(){
 /* ---- 出廠預設 profile（中性）----
    通用版不帶任何個人／公司母版設定：無預留區、系統可用字體、語言跟隨瀏覽器。
    個人化設定一律走 profile（deck.profile 欄位群 → localStorage → 這裡），見 §profile。 */
-function defaultEaFont(){   // 中文字體無跨平台通解，依作業系統挑一個「本機一定有」的
-  const ua=navigator.userAgent||'';
-  if(/Mac|iPhone|iPad/.test(ua)) return 'PingFang TC';
-  if(/Windows/.test(ua)) return 'Microsoft JhengHei';
-  return 'Noto Sans CJK TC';
+/* 本機有沒有這個字體：用 canvas 量一串中英混排文字，與「只退回通用字體」的寬度比，不同就是有。
+   載入時就會被 defaultEaFont 呼叫（出廠 profile 在載入時組出來），而建置後全部 app/ 是同一支 script，
+   函式宣告會提升，所以放在這裡、不必等 boot.js。 */
+function fontAvailable(name){
+  const c=document.createElement('canvas').getContext('2d'), t=/*zh*/'0mW中永19';
+  const w=f=>{ c.font=`400 100px ${f}`; return c.measureText(t).width; };
+  return w(`"${name}", monospace`)!==w('monospace')||w(`"${name}", serif`)!==w('serif');
+}
+/* 預設中文字體：依本機實際裝了哪個挑，不依作業系統猜。
+   中文字體無跨平台通解，而作業系統與瀏覽器版本都不保證字體在不在（精簡版系統、被移除的字體、
+   手動裝了別家字體），猜錯就會把一個本機沒有的字體名寫進簡報與匯出。依序找 macOS／iOS 內建的
+   PingFang TC、Windows 內建的 Microsoft JhengHei，都沒有就用 Noto Sans CJK TC（Linux、Android 常見）。
+   與舊版（讀瀏覽器回報的作業系統）的差別：字體集和作業系統的預設不一致時結果會不同，
+   例如 Windows 缺 Microsoft JhengHei 時改回 Noto Sans CJK TC，新結果是本機實際有的字體。
+   瀏覽器的隱私保護（例如 Firefox 的防指紋）若限制網頁看得到的本機字體，這裡可能偵測不到內建字體，
+   於是回退到 Noto Sans CJK TC；使用者可在「全簡報設定 → 字體」自己改。 */
+function defaultEaFont(){
+  return ['PingFang TC','Microsoft JhengHei'].find(fontAvailable)||'Noto Sans CJK TC';
 }
 function defaultLang(){
   const l=String(navigator.language||'en-US');
@@ -14042,11 +14055,7 @@ const DJ=Object.freeze(djAfterBoot({
 }));
 window.DJ=DJ;
 /* ================= 字體可用性提示 ================= */
-function fontAvailable(name){
-  const c=document.createElement('canvas').getContext('2d'), t=/*zh*/'0mW中永19';
-  const w=f=>{ c.font=`400 100px ${f}`; return c.measureText(t).width; };
-  return w(`"${name}", monospace`)!==w('monospace')||w(`"${name}", serif`)!==w('serif');
-}
+/* fontAvailable 在 core/config.js（預設中文字體也用它挑） */
 async function checkFonts(){
   const F=APP.deck.fonts||FONTS;
   const names=[...new Set([F.ea,F.latin,F.tableLatin])];
