@@ -13,7 +13,7 @@ function chartTarget(){
 function openChartModal(el){
   chartTargetRef={page:curPage().id,el:el.id};
   $('#chartArea').value=JSON.stringify(el.option,null,1);
-  $('#chartTargetTag').textContent=_t('{0}：{1}',L_NAME[el.type]||_t('圖表'),el.id);
+  $('#chartTargetTag').textContent=_t('{0}：{1}',ownVal(L_NAME,el.type)||_t('圖表'),el.id);
   $('#chartModal').hidden=false;
   chartTab('vis');
 }

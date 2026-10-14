@@ -58,8 +58,12 @@ const DECK_SCHEMA={
 /* 各層的顯示名，用在警告訊息的「在哪一層才合法」提示 */
 const SCHEMA_LEVEL_NAMES={deck:'the deck',page:'a page',para:'a paragraph',run:'a text run',cell:'a table cell',
   bullet:'bullet',transition:'transition'};
+/* 認得的元素型別：只認 DECK_SCHEMA.element 自己的鍵，排除 common。直接寫 element[type] 的話，
+   'constructor'、'toString' 這類原型鍵會取到函式而被當成認得。與 model/normalize.js 的 elTypeOk 同一判準；
+   這個檔要能單獨在 node 裡跑（tools/deck-lint.js），所以不引用那邊，自己寫一份 */
+const schemaKnownType=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 function schemaElKeys(type){
-  const E=DECK_SCHEMA.element, own=E[type]||[];
+  const E=DECK_SCHEMA.element, own=schemaKnownType(type)? E[type] : [];
   const common=type==='table'? E.common.filter(k=>!DECK_SCHEMA.tableNot.includes(k)) : E.common;
   return new Set(common.concat(own));
 }
@@ -121,7 +125,7 @@ function schemaCheck(obj,kind,path){
   const el=(e,p)=>{
     if(!e||typeof e!=='object') return;
     const lv=(e.type||'?')+' element';
-    if(!DECK_SCHEMA.element[e.type]){ out.push(p+'.type: unknown element type "'+e.type+'" (text, shape, image, table, chart, video)'); return; }
+    if(!schemaKnownType(e.type)){ out.push(p+'.type: unknown element type "'+e.type+'" (text, shape, image, table, chart, video)'); return; }
     keys(e,schemaElKeys(e.type),p,lv);
     if(e.link&&typeof e.link==='object') keys(e.link,S.elLink,p+'.link','an element link');
     if(e.shadow&&typeof e.shadow==='object') keys(e.shadow,S.shadow,p+'.shadow','shadow');

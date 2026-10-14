@@ -282,7 +282,7 @@ async function addElToSlide(slide,el,pend){
 // 字體後處理：兩種模式都明確填 latin/ea/cs（不剝離、不切 run），全 run lang=zh-TW
 // 鎖定模式寫死三字體；繼承模式寫 +mn-lt/+mn-ea/+mn-cs 主題槽引用（貼上時由目的端母版接手）
 function transitionXml(tr){
-  if(!tr||!TRANSITIONS[tr.type]) return '';
+  if(!tr||!ownVal(TRANSITIONS,tr.type)) return '';
   if(tr.type==='morph'){
     const dur=Math.max(100,Math.min(10000,Math.round(tr.dur||600)));
     const opt={byObject:1,byWord:1,byChar:1}[tr.option]? tr.option:'byObject';
@@ -291,6 +291,6 @@ function transitionXml(tr){
       +`<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="slow" p14:dur="${dur}"><p159:morph option="${opt}"/></p:transition>`
       +'</mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>';
   }
-  const inner={fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'}[tr.type];
+  const inner=ownVal({fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'},tr.type);
   return `<p:transition spd="med">${inner}</p:transition>`;
 }

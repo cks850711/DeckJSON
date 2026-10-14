@@ -141,7 +141,7 @@ function applyPropTabs(){
   const el=APP.selIds.length===1? selEl() : null;
   // null ＝這一頁收容所有沒被前面認領的區塊
   // 型別名：形狀若是線條類，內容區塊叫「線條樣式」，頁名跟著叫「線條」
-  const typeName= el? (isLineEl(el)? _t('線條') : (TAB_CONTENT_NAME[el.type]||_t('內容'))) : _t('內容');
+  const typeName= el? (isLineEl(el)? _t('線條') : (ownVal(TAB_CONTENT_NAME,el.type)||_t('內容'))) : _t('內容');
   const hasText= el&&(el.type==='text'||(el.type==='shape'&&el.paras));
   const defs= mode==='sel'
     ? (el&&el.type==='table'
@@ -217,7 +217,7 @@ function renderPropsBody(){
   if(!el){ propsPage(pp); return; }
   const names={text:_t('文字框'),table:_t('表格'),image:_t('圖片'),shape:_t('形狀'),chart:_t('圖表'),video:_t('影片')};
   // 型別與 id 都來自簡報檔，以文字節點放入：外來簡報的 id 帶 HTML 時，寫成 innerHTML 會在點選時執行
-  const h4=document.createElement('h4'); h4.textContent=(names[el.type]||el.type)+' ';
+  const h4=document.createElement('h4'); h4.textContent=(ownVal(names,el.type)||String(el.type))+' ';
   const idTag=document.createElement('span'); idTag.className='unit'; idTag.textContent=el.id;
   h4.appendChild(idTag); pp.appendChild(h4);
   const sz=elSize(el);

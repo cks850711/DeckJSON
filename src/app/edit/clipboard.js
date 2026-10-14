@@ -341,7 +341,7 @@ document.addEventListener('paste',e=>{
   insertPasted(els,false);
 });
 const PASTE_OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
-const pastableEl=x=>!!x&&typeof x==='object'&&!!PASTE_OK[x.type];
+const pastableEl=x=>!!x&&typeof x==='object'&&!!ownVal(PASTE_OK,x.type);
 function insertPasted(els,placed){
   els=els.filter(pastableEl);
   if(!els.length) return;

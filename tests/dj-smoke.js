@@ -564,6 +564,44 @@ export default async function run() {
       row.querySelector('.lname').textContent === UNK.type && document.querySelector('#propPanel h4').textContent.startsWith(UNK.type));
     layersBtn.click();
     ok('security: the unknown type runs nothing', window.__djx.length === 0, window.__djx);
+    // 型別名是原型鍵（constructor、toString、__proto__）：查表只認表自己的鍵，否則會被當成認得的型別
+    const PROTO = ['constructor', 'toString', '__proto__'];
+    window.alert = m => alerts.push(String(m));
+    try {
+      await DJ.load({title: 'proto', pages: [{id: 'q', transition: {type: 'constructor'}, elements: [
+        ...PROTO.map((t, i) => ({id: 'q' + i, type: t, x: 40, y: 40 + 60 * i, w: 100, h: 40, paras: {}})),
+        TEXT('qt', 400, 40, 200, 40, 't')]}]});
+    } finally { window.alert = realAlert; }
+    DJ.show('q'); await tick(100);
+    layersBtn.click(); await tick(100);
+    const names = PROTO.map((t, i) => document.querySelector(`#layerList .layerRow[data-id="q${i}"] .lname`).textContent);
+    const icons = PROTO.map((t, i) => document.querySelector(`#layerList .layerRow[data-id="q${i}"] .licon`).innerHTML);
+    document.querySelector('#layerList .layerRow[data-id="q0"]').click(); await tick(100);
+    const qh4 = document.querySelector('#propPanel h4').textContent;
+    layersBtn.click();
+    ok('security: prototype-key types show their own name in the layer list', JSON.stringify(names) === JSON.stringify(PROTO), names);
+    ok('security: prototype-key types get the default layer icon', icons.every(h => h.includes('#ic-shape')), icons);
+    ok('security: the property panel shows a prototype-key type by name', qh4.startsWith('constructor '), qh4);
+    ok('security: prototype-key types are not drawn', PROTO.every((t, i) => !document.querySelector(`#stage [data-id="q${i}"]`)));
+    const ql = DJ.lint('q');
+    ok('security: lint reports prototype-key types as unknown', PROTO.every((t, i) => ql.some(w => w.startsWith(`q${i}.type: unknown element type`))), ql);
+    ok('security: a prototype-key transition type is dropped', DJ.get('q').transition === null, DJ.get('q').transition);
+    // 不分型別的讀取動詞對未知元素不拋錯（paras 不是陣列）
+    let qo = null, qerr = null;
+    try { qo = DJ.outline('q'); DJ.bbox('q', ['q0', 'qt']); DJ.overflow(); DJ.lint(); } catch (e) { qerr = e.message; }
+    ok('security: outline, bbox, overflow and lint accept unknown elements as they are', !qerr && qo[0].unknown === true && qo[0].x === 40, qerr || qo[0]);
+    // 複製這幾個再貼上：不認得的型別一個都不進來
+    const qdt = new DataTransfer();
+    layersBtn.click(); await tick(100);
+    document.querySelector('#layerList .layerRow[data-id="q1"]').click(); await tick(100);
+    layersBtn.click();
+    document.dispatchEvent(new ClipboardEvent('copy', {clipboardData: qdt, bubbles: true, cancelable: true}));
+    const qn = DJ.get('q').elements.length;
+    document.dispatchEvent(new ClipboardEvent('paste', {clipboardData: qdt, bubbles: true, cancelable: true}));
+    await tick(200);
+    ok('security: copy and paste does not bring in prototype-key types', qdt.getData('text/plain').includes('toString') && DJ.get('q').elements.length === qn,
+      DJ.get('q').elements.map(e => e.type));
+    ok('security: prototype-key types run nothing', window.__djx.length === 0, window.__djx);
     delete window.__djx;
     await DJ.load(fixture());
 

@@ -30,7 +30,14 @@ function asTx(mode,fn){
     tx.onabort=()=>rej(tx.error||new Error(_t('IndexedDB 交易中止')));
   }));
 }
-function asHint(txt,bad){ const s=$('#saveHint'); if(!s) return; s.textContent=txt||''; s.classList.toggle('bad',!!bad); }
+/* asWarn：還原失敗的停用警告。之後的提示（已存檔…）都接在它前面一起顯示、整列維持警告色，
+   否則手動存檔一次它就被蓋掉，使用者不再知道自動存檔是停的。只有 asDropFailed 會清掉它 */
+let asWarn='';
+function asHint(txt,bad){
+  const s=$('#saveHint'); if(!s) return;
+  s.textContent= asWarn&&txt!==asWarn? (txt? txt+' · '+asWarn : asWarn) : (txt||'');
+  s.classList.toggle('bad',!!bad||!!asWarn);
+}
 const as2=n=>String(n).padStart(2,'0');
 function asStamp(t){ const d=new Date(t); return as2(d.getHours())+':'+as2(d.getMinutes())+':'+as2(d.getSeconds()); }
 function asSaveNow(){
@@ -60,6 +67,14 @@ function scheduleAutosave(){
   asTimer=setTimeout(asSaveNow,AS_DELAY);
 }
 function asClear(){ return asTx('readwrite',st=>st.delete(AS_KEY)).catch(()=>{}); }
+/* 還原失敗後，使用者確認放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
+   asRestoreFailed 只在還原失敗時為真；瀏覽器擋 IndexedDB、容量已滿這類停用不走這裡，恢復了也存不進去 */
+let asRestoreFailed=false;
+function asDropFailed(){
+  if(!asRestoreFailed) return;
+  asClear();   // 之後的自動存檔排在這筆刪除之後（同一個 object store 的交易依建立順序執行）
+  asRestoreFailed=false; asOff=false; asWarn=''; asHint('');
+}
 async function asRestore(){
   let rec=null;
   try{ rec=await asTx('readonly',st=>st.get(AS_KEY)); }
@@ -84,9 +99,11 @@ async function asRestore(){
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
          選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
          不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
-         「開新簡報」會清除自動存檔，那裡同樣看 asOff（io/file.js）。 */
-      asOff=true;
-      asHint(_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err),true);
+         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外確認放棄這筆記錄時才刪（asDropFailed）。
+         記錄若是真的壞了，任何版本都讀不回來，沒有這條路的話這個網址每次載入都會停用自動存檔。 */
+      asOff=true; asRestoreFailed=true;
+      asWarn=_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err);
+      asHint(asWarn,true);
     }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西

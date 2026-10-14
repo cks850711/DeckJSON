@@ -76,6 +76,10 @@ function setIcoBtn(b,ic,txt,title){
 }
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+/* 拿簡報裡的值（元素 type、圖表 series type、轉場 type…）去查常數表時，只認表自己的鍵。
+   直接寫 TABLE[key] 的話，'constructor'、'toString'、'__proto__' 會從原型取到函式或物件，
+   被當成查到了：顯示成函式原始碼、拼進 HTML、通過白名單。 */
+const ownVal=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)? o[k] : undefined;
 
 /* ================= profile（環境設定檔） =================
    把「投影片尺寸／預留區／三字體／語言／頁碼與日期樣式／檔案屬性」這些原本寫死在程式裡的客製化，

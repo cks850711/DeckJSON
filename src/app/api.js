@@ -250,6 +250,14 @@ const DJ=Object.freeze(djAfterBoot({
   },
   outline(pid){
     return djEls(APP.deck,pid).map(el=>{
+      /* 型別不認得的元素是不透明的：欄位原樣保留但形狀未知（paras 可能不是陣列），
+         只回 id、type 與是數字的座標尺寸，不去讀其他欄位 */
+      if(!elTypeOk(el.type)){
+        const o={id:el.id,type:el.type,unknown:true};
+        for(const k of ['x','y','w','h']) if(typeof el[k]==='number'&&isFinite(el[k])) o[k]=Math.round(el[k]);
+        if(el.hidden===true) o.hidden=true;
+        return o;
+      }
       const o={id:el.id,type:el.type,x:Math.round(el.x),y:Math.round(el.y)};
       // 表格高度用畫出來的實際高度：rowH 只是下限，字放不下時列會自己長高，加總 rowH 會少算
       if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=tableRowHeights(el).reduce((a,b)=>a+b,0);

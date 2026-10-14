@@ -174,10 +174,16 @@ if(!fsUsable()){   // 講明白比靜默降級重要：按鈕上就要看得出�
 $('#btnNew').onclick=()=>{
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
   // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
-  if(!confirm(_t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
+  // 自動存檔停用時不會清除它（例如還原失敗後留著的那筆記錄），確認文字照實講
+  if(!confirm(asOff
+    ? _t('開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n)
+    : _t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
   if(!confirm(_t('再確認一次：真的要放棄目前內容？'))) return;
-  if(!asOff) asClear();   // 自動存檔停用時（例如還原失敗），留著的那筆記錄不能在這裡被刪掉
-  commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
+  if(!asOff) asClear();
+  /* 還原失敗而停用的，在這裡給一條出路：另外問一次要不要放棄那筆讀不回來的記錄、恢復自動存檔。
+     預設（取消）是保留——那筆記錄可能只是這個版本讀不懂，換版本就讀得回來 */
+  else if(asRestoreFailed&&confirm(_t('上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。'))) asDropFailed();
+  commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔就算清了，本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
   setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪
   APP.edit=null; APP.editing=null; setSel([]);

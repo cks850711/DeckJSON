@@ -2343,6 +2343,8 @@ Object.assign(I18N_PACKS.en=I18N_PACKS.en||{},{
   "載入失敗：{0}": "Load failed: {0}",
   "開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+' and the autosave too.\n\nAnything not saved to a file can\'t be recovered. Continue?',
   "再確認一次：真的要放棄目前內容？": "One more time: really discard the current content?",
+  "開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？": (p,e)=>'A new deck clears the current '+p+(p===1?' slide':' slides')+' / '+e+(e===1?' element':' elements')+'. Autosave is off right now, so it is not cleared.\n\nAnything not saved to a file can\'t be recovered. Continue?',
+  "上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。": "The autosave that couldn't be read back is still kept. Delete it and turn autosave back on?\n\nOnce deleted it can't be recovered. Cancel keeps it, and autosave stays off.",
   "這不是 profile 檔（format 應為 deckjson-profile）": "This isn't a profile file (format should be deckjson-profile)",
   "已套用設定檔「{0}」。\n要同時設為「新簡報預設」嗎？": "Applied profile “{0}”.\nAlso set it as the default for new decks?",
   "這個瀏覽器環境不允許寫入 localStorage，無法記住預設（本簡報仍已套用）。": "This browser environment doesn't allow writing to localStorage, so the default can't be remembered (it's still applied to this deck).",
@@ -3368,6 +3370,10 @@ function setIcoBtn(b,ic,txt,title){
 }
 const stage=$('#stage');
 const uid=p=>(p||'e')+'-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+/* 拿簡報裡的值（元素 type、圖表 series type、轉場 type…）去查常數表時，只認表自己的鍵。
+   直接寫 TABLE[key] 的話，'constructor'、'toString'、'__proto__' 會從原型取到函式或物件，
+   被當成查到了：顯示成函式原始碼、拼進 HTML、通過白名單。 */
+const ownVal=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)? o[k] : undefined;
 
 /* ================= profile（環境設定檔） =================
    把「投影片尺寸／預留區／三字體／語言／頁碼與日期樣式／檔案屬性」這些原本寫死在程式裡的客製化，
@@ -6098,7 +6104,7 @@ function applyPropTabs(){
   const el=APP.selIds.length===1? selEl() : null;
   // null ＝這一頁收容所有沒被前面認領的區塊
   // 型別名：形狀若是線條類，內容區塊叫「線條樣式」，頁名跟著叫「線條」
-  const typeName= el? (isLineEl(el)? _t('線條') : (TAB_CONTENT_NAME[el.type]||_t('內容'))) : _t('內容');
+  const typeName= el? (isLineEl(el)? _t('線條') : (ownVal(TAB_CONTENT_NAME,el.type)||_t('內容'))) : _t('內容');
   const hasText= el&&(el.type==='text'||(el.type==='shape'&&el.paras));
   const defs= mode==='sel'
     ? (el&&el.type==='table'
@@ -6174,7 +6180,7 @@ function renderPropsBody(){
   if(!el){ propsPage(pp); return; }
   const names={text:_t('文字框'),table:_t('表格'),image:_t('圖片'),shape:_t('形狀'),chart:_t('圖表'),video:_t('影片')};
   // 型別與 id 都來自簡報檔，以文字節點放入：外來簡報的 id 帶 HTML 時，寫成 innerHTML 會在點選時執行
-  const h4=document.createElement('h4'); h4.textContent=(names[el.type]||el.type)+' ';
+  const h4=document.createElement('h4'); h4.textContent=(ownVal(names,el.type)||String(el.type))+' ';
   const idTag=document.createElement('span'); idTag.className='unit'; idTag.textContent=el.id;
   h4.appendChild(idTag); pp.appendChild(h4);
   const sz=elSize(el);
@@ -9412,7 +9418,7 @@ document.addEventListener('paste',e=>{
   insertPasted(els,false);
 });
 const PASTE_OK={text:1,table:1,image:1,shape:1,chart:1,video:1};
-const pastableEl=x=>!!x&&typeof x==='object'&&!!PASTE_OK[x.type];
+const pastableEl=x=>!!x&&typeof x==='object'&&!!ownVal(PASTE_OK,x.type);
 function insertPasted(els,placed){
   els=els.filter(pastableEl);
   if(!els.length) return;
@@ -9938,7 +9944,7 @@ function normalizeDeck(d){
     if(typeof pg.bgImage==='string'&&looksLikeAssetRef(pg.bgImage))
       throw new Error(_t('頁面 {0} 的 bgImage 是資產引用「{1}」，但這份 JSON 不在容器裡。',pg.id,pg.bgImage));
     if(typeof pg.bgImage!=='string'||!pg.bgImage.startsWith('data:image/')) delete pg.bgImage;
-    pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
+    pg.transition=(pg.transition&&typeof pg.transition==='object'&&ownVal(TRANSITIONS,pg.transition.type))? pg.transition:null;
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
     pg.notes= pg.notes==null? '' : String(pg.notes);
     if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）
@@ -10178,8 +10184,12 @@ const DECK_SCHEMA={
 /* 各層的顯示名，用在警告訊息的「在哪一層才合法」提示 */
 const SCHEMA_LEVEL_NAMES={deck:'the deck',page:'a page',para:'a paragraph',run:'a text run',cell:'a table cell',
   bullet:'bullet',transition:'transition'};
+/* 認得的元素型別：只認 DECK_SCHEMA.element 自己的鍵，排除 common。直接寫 element[type] 的話，
+   'constructor'、'toString' 這類原型鍵會取到函式而被當成認得。與 model/normalize.js 的 elTypeOk 同一判準；
+   這個檔要能單獨在 node 裡跑（tools/deck-lint.js），所以不引用那邊，自己寫一份 */
+const schemaKnownType=t=>typeof t==='string'&&t!=='common'&&Object.prototype.hasOwnProperty.call(DECK_SCHEMA.element,t);
 function schemaElKeys(type){
-  const E=DECK_SCHEMA.element, own=E[type]||[];
+  const E=DECK_SCHEMA.element, own=schemaKnownType(type)? E[type] : [];
   const common=type==='table'? E.common.filter(k=>!DECK_SCHEMA.tableNot.includes(k)) : E.common;
   return new Set(common.concat(own));
 }
@@ -10241,7 +10251,7 @@ function schemaCheck(obj,kind,path){
   const el=(e,p)=>{
     if(!e||typeof e!=='object') return;
     const lv=(e.type||'?')+' element';
-    if(!DECK_SCHEMA.element[e.type]){ out.push(p+'.type: unknown element type "'+e.type+'" (text, shape, image, table, chart, video)'); return; }
+    if(!schemaKnownType(e.type)){ out.push(p+'.type: unknown element type "'+e.type+'" (text, shape, image, table, chart, video)'); return; }
     keys(e,schemaElKeys(e.type),p,lv);
     if(e.link&&typeof e.link==='object') keys(e.link,S.elLink,p+'.link','an element link');
     if(e.shadow&&typeof e.shadow==='object') keys(e.shadow,S.shadow,p+'.shadow','shadow');
@@ -10401,8 +10411,8 @@ function nativeMap(op){
   const ss=(op.series||[]).filter(s=>s&&typeof s==='object');
   if(!ss.length) return {ok:false,reason:_t('option 內沒有 series')};
   const t0=ss[0].type;
-  const bad=ss.find(s=>NCHART_UNSUP[s.type]);
-  if(bad) return {ok:false,reason:_t('{0}沒有 PowerPoint 原生對應',NCHART_UNSUP[bad.type])};
+  const bad=ss.find(s=>ownVal(NCHART_UNSUP,s.type));
+  if(bad) return {ok:false,reason:_t('{0}沒有 PowerPoint 原生對應',ownVal(NCHART_UNSUP,bad.type))};
   if(ss.some(s=>s.type!==t0)) return {ok:false,reason:_t('同一張圖混用多種 series 型別，原生圖表無法表示')};
   const drop=[];                       // 映射時被丟掉的設定，回報給使用者
   const chk=(cond,what)=>{ if(cond&&!drop.includes(what)) drop.push(what); };
@@ -10930,7 +10940,7 @@ function layersOpen(){ return !$('#layerPanel').hidden; }
 function layerLabel(el){
   if(el.type==='text'||(el.type==='shape'&&el.paras)){ const t=plainText(el).replace(/\s+/g,' ').trim(); if(t) return t.slice(0,18); }
   if(el.type==='shape') return (LINE_KINDS[el.shape]||SHAPES[el.shape]||{}).label||_t('形狀');
-  return L_NAME[el.type]||el.type;
+  return ownVal(L_NAME,el.type)||String(el.type);   // 不認得的型別顯示型別名本身
 }
 function renderLayers(){
   if(typeof $!=='function'||!layersOpen()) return;
@@ -10945,7 +10955,7 @@ function renderLayers(){
     eye.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.hidden) delete el.hidden; else el.hidden=true; renderStage(); renderProps(); };
     const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.innerHTML=licon(el.locked?'ic-lock':'ic-unlock'); lock.title=_t('鎖定（畫布不可選拖）');
     lock.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.locked){ delete el.locked; } else { el.locked=true; if(APP.selIds.includes(el.id)) setSel(APP.selIds.filter(id=>id!==el.id)); } renderStage(); renderProps(); };
-    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(L_ICON[el.type]||'ic-shape');
+    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(ownVal(L_ICON,el.type)||'ic-shape');
     const nm=document.createElement('span'); nm.className='lname'; nm.textContent=(el.groupId?'⧉ ':'')+layerLabel(el); nm.title=el.id;
     row.append(eye,lock,icon,nm);
     row.onclick=()=>{ setSel(el.groupId?groupMembers(el).map(m=>m.id):[el.id]); updateSelBox(); renderProps(); syncPageJson(); renderLayers(); };
@@ -11120,7 +11130,14 @@ function asTx(mode,fn){
     tx.onabort=()=>rej(tx.error||new Error(_t('IndexedDB 交易中止')));
   }));
 }
-function asHint(txt,bad){ const s=$('#saveHint'); if(!s) return; s.textContent=txt||''; s.classList.toggle('bad',!!bad); }
+/* asWarn：還原失敗的停用警告。之後的提示（已存檔…）都接在它前面一起顯示、整列維持警告色，
+   否則手動存檔一次它就被蓋掉，使用者不再知道自動存檔是停的。只有 asDropFailed 會清掉它 */
+let asWarn='';
+function asHint(txt,bad){
+  const s=$('#saveHint'); if(!s) return;
+  s.textContent= asWarn&&txt!==asWarn? (txt? txt+' · '+asWarn : asWarn) : (txt||'');
+  s.classList.toggle('bad',!!bad||!!asWarn);
+}
 const as2=n=>String(n).padStart(2,'0');
 function asStamp(t){ const d=new Date(t); return as2(d.getHours())+':'+as2(d.getMinutes())+':'+as2(d.getSeconds()); }
 function asSaveNow(){
@@ -11150,6 +11167,14 @@ function scheduleAutosave(){
   asTimer=setTimeout(asSaveNow,AS_DELAY);
 }
 function asClear(){ return asTx('readwrite',st=>st.delete(AS_KEY)).catch(()=>{}); }
+/* 還原失敗後，使用者確認放棄那筆記錄時（見 io/file.js 的「開新簡報」）：刪掉它並恢復自動存檔。
+   asRestoreFailed 只在還原失敗時為真；瀏覽器擋 IndexedDB、容量已滿這類停用不走這裡，恢復了也存不進去 */
+let asRestoreFailed=false;
+function asDropFailed(){
+  if(!asRestoreFailed) return;
+  asClear();   // 之後的自動存檔排在這筆刪除之後（同一個 object store 的交易依建立順序執行）
+  asRestoreFailed=false; asOff=false; asWarn=''; asHint('');
+}
 async function asRestore(){
   let rec=null;
   try{ rec=await asTx('readonly',st=>st.get(AS_KEY)); }
@@ -11174,9 +11199,11 @@ async function asRestore(){
          下一次編輯 1.2 秒後就把這筆記錄蓋成空白簡報，原本的內容永久消失（2026-10-14 實測）。
          選停用而不是把記錄搬到備份鍵：留在原鍵，換一個讀得懂它的版本重新整理就能照常還原，
          不需要另外做找回備份的介面；代價是這次工作階段的修改不會自動存檔，提示裡要講明。
-         「開新簡報」會清除自動存檔，那裡同樣看 asOff（io/file.js）。 */
-      asOff=true;
-      asHint(_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err),true);
+         「開新簡報」平常會清除自動存檔；停用時不清，只在使用者另外確認放棄這筆記錄時才刪（asDropFailed）。
+         記錄若是真的壞了，任何版本都讀不回來，沒有這條路的話這個網址每次載入都會停用自動存檔。 */
+      asOff=true; asRestoreFailed=true;
+      asWarn=_t('⚠ 上次的自動存檔讀不回來，已停用自動存檔、原記錄保留不動。這次的修改請用「存檔」或「另存新檔」存成檔案。原因：{0}',err&&err.message||err);
+      asHint(asWarn,true);
     }
   }
   APP.ready=true;   // 還原完才開始存，否則空白 deck 會覆蓋掉剛讀出來的東西
@@ -11356,10 +11383,16 @@ if(!fsUsable()){   // 講明白比靜默降級重要：按鈕上就要看得出�
 $('#btnNew').onclick=()=>{
   const n=APP.deck.pages.reduce((s,p)=>s+p.elements.length,0);
   // 二次確認：第一關講清楚會失去什麼，第二關擋住「順手按 Enter」
-  if(!confirm(_t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
+  // 自動存檔停用時不會清除它（例如還原失敗後留著的那筆記錄），確認文字照實講
+  if(!confirm(asOff
+    ? _t('開新簡報會清空目前的 {0} 頁／{1} 個元素。自動存檔目前停用，不會跟著清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n)
+    : _t('開新簡報會清空目前的 {0} 頁／{1} 個元素，且自動存檔一併清除。\n\n未另存的內容將無法復原。要繼續嗎？',APP.deck.pages.length,n))) return;
   if(!confirm(_t('再確認一次：真的要放棄目前內容？'))) return;
-  if(!asOff) asClear();   // 自動存檔停用時（例如還原失敗），留著的那筆記錄不能在這裡被刪掉
-  commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔已清，但本次工作階段還救得回來）
+  if(!asOff) asClear();
+  /* 還原失敗而停用的，在這裡給一條出路：另外問一次要不要放棄那筆讀不回來的記錄、恢復自動存檔。
+     預設（取消）是保留——那筆記錄可能只是這個版本讀不懂，換版本就讀得回來 */
+  else if(asRestoreFailed&&confirm(_t('上次讀不回來的那筆自動存檔還保留著。要刪掉它、恢復自動存檔嗎？\n\n刪掉之後就救不回來了。按「取消」則保留它，自動存檔維持停用。'))) asDropFailed();
+  commitUndo();   // 仍留一步 Cmd+Z 後路（自動存檔就算清了，本次工作階段還救得回來）
   APP.deck=newDeck(); APP.page=APP.deck.pages[0].id;
   setDeckFile(null);   // 新簡報還沒有對應的檔案，Cmd/Ctrl+S 要重新問存到哪
   APP.edit=null; APP.editing=null; setSel([]);
@@ -11515,7 +11548,7 @@ function chartTarget(){
 function openChartModal(el){
   chartTargetRef={page:curPage().id,el:el.id};
   $('#chartArea').value=JSON.stringify(el.option,null,1);
-  $('#chartTargetTag').textContent=_t('{0}：{1}',L_NAME[el.type]||_t('圖表'),el.id);
+  $('#chartTargetTag').textContent=_t('{0}：{1}',ownVal(L_NAME,el.type)||_t('圖表'),el.id);
   $('#chartModal').hidden=false;
   chartTab('vis');
 }
@@ -12587,7 +12620,7 @@ async function addElToSlide(slide,el,pend){
 // 字體後處理：兩種模式都明確填 latin/ea/cs（不剝離、不切 run），全 run lang=zh-TW
 // 鎖定模式寫死三字體；繼承模式寫 +mn-lt/+mn-ea/+mn-cs 主題槽引用（貼上時由目的端母版接手）
 function transitionXml(tr){
-  if(!tr||!TRANSITIONS[tr.type]) return '';
+  if(!tr||!ownVal(TRANSITIONS,tr.type)) return '';
   if(tr.type==='morph'){
     const dur=Math.max(100,Math.min(10000,Math.round(tr.dur||600)));
     const opt={byObject:1,byWord:1,byChar:1}[tr.option]? tr.option:'byObject';
@@ -12596,7 +12629,7 @@ function transitionXml(tr){
       +`<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="slow" p14:dur="${dur}"><p159:morph option="${opt}"/></p:transition>`
       +'</mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>';
   }
-  const inner={fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'}[tr.type];
+  const inner=ownVal({fade:'<p:fade/>',push:'<p:push dir="u"/>',wipe:'<p:wipe dir="l"/>'},tr.type);
   return `<p:transition spd="med">${inner}</p:transition>`;
 }
 /* ================= 頁尾佔位符（頁碼 sldNum／日期 dt） =================
@@ -13502,6 +13535,14 @@ const DJ=Object.freeze(djAfterBoot({
   },
   outline(pid){
     return djEls(APP.deck,pid).map(el=>{
+      /* 型別不認得的元素是不透明的：欄位原樣保留但形狀未知（paras 可能不是陣列），
+         只回 id、type 與是數字的座標尺寸，不去讀其他欄位 */
+      if(!elTypeOk(el.type)){
+        const o={id:el.id,type:el.type,unknown:true};
+        for(const k of ['x','y','w','h']) if(typeof el[k]==='number'&&isFinite(el[k])) o[k]=Math.round(el[k]);
+        if(el.hidden===true) o.hidden=true;
+        return o;
+      }
       const o={id:el.id,type:el.type,x:Math.round(el.x),y:Math.round(el.y)};
       // 表格高度用畫出來的實際高度：rowH 只是下限，字放不下時列會自己長高，加總 rowH 會少算
       if(el.type==='table'){ o.w=el.colW.reduce((a,b)=>a+b,0); o.h=tableRowHeights(el).reduce((a,b)=>a+b,0);

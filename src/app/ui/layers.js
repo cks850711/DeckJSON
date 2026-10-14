@@ -28,7 +28,7 @@ function layersOpen(){ return !$('#layerPanel').hidden; }
 function layerLabel(el){
   if(el.type==='text'||(el.type==='shape'&&el.paras)){ const t=plainText(el).replace(/\s+/g,' ').trim(); if(t) return t.slice(0,18); }
   if(el.type==='shape') return (LINE_KINDS[el.shape]||SHAPES[el.shape]||{}).label||_t('形狀');
-  return L_NAME[el.type]||el.type;
+  return ownVal(L_NAME,el.type)||String(el.type);   // 不認得的型別顯示型別名本身
 }
 function renderLayers(){
   if(typeof $!=='function'||!layersOpen()) return;
@@ -43,7 +43,7 @@ function renderLayers(){
     eye.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.hidden) delete el.hidden; else el.hidden=true; renderStage(); renderProps(); };
     const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.innerHTML=licon(el.locked?'ic-lock':'ic-unlock'); lock.title=_t('鎖定（畫布不可選拖）');
     lock.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.locked){ delete el.locked; } else { el.locked=true; if(APP.selIds.includes(el.id)) setSel(APP.selIds.filter(id=>id!==el.id)); } renderStage(); renderProps(); };
-    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(L_ICON[el.type]||'ic-shape');
+    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(ownVal(L_ICON,el.type)||'ic-shape');
     const nm=document.createElement('span'); nm.className='lname'; nm.textContent=(el.groupId?'⧉ ':'')+layerLabel(el); nm.title=el.id;
     row.append(eye,lock,icon,nm);
     row.onclick=()=>{ setSel(el.groupId?groupMembers(el).map(m=>m.id):[el.id]); updateSelBox(); renderProps(); syncPageJson(); renderLayers(); };

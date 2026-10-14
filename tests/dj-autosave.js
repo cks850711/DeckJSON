@@ -9,7 +9,7 @@
  *
  * 測試會改寫這個網址的自動存檔（IndexedDB 的 deckjson／autosave／current），結束時放回原本那一筆；
  * **不要在平常編簡報的網址上跑**，換一個 port。頁面放在 iframe 裡載入，載入前先攔住 alert／confirm／prompt
- * 與帶 download 的連結點擊（confirm 一律回答「確定」），整個過程不跳視窗、不下載檔案。
+ * 與帶 download 的連結點擊（confirm 預設回答「確定」，測「開新簡報」時逐道指定），整個過程不跳視窗、不下載檔案。
  */
 const DB = 'deckjson', STORE = 'autosave', KEY = 'current';
 
@@ -90,22 +90,42 @@ export default async function autosaveTest(page = '/deckjson.html') {
       ok('unknown type: nothing was downloaded', w.__dl.length === 0, w.__dl);
     });
     await part('failed restore', async () => {
-      // ---- 還原失敗：之後的編輯與「開新簡報」都不能蓋掉原記錄 ----
+      // ---- 還原失敗：記錄保住、警告一直看得到、確認文字照實講，並有一條要確認的出路 ----
       const BAD = {deck: {title: 'autosave broken', pages: [{id: 'p1', elements: [TEXT('a', 'one')]},
         {id: 'p2', elements: [{id: 't', type: 'table', x: 0, y: 0}]}]},   // 表格缺 colW／rowH／cells，normalizeDeck 會拋錯
         page: 'p1', at: Date.now(), handle: null, srv: null, dirty: false};
       await putRec(BAD);
       const want = JSON.stringify(await getRec());
       const {w} = await boot(page);
+      const hint = w.document.querySelector('#saveHint'), warn = hint.textContent;
+      // 「開新簡報」的幾道確認依序回答 answers；問過什麼記在 asked
+      const newDeck = async answers => {
+        const asked = [];
+        w.confirm = m => { asked.push(String(m)); return answers.length ? answers.shift() : false; };
+        w.document.querySelector('#btnNew').click();
+        await tick(500);
+        return asked;
+      };
       ok('failed restore: the page opens on a blank deck', w.DJ.list().length === 1, w.DJ.list().length);
-      ok('failed restore: the save hint turns into a warning', w.document.querySelector('#saveHint').classList.contains('bad'),
-        w.document.querySelector('#saveHint').textContent);
+      ok('failed restore: the save hint turns into a warning', hint.classList.contains('bad') && warn.length > 0, warn);
       await w.DJ.add(w.DJ.list()[0].id, [TEXT('n', 'new work')]);
       await tick(1800);
       ok('failed restore: editing afterwards leaves the record untouched', JSON.stringify(await getRec()) === want);
-      w.document.querySelector('#btnNew').click();   // 開新簡報：兩道 confirm 都被攔成「確定」
-      await tick(500);
-      ok('failed restore: starting a new deck leaves the record untouched', JSON.stringify(await getRec()) === want);
+      // 開新簡報但不放棄記錄：前兩道確定、第三道取消
+      const asked = await newDeck([true, true, false]);
+      ok('failed restore: the new-deck confirm does not claim the autosave is cleared',
+        asked.length > 0 && !/一併清除|and the autosave too/.test(asked[0]), asked[0]);
+      ok('failed restore: new deck asks separately whether to drop the unreadable record', asked.length === 3, asked);
+      ok('failed restore: keeping it leaves the record untouched', JSON.stringify(await getRec()) === want);
+      ok('failed restore: the warning stays visible after other hints', hint.classList.contains('bad') && hint.textContent.includes(warn),
+        hint.textContent);
+      // 這次確認放棄：記錄刪掉、自動存檔恢復，新簡報接著自動存檔
+      await newDeck([true, true, true]);
+      await tick(1800);
+      const after = await getRec();
+      ok('failed restore: dropping it resumes autosave with the new deck',
+        !!after && JSON.stringify(after) !== want && after.deck.pages.length === 1, after && after.deck.title);
+      ok('failed restore: the warning goes away once autosave resumes', !hint.classList.contains('bad'), hint.textContent);
     });
   } finally {
     if (keep === undefined) await delRec(); else await putRec(keep);

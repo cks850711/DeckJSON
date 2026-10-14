@@ -296,7 +296,7 @@ function normalizeDeck(d){
     if(typeof pg.bgImage==='string'&&looksLikeAssetRef(pg.bgImage))
       throw new Error(_t('頁面 {0} 的 bgImage 是資產引用「{1}」，但這份 JSON 不在容器裡。',pg.id,pg.bgImage));
     if(typeof pg.bgImage!=='string'||!pg.bgImage.startsWith('data:image/')) delete pg.bgImage;
-    pg.transition=(pg.transition&&typeof pg.transition==='object'&&TRANSITIONS[pg.transition.type])? pg.transition:null;
+    pg.transition=(pg.transition&&typeof pg.transition==='object'&&ownVal(TRANSITIONS,pg.transition.type))? pg.transition:null;
     if(pg.transition&&pg.transition.type==='morph') pg.transition.dur=Math.max(100,Math.min(10000,Math.round(+pg.transition.dur)||600));
     pg.notes= pg.notes==null? '' : String(pg.notes);
     if(pg.skip) pg.skip=true; else delete pg.skip;   // 不放映（匯出 <p:sld show="0">）

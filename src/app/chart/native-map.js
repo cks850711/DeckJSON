@@ -40,8 +40,8 @@ function nativeMap(op){
   const ss=(op.series||[]).filter(s=>s&&typeof s==='object');
   if(!ss.length) return {ok:false,reason:_t('option 內沒有 series')};
   const t0=ss[0].type;
-  const bad=ss.find(s=>NCHART_UNSUP[s.type]);
-  if(bad) return {ok:false,reason:_t('{0}沒有 PowerPoint 原生對應',NCHART_UNSUP[bad.type])};
+  const bad=ss.find(s=>ownVal(NCHART_UNSUP,s.type));
+  if(bad) return {ok:false,reason:_t('{0}沒有 PowerPoint 原生對應',ownVal(NCHART_UNSUP,bad.type))};
   if(ss.some(s=>s.type!==t0)) return {ok:false,reason:_t('同一張圖混用多種 series 型別，原生圖表無法表示')};
   const drop=[];                       // 映射時被丟掉的設定，回報給使用者
   const chk=(cond,what)=>{ if(cond&&!drop.includes(what)) drop.push(what); };
