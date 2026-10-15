@@ -24,7 +24,7 @@ const TEMPLATES=[
 function openTemplateModal(){
   const g=$('#tplGrid'); g.replaceChildren();
   for(const t of TEMPLATES){
-    const b=document.createElement('button'); b.textContent=t.name; b.style.cssText='padding:14px 18px';
+    const b=document.createElement('button'); b.textContent=t.name;
     b.onclick=()=>{ commitUndo(); const spec=t.build(); const pg=newPage(); if(spec.bg)pg.bg=spec.bg; pg.elements=spec.elements; pg.name=t.name;
       const at=APP.deck.pages.indexOf(curPage())+1; APP.deck.pages.splice(at,0,pg); $('#tplModal').hidden=true; setPage(pg.id); };
     g.appendChild(b);

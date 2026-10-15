@@ -30,7 +30,7 @@ function imageInner(el){
     im.style.cssText=`width:${g.dw}px;height:${g.dh}px;left:${g.left}px;top:${g.top}px`; return im; };
   const im=mkImg(); if(el.alt) im.alt=el.alt;
   wrap.appendChild(im);
-  if(el.round) wrap.style.borderRadius='50%';
+  if(el.round) wrap.classList.add('round');
   /* 裁切模式：整張圖以 35% 不透明度露出（.imgc 放開 overflow），框內再疊一份同座標的
      亮圖與三分格線。使用者因此看得到「自己正在捨棄什麼」——舊做法直接把裁掉的部分
      藏起來，等於閉著眼睛調。 */
@@ -215,11 +215,11 @@ function imageCompressRows(el){
   /* 垂直堆疊而非並排：側欄只有 ~130px 寬，三顆並排會把「1000×562」這種字截掉，
      使用者又看不到自己按的是什麼。一行一顆，解析度與預估體積左右對齊。 */
   const row=document.createElement('div'); row.className='row';
-  row.style.cssText='flex-direction:column;align-items:stretch;gap:3px';
+  row.classList.add('colList');
   for(const p of RECODE_PRESETS){
     const [tw,th]=targetPixels(el,p.mul);
     const b=document.createElement('button');
-    b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left;display:flex;justify-content:space-between;align-items:baseline;gap:6px';
+    b.classList.add('recBtn','recSplit');
     // 與 recodeImage 的 s>=1 同條件：任一軸已達需求就壓不出效益（漏看高的話按鈕會亮著卻壓不動）
     const tooBig=!(el.natW>0)||!(el.natH>0)||tw>=el.natW||th>=el.natH;
     setHTML(b,`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`);
@@ -341,10 +341,10 @@ function batchCompressRows(scope){
   wrap.appendChild(info);
   if(!items.length) return wrap;
   const row=document.createElement('div'); row.className='row';
-  row.style.cssText='flex-direction:column;align-items:stretch;gap:3px';
+  row.classList.add('colList');
   for(const p of RECODE_PRESETS){
     const b=document.createElement('button');
-    b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left';
+    b.classList.add('recBtn');
     setHTML(b,`<b>${p.mul}×</b> <span style="opacity:.55;font-size:10px">${p.ppi} PPI · ${p.label}</span>`);
     b.title=_t('每張圖各自縮到自己顯示尺寸的 {0} 倍（約 {1} PPI）。會先估算並列出總量再要你確認',p.mul,p.ppi);
     b.onclick=ev=>batchCompress(scope,p,ev.currentTarget);

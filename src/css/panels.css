@@ -134,3 +134,8 @@
   :is(#propPanel,.ppctl) .row button.gsBtn{flex:1;padding:5px 2px}   /* 格距四顆一列 */
   :is(#propPanel,.ppctl) .row label.scChk{display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer}   /* 縮放列的「含字級」核取 */
   .ctlOff{opacity:.5}                                                  /* 停用或鎖定的控件標籤 */
+  /* 圖片壓縮預設：一行一顆，解析度與預估體積左右對齊 */
+  :is(#propPanel,.ppctl) .row.colList{flex-direction:column;align-items:stretch;gap:3px}
+  :is(#propPanel,.ppctl) .row.colList button.recBtn{width:100%;line-height:1.3;padding:3px 6px;text-align:left}
+  :is(#propPanel,.ppctl) .row.colList button.recBtn.recSplit{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .svgOv{overflow:visible}                                          /* 圖說框尾標會伸出 bbox */

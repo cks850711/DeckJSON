@@ -158,7 +158,7 @@
   .palSw:hover{outline:2px solid var(--accent);outline-offset:1px}
   .ocGrid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
   .ocGrid .palSw{width:100%;height:16px;border-radius:2px}
-  #palettePop .pfull{display:flex;align-items:center;gap:8px;padding:6px 2px}
+  :is(#palettePop,#palCopyWin) .pfull{display:flex;align-items:center;gap:8px;padding:6px 2px}
   /* DJ App 的槽位選單：一格一列，數字鍵 1～5 直接選 */
   #slotList{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
   .slotRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:9px 12px;
@@ -173,3 +173,16 @@
   .slotRow .tag{font-size:11.5px;flex:none;color:var(--fg-dim)}
   .slotRow .tag.warn{color:var(--warn)}
   .slotFull{font-size:12.5px;color:var(--warn);padding:4px 2px}
+  /* 色票複製窗（#palCopyWin）的標題列、分頁列與可複製的色票 */
+  .palHead{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .palTitle{font-size:11px;color:var(--fg-dim);margin-right:auto}
+  .palToast{font-size:11px;color:#69db7c}
+  .palTabs{display:flex;gap:4px;margin-bottom:6px}
+  .palSw.palCopy{cursor:copy}
+  :is(#palettePop,#palCopyWin) input.w84{width:84px}
+  #tplGrid button{padding:14px 18px}
+  /* 圖表編輯面板的控件：核取、色票鈕、餅圖各項顏色 */
+  #chartModal .chkLab{display:flex;align-items:center;gap:4px;cursor:pointer}
+  #chartModal input.wAuto{width:auto}
+  #chartModal .swatchBtn.cvSw{width:24px;height:20px}
+  #chartModal .cvItem{display:flex;align-items:center;gap:3px}

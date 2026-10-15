@@ -245,7 +245,7 @@ function startCellEdit(el,td,initSel){
   focusCellJson(el.id,r,c);   // JSON 面板開著時捲至該格
   td.textContent='';
   const ed=editableDiv();
-  ed.style.cssText='min-height:1em;white-space:pre-wrap;';   // pre-wrap：Enter 的格內換行才顯示得出來
+  ed.classList.add('cellEd');   // pre-wrap：Enter 的格內換行才顯示得出來
   /* 逐 run 建 span 並標 data-r：格式化按鈕靠這個索引回查「開啟編輯當下」的樣式，
      所以就算瀏覽器把 span 搬家／合併，樣式依然對得回去（同文字框編輯器的作法）。 */
   const src=cellRuns(cell);

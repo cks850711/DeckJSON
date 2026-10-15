@@ -35,7 +35,7 @@ function shapeThumb(key,VB,MAX){
       p.setAttribute('transform',`translate(${ox},${oy})`);
       svg.appendChild(p);
     }
-    svg.style.overflow='visible';   // 圖說框尾標伸出 bbox
+    svg.classList.add('svgOv');   // 圖說框尾標伸出 bbox
   }
   return svg;
 }

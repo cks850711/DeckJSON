@@ -46,7 +46,7 @@ function buildPalBody(){
   }else{
     const wrap=document.createElement('div'); wrap.className='pfull';
     const ci=document.createElement('input'); ci.type='color'; ci.value='#'+(palTarget.hex||'CCCCCC');
-    const tx=document.createElement('input'); tx.type='text'; tx.value=palTarget.hex||''; tx.style.width='84px'; tx.maxLength=7;
+    const tx=document.createElement('input'); tx.type='text'; tx.value=palTarget.hex||''; tx.classList.add('w84'); tx.maxLength=7;
     ci.oninput=()=>{ tx.value=ci.value.slice(1).toUpperCase(); };
     const ok=document.createElement('button'); ok.textContent=_t('套用'); ok.className='primary';
     ok.onclick=()=>{ const h=(tx.value||ci.value.slice(1)).replace('#','').toUpperCase(); if(/^[0-9A-F]{6}$/.test(h)) pickPal(h); else alert(_t('請輸入 6 位十六進位色碼')); };
@@ -92,20 +92,20 @@ function buildCopyPalWin(){
   // 圖表的 option 是 raw ECharts，複製時要帶 #；表格等元素層一律裸碼。見本區塊開頭註解。
   const forChart=((selEl()||{}).type==='chart');
   w.dataset.fc=forChart?'1':'0';
-  const head=document.createElement('div'); head.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+  const head=document.createElement('div'); head.className='palHead';
   const title=document.createElement('span');
   title.textContent=forChart? _t('色票 → 複製 #色碼（圖表）') : _t('色票 → 複製色碼');
   title.title=forChart? _t('chart.option 是 raw ECharts，顏色必須帶 #，與 deck 其餘欄位相反')
                       : _t('元素層用不帶 # 的 6 位碼，畫布渲染時程式自己補');
-  title.style.cssText='font-size:11px;color:var(--fg-dim);margin-right:auto;';
-  const toast=document.createElement('span'); toast.style.cssText='font-size:11px;color:#69db7c;';
+  title.className='palTitle';
+  const toast=document.createElement('span'); toast.className='palToast';
   head.appendChild(title); head.appendChild(toast); w.appendChild(head);
   const fmt=c=>(forChart?'#':'')+String(c).replace('#','').toUpperCase();
   const copy=async c=>{ const hex=fmt(c);
     try{ await navigator.clipboard.writeText(hex); }catch(e){ /* 剪貼簿權限被拒時複製不到；下一行的提示仍會顯示「已複製」 */ }
     toast.textContent=_t('已複製 {0}',hex);
     setTimeout(()=>{ if(toast.textContent===_t('已複製 {0}',hex)) toast.textContent=''; },1600); };
-  const tabs=document.createElement('div'); tabs.style.cssText='display:flex;gap:4px;margin-bottom:6px;';
+  const tabs=document.createElement('div'); tabs.className='palTabs';
   for(const [k,label] of [['designer',_t('精選')],['open','Open Color'],['full',_t('全色域')]]){
     const b=document.createElement('button'); b.textContent=label;
     b.style.cssText='font-size:11px;padding:2px 8px;'+(copyPalTab===k?'outline:1px solid var(--accent);':'');
@@ -113,7 +113,7 @@ function buildCopyPalWin(){
     tabs.appendChild(b);
   }
   w.appendChild(tabs);
-  const sw=c=>{ const s=document.createElement('div'); s.className='palSw'; s.style.background=(String(c)[0]==='#'?c:'#'+c); s.title=fmt(c); s.style.cursor='copy'; s.onclick=()=>copy(c); return s; };
+  const sw=c=>{ const s=document.createElement('div'); s.className='palSw'; s.style.background=(String(c)[0]==='#'?c:'#'+c); s.title=fmt(c); s.classList.add('palCopy'); s.onclick=()=>copy(c); return s; };
   if(copyPalTab==='designer'){
     for(const p of DESIGNER_PALETTES){
       const row=document.createElement('div'); row.className='palRow';
@@ -128,9 +128,9 @@ function buildCopyPalWin(){
       w.appendChild(g);
     }
   }else{
-    const wrap=document.createElement('div'); wrap.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 2px;';
+    const wrap=document.createElement('div'); wrap.className='pfull';
     const ci=document.createElement('input'); ci.type='color'; ci.value='#4D9DE0';
-    const tx=document.createElement('input'); tx.type='text'; tx.value='4D9DE0'; tx.style.width='84px'; tx.maxLength=7;
+    const tx=document.createElement('input'); tx.type='text'; tx.value='4D9DE0'; tx.classList.add('w84'); tx.maxLength=7;
     ci.oninput=()=>{ tx.value=ci.value.slice(1).toUpperCase(); };
     const ok=document.createElement('button'); ok.textContent=_t('複製'); ok.className='primary';
     ok.onclick=()=>{ const h=(tx.value||'').replace('#','').toUpperCase(); if(/^[0-9A-F]{6}$/.test(h)) copy(h); else alert(_t('請輸入 6 位十六進位色碼')); };

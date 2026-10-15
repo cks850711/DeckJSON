@@ -201,9 +201,9 @@ function buildChartVis(){
   const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; setHTML(d,t); pane.appendChild(d); };
   const chk=(p,text,get,set,o)=>{
     o=o||{};
-    const l=document.createElement('label'); l.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer';
-    const c=document.createElement('input'); c.type='checkbox'; c.style.width='auto'; c.checked=!!get();
-    if(o.lock){ c.disabled=true; l.style.opacity='.5'; l.title=o.lock; }
+    const l=document.createElement('label'); l.className='chkLab';
+    const c=document.createElement('input'); c.type='checkbox'; c.classList.add('wAuto'); c.checked=!!get();
+    if(o.lock){ c.disabled=true; l.classList.add('ctlOff'); l.title=o.lock; }
     else if(o.title) l.title=o.title;
     c.onchange=()=>apply(()=>set(c.checked),o.rebuild);
     l.appendChild(c); l.appendChild(document.createTextNode(text)); p.appendChild(l); return c;
@@ -235,7 +235,7 @@ function buildChartVis(){
   // 用本專案的色票系統（設計師精選／Open Color／全色域），不用瀏覽器原生色盤
   const color=(p,val,set,title)=>{
     const b=document.createElement('button'); b.className='swatchBtn';
-    b.style.cssText='width:24px;height:20px'; b.style.background='#'+val;
+    b.classList.add('cvSw'); b.style.background='#'+val;
     if(title)b.title=title;
     b.onclick=()=>openPalette(b,val,hex=>{ b.style.background='#'+hex;
       commitUndo(); set(hex); renderAll(); syncPageJson(); buildChartVis(); });
@@ -407,7 +407,7 @@ function buildChartVis(){
   if(isPie){
     const r11=row();
     (op.series[0].data||[]).forEach((v,i)=>{
-      const box=document.createElement('span'); box.style.cssText='display:flex;align-items:center;gap:3px';
+      const box=document.createElement('span'); box.className='cvItem';
       box.appendChild(Object.assign(document.createElement('span'),
         {textContent:(v&&v.name)||_t('項目 {0}',i+1),style:'font-size:12px;color:var(--fg-dim)'}));
       color(box,hexOf(v&&v.itemStyle&&v.itemStyle.color,CHART_PAL[i%CHART_PAL.length]),
