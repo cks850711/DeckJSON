@@ -188,7 +188,7 @@
   /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
   #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
-  /* 畫布的縮放（transform）與置中外距（margin）是 applyStage／setZoom 寫在 #stage 的行內值，
+  /* 畫布的縮放（transform）與置中外距（margin）是 setZoom（ui/view.js）寫在 #stage 的行內值，
      擷取時要拿掉（輸出是原尺寸、不位移），所以得用 !important 壓過行內值；不必存回，拿掉 class 就恢復 */
   #stage.capturing{box-shadow:none!important;transform:none!important;margin:0!important}
   #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
@@ -473,7 +473,7 @@
   :is(#propPanel,.ppctl) .subTitle:first-child{margin-top:0;padding-top:0;border-top:none}
   /* ── 面板控件的尺寸小工具：取代程式裡逐顆寫的行內值。選擇器的優先序要跟上面
      `:is(#propPanel,.ppctl) …` 的規則同級或更高，否則 width／gap／min-width 會被它們蓋回去 ── */
-  .fx{flex:1}                                                       /* 輸入框在一列裡吃掉剩餘寬度 */
+  .fx{flex:1}                                                       /* 輸入框、下拉、滑桿與按鈕在一列裡吃掉剩餘寬度 */
   .mw60{min-width:60px} .mw70{min-width:70px} .mw72{min-width:72px} .mw80{min-width:80px} .mw90{min-width:90px}
   :is(#propPanel,.ppctl) .row input.w44{width:44px}
   :is(#propPanel,.ppctl) .row input.w58{width:58px}
