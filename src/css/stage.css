@@ -2,7 +2,8 @@
   #stageOuter{margin:0 auto;display:flow-root}   /* flow-root：擋 margin collapse，stage 的置中邊距才留在 outer 內 */
   /* overflow 刻意可見：物件拖出投影片仍看得到、救得回（外圍由 .outmask 壓半灰） */
   /* 寬高由 applyStage() 依 deck.stage 設定（此處僅為首次繪製前的預設 16:9） */
-  #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:var(--font-latin),var(--font-ea),sans-serif}
+  #stage{position:relative;width:1280px;height:720px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);transform-origin:0 0;overflow:visible;font-family:var(--font-latin),var(--font-ea),sans-serif;
+    background-size:100% 100%;background-repeat:no-repeat}   /* 頁面背景圖滿版拉伸（同匯出的 <p:bg> blipFill stretch）；JS 只寫 background-color／image，不用縮寫 */
   .outmask{position:absolute;background:rgba(30,31,36,.55);pointer-events:none;z-index:20}
   /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
   #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
@@ -13,6 +14,7 @@
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
+  :is(.el,.mel){transform-origin:50% 50%}   /* 旋轉繞框中心 */
   /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
   /* ⚠ .mel 只是「不可互動」的標記，排版一律沿用 .el 的規則——
      下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
@@ -69,6 +71,26 @@
   :is(.el,.mel) .txt>div.math{white-space:normal}
   :is(.el,.mel) .txt>div.math .katex-display{margin:0;text-align:inherit}
   :is(.el,.mel) .txt>div.math .katex-display>.katex{text-align:inherit;font-size:var(--math-em,1.21em)}
+  /* 不自動換行（匯出 bodyPr wrap="none"）。段落要用比 `.txt>div` 更具體的選擇器才壓得過它的 pre-wrap，
+     並排在 .math 規則之後（兩者優先序相同，不換行的方程式段落仍以不換行為準） */
+  :is(.el,.mel) .txt.nw{white-space:pre}
+  :is(.el,.mel) .txt>div.nw{white-space:pre}
+  /* 一個 run／儲存格的字形樣式（runSpan、儲存格） */
+  .isB{font-weight:700}
+  .isI{font-style:italic}
+  .isSup{vertical-align:super}
+  .isSub{vertical-align:sub}
+  /* 形狀裡的文字塊：疊在 svg 上，有文字區矩形時由 JS 給 left／top／width／height，沒有則填滿 */
+  :is(.el,.mel) .txt.txtAbs{position:absolute}
+  :is(.el,.mel) .txt.txtAbs.fill{inset:0}
+  /* 翻轉只套在 svg（transform 由 JS 依 flipH／flipV 算），繞 svg 中心鏡射 */
+  :is(.el,.mel) svg.flip{transform-origin:50% 50%}
+  /* 離屏量測用的元素替身（textFitSize、tableRowHeights）：不可見、不吃事件。
+     fitW／fitH 讓文字塊在那一維依內容撐開；框自己的 width／height 由 JS 清掉 renderEl 寫入的行內值，
+     所以這裡只需要壓過 `.txt{width:100%;height:100%}` */
+  .el.measuring{visibility:hidden;pointer-events:none}
+  .el.measuring.fitW .txt{width:auto}
+  .el.measuring.fitH .txt{height:auto}
   .el.overflow{outline:1px dashed var(--danger)}
   :is(.el,.mel) table{border-collapse:collapse;table-layout:fixed;background:transparent;font-family:"Roboto","Noto Sans TC",sans-serif}
   :is(.el,.mel) td{padding:0 3px;line-height:1.2;overflow:hidden;white-space:pre-wrap;word-break:break-word}

@@ -63,10 +63,10 @@ function runSpan(r,defSizePt){
   sp.textContent=String(r.text);
   sp.style.fontSize=pt2px((r.sizePt||defSizePt)*((r.sup||r.sub)?0.7:1))+'px';
   sp.style.color='#'+(r.color||'1A1A1A');
-  if(r.bold)sp.style.fontWeight=700;
-  if(r.italic)sp.style.fontStyle='italic';
-  if(r.sup)sp.style.verticalAlign='super';
-  if(r.sub)sp.style.verticalAlign='sub';
+  if(r.bold)sp.classList.add('isB');
+  if(r.italic)sp.classList.add('isI');
+  if(r.sup)sp.classList.add('isSup');
+  if(r.sub)sp.classList.add('isSub');
   // 底線／刪除線可疊加；有超連結時 PptxGenJS 會自動補 u="sng"，預覽同步畫底線（預覽＝輸出）
   const dec=[]; if(r.underline||r.link) dec.push('underline'); if(r.strike) dec.push('line-through');
   if(dec.length) sp.style.textDecoration=dec.join(' ');
@@ -93,7 +93,7 @@ function paraDiv(p,el,seq){
   const div=document.createElement('div');
   div.style.textAlign=ownVal({left:'left',center:'center',right:'right',justify:'justify'},p.align||'left');
   // 不換行要下在段落 div 上：CSS 的 `:is(.el,.mel) .txt>div{white-space:pre-wrap}` 比 .txt 更具體，會蓋掉上層設定
-  if(el&&el.nowrap) div.style.whiteSpace='pre';
+  if(el&&el.nowrap) div.classList.add('nw');
   if(p.spaceBefore>0) div.style.marginTop=pt2px(p.spaceBefore)+'px';
   if(p.spaceAfter>0) div.style.marginBottom=pt2px(p.spaceAfter)+'px';
   // 方程式段落：平常用 KaTeX 畫；在就地編輯中改顯示 $$原文$$ 純文字，編輯完由 editCommit 收回（見 mathFold）
@@ -129,7 +129,7 @@ function txtBlock(el){
   t.style.justifyContent=ownVal({top:'flex-start',middle:'center',bottom:'flex-end'},el.valign||'top');
   t.style.lineHeight=el.lineSpacing||1.2;
   if(el.inset>0) t.style.padding=pt2px(el.inset)+'px';   // 文字框內距（匯出為 bodyPr 的 lIns/tIns/rIns/bIns）
-  if(el.nowrap) t.style.whiteSpace='pre';                // 不自動換行（匯出 bodyPr wrap="none"）
+  if(el.nowrap) t.classList.add('nw');                   // 不自動換行（匯出 bodyPr wrap="none"）
   // 直書：writing-mode 一改，.txt 的 flex-direction:column 自然沿著新的區塊軸堆疊段落，不必另外調
   if(VERT_MODES[el.vert]) Object.assign(t.style,VERT_MODES[el.vert].css);
   const ps=el.paras||[], seqs=numberSeqs(ps);   // 編號清單流水號，規則見 numberSeqs
@@ -166,13 +166,12 @@ function renderTableInto(box,el){
       td.style.fontSize=pt2px(cell.sizePt||12)+'px';
       td.style.lineHeight=cell.lineSpacing||1.2;
       td.style.color='#'+(cell.color||'1A1A1A');
-      if(cell.bold)td.style.fontWeight=700;
-      if(cell.italic)td.style.fontStyle='italic';
+      if(cell.bold)td.classList.add('isB');
+      if(cell.italic)td.classList.add('isI');
       for(const [side,key] of [['Top','t'],['Right','r'],['Bottom','b'],['Left','l']]){
         const s=cellSide(el,cell,key);
         td.style['border'+side]= s? `${Math.max(1,pt2px(s.pt))}px ${s.dash?'dashed':'solid'} #${s.color}` : 'none';
       }
-      td.style.whiteSpace='pre-wrap';   // 保留格內換行（Shift+Enter）與空白
       /* 格內混排：有 runs 才逐 run 建 span，否則維持單一 textNode。
          差別不只是效率——就地編輯是以 DOM 為真相，扁平格保持 textNode 才能沿用原本那條純文字路徑。 */
       if(Array.isArray(cell.runs)&&cell.runs.length){
@@ -275,21 +274,20 @@ function renderShapeInto(box,el){
     svg.appendChild(node); box.appendChild(svg);
     return;
   }
-  svg.style.overflow='visible';   // 圖說框尾標會伸出 bbox（同 PPT）
   // 翻轉只鏡射幾何（svg），文字不鏡射——同 PPT flip 行為
   const fl=[]; if(el.flipH) fl.push('scaleX(-1)'); if(el.flipV) fl.push('scaleY(-1)');
-  if(fl.length){ svg.style.transform=fl.join(' '); svg.style.transformOrigin='50% 50%'; }
+  if(fl.length){ svg.style.transform=fl.join(' '); svg.classList.add('flip'); }
   const sw=Math.max(1,pt2px(el.linePt||1)), da=dashArray(el,sw);
   const paint=el.grad? gradPaint(svg,'gr-'+el.id,el.grad) : null;
   for(const p of shapeNodes(shapePaths(el),el.fill,el.lineColor,sw,da,paint)) svg.appendChild(p);
   box.appendChild(svg);
   if(el.paras){
     const t=txtBlock(el);
-    t.style.position='absolute';
+    t.classList.add('txtAbs');
     const tr=textRect(el);
     if(tr){ t.style.left=tr.x+'px'; t.style.top=tr.y+'px';
             t.style.width=tr.w+'px'; t.style.height=tr.h+'px'; }
-    else t.style.inset='0';
+    else t.classList.add('fill');
     box.appendChild(t);
   }
 }
@@ -394,12 +392,11 @@ function renderChartInto(box,el){
 // 旋轉套在整個 box（文字隨形狀轉，同 PPT）；圖片翻轉也在 box。
 // 形狀翻轉只套在 svg（PPT flip 只鏡射幾何、文字不鏡射），見 renderShapeInto。
 function applyBoxTransform(box,el){
-  if(isLineEl(el)){ box.style.transform=''; return; }
+  if(isLineEl(el)){ box.style.removeProperty('transform'); return; }   // 清除先前寫入的行內旋轉
   const t=[];
   if(el.rot) t.push(`rotate(${el.rot}deg)`);
   if(el.type==='image'){ if(el.flipH) t.push('scaleX(-1)'); if(el.flipV) t.push('scaleY(-1)'); }
   box.style.transform=t.join(' ');
-  box.style.transformOrigin='50% 50%';
 }
 function renderEl(el){
   const box=document.createElement('div');
@@ -454,10 +451,9 @@ function renderStage(){
   // 清掉舊元素與選取框
   stage.querySelectorAll('.el,.mel,#selBox,.pgnum').forEach(e=>e.remove());
   const pg=curPage();
-  stage.style.background='#'+(pg.bg||'FFFFFF');
+  stage.style.backgroundColor='#'+(pg.bg||'FFFFFF');   // 不用 background 縮寫：它會把樣式表的 background-size／repeat 重設
   // 頁面背景圖：滿版拉伸（同匯出的 <p:bg> blipFill stretch），壓在所有元素之下
   stage.style.backgroundImage= pg.bgImage? `url("${pg.bgImage}")` : '';
-  stage.style.backgroundSize='100% 100%'; stage.style.backgroundRepeat='no-repeat';
   stage.classList.toggle('masterEdit',!!APP.masterEdit);
   // 母版空的時候畫布全白，補一句引導；順便同步母版標記鈕（啟用母版與否會變）
   stage.classList.toggle('melEmpty',!!APP.masterEdit&&!curEls().length);
@@ -520,10 +516,9 @@ function textFitSize(el){
   const vert=!!VERT_MODES[el.vert];
   const box=renderEl(el);
   box.removeAttribute('data-id');
-  box.style.visibility='hidden'; box.style.pointerEvents='none';
+  box.classList.add('measuring',vert?'fitW':'fitH');
   const t=box.querySelector('.txt');
-  if(vert){ box.style.width='auto'; t.style.width='auto'; }
-  else{ box.style.height='auto'; t.style.height='auto'; }
+  box.style.removeProperty(vert?'width':'height');   // 清除 renderEl 寫入的行內尺寸，量那一維的自然大小
   stage.appendChild(box);
   /* 框的外框尺寸 ＋ 內容超出 .txt 的部分。行距小於字型本身的高度時，字形上下緣會凸出行框：
      框高（offsetHeight）不算這一截，markOverflow 看的 scrollHeight 卻算。只量框高的話，
@@ -539,7 +534,8 @@ function textFitSize(el){
 function tableRowHeights(el,rowH){
   const box=renderEl(Object.assign({},el,{rowH:rowH||el.rowH}));
   box.removeAttribute('data-id');
-  box.style.visibility='hidden'; box.style.pointerEvents='none'; box.style.transform='none';
+  box.classList.add('measuring');
+  box.style.removeProperty('transform');   // 清除 renderEl 寫入的行內旋轉
   stage.appendChild(box);
   const hs=[...box.querySelectorAll('tr')].map(t=>t.offsetHeight);
   box.remove();
