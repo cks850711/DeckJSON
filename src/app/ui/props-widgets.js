@@ -55,7 +55,7 @@ function btnRow(defs){ // [[label,fn,title,on],...]
     const b=document.createElement('button');
     if(label&&typeof label==='object'&&label.ic){
       b.className='icBtn';
-      b.innerHTML='<svg class="ic"><use href="#'+label.ic+'"/></svg>';
+      setHTML(b,'<svg class="ic"><use href="#'+label.ic+'"/></svg>');
       if(label.txt) b.appendChild(document.createTextNode(label.txt));
     }else b.textContent=label;
     if(title)b.title=title; if(on)b.classList.add('on');
@@ -148,7 +148,7 @@ function dashRow(el){
   row.appendChild(Object.assign(document.createElement('label'),{textContent:_t('線型')}));
   const sel=document.createElement('select'); sel.style.flex='1'; sel.style.minWidth='72px';
   sel.title=_t('匯出為 PPT 原生 prstDash；畫布用 stroke-dasharray 預覽（隨線寬縮放）');
-  sel.innerHTML=DASH_KINDS.map(d=>`<option value="${d.key}">${d.label}</option>`).join('');
+  setHTML(sel,DASH_KINDS.map(d=>`<option value="${d.key}">${d.label}</option>`).join(''));
   sel.value=dashKind(el).key;
   sel.onchange=()=>{ commitUndo();
     if(sel.value==='solid') delete el.dash; else el.dash=sel.value;
@@ -219,7 +219,7 @@ function applyDim(el,isWidth,newPx){
 }
 // 不透明度滑桿（0–100，預設 100=不透明）；拖曳一次只記一步 undo，即時更新畫布
 function opacityRow(els){
-  const row=document.createElement('div'); row.className='row'; row.innerHTML=_t('<label>不透明</label>');
+  const row=document.createElement('div'); row.className='row'; setHTML(row,_t('<label>不透明</label>'));
   const cur=(els.length===1&&els[0].opacity!=null)?els[0].opacity:100;
   const inp=document.createElement('input'); inp.type='range'; inp.min=0; inp.max=100; inp.step=1; inp.value=cur;
   inp.style.flex='1'; inp.style.minWidth='70px';

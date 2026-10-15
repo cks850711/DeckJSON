@@ -13,7 +13,7 @@ function propsChart(pp,el){
   if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').style.opacity='.5'; }
   pp.appendChild(nrow);
   const nn=document.createElement('div'); nn.className='row';
-  nn.innerHTML='<span class="unit">'+(!nm.ok
+  setHTML(nn,'<span class="unit">'+(!nm.ok
     ? _t('這張圖走 PNG，因為<b>{0}</b>。',esc(nm.reason))
     : el.native
       ? _t('匯出為 <b>{0}</b> 原生圖表，在 PowerPoint 裡可以改資料。顏色、字體與繪圖區已經鎖定，'
@@ -21,9 +21,9 @@ function propsChart(pp,el){
         +'原生圖表也不支援陰影與超連結。',nm.type)
         +(nm.drop.length? _t('<br>將不保留：{0}',esc(nm.drop.join(_t('、')))) : '')
       : _t('目前以 3 倍解析度 PNG 匯出（外觀與畫布一致，PPT 內不可改資料）。可勾選改為原生 <b>{0}</b>。',nm.type))
-    +'</span>';
+    +'</span>');
   pp.appendChild(nn);
-  const car=document.createElement('div'); car.className='row'; car.innerHTML=_t('<label>替代文字</label>');
+  const car=document.createElement('div'); car.className='row'; setHTML(car,_t('<label>替代文字</label>'));
   const cai=document.createElement('input'); cai.type='text'; cai.style.flex='1'; cai.style.minWidth='80px';
   cai.placeholder=_t('無障礙說明'); cai.value=el.alt||''; cai.title=_t('寫入無障礙說明：PNG 走圖片 descr，原生圖表走 graphicFrame 的 descr');
   cai.onchange=()=>{ commitUndo(); const v=cai.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };

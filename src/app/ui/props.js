@@ -35,7 +35,7 @@ function renderMultiProps(pp){
     [_t('橫中'),()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(Math.round((STAGE_W-bb.w)/2)-bb.x,0); renderStage(); renderProps(); },_t('整組在投影片水平置中（組內相對位置不變）')],
     [_t('縱中'),()=>{ commitUndo(); const bb=groupBBox(selEls()); moveAll(0,Math.round((STAGE_H-bb.h)/2)-bb.y); renderStage(); renderProps(); },_t('整組在投影片垂直置中')],
   ]));
-  const row=document.createElement('div'); row.className='row'; row.innerHTML=_t('<label>縮放</label>');
+  const row=document.createElement('div'); row.className='row'; setHTML(row,_t('<label>縮放</label>'));
   const inp=document.createElement('input'); inp.type='number'; inp.min=5; inp.max=1000; inp.value=100; inp.step=5;
   inp.onchange=()=>{ const s=(+inp.value)/100; if(!(s>0))return; commitUndo();
     const bb=groupBBox(selEls()); groupScaleTo({anchor:{x:bb.x+bb.w/2,y:bb.y+bb.h/2},orig:selEls().map(el=>structuredClone(el))},s);
@@ -76,9 +76,9 @@ function renderMultiProps(pp){
   ]));
   pp.appendChild(btnRow([[_t('複製'),()=>duplicateSelected(),'Cmd/Ctrl+D'],[_t('刪除'),()=>deleteSelected(),'Delete']]));
   const note=document.createElement('div'); note.className='row';
-  note.innerHTML='<span class="unit">'+_t('拖四角是整組等比縮放，拖本體是整組搬移，吸附作用在包圍盒上。'
+  setHTML(note,'<span class="unit">'+_t('拖四角是整組等比縮放，拖本體是整組搬移，吸附作用在包圍盒上。'
     +'上面的 X／Y／寬／高講的也是<b>包圍盒</b>——群組本身沒有座標，成員各自獨立，匯出時會攤平成獨立元素。'
-    +'要改其中一個成員，雙擊進去。')+'</span>';
+    +'要改其中一個成員，雙擊進去。')+'</span>');
   pp.appendChild(note);
 }
 /* ---- 面板跟著游標／選取走 ----
@@ -237,7 +237,7 @@ function renderPropsBody(){
   ]));
   // 縮放滑桿（0.1–2.0×，停頓於 0.5/0.8/1.0/1.2/1.5）＋含字級（預設開）；放開歸回 1.0×
   pp.appendChild(secTitle(_t('變形')));
-  const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; scWrap.innerHTML=_t('<label>縮放</label>');
+  const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; setHTML(scWrap,_t('<label>縮放</label>'));
   const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.style.flex='1'; sl.style.minWidth='90px'; sl.setAttribute('list','scaleTicks');
   const scVal=Object.assign(document.createElement('span'),{className:'unit'}); scVal.textContent='1.00×';
   const DET=[0.5,0.8,1,1.2,1.5]; let scOrig=null;
@@ -270,7 +270,7 @@ function renderPropsBody(){
   ]));
   // 旋轉／翻轉（圖片與面狀形狀；線條類方向由端點控制）
   if(el.type==='image'||(el.type==='shape'&&!isLineEl(el))){
-    const rr=document.createElement('div'); rr.className='row'; rr.innerHTML=_t('<label>角度</label>');
+    const rr=document.createElement('div'); rr.className='row'; setHTML(rr,_t('<label>角度</label>'));
     const ri=document.createElement('input'); ri.type='number'; ri.step='0.1'; ri.value=el.rot||0;
     ri.onchange=()=>{ commitUndo(); el.rot=((parseFloat(ri.value)||0)%360+360)%360; renderStage(); renderProps(); };
     rr.appendChild(ri); rr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'°'}));
@@ -291,7 +291,7 @@ function renderPropsBody(){
      單向不可逆，且會失去黃點與子路徑各自的填色／描邊差異，故先問清楚才做。 */
   if(el.type==='shape'&&el.shape!=='custGeom'&&!LINE_KINDS[el.shape]&&PRESET_GEOM[el.shape]){
     const r=document.createElement('div'); r.className='row';
-    r.innerHTML=_t('<label>編輯端點</label>');
+    setHTML(r,_t('<label>編輯端點</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('轉成可編輯端點'));
     b.style.flex='1';
     b.title=_t('把這個內建形狀拆成端點後進圖形編輯器（同 PowerPoint 的「編輯端點」）。單向不可逆');
@@ -301,7 +301,7 @@ function renderPropsBody(){
   // 自訂幾何：進圖形編輯器（畫布上直接畫，不必手改 points）
   if(el.type==='shape'&&el.shape==='custGeom'){
     const r=document.createElement('div'); r.className='row';
-    r.innerHTML=_t('<label>自訂幾何</label>');
+    setHTML(r,_t('<label>自訂幾何</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('開啟圖形編輯器'));
     b.style.flex='1'; b.onclick=()=>openGeomEditor(el);
     r.appendChild(b); pp.appendChild(r);
@@ -313,7 +313,7 @@ function renderPropsBody(){
       if(b.fixed) return;   // 沒有黃點引用的 adj＝preset 的固定補齊值，不給使用者調
       const cur=()=>adjVals(el)[mi];
       const pct=v=>(v/1000).toFixed(1)+'%';   // adj 是 OOXML 千分比，面板顯示成百分比才讀得懂
-      const ar=document.createElement('div'); ar.className='row'; ar.innerHTML=`<label>${adjLabel(el.shape,mi)}</label>`;
+      const ar=document.createElement('div'); ar.className='row'; setHTML(ar,`<label>${adjLabel(el.shape,mi)}</label>`);
       const ai=document.createElement('input'); ai.type='range';
       ai.min=Math.round(b.lo); ai.max=Math.round(b.hi); ai.step=Math.max(1,Math.round((b.hi-b.lo)/400));
       ai.value=cur(); ai.style.flex='1'; ai.style.minWidth='70px';

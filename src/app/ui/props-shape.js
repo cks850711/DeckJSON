@@ -3,14 +3,14 @@
 /* 線條類：線色、線寬、線型、端點 */
 function propsLine(pp,el){
   pp.appendChild(colorRow(_t('線色'),el.lineColor,v=>el.lineColor=v,false));
-  const row=document.createElement('div'); row.className='row'; row.innerHTML=_t('<label>線寬</label>');
+  const row=document.createElement('div'); row.className='row'; setHTML(row,_t('<label>線寬</label>'));
   const inp=document.createElement('input'); inp.type='number'; inp.step=0.25; inp.min=0.25; inp.value=el.linePt||1.5;
   inp.onchange=()=>{ commitUndo(); el.linePt=+inp.value; renderStage(); };
   row.appendChild(inp); row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
   pp.appendChild(row);
   pp.appendChild(dashRow(el));
   const note=document.createElement('div'); note.className='row';
-  note.innerHTML=_t('<span class="unit">拖兩端的圓點可以改方向，快接近水平或垂直時會自動貼齊。</span>');
+  setHTML(note,_t('<span class="unit">拖兩端的圓點可以改方向，快接近水平或垂直時會自動貼齊。</span>'));
   pp.appendChild(note);
   pp.appendChild(linkRows(el,_t('線條')));
 }

@@ -14,12 +14,12 @@ function propsText(pp,el){
   };
   pp.appendChild(ta);
   const row=document.createElement('div'); row.className='row';
-  row.innerHTML=_t('<label>字級</label>');
+  setHTML(row,_t('<label>字級</label>'));
   const inp=document.createElement('input'); inp.type='number'; inp.min=6; inp.max=96; inp.value=b.sizePt;
   inp.onchange=()=>{ commitUndo(); runApply(el,r=>r.sizePt=+inp.value); renderStage(); };
   row.appendChild(inp); row.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'pt'}));
   pp.appendChild(row);
-  const lsr=document.createElement('div'); lsr.className='row'; lsr.innerHTML=_t('<label>行距</label>');
+  const lsr=document.createElement('div'); lsr.className='row'; setHTML(lsr,_t('<label>行距</label>'));
   const lsi=document.createElement('input'); lsi.type='number'; lsi.step='0.05'; lsi.min='0.5'; lsi.max='5'; lsi.value=el.lineSpacing||1.2;
   lsi.onchange=()=>{ commitUndo(); const v=parseFloat(lsi.value); el.lineSpacing=(v&&Math.abs(v-1.2)>1e-6)?v:undefined; if(el.lineSpacing===undefined)delete el.lineSpacing; renderStage(); };
   lsr.appendChild(lsi); lsr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:_t('×字級')}));
@@ -49,9 +49,9 @@ function propsText(pp,el){
     if(v) el.nowrap=true; else delete el.nowrap; renderStage(); renderProps(); },
     _t('文字超出框寬不折行（匯出 bodyPr wrap="none"）；適合單行標籤')]]));
   // 文字方向（直書／旋轉）：匯出為原生 bodyPr vert，不是把文字框整個轉角度
-  {const vr=document.createElement('div'); vr.className='row'; vr.innerHTML=_t('<label>文字方向</label>');
+  {const vr=document.createElement('div'); vr.className='row'; setHTML(vr,_t('<label>文字方向</label>'));
    const vs=document.createElement('select'); vs.style.flex='1';
-   vs.innerHTML='<option value="">'+_t('橫書')+'</option>'+Object.entries(VERT_MODES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+   setHTML(vs,'<option value="">'+_t('橫書')+'</option>'+Object.entries(VERT_MODES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join(''));
    vs.value=el.vert||'';
    vs.title=_t('匯出為原生 <a:bodyPr vert>：文字在框內轉向，框本身不轉（要轉整個框請用「旋轉」）');
    vs.onchange=()=>{ commitUndo();
@@ -62,7 +62,7 @@ function propsText(pp,el){
   pp.appendChild(subTitle(_t('字元進階')));
   pp.appendChild(numRow(_t('字距'),b.charSpacing||0,v=>setRunOpt(el,'charSpacing',v||undefined),
     {min:-5,max:30,step:0.5,unit:'pt',title:_t('字元間距（正值拉寬、負值收緊）')}));
-  const ffr=document.createElement('div'); ffr.className='row'; ffr.innerHTML=_t('<label>字型</label>');
+  const ffr=document.createElement('div'); ffr.className='row'; setHTML(ffr,_t('<label>字型</label>'));
   const ffi=document.createElement('input'); ffi.type='text'; ffi.style.flex='1'; ffi.style.minWidth='80px';
   ffi.placeholder=_t('沿用全域'); ffi.value=b.fontFace||'';
   ffi.title=_t('只覆寫此元素的字型（留空＝沿用頂端「字體」模式設定）。匯出時 latin/ea/cs 三槽都用此字型。');
@@ -104,7 +104,7 @@ function propsText(pp,el){
   pp.appendChild(numRow(_t('段後'),(b.spaceAfter)||0,v=>runApply(el,(r,p)=>{ if(v>0)p.spaceAfter=v; else delete p.spaceAfter; }),{min:0,max:72,step:1,unit:'pt',title:_t('段落下方額外間距')}));
   // ── 超連結：外部網址或跳到本簡報某頁 ──
   pp.appendChild(subTitle(_t('超連結')));
-  const lkr=document.createElement('div'); lkr.className='row'; lkr.innerHTML=_t('<label>連結</label>');
+  const lkr=document.createElement('div'); lkr.className='row'; setHTML(lkr,_t('<label>連結</label>'));
   const lki=document.createElement('input'); lki.type='text'; lki.style.flex='1'; lki.style.minWidth='80px';
   lki.placeholder=_t('https://… 或 #3');
   lki.value= b.link? (b.link.url||('#'+b.link.slide)) : '';

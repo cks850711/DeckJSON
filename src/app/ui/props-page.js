@@ -5,20 +5,20 @@ function propsMasterPage(pp){
   /* 母版編輯中沒選東西時，右欄不該顯示頁面屬性——那些控件（底色、背景圖、備忘稿、
      章節、不放映此頁）全都作用在**離開母版後會回去的那一頁**，不是母版。畫面上正在
      編輯母版卻擺著一排會改到別處的控件，是會讓人改錯東西的誤導。 */
-  pp.innerHTML=_t('<h4>母版</h4>');
+  setHTML(pp,_t('<h4>母版</h4>'));
   pp.appendChild(secTitle(_t('母版'),true));
   const mi=document.createElement('div'); mi.className='row';
-  mi.innerHTML='<span class="unit">'+_t('正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，一般工具全部照用，'
+  setHTML(mi,'<span class="unit">'+_t('正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，一般工具全部照用，'
     +'<b>點任何一個母版元素</b>就能在這裡改它的屬性。<br><br>'
     +'底色、背景圖、備忘稿、章節這些屬於個別頁面，母版模式下改不到。'
-    +'整份簡報的設定請按工具列的<b>全簡報設定</b>。')+'</span>';
+    +'整份簡報的設定請按工具列的<b>全簡報設定</b>。')+'</span>');
   pp.appendChild(mi);
   pp.appendChild(btnRow([[{ic:'ic-master',txt:_t('完成，回到頁面')},()=>setMasterEdit(false),_t('離開母版編輯')]]));
   updateCopyPalWin();
 }
 /* 沒有選取任何元素時：頁面樣式、章節、備忘稿、範本與合併、全簡報的工具 */
 function propsPage(pp){
-  pp.innerHTML=_t('<h4>頁面</h4>');
+  setHTML(pp,_t('<h4>頁面</h4>'));
   pp.appendChild(secTitle(_t('頁面樣式'),true));
   pp.appendChild(colorRow(_t('底色'),curPage().bg,v=>{curPage().bg=v||'FFFFFF';},false));
   // 頁面背景圖（滿版拉伸，匯出為原生 <p:bg> blipFill；蓋在底色之上、所有元素之下）
@@ -28,30 +28,30 @@ function propsPage(pp){
   ]));
   if(curPage().bgImage){
     const bn=document.createElement('div'); bn.className='row';
-    bn.innerHTML=_t('<span class="unit">背景圖已設定（滿版拉伸，不隨元素選取）。想要精確裁切／局部露出，請改用一般圖片元素鋪滿整頁。</span>');
+    setHTML(bn,_t('<span class="unit">背景圖已設定（滿版拉伸，不隨元素選取）。想要精確裁切／局部露出，請改用一般圖片元素鋪滿整頁。</span>'));
     pp.appendChild(bn);
     /* 背景圖的單獨壓縮入口：它不是元素、選不到，沒有這條路就只能連同其他圖一起批次壓。
        目標像素按滿版畫布算（STAGE_W×STAGE_H×倍率），與下方批次用的是同一套換算。 */
     pp.appendChild(batchCompressRows('pagebg'));
   }
   // 轉場（進入此頁時播放；Morph 依元素 id 跨頁配對，複製頁改版面即可平滑補間）
-  const trRow=document.createElement('div'); trRow.className='row'; trRow.innerHTML=_t('<label>轉場</label>');
+  const trRow=document.createElement('div'); trRow.className='row'; setHTML(trRow,_t('<label>轉場</label>'));
   const trSel=document.createElement('select');
-  trSel.innerHTML='<option value="">'+_t('無')+'</option>'+Object.entries(TRANSITIONS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  setHTML(trSel,'<option value="">'+_t('無')+'</option>'+Object.entries(TRANSITIONS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join(''));
   trSel.value=(curPage().transition&&curPage().transition.type)||'';
   trSel.onchange=()=>{ commitUndo();
     curPage().transition= trSel.value? (trSel.value==='morph'? {type:'morph',dur:600}:{type:trSel.value}) : null;
     renderProps(); syncPageJson(); };
   trRow.appendChild(trSel); pp.appendChild(trRow);
   if(curPage().transition&&curPage().transition.type==='morph'){
-    const dr=document.createElement('div'); dr.className='row'; dr.innerHTML=_t('<label>時長</label>');
+    const dr=document.createElement('div'); dr.className='row'; setHTML(dr,_t('<label>時長</label>'));
     const di=document.createElement('input'); di.type='number'; di.min=100; di.max=10000; di.step=100; di.value=curPage().transition.dur||600;
     di.onchange=()=>{ commitUndo(); curPage().transition.dur=Math.max(100,Math.min(10000,Math.round(+di.value)||600)); syncPageJson(); };
     dr.appendChild(di); dr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:'ms'}));
     pp.appendChild(dr);
     const mn=document.createElement('div'); mn.className='row';
-    mn.innerHTML='<span class="unit">'+_t('Morph 是看元素 id 去配對前一頁的同名元素，所以「複製此頁」會保留 id，'
-      +'就是為了讓它配得到。太舊的 PowerPoint 不支援 Morph，會自動退成淡出。')+'</span>';
+    setHTML(mn,'<span class="unit">'+_t('Morph 是看元素 id 去配對前一頁的同名元素，所以「複製此頁」會保留 id，'
+      +'就是為了讓它配得到。太舊的 PowerPoint 不支援 Morph，會自動退成淡出。')+'</span>');
     pp.appendChild(mn);
   }
   // 本頁圖片批次壓縮：含元素圖與本頁背景圖，每張各自依自己的顯示尺寸換算目標像素
@@ -80,7 +80,7 @@ function propsPage(pp){
     normalizeDeck(APP.deck); renderAll(); syncPageJson(); },
     _t('PowerPoint 縮圖窗格的可摺疊分組：可整段收合／搬動／隱藏。不影響投影片內容，放映時看不到')]]));
   if(hasSec){
-    const sr=document.createElement('div'); sr.className='row'; sr.innerHTML=_t('<label>章節名</label>');
+    const sr=document.createElement('div'); sr.className='row'; setHTML(sr,_t('<label>章節名</label>'));
     const si=document.createElement('input'); si.type='text'; si.value=curPage().section; si.maxLength=60;
     si.onchange=()=>{ commitUndo();
       curPage().section=si.value.trim()||curPage().name||_t('章節');
@@ -88,11 +88,11 @@ function propsPage(pp){
       renderAll(); syncPageJson(); };
     sr.appendChild(si); pp.appendChild(sr);
     const sn=document.createElement('div'); sn.className='row';
-    sn.innerHTML=_t('<span class="unit">本頁到下一個章節起點之間的頁面同屬此章。章節名<b>必須唯一</b>，撞名會自動補「(2)」——PowerPoint 是靠名稱認章節的。</span>');
+    setHTML(sn,_t('<span class="unit">本頁到下一個章節起點之間的頁面同屬此章。章節名<b>必須唯一</b>，撞名會自動補「(2)」——PowerPoint 是靠名稱認章節的。</span>'));
     pp.appendChild(sn);
   }
   pp.appendChild(secTitle(_t('備忘稿')));
-  const nl=document.createElement('div'); nl.className='row'; nl.innerHTML=_t('<label style="min-width:auto">講者備忘稿</label>');
+  const nl=document.createElement('div'); nl.className='row'; setHTML(nl,_t('<label style="min-width:auto">講者備忘稿</label>'));
   pp.appendChild(nl);
   const nt=document.createElement('textarea'); nt.rows=4; nt.placeholder=_t('此頁備忘稿（匯出寫入 pptx 備忘稿）'); nt.value=curPage().notes||'';
   nt.onchange=()=>{ commitUndo(); curPage().notes=nt.value; };
