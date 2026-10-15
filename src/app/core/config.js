@@ -82,7 +82,7 @@ const NS='http://www.w3.org/2000/svg';
 /* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
 function setIcoBtn(b,ic,txt,title){
   b.className=(b.className? b.className+' ':'')+'icBtn';
-  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
+  setHTML(b,'<svg class="ic"><use href="#'+ic+'"/></svg>');
   if(txt) b.appendChild(document.createTextNode(txt));
   if(title) b.title=title;
   return b;

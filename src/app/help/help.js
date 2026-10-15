@@ -44,7 +44,7 @@ function applyHelpTabs(){
   /* 說明本文不走字典——段落裡夾著 <b>／<code>／<kbd>，拆句翻只會讓語序錯亂——每個語言一份完整 HTML。
      沒有說明本文的語言整份退回中文，配圖也跟著用中文的：圖上的字要和本文同一種語言。 */
   const hp=UI_PACK.help? UI_PACK : I18N_PACKS.zh;
-  hb.innerHTML=hp.help||'';
+  setHTML(hb,hp.help||'');
   const groups=[]; let cur=null;
   for(const n of [...hb.childNodes]){
     if(n.nodeType===1&&n.tagName==='H4'&&n.dataset.tab){ cur={name:n.dataset.tab,nodes:[]}; groups.push(cur); }

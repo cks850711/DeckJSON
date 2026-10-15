@@ -98,7 +98,7 @@ function armPainter(el){ APP.painter=extractStyle(el); updatePainterHint(); }
 function updatePainterHint(){
   const on=!!APP.painter;
   stage.style.cursor= on?'copy':'';
-  $('#painterHint').innerHTML= on?_t('<svg class="ic"><use href="#ic-brush"/></svg>格式刷啟用：點元素套用（可連續，Esc 取消）'):'';
+  setHTML($('#painterHint'),on?_t('<svg class="ic"><use href="#ic-brush"/></svg>格式刷啟用：點元素套用（可連續，Esc 取消）'):'');
 }
 function applyPainterTo(el){ if(!APP.painter||!el) return; commitUndo(); applyStyle(el,APP.painter); renderStage(); if(APP.sel===el.id) renderProps(); }
 

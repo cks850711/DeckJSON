@@ -206,10 +206,10 @@ function imageCompressRows(el){
   const over=(el.natW&&el.w)? el.natW/targetPixels(el,1)[0] : 0;
   const done=(lastRecode&&lastRecode.id===el.id)
     ? ' · <b style="color:#69db7c">'+_t('已省 {0}%',Math.round((1-lastRecode.after/lastRecode.before)*100))+'</b>' : '';
-  info.innerHTML='<span class="unit">'+_t('原圖 <b>{0}</b>',(el.natW||'?')+'×'+(el.natH||'?'))+' · '
+  setHTML(info,'<span class="unit">'+_t('原圖 <b>{0}</b>',(el.natW||'?')+'×'+(el.natH||'?'))+' · '
     +fmtBytes(dataUrlBytes(el.dataUrl))
     +' · '+_t('框內只用到 <b>{0}</b>',targetPixels(el,1)[0]+'×'+targetPixels(el,1)[1])
-    +(over>1.6? _t('，<b>可省空間</b>') : _t('，已相稱'))+done+'</span>';
+    +(over>1.6? _t('，<b>可省空間</b>') : _t('，已相稱'))+done+'</span>');
   wrap.appendChild(info);
 
   /* 垂直堆疊而非並排：側欄只有 ~130px 寬，三顆並排會把「1000×562」這種字截掉，
@@ -222,7 +222,7 @@ function imageCompressRows(el){
     b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left;display:flex;justify-content:space-between;align-items:baseline;gap:6px';
     // 與 recodeImage 的 s>=1 同條件：任一軸已達需求就壓不出效益（漏看高的話按鈕會亮著卻壓不動）
     const tooBig=!(el.natW>0)||!(el.natH>0)||tw>=el.natW||th>=el.natH;
-    b.innerHTML=`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`;
+    setHTML(b,`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`);
     if(tooBig){
       b.disabled=true;
       b.title=_t('原圖只有 {0}，已經小於這個檔位——再壓只會失真不會變小',(el.natW||'?')+'×'+(el.natH||'?'));
@@ -231,17 +231,17 @@ function imageCompressRows(el){
       b.dataset.est=`${el.dataUrl.length}|${tw}x${th}`;
       b.onclick=async ev=>{
         const btn=ev.currentTarget, html=btn.innerHTML;
-        btn.innerHTML=_t('處理中…'); btn.disabled=true;
+        setHTML(btn,_t('處理中…')); btn.disabled=true;
         try{
           const r=await recodeImage(el.dataUrl,tw,th,IMG_QUALITY);
-          if(!r){ btn.innerHTML=html; btn.disabled=false;
+          if(!r){ setHTML(btn,html); btn.disabled=false;
             alert(_t('這張圖壓不出效益（原圖 {0}，目標 {1}），因此未變更。',el.natW+'×'+el.natH,tw+'×'+th)); return; }
           const before=dataUrlBytes(el.dataUrl);
           commitUndo();
           el.dataUrl=r.dataUrl; el.natW=r.natW; el.natH=r.natH;
           lastRecode={id:el.id,before,after:dataUrlBytes(r.dataUrl)};
           renderStage(); renderProps(); syncPageJson();
-        }catch(err){ btn.innerHTML=html; btn.disabled=false; alert(_t('壓縮失敗：{0}',err.message)); }
+        }catch(err){ setHTML(btn,html); btn.disabled=false; alert(_t('壓縮失敗：{0}',err.message)); }
       };
     }
     row.appendChild(b);
@@ -253,7 +253,7 @@ function imageCompressRows(el){
     for(const b of row.querySelectorAll('button[data-est]')){
       const key=el.id+'|'+b.dataset.est;
       const put=v=>{ if(b.isConnected&&!b.querySelector('.estv'))
-        b.insertAdjacentHTML('beforeend',`<span class="estv" style="opacity:.75;font-size:10px;white-space:nowrap">→ ${fmtBytes(v)}</span>`); };
+        appendHTML(b,`<span class="estv" style="opacity:.75;font-size:10px;white-space:nowrap">→ ${fmtBytes(v)}</span>`); };
       if(recodeEst.has(key)){ put(recodeEst.get(key)); continue; }
       const [w,h]=b.dataset.est.split('|')[1].split('x').map(Number);
       recodeImage(el.dataUrl,w,h,IMG_QUALITY).then(r=>{
@@ -304,7 +304,7 @@ async function batchCompress(scope,p,btn){
   const plans=[]; let before=0,after=0,skipped=0;
   try{
     for(let i=0;i<items.length;i++){
-      btn.innerHTML=_t('估算中 {0}/{1}…',i+1,items.length);
+      setHTML(btn,_t('估算中 {0}/{1}…',i+1,items.length));
       const it=items[i], url=it.get(), b=dataUrlBytes(url);
       before+=b;
       const [tw,th]=it.target(p.mul);
@@ -312,7 +312,7 @@ async function batchCompress(scope,p,btn){
       if(r){ plans.push({it,r}); after+=dataUrlBytes(r.dataUrl); }
       else { after+=b; skipped++; }
     }
-  }finally{ btn.innerHTML=html; btn.disabled=false; }
+  }finally{ setHTML(btn,html); btn.disabled=false; }
   if(!plans.length){
     alert(_t('{0}的 {1} 張圖都已經小於「{2}×（{3} PPI）」這個檔位，沒有壓縮空間。',where,items.length,p.mul,p.ppi));
     return;
@@ -334,10 +334,10 @@ function batchCompressRows(scope){
   const total=items.reduce((a,it)=>a+dataUrlBytes(it.get()),0);
   const isBg=scope==='pagebg'||scope==='deckbg';
   const info=document.createElement('div'); info.className='row';
-  info.innerHTML=`<span class="unit">${items.length
+  setHTML(info,`<span class="unit">${items.length
     ? (isBg? _t('<b>{0}</b> 張背景圖，合計 <b>{1}</b>',items.length,fmtBytes(total))
            : _t('<b>{0}</b> 張圖片，合計 <b>{1}</b>',items.length,fmtBytes(total)))
-    : (isBg?_t('沒有背景圖'):_t('沒有圖片（背景圖另計）'))}</span>`;
+    : (isBg?_t('沒有背景圖'):_t('沒有圖片（背景圖另計）'))}</span>`);
   wrap.appendChild(info);
   if(!items.length) return wrap;
   const row=document.createElement('div'); row.className='row';
@@ -345,7 +345,7 @@ function batchCompressRows(scope){
   for(const p of RECODE_PRESETS){
     const b=document.createElement('button');
     b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left';
-    b.innerHTML=`<b>${p.mul}×</b> <span style="opacity:.55;font-size:10px">${p.ppi} PPI · ${p.label}</span>`;
+    setHTML(b,`<b>${p.mul}×</b> <span style="opacity:.55;font-size:10px">${p.ppi} PPI · ${p.label}</span>`);
     b.title=_t('每張圖各自縮到自己顯示尺寸的 {0} 倍（約 {1} PPI）。會先估算並列出總量再要你確認',p.mul,p.ppi);
     b.onclick=ev=>batchCompress(scope,p,ev.currentTarget);
     row.appendChild(b);

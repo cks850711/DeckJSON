@@ -76,7 +76,7 @@ function slotPick(getFile){
         const b=document.createElement('button');
         b.className='slotRow'+(r.used?'':' empty'); b.disabled=r.busy;
         const sub=[r.file, r.used? _t('{0} 頁',r.pages) : '', slotWhen(r.at)].filter(Boolean).join(' · ');
-        b.innerHTML='<span class="sn"></span><span class="st"><span class="t1"></span><span class="t2"></span></span><span class="tag"></span>';
+        setHTML(b,'<span class="sn"></span><span class="st"><span class="t1"></span><span class="t2"></span></span><span class="tag"></span>');
         b.querySelector('.sn').textContent=r.n;
         b.querySelector('.t1').textContent=r.used? (r.title||_t('未命名')) : _t('（空）');
         b.querySelector('.t2').textContent=sub;

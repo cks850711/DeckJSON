@@ -376,13 +376,13 @@ $('#gSnap').onchange=gRender;
 $('#gOK').onclick=gSave;
 $('#gCancel').onclick=gCloseEditor;
 $('#btnGeomClose').onclick=gCloseEditor;
-$('#gNote').innerHTML=_t('<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
+setHTML($('#gNote'),_t('<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
   'Esc／雙擊＝結束這條路徑，之後再點就是<b>新的子路徑</b>。<b>挖洞</b>：在外圈裡面再畫一條子路徑就會空心，'+
   '<b>繞行方向不影響</b>（PowerPoint 用 even-odd 規則，2026-08-03 實測）——編輯器裡看到的空心＝PPT 裡的空心。'+
   '<b>編輯點</b>：拖錨點移動，拖<b>藍色控制柄</b>調曲度（按住 Alt 拖＝兩側拆開成折角），'+
   '點<b>線段</b>在正中插入節點，雙擊錨點切換直線／曲線，Delete 刪除。Cmd/Ctrl+Z 在編輯器內獨立復原。'+
   '座標活在下方虛線框（＝形狀當下尺寸）內，之後拉大拉小圖案會<b>等比跟著變</b>。'+
-  '圓弧段在開啟時會折成貝茲曲線。');
+  '圓弧段在開啟時會折成貝茲曲線。'));
 // 編輯器開著時吃掉全域快捷鍵（capture 階段先攔，避免 Delete 刪到投影片上的元素）
 document.addEventListener('keydown',e=>{
   if(!GEO.open) return;

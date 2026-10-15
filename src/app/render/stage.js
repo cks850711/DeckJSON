@@ -40,9 +40,9 @@ function renderGrid(){
   for(let i=0;i*step<=STAGE_W+.01;i++) d[kind(i)]+=`M${n(i*step)} 0V${STAGE_H}`;
   for(let i=0;i*step<=STAGE_H+.01;i++) d[kind(i)]+=`M0 ${n(i*step)}H${STAGE_W}`;
   const style=[['.5','2 3','.6'],['.5','','.85'],['1.1','','1']];
-  svg.innerHTML=d.map((path,i)=> path? `<path d="${path}" fill="none" stroke="#${G.color}"`
+  setHTML(svg,d.map((path,i)=> path? `<path d="${path}" fill="none" stroke="#${G.color}"`
     +` stroke-width="${style[i][0]}"${style[i][1]?` stroke-dasharray="${style[i][1]}"`:''}`
-    +` opacity="${style[i][2]}" vector-effect="non-scaling-stroke"/>` : '').join('');
+    +` opacity="${style[i][2]}" vector-effect="non-scaling-stroke"/>` : '').join(''));
 }
 // 預留區：deck.zones 陣列 → 畫布上的虛線提示框（純輔助，不寫入任何 OOXML）
 function renderZones(){
@@ -440,7 +440,7 @@ function renderVideoInto(box,el){
     box.appendChild(bd);
   }else{
     const ph=document.createElement('div'); ph.className='vph';
-    ph.innerHTML=_t('<div style="font-size:20px">▶</div><div>未設封面圖</div>');
+    setHTML(ph,_t('<div style="font-size:20px">▶</div><div>未設封面圖</div>'));
     box.appendChild(ph);
   }
   const tag=document.createElement('div'); tag.className='vtag';

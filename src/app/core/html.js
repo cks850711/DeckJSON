@@ -21,8 +21,11 @@ const HTML_DROP=new Set(['script','style','template','noscript','iframe','frame'
 const HTML_ATTRS={'*':['class','style'], h4:['data-tab'], div:['data-fig'], option:['value','selected']};
 const HTML_SVG_ATTRS={'*':['class'], use:['href'],
   path:['d','fill','stroke','stroke-width','stroke-dasharray','opacity','vector-effect']};
-/* style 只留這幾個 CSS 屬性（目前寫入的字串用到的全部）。都是不吃網址的屬性，所以不必再檢查值 */
-const HTML_CSS=new Set(['color','font-size','min-width','opacity','white-space']);
+/* style 只留這幾個 CSS 屬性（目前寫入的字串用到的全部）。都是不吃網址的屬性，所以不必再檢查值。
+   比對的是 el.style 列出的名稱，縮寫屬性在那裡是展開後的細項：white-space 在新版瀏覽器展開成
+   white-space-collapse＋text-wrap-mode（較舊的版本是 text-wrap），所以細項名也要列 */
+const HTML_CSS=new Set(['color','font-size','min-width','opacity',
+  'white-space','white-space-collapse','text-wrap-mode','text-wrap']);
 /* 其餘屬性的值：fill／stroke 這類可以寫 url(…)；反斜線擋掉 u\72l( 這類跳脫寫法 */
 const HTML_BAD_VALUE=/\\|url\s*\(|image-set\s*\(|expression\s*\(/i;
 /* <use> 只引用同一份文件裡的圖示（#ic-…），外部或 data: 網址會載入別處的 SVG */

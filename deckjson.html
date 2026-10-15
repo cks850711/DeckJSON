@@ -3247,8 +3247,11 @@ const HTML_DROP=new Set(['script','style','template','noscript','iframe','frame'
 const HTML_ATTRS={'*':['class','style'], h4:['data-tab'], div:['data-fig'], option:['value','selected']};
 const HTML_SVG_ATTRS={'*':['class'], use:['href'],
   path:['d','fill','stroke','stroke-width','stroke-dasharray','opacity','vector-effect']};
-/* style 只留這幾個 CSS 屬性（目前寫入的字串用到的全部）。都是不吃網址的屬性，所以不必再檢查值 */
-const HTML_CSS=new Set(['color','font-size','min-width','opacity','white-space']);
+/* style 只留這幾個 CSS 屬性（目前寫入的字串用到的全部）。都是不吃網址的屬性，所以不必再檢查值。
+   比對的是 el.style 列出的名稱，縮寫屬性在那裡是展開後的細項：white-space 在新版瀏覽器展開成
+   white-space-collapse＋text-wrap-mode（較舊的版本是 text-wrap），所以細項名也要列 */
+const HTML_CSS=new Set(['color','font-size','min-width','opacity',
+  'white-space','white-space-collapse','text-wrap-mode','text-wrap']);
 /* 其餘屬性的值：fill／stroke 這類可以寫 url(…)；反斜線擋掉 u\72l( 這類跳脫寫法 */
 const HTML_BAD_VALUE=/\\|url\s*\(|image-set\s*\(|expression\s*\(/i;
 /* <use> 只引用同一份文件裡的圖示（#ic-…），外部或 data: 網址會載入別處的 SVG */
@@ -3459,7 +3462,7 @@ const NS='http://www.w3.org/2000/svg';
 /* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
 function setIcoBtn(b,ic,txt,title){
   b.className=(b.className? b.className+' ':'')+'icBtn';
-  b.innerHTML='<svg class="ic"><use href="#'+ic+'"/></svg>';
+  setHTML(b,'<svg class="ic"><use href="#'+ic+'"/></svg>');
   if(txt) b.appendChild(document.createTextNode(txt));
   if(title) b.title=title;
   return b;
@@ -4601,9 +4604,9 @@ function renderGrid(){
   for(let i=0;i*step<=STAGE_W+.01;i++) d[kind(i)]+=`M${n(i*step)} 0V${STAGE_H}`;
   for(let i=0;i*step<=STAGE_H+.01;i++) d[kind(i)]+=`M0 ${n(i*step)}H${STAGE_W}`;
   const style=[['.5','2 3','.6'],['.5','','.85'],['1.1','','1']];
-  svg.innerHTML=d.map((path,i)=> path? `<path d="${path}" fill="none" stroke="#${G.color}"`
+  setHTML(svg,d.map((path,i)=> path? `<path d="${path}" fill="none" stroke="#${G.color}"`
     +` stroke-width="${style[i][0]}"${style[i][1]?` stroke-dasharray="${style[i][1]}"`:''}`
-    +` opacity="${style[i][2]}" vector-effect="non-scaling-stroke"/>` : '').join('');
+    +` opacity="${style[i][2]}" vector-effect="non-scaling-stroke"/>` : '').join(''));
 }
 // 預留區：deck.zones 陣列 → 畫布上的虛線提示框（純輔助，不寫入任何 OOXML）
 function renderZones(){
@@ -5001,7 +5004,7 @@ function renderVideoInto(box,el){
     box.appendChild(bd);
   }else{
     const ph=document.createElement('div'); ph.className='vph';
-    ph.innerHTML=_t('<div style="font-size:20px">▶</div><div>未設封面圖</div>');
+    setHTML(ph,_t('<div style="font-size:20px">▶</div><div>未設封面圖</div>'));
     box.appendChild(ph);
   }
   const tag=document.createElement('div'); tag.className='vtag';
@@ -5416,8 +5419,8 @@ function renderMasterSlot(){
     if(!masterEls().length) b.classList.add('empty');
   }
   const lb=document.createElement('div'); lb.className='mtLabel';
-  lb.innerHTML='<svg class="ic"><use href="#ic-master"/></svg><span>'
-    +(editing?_t('完成編輯'):(on?_t('母版'):_t('＋ 母版')))+'</span>';   // 欄寬只有 158px，長標題會頂到邊；完整說法在畫布下方的母版列
+  setHTML(lb,'<svg class="ic"><use href="#ic-master"/></svg><span>'
+    +(editing?_t('完成編輯'):(on?_t('母版'):_t('＋ 母版')))+'</span>');   // 欄寬只有 158px，長標題會頂到邊；完整說法在畫布下方的母版列
   b.appendChild(lb);
   b.title= editing? _t('離開母版編輯，回到原本那一頁')
     : on? _t('編輯母版：畫布只顯示母版元素，一般工具全部照用')
@@ -5457,9 +5460,9 @@ function buildDeckSettings(pp){
        這裡只留「整份簡報怎麼套」的設定，不再重複放進出按鈕。 */
     if(APP.masterEdit){
       const mh=document.createElement('div'); mh.className='row';
-      mh.innerHTML='<span class="unit">'+_t('正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，'
+      setHTML(mh,'<span class="unit">'+_t('正在編輯母版。這裡放的元素會出現在<b>每一頁</b>，'
         +'一般工具全部照用。改完按<b>左側頁面欄底部</b>或畫布下方的「完成，回到頁面」，'
-        +'也可以直接點左邊任一頁縮圖離開。')+'</span>';
+        +'也可以直接點左邊任一頁縮圖離開。')+'</span>');
       pp.appendChild(mh);
     }else{
     pp.appendChild(checkRow([[_t('啟用母版'),()=>masterOn(),v=>{ commitUndo();
@@ -5467,37 +5470,37 @@ function buildDeckSettings(pp){
       _t('把 Logo／頁尾等每頁都要的東西放在一份「信紙」上，改一次全部頁面跟著變')]]));
     if(masterOn()){
       const me=document.createElement('div'); me.className='row';
-      me.innerHTML=_t('<span class="unit">編輯母版內容請按<b>左側頁面欄底部的「母版」</b>。</span>');
+      setHTML(me,_t('<span class="unit">編輯母版內容請按<b>左側頁面欄底部的「母版」</b>。</span>'));
       pp.appendChild(me);
-      const mr=document.createElement('div'); mr.className='row'; mr.innerHTML=_t('<label>匯出方式</label>');
+      const mr=document.createElement('div'); mr.className='row'; setHTML(mr,_t('<label>匯出方式</label>'));
       const ms=document.createElement('select');
-      ms.innerHTML='<option value="master">'+_t('放在母版上（檔案小）')+'</option>'
-                 +'<option value="flat">'+_t('畫進每一頁（可整張搬走）')+'</option>';
+      setHTML(ms,'<option value="master">'+_t('放在母版上（檔案小）')+'</option>'
+                 +'<option value="flat">'+_t('畫進每一頁（可整張搬走）')+'</option>');
       ms.value=APP.deck.master.flatten? 'flat':'master';
       ms.onchange=()=>{ commitUndo(); APP.deck.master.flatten=(ms.value==='flat'); syncPageJson(); renderDeckSettings(); };
       mr.appendChild(ms); pp.appendChild(mr);
       const mn2=document.createElement('div'); mn2.className='row';
-      mn2.innerHTML='<span class="unit">'+(APP.deck.master.flatten
+      setHTML(mn2,'<span class="unit">'+(APP.deck.master.flatten
         ? _t('匯出時把母版內容<b>實際畫進每一頁</b>：整份或單張投影片複製到別的簡報都帶得走，代價是圖片位元組每頁各存一份。')
         : _t('匯出時放在 PowerPoint 的<b>版面配置</b>上：檔案最小，但<b>單張投影片複製到別的簡報時不會跟著走</b>（整份寄出則正常）。'))
-        +_t('　切換不會動到母版內容，可隨時來回比較。')+'</span>';
+        +_t('　切換不會動到母版內容，可隨時來回比較。')+'</span>');
       pp.appendChild(mn2);
     }
     }
     /* 樣式模式：決定字體與頁碼／日期怎麼寫進 pptx。原本錯放在齒輪「偏好設定」裡，
        但它是 deck.fontMode，會被存進簡報檔，屬於這份簡報而不是這台瀏覽器。 */
     pp.appendChild(secTitle(_t('樣式模式')));
-    const fmr=document.createElement('div'); fmr.className='row'; fmr.innerHTML=_t('<label>匯出樣式</label>');
+    const fmr=document.createElement('div'); fmr.className='row'; setHTML(fmr,_t('<label>匯出樣式</label>'));
     const fms=document.createElement('select'); fms.id='selFontMode';
-    fms.innerHTML=_t('<option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>');
+    setHTML(fms,_t('<option value="locked">鎖定樣式</option><option value="inherit">母版繼承</option>'));
     fms.value=APP.deck.fontMode;
     fms.onchange=()=>{ commitUndo(); APP.deck.fontMode=fms.value; renderDeckSettings(); };
     fmr.appendChild(fms); pp.appendChild(fmr);
     const fmn=document.createElement('div'); fmn.className='row';
-    fmn.innerHTML='<span class="unit">'+(APP.deck.fontMode==='inherit'
+    setHTML(fmn,'<span class="unit">'+(APP.deck.fontMode==='inherit'
       ? _t('<b>母版繼承</b>：字體改成引用主題槽，頁碼與日期寫成不帶座標的空殼。貼到別的母版時，這些都由<b>那個母版</b>接手。')
       : _t('<b>鎖定樣式</b>：匯出時字體名與頁碼、日期的座標都寫死，貼到哪裡都長一樣。'))
-      +_t('　字體名在下面的「字體（整份簡報）」設定。')+'</span>';
+      +_t('　字體名在下面的「字體（整份簡報）」設定。')+'</span>');
     pp.appendChild(fmn);
     /* 頁碼與日期是 PowerPoint 底部同一排的兩個佔位符，設定項目也一模一樣，故共用同一段建構程式。
        只有「自動更新／固定文字」是日期獨有的。 */
@@ -5537,8 +5540,8 @@ function buildDeckSettings(pp){
       pp.appendChild(checkRow([[_t('首頁不顯示'),()=>!!cfg.skipFirst,v=>{ commitUndo();
         if(v) cfg.skipFirst=true; else delete cfg.skipFirst; renderAll(); },_t('封面通常不放{0}',label)]]));
       const nn=document.createElement('div'); nn.className='row';
-      nn.innerHTML='<span class="unit">'+_t('畫布上的{0}只是<b>預覽</b>，點不到也選不起來，匯出時是 PowerPoint 原生的佔位符。',label)
-        +_t('切到「母版繼承」之後，位置與字級會改由<b>目的端母版</b>的頁尾決定；畫布上顯示的，是這個檔自己打開時的樣子。')+'</span>';
+      setHTML(nn,'<span class="unit">'+_t('畫布上的{0}只是<b>預覽</b>，點不到也選不起來，匯出時是 PowerPoint 原生的佔位符。',label)
+        +_t('切到「母版繼承」之後，位置與字級會改由<b>目的端母版</b>的頁尾決定；畫布上顯示的，是這個檔自己打開時的樣子。')+'</span>');
       pp.appendChild(nn);
     }
     pp.appendChild(secTitle(_t('檔案資訊')));
@@ -5552,7 +5555,7 @@ function buildDeckSettings(pp){
       r.appendChild(i); pp.appendChild(r);
     }
     const mn2=document.createElement('div'); mn2.className='row';
-    mn2.innerHTML=_t('<span class="unit">標題取自頂端的「簡報標題」欄。下面三欄留空的話，那一欄就不寫進檔案屬性。</span>');
+    setHTML(mn2,_t('<span class="unit">標題取自頂端的「簡報標題」欄。下面三欄留空的話，那一欄就不寫進檔案屬性。</span>'));
     pp.appendChild(mn2);
     /* ── md 簡寫（整份簡報）：JSON 與 DJ 寫進來的 "md" 怎麼展開。存進簡報檔，AI 讀得到、套範本時跟著走。
        只存與預設不同的鍵（同 normalizeDeck），沒動過的簡報不多出 markdown 欄位 ── */
@@ -5580,9 +5583,9 @@ function buildDeckSettings(pp){
         _t('<sub> 下標、<sup> 上標、<u> 底線、<mark> 螢光')],
     ]));
     const mdn=document.createElement('div'); mdn.className='row';
-    mdn.innerHTML='<span class="unit">'+_t('JSON 段落與儲存格的 <code>"md"</code> 簡寫照這裡展開：<code>**粗體**</code>、<code>*斜體*</code>、連結固定認得，上面四項可以關掉。')
+    setHTML(mdn,'<span class="unit">'+_t('JSON 段落與儲存格的 <code>"md"</code> 簡寫照這裡展開：<code>**粗體**</code>、<code>*斜體*</code>、連結固定認得，上面四項可以關掉。')
       +_t('　在畫布上打字時，整段打成 <code>$$…$$</code> 也會變成方程式。')
-      +_t('　設定只影響<b>之後寫進來</b>的字，改了不會重畫已經有的螢光。')+'</span>';
+      +_t('　設定只影響<b>之後寫進來</b>的字，改了不會重畫已經有的螢光。')+'</span>');
     pp.appendChild(mdn);
     // ── 投影片尺寸（整份簡報）：預設值或自訂 px；改尺寸不會搬動既有元素，需自行重排 ──
     pp.appendChild(secTitle(_t('投影片尺寸')));
@@ -5592,9 +5595,9 @@ function buildDeckSettings(pp){
     pp.appendChild(numRow(_t('寬'),st.w,v=>{ APP.deck.stage={...APP.deck.stage,w:Math.round(v)}; renderAll(); },{min:160,max:4000,step:16,unit:'px'}));
     pp.appendChild(numRow(_t('高'),st.h,v=>{ APP.deck.stage={...APP.deck.stage,h:Math.round(v)}; renderAll(); },{min:120,max:4000,step:16,unit:'px'}));
     const stn=document.createElement('div'); stn.className='row';
-    stn.innerHTML=`<span class="unit">${(st.w/96*2.54).toFixed(2)} × ${(st.h/96*2.54).toFixed(2)} cm`
+    setHTML(stn,`<span class="unit">${(st.w/96*2.54).toFixed(2)} × ${(st.h/96*2.54).toFixed(2)} cm`
       +(pre?_t('（標準 {0}）',pre.key.replace('x',':')):_t('（自訂比例，匯出的 sldSz 不標準型別名）'))
-      +_t('。改尺寸<b>不會自動搬動既有元素</b>，需自行重排。')+'</span>';
+      +_t('。改尺寸<b>不會自動搬動既有元素</b>，需自行重排。')+'</span>');
     pp.appendChild(stn);
     // ── 字體（整份簡報）：三槽任意字體名；預覽用 CSS 變數即時反映，匯出寫同一個字體名 ──
     pp.appendChild(secTitle(_t('字體')));
@@ -5651,8 +5654,8 @@ function buildDeckSettings(pp){
         x:Math.round(STAGE_W*0.75),y:0,w:Math.round(STAGE_W*0.24),h:Math.round(STAGE_H*0.16)}];
       renderAll(); },_t('新增一塊不該被內容壓到的區域（如 Logo 位、頁尾）')]]));
     const zn2=document.createElement('div'); zn2.className='row';
-    zn2.innerHTML='<span class="unit">'+_t('預留區只是<b>畫布輔助線與吸附</b>（元素壓到會變紅警告，不阻擋），<b>不寫入 pptx</b>。')
-      +(zs.length?'':_t('目前沒有預留區——若你的母版右上有 Logo、底部有頁尾，在這裡加上對應方框即可。'))+'</span>';
+    setHTML(zn2,'<span class="unit">'+_t('預留區只是<b>畫布輔助線與吸附</b>（元素壓到會變紅警告，不阻擋），<b>不寫入 pptx</b>。')
+      +(zs.length?'':_t('目前沒有預留區——若你的母版右上有 Logo、底部有頁尾，在這裡加上對應方框即可。'))+'</span>');
     pp.appendChild(zn2);
     // ── 環境設定檔（profile）：把上面這些客製化整包存下／載入，並可設為新簡報的預設 ──
     pp.appendChild(secTitle(_t('環境設定檔（profile）')));
@@ -5670,8 +5673,8 @@ function buildDeckSettings(pp){
       try{ localStorage.removeItem(PROFILE_KEY); }catch(e){ /* 讀得到卻刪不掉時預設會留著，而且沒有提示：下面的 renderProps 不重畫這個面板，成功或失敗按鈕都不會消失 */ }
       renderProps(); },_t('恢復中性出廠值')]]));
     const pfn=document.createElement('div'); pfn.className='row';
-    pfn.innerHTML='<span class="unit">'+_t('目前設定檔：<b>{0}</b>。',(APP.deck.profileName||_t('預設')).replace(/</g,'&lt;'))
-      +_t('設定跟著這份簡報的 JSON 走，所以貼給 AI 再貼回來不會掉。')+'</span>';
+    setHTML(pfn,'<span class="unit">'+_t('目前設定檔：<b>{0}</b>。',(APP.deck.profileName||_t('預設')).replace(/</g,'&lt;'))
+      +_t('設定跟著這份簡報的 JSON 走，所以貼給 AI 再貼回來不會掉。')+'</span>');
     pp.appendChild(pfn);
 }
 
@@ -7211,7 +7214,7 @@ function armPainter(el){ APP.painter=extractStyle(el); updatePainterHint(); }
 function updatePainterHint(){
   const on=!!APP.painter;
   stage.style.cursor= on?'copy':'';
-  $('#painterHint').innerHTML= on?_t('<svg class="ic"><use href="#ic-brush"/></svg>格式刷啟用：點元素套用（可連續，Esc 取消）'):'';
+  setHTML($('#painterHint'),on?_t('<svg class="ic"><use href="#ic-brush"/></svg>格式刷啟用：點元素套用（可連續，Esc 取消）'):'');
 }
 function applyPainterTo(el){ if(!APP.painter||!el) return; commitUndo(); applyStyle(el,APP.painter); renderStage(); if(APP.sel===el.id) renderProps(); }
 
@@ -7455,10 +7458,10 @@ function imageCompressRows(el){
   const over=(el.natW&&el.w)? el.natW/targetPixels(el,1)[0] : 0;
   const done=(lastRecode&&lastRecode.id===el.id)
     ? ' · <b style="color:#69db7c">'+_t('已省 {0}%',Math.round((1-lastRecode.after/lastRecode.before)*100))+'</b>' : '';
-  info.innerHTML='<span class="unit">'+_t('原圖 <b>{0}</b>',(el.natW||'?')+'×'+(el.natH||'?'))+' · '
+  setHTML(info,'<span class="unit">'+_t('原圖 <b>{0}</b>',(el.natW||'?')+'×'+(el.natH||'?'))+' · '
     +fmtBytes(dataUrlBytes(el.dataUrl))
     +' · '+_t('框內只用到 <b>{0}</b>',targetPixels(el,1)[0]+'×'+targetPixels(el,1)[1])
-    +(over>1.6? _t('，<b>可省空間</b>') : _t('，已相稱'))+done+'</span>';
+    +(over>1.6? _t('，<b>可省空間</b>') : _t('，已相稱'))+done+'</span>');
   wrap.appendChild(info);
 
   /* 垂直堆疊而非並排：側欄只有 ~130px 寬，三顆並排會把「1000×562」這種字截掉，
@@ -7471,7 +7474,7 @@ function imageCompressRows(el){
     b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left;display:flex;justify-content:space-between;align-items:baseline;gap:6px';
     // 與 recodeImage 的 s>=1 同條件：任一軸已達需求就壓不出效益（漏看高的話按鈕會亮著卻壓不動）
     const tooBig=!(el.natW>0)||!(el.natH>0)||tw>=el.natW||th>=el.natH;
-    b.innerHTML=`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`;
+    setHTML(b,`<span><b>${tw}×${th}</b> <span style="opacity:.55;font-size:10px">${p.mul}× · ${p.label}</span></span>`);
     if(tooBig){
       b.disabled=true;
       b.title=_t('原圖只有 {0}，已經小於這個檔位——再壓只會失真不會變小',(el.natW||'?')+'×'+(el.natH||'?'));
@@ -7480,17 +7483,17 @@ function imageCompressRows(el){
       b.dataset.est=`${el.dataUrl.length}|${tw}x${th}`;
       b.onclick=async ev=>{
         const btn=ev.currentTarget, html=btn.innerHTML;
-        btn.innerHTML=_t('處理中…'); btn.disabled=true;
+        setHTML(btn,_t('處理中…')); btn.disabled=true;
         try{
           const r=await recodeImage(el.dataUrl,tw,th,IMG_QUALITY);
-          if(!r){ btn.innerHTML=html; btn.disabled=false;
+          if(!r){ setHTML(btn,html); btn.disabled=false;
             alert(_t('這張圖壓不出效益（原圖 {0}，目標 {1}），因此未變更。',el.natW+'×'+el.natH,tw+'×'+th)); return; }
           const before=dataUrlBytes(el.dataUrl);
           commitUndo();
           el.dataUrl=r.dataUrl; el.natW=r.natW; el.natH=r.natH;
           lastRecode={id:el.id,before,after:dataUrlBytes(r.dataUrl)};
           renderStage(); renderProps(); syncPageJson();
-        }catch(err){ btn.innerHTML=html; btn.disabled=false; alert(_t('壓縮失敗：{0}',err.message)); }
+        }catch(err){ setHTML(btn,html); btn.disabled=false; alert(_t('壓縮失敗：{0}',err.message)); }
       };
     }
     row.appendChild(b);
@@ -7502,7 +7505,7 @@ function imageCompressRows(el){
     for(const b of row.querySelectorAll('button[data-est]')){
       const key=el.id+'|'+b.dataset.est;
       const put=v=>{ if(b.isConnected&&!b.querySelector('.estv'))
-        b.insertAdjacentHTML('beforeend',`<span class="estv" style="opacity:.75;font-size:10px;white-space:nowrap">→ ${fmtBytes(v)}</span>`); };
+        appendHTML(b,`<span class="estv" style="opacity:.75;font-size:10px;white-space:nowrap">→ ${fmtBytes(v)}</span>`); };
       if(recodeEst.has(key)){ put(recodeEst.get(key)); continue; }
       const [w,h]=b.dataset.est.split('|')[1].split('x').map(Number);
       recodeImage(el.dataUrl,w,h,IMG_QUALITY).then(r=>{
@@ -7553,7 +7556,7 @@ async function batchCompress(scope,p,btn){
   const plans=[]; let before=0,after=0,skipped=0;
   try{
     for(let i=0;i<items.length;i++){
-      btn.innerHTML=_t('估算中 {0}/{1}…',i+1,items.length);
+      setHTML(btn,_t('估算中 {0}/{1}…',i+1,items.length));
       const it=items[i], url=it.get(), b=dataUrlBytes(url);
       before+=b;
       const [tw,th]=it.target(p.mul);
@@ -7561,7 +7564,7 @@ async function batchCompress(scope,p,btn){
       if(r){ plans.push({it,r}); after+=dataUrlBytes(r.dataUrl); }
       else { after+=b; skipped++; }
     }
-  }finally{ btn.innerHTML=html; btn.disabled=false; }
+  }finally{ setHTML(btn,html); btn.disabled=false; }
   if(!plans.length){
     alert(_t('{0}的 {1} 張圖都已經小於「{2}×（{3} PPI）」這個檔位，沒有壓縮空間。',where,items.length,p.mul,p.ppi));
     return;
@@ -7583,10 +7586,10 @@ function batchCompressRows(scope){
   const total=items.reduce((a,it)=>a+dataUrlBytes(it.get()),0);
   const isBg=scope==='pagebg'||scope==='deckbg';
   const info=document.createElement('div'); info.className='row';
-  info.innerHTML=`<span class="unit">${items.length
+  setHTML(info,`<span class="unit">${items.length
     ? (isBg? _t('<b>{0}</b> 張背景圖，合計 <b>{1}</b>',items.length,fmtBytes(total))
            : _t('<b>{0}</b> 張圖片，合計 <b>{1}</b>',items.length,fmtBytes(total)))
-    : (isBg?_t('沒有背景圖'):_t('沒有圖片（背景圖另計）'))}</span>`;
+    : (isBg?_t('沒有背景圖'):_t('沒有圖片（背景圖另計）'))}</span>`);
   wrap.appendChild(info);
   if(!items.length) return wrap;
   const row=document.createElement('div'); row.className='row';
@@ -7594,7 +7597,7 @@ function batchCompressRows(scope){
   for(const p of RECODE_PRESETS){
     const b=document.createElement('button');
     b.style.cssText='width:100%;line-height:1.3;padding:3px 6px;text-align:left';
-    b.innerHTML=`<b>${p.mul}×</b> <span style="opacity:.55;font-size:10px">${p.ppi} PPI · ${p.label}</span>`;
+    setHTML(b,`<b>${p.mul}×</b> <span style="opacity:.55;font-size:10px">${p.ppi} PPI · ${p.label}</span>`);
     b.title=_t('每張圖各自縮到自己顯示尺寸的 {0} 倍（約 {1} PPI）。會先估算並列出總量再要你確認',p.mul,p.ppi);
     b.onclick=ev=>batchCompress(scope,p,ev.currentTarget);
     row.appendChild(b);
@@ -7665,7 +7668,7 @@ function buildShapeGrid(q){
     }
     g.appendChild(row);
   }
-  if(!n) g.innerHTML=_t('<div class="empty">找不到符合的形狀。</div>');
+  if(!n) setHTML(g,_t('<div class="empty">找不到符合的形狀。</div>'));
   $('#shapeCount').textContent=_t('{0} 個',n);
 }
 function insertShape(key){
@@ -8068,13 +8071,13 @@ $('#gSnap').onchange=gRender;
 $('#gOK').onclick=gSave;
 $('#gCancel').onclick=gCloseEditor;
 $('#btnGeomClose').onclick=gCloseEditor;
-$('#gNote').innerHTML=_t('<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
+setHTML($('#gNote'),_t('<b>鋼筆</b>：點一下＝角點，<b>按住拖曳</b>＝帶曲度的平滑點；點回<b>黃色起點</b>閉合；'+
   'Esc／雙擊＝結束這條路徑，之後再點就是<b>新的子路徑</b>。<b>挖洞</b>：在外圈裡面再畫一條子路徑就會空心，'+
   '<b>繞行方向不影響</b>（PowerPoint 用 even-odd 規則，2026-08-03 實測）——編輯器裡看到的空心＝PPT 裡的空心。'+
   '<b>編輯點</b>：拖錨點移動，拖<b>藍色控制柄</b>調曲度（按住 Alt 拖＝兩側拆開成折角），'+
   '點<b>線段</b>在正中插入節點，雙擊錨點切換直線／曲線，Delete 刪除。Cmd/Ctrl+Z 在編輯器內獨立復原。'+
   '座標活在下方虛線框（＝形狀當下尺寸）內，之後拉大拉小圖案會<b>等比跟著變</b>。'+
-  '圓弧段在開啟時會折成貝茲曲線。');
+  '圓弧段在開啟時會折成貝茲曲線。'));
 // 編輯器開著時吃掉全域快捷鍵（capture 階段先攔，避免 Delete 刪到投影片上的元素）
 document.addEventListener('keydown',e=>{
   if(!GEO.open) return;
@@ -9671,7 +9674,7 @@ function buildGridControls(c){
       setGrid({size:Math.max(1,Math.min(800,v*GRID_UNITS[gu]))}); renderGridPop(); };
     cr.appendChild(ci);
     const us=document.createElement('select'); us.style.width='auto';
-    us.innerHTML=Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join('');
+    setHTML(us,Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join(''));
     us.onchange=()=>{ APP.gridUnit=us.value; renderGridPop(); };
     cr.appendChild(us); c.appendChild(cr);
     const nr=document.createElement('div'); nr.className='row'; nr.style.gap='3px';
@@ -9694,8 +9697,8 @@ function buildGridControls(c){
     rst.onclick=()=>{ setGrid({size:GRID_DEF.size,sub:GRID_DEF.sub,major:GRID_DEF.major,color:GRID_DEF.color}); renderGridPop(); };
     clr.appendChild(rst); c.appendChild(clr);
     const gn=document.createElement('div'); gn.className='row';
-    gn.innerHTML='<span class="unit">'+_t('格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，'
-      +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。')+'</span>';
+    setHTML(gn,'<span class="unit">'+_t('格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，'
+      +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。')+'</span>');
     c.appendChild(gn);
   }
 }
@@ -9755,8 +9758,8 @@ syncMelBtn();
 function syncPasteWhiteBtn(){
   const b=$('#btnPasteWhite');
   b.classList.toggle('on',APP.pasteWhite);
-  // 用 innerHTML 而非 textContent：這顆按鈕帶 SVG 圖示，textContent 會把圖示一起洗掉
-  b.innerHTML='<svg class="ic"><use href="#ic-white"/></svg> '+(APP.pasteWhite? _t('白底') : _t('透明'));
+  // 用 setHTML 而非 textContent：這顆按鈕帶 SVG 圖示，textContent 會把圖示一起洗掉
+  setHTML(b,'<svg class="ic"><use href="#ic-white"/></svg> '+(APP.pasteWhite? _t('白底') : _t('透明')));
 }
 $('#btnPasteWhite').onclick=()=>{ APP.pasteWhite=!APP.pasteWhite; savePasteWhite(); syncPasteWhiteBtn(); };
 syncPasteWhiteBtn();
@@ -11074,11 +11077,11 @@ function renderLayers(){
     const row=document.createElement('div'); row.className='layerRow'; row.dataset.id=el.id;
     if(APP.selIds.includes(el.id)) row.classList.add('sel');
     if(el.hidden) row.classList.add('hid');
-    const eye=document.createElement('button'); eye.className='ltog eyeTog'+(el.hidden?'':' on'); eye.innerHTML=licon(el.hidden?'ic-eye-off':'ic-eye'); eye.title=_t('顯示／隱藏');
+    const eye=document.createElement('button'); eye.className='ltog eyeTog'+(el.hidden?'':' on'); setHTML(eye,licon(el.hidden?'ic-eye-off':'ic-eye')); eye.title=_t('顯示／隱藏');
     eye.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.hidden) delete el.hidden; else el.hidden=true; renderStage(); renderProps(); };
-    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.innerHTML=licon(el.locked?'ic-lock':'ic-unlock'); lock.title=_t('鎖定（畫布不可選拖）');
+    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); setHTML(lock,licon(el.locked?'ic-lock':'ic-unlock')); lock.title=_t('鎖定（畫布不可選拖）');
     lock.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.locked){ delete el.locked; } else { el.locked=true; if(APP.selIds.includes(el.id)) setSel(APP.selIds.filter(id=>id!==el.id)); } renderStage(); renderProps(); };
-    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(ownVal(L_ICON,el.type)||'ic-shape');
+    const icon=document.createElement('span'); icon.className='licon'; setHTML(icon,licon(ownVal(L_ICON,el.type)||'ic-shape'));
     const nm=document.createElement('span'); nm.className='lname'; nm.textContent=(el.groupId?'⧉ ':'')+layerLabel(el); nm.title=el.id;
     row.append(eye,lock,icon,nm);
     row.onclick=()=>{ setSel(el.groupId?groupMembers(el).map(m=>m.id):[el.id]); updateSelBox(); renderProps(); syncPageJson(); renderLayers(); };
@@ -11862,7 +11865,7 @@ function buildChartVis(){
   const sec=t=>{ const d=document.createElement('div'); d.className='cvSec'; d.textContent=t; pane.appendChild(d); };
   const row=()=>{ const d=document.createElement('div'); d.className='cvRow'; pane.appendChild(d); return d; };
   const lab=(p,t)=>p.appendChild(Object.assign(document.createElement('label'),{textContent:t}));
-  const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; d.innerHTML=t; pane.appendChild(d); };
+  const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; setHTML(d,t); pane.appendChild(d); };
   const chk=(p,text,get,set,o)=>{
     o=o||{};
     const l=document.createElement('label'); l.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer';
@@ -12207,7 +12210,7 @@ function applyHelpTabs(){
   /* 說明本文不走字典——段落裡夾著 <b>／<code>／<kbd>，拆句翻只會讓語序錯亂——每個語言一份完整 HTML。
      沒有說明本文的語言整份退回中文，配圖也跟著用中文的：圖上的字要和本文同一種語言。 */
   const hp=UI_PACK.help? UI_PACK : I18N_PACKS.zh;
-  hb.innerHTML=hp.help||'';
+  setHTML(hb,hp.help||'');
   const groups=[]; let cur=null;
   for(const n of [...hb.childNodes]){
     if(n.nodeType===1&&n.tagName==='H4'&&n.dataset.tab){ cur={name:n.dataset.tab,nodes:[]}; groups.push(cur); }
@@ -13304,7 +13307,7 @@ function slotPick(getFile){
         const b=document.createElement('button');
         b.className='slotRow'+(r.used?'':' empty'); b.disabled=r.busy;
         const sub=[r.file, r.used? _t('{0} 頁',r.pages) : '', slotWhen(r.at)].filter(Boolean).join(' · ');
-        b.innerHTML='<span class="sn"></span><span class="st"><span class="t1"></span><span class="t2"></span></span><span class="tag"></span>';
+        setHTML(b,'<span class="sn"></span><span class="st"><span class="t1"></span><span class="t2"></span></span><span class="tag"></span>');
         b.querySelector('.sn').textContent=r.n;
         b.querySelector('.t1').textContent=r.used? (r.title||_t('未命名')) : _t('（空）');
         b.querySelector('.t2').textContent=sub;

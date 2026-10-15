@@ -198,7 +198,7 @@ function buildChartVis(){
   const sec=t=>{ const d=document.createElement('div'); d.className='cvSec'; d.textContent=t; pane.appendChild(d); };
   const row=()=>{ const d=document.createElement('div'); d.className='cvRow'; pane.appendChild(d); return d; };
   const lab=(p,t)=>p.appendChild(Object.assign(document.createElement('label'),{textContent:t}));
-  const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; d.innerHTML=t; pane.appendChild(d); };
+  const note=(t,cls)=>{ const d=document.createElement('div'); d.className=cls||'mnote'; setHTML(d,t); pane.appendChild(d); };
   const chk=(p,text,get,set,o)=>{
     o=o||{};
     const l=document.createElement('label'); l.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer';

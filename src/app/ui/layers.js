@@ -39,11 +39,11 @@ function renderLayers(){
     const row=document.createElement('div'); row.className='layerRow'; row.dataset.id=el.id;
     if(APP.selIds.includes(el.id)) row.classList.add('sel');
     if(el.hidden) row.classList.add('hid');
-    const eye=document.createElement('button'); eye.className='ltog eyeTog'+(el.hidden?'':' on'); eye.innerHTML=licon(el.hidden?'ic-eye-off':'ic-eye'); eye.title=_t('顯示／隱藏');
+    const eye=document.createElement('button'); eye.className='ltog eyeTog'+(el.hidden?'':' on'); setHTML(eye,licon(el.hidden?'ic-eye-off':'ic-eye')); eye.title=_t('顯示／隱藏');
     eye.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.hidden) delete el.hidden; else el.hidden=true; renderStage(); renderProps(); };
-    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); lock.innerHTML=licon(el.locked?'ic-lock':'ic-unlock'); lock.title=_t('鎖定（畫布不可選拖）');
+    const lock=document.createElement('button'); lock.className='ltog'+(el.locked?' on':''); setHTML(lock,licon(el.locked?'ic-lock':'ic-unlock')); lock.title=_t('鎖定（畫布不可選拖）');
     lock.onclick=ev=>{ ev.stopPropagation(); commitUndo(); if(el.locked){ delete el.locked; } else { el.locked=true; if(APP.selIds.includes(el.id)) setSel(APP.selIds.filter(id=>id!==el.id)); } renderStage(); renderProps(); };
-    const icon=document.createElement('span'); icon.className='licon'; icon.innerHTML=licon(ownVal(L_ICON,el.type)||'ic-shape');
+    const icon=document.createElement('span'); icon.className='licon'; setHTML(icon,licon(ownVal(L_ICON,el.type)||'ic-shape'));
     const nm=document.createElement('span'); nm.className='lname'; nm.textContent=(el.groupId?'⧉ ':'')+layerLabel(el); nm.title=el.id;
     row.append(eye,lock,icon,nm);
     row.onclick=()=>{ setSel(el.groupId?groupMembers(el).map(m=>m.id):[el.id]); updateSelBox(); renderProps(); syncPageJson(); renderLayers(); };

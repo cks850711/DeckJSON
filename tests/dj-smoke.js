@@ -703,7 +703,7 @@ export default async function run() {
     ok('security: setHTML strips id and name (no DOM clobbering)', document.querySelectorAll('#propPanel').length === 1
       && !host.querySelector('[id],[name]'), host.innerHTML);
     // 允許的內容原樣保留：翻譯字串的標記、圖示、行內樣式的寫法
-    const okHtml = '<span class="unit" style="opacity:.55;font-size:10px">a <b>b</b> <code>c</code> <kbd>d</kbd><br></span>'
+    const okHtml = '<span class="unit" style="opacity:.55;font-size:10px;white-space:nowrap">a <b>b</b> <code>c</code> <kbd>d</kbd><br></span>'
       + '<svg class="ic"><use href="#ic-copy"></use></svg><label style="min-width:auto">e</label>';
     setHTML(host, okHtml);
     ok('setHTML: allowed markup comes through unchanged', host.innerHTML === okHtml, host.innerHTML);

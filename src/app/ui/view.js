@@ -112,7 +112,7 @@ function buildGridControls(c){
       setGrid({size:Math.max(1,Math.min(800,v*GRID_UNITS[gu]))}); renderGridPop(); };
     cr.appendChild(ci);
     const us=document.createElement('select'); us.style.width='auto';
-    us.innerHTML=Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join('');
+    setHTML(us,Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join(''));
     us.onchange=()=>{ APP.gridUnit=us.value; renderGridPop(); };
     cr.appendChild(us); c.appendChild(cr);
     const nr=document.createElement('div'); nr.className='row'; nr.style.gap='3px';
@@ -135,8 +135,8 @@ function buildGridControls(c){
     rst.onclick=()=>{ setGrid({size:GRID_DEF.size,sub:GRID_DEF.sub,major:GRID_DEF.major,color:GRID_DEF.color}); renderGridPop(); };
     clr.appendChild(rst); c.appendChild(clr);
     const gn=document.createElement('div'); gn.className='row';
-    gn.innerHTML='<span class="unit">'+_t('格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，'
-      +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。')+'</span>';
+    setHTML(gn,'<span class="unit">'+_t('格線<b>只在畫布上</b>：不匯出、不進快照、不寫進 .deck 檔，'
+      +'設定存在這台瀏覽器（換電腦要重設）。單位對照：1mm ≈ 3.78px。')+'</span>');
     c.appendChild(gn);
   }
 }
@@ -196,8 +196,8 @@ syncMelBtn();
 function syncPasteWhiteBtn(){
   const b=$('#btnPasteWhite');
   b.classList.toggle('on',APP.pasteWhite);
-  // 用 innerHTML 而非 textContent：這顆按鈕帶 SVG 圖示，textContent 會把圖示一起洗掉
-  b.innerHTML='<svg class="ic"><use href="#ic-white"/></svg> '+(APP.pasteWhite? _t('白底') : _t('透明'));
+  // 用 setHTML 而非 textContent：這顆按鈕帶 SVG 圖示，textContent 會把圖示一起洗掉
+  setHTML(b,'<svg class="ic"><use href="#ic-white"/></svg> '+(APP.pasteWhite? _t('白底') : _t('透明')));
 }
 $('#btnPasteWhite').onclick=()=>{ APP.pasteWhite=!APP.pasteWhite; savePasteWhite(); syncPasteWhiteBtn(); };
 syncPasteWhiteBtn();

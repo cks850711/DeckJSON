@@ -61,7 +61,7 @@ function buildShapeGrid(q){
     }
     g.appendChild(row);
   }
-  if(!n) g.innerHTML=_t('<div class="empty">找不到符合的形狀。</div>');
+  if(!n) setHTML(g,_t('<div class="empty">找不到符合的形狀。</div>'));
   $('#shapeCount').textContent=_t('{0} 個',n);
 }
 function insertShape(key){

@@ -170,8 +170,8 @@ function renderMasterSlot(){
     if(!masterEls().length) b.classList.add('empty');
   }
   const lb=document.createElement('div'); lb.className='mtLabel';
-  lb.innerHTML='<svg class="ic"><use href="#ic-master"/></svg><span>'
-    +(editing?_t('完成編輯'):(on?_t('母版'):_t('＋ 母版')))+'</span>';   // 欄寬只有 158px，長標題會頂到邊；完整說法在畫布下方的母版列
+  setHTML(lb,'<svg class="ic"><use href="#ic-master"/></svg><span>'
+    +(editing?_t('完成編輯'):(on?_t('母版'):_t('＋ 母版')))+'</span>');   // 欄寬只有 158px，長標題會頂到邊；完整說法在畫布下方的母版列
   b.appendChild(lb);
   b.title= editing? _t('離開母版編輯，回到原本那一頁')
     : on? _t('編輯母版：畫布只顯示母版元素，一般工具全部照用')
