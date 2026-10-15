@@ -97,28 +97,28 @@ function buildGridControls(c){
     const mm=G.size/MM2PX, PRESET=[1,2,5,10];
     const near=PRESET.find(v=>Math.abs(mm-v)<1e-6);
     const pr=btnRow(PRESET.map(v=>[v+'mm',()=>setGrid({size:v*MM2PX}),_t('格距 {0}mm',v),near===v]));
-    pr.style.gap='3px';
+    pr.classList.add('gap3');
     PRESET.forEach((v,i)=>{ if(pr.children[i]) pr.children[i].dataset.gsize=v; });
-    for(const b of pr.children) b.style.cssText='flex:1;padding:5px 2px';   // 四顆一列不折行
+    for(const b of pr.children) b.classList.add('gsBtn');   // 四顆一列不折行
     c.appendChild(pr);
     // 自訂格距：值與單位分開，換單位只換顯示不動實際大小（內部一律 px）
     const cr=document.createElement('div'); cr.className='row';
     cr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('格距')}));
     const gu=APP.gridUnit||'mm';
     const ci=document.createElement('input'); ci.type='number'; ci.min='0.1'; ci.step= gu==='px'?1:0.5;
-    ci.value=+(G.size/GRID_UNITS[gu]).toFixed(3); ci.style.width='62px'; ci.dataset.gval='1';
+    ci.value=+(G.size/GRID_UNITS[gu]).toFixed(3); ci.classList.add('w62'); ci.dataset.gval='1';
     ci.onchange=()=>{ const v=parseFloat(ci.value);
       if(!(v>0)){ renderGridPop(); return; }
       setGrid({size:Math.max(1,Math.min(800,v*GRID_UNITS[gu]))}); renderGridPop(); };
     cr.appendChild(ci);
-    const us=document.createElement('select'); us.style.width='auto';
+    const us=document.createElement('select'); us.classList.add('wAuto');
     setHTML(us,Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join(''));
     us.onchange=()=>{ APP.gridUnit=us.value; renderGridPop(); };
     cr.appendChild(us); c.appendChild(cr);
-    const nr=document.createElement('div'); nr.className='row'; nr.style.gap='3px';
+    const nr=document.createElement('div'); nr.className='row gap3';
     for(const [k,lab,tip] of [['sub',_t('細線'),_t('每幾格畫一條細實線')],['major',_t('粗線'),_t('每幾格畫一條粗實線')]]){
-      const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; nr.appendChild(lb);
-      const i=document.createElement('input'); i.type='number'; i.min=1; i.max=200; i.value=G[k]; i.style.width='44px'; i.title=tip;
+      const lb=document.createElement('label'); lb.textContent=lab; lb.classList.add('mwAuto'); nr.appendChild(lb);
+      const i=document.createElement('input'); i.type='number'; i.min=1; i.max=200; i.value=G[k]; i.classList.add('w44'); i.title=tip;
       i.onchange=()=>setGrid({[k]:Math.max(1,Math.min(200,Math.round(+i.value)||G[k]))});
       nr.appendChild(i);
       nr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:_t('格')}));

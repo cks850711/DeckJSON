@@ -469,6 +469,17 @@
   :is(#propPanel,.ppctl) .subTitle{font-size:11px;font-weight:600;color:var(--fg-dim);
     margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
   :is(#propPanel,.ppctl) .subTitle:first-child{margin-top:0;padding-top:0;border-top:none}
+  /* ── 面板控件的尺寸小工具：取代程式裡逐顆寫的行內值。選擇器的優先序要跟上面
+     `:is(#propPanel,.ppctl) …` 的規則同級或更高，否則 width／gap／min-width 會被它們蓋回去 ── */
+  .fx{flex:1}                                                       /* 輸入框在一列裡吃掉剩餘寬度 */
+  .mw60{min-width:60px} .mw70{min-width:70px} .mw72{min-width:72px} .mw80{min-width:80px} .mw90{min-width:90px}
+  :is(#propPanel,.ppctl) .row input.w44{width:44px}
+  :is(#propPanel,.ppctl) .row input.w58{width:58px}
+  :is(#propPanel,.ppctl) .row input.w62{width:62px}
+  :is(#propPanel,.ppctl) .row :is(input,select).wAuto{width:auto}
+  :is(#propPanel,.ppctl) .row.gap3{gap:3px}
+  :is(#propPanel,.ppctl) .row label.mwAuto{min-width:auto}
+  :is(#propPanel,.ppctl) .row button.gsBtn{flex:1;padding:5px 2px}   /* 格距四顆一列 */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);
     display:flex;align-items:center;justify-content:center;z-index:50}
   .modal[hidden]{display:none}
@@ -5564,7 +5575,7 @@ function buildDeckSettings(pp){
         if(cfg.fmt==='fixed'){
           const r=document.createElement('div'); r.className='row';
           r.appendChild(Object.assign(document.createElement('label'),{textContent:_t('內容')}));
-          const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+          const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
           i.value=cfg.text||''; i.placeholder=_t('固定顯示的文字');
           i.onchange=()=>{ commitUndo(); cfg.text=i.value.trim().slice(0,60); renderAll(); };
           r.appendChild(i); pp.appendChild(r);
@@ -5583,7 +5594,7 @@ function buildDeckSettings(pp){
     for(const [key,label,ph] of [['author',_t('作者'),_t('填入 pptx 檔案屬性')],['company',_t('公司'),''],['subject',_t('主旨'),'']]){
       const r=document.createElement('div'); r.className='row';
       r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
-      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
       if(ph) i.placeholder=ph;
       i.value=APP.deck[key]||''; i.title=_t('寫入 docProps（Finder／PowerPoint「資訊」看得到）');
       i.onchange=()=>{ const v=i.value.trim(); if(v) APP.deck[key]=v; else delete APP.deck[key]; };
@@ -5641,7 +5652,7 @@ function buildDeckSettings(pp){
         ['tableLatin',_t('表格英數'),_t('表格內的英數字體，可與正文不同')]]){
       const r=document.createElement('div'); r.className='row';
       r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
-      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
       i.value=APP.deck.fonts[key]||''; i.title=_t('{0}。填本機已安裝的字體名，預覽才會一致；未安裝仍可匯出。',tip);
       i.onchange=()=>{ const v=i.value.trim(); if(!v){ i.value=APP.deck.fonts[key]; return; }
         commitUndo(); APP.deck.fonts={...APP.deck.fonts,[key]:v}; renderAll(); checkFonts(); };
@@ -5649,7 +5660,7 @@ function buildDeckSettings(pp){
     }
     const lgr=document.createElement('div'); lgr.className='row';
     lgr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('語言')}));
-    const lgi=document.createElement('input'); lgi.type='text'; lgi.style.flex='1'; lgi.style.minWidth='70px';
+    const lgi=document.createElement('input'); lgi.type='text'; lgi.classList.add('fx','mw70');
     lgi.value=APP.deck.lang||''; lgi.placeholder='zh-TW';
     lgi.title=_t('寫入每個文字 run 的 lang 屬性，決定 PowerPoint 用哪國拼字檢查／斷字規則');
     lgi.onchange=()=>{ const v=lgi.value.trim();
@@ -5661,7 +5672,7 @@ function buildDeckSettings(pp){
     const zs=APP.deck.zones||[];
     zs.forEach((z,zi)=>{
       const hr=document.createElement('div'); hr.className='row';
-      const zn=document.createElement('input'); zn.type='text'; zn.value=z.name; zn.style.flex='1'; zn.style.minWidth='60px';
+      const zn=document.createElement('input'); zn.type='text'; zn.value=z.name; zn.classList.add('fx','mw60');
       zn.title=_t('預留區名稱（侵入時的警告文字用）');
       zn.onchange=()=>{ commitUndo(); z.name=zn.value.trim()||_t('預留區'); renderAll(); };
       const zd=document.createElement('button'); zd.textContent='✕'; zd.title=_t('刪除此預留區');
@@ -5669,10 +5680,10 @@ function buildDeckSettings(pp){
       hr.appendChild(zn); hr.appendChild(zd); pp.appendChild(hr);
       // 四個座標擠成兩列（面板只有 220px 寬）；改完走 renderAll，虛線框才會跟著移動
       const zRow=(a,b)=>{
-        const r=document.createElement('div'); r.className='row'; r.style.gap='3px';
+        const r=document.createElement('div'); r.className='row gap3';
         for(const [k,lab] of [a,b]){
-          const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; r.appendChild(lb);
-          const i=document.createElement('input'); i.type='number'; i.style.width='44px'; i.value=z[k];
+          const lb=document.createElement('label'); lb.textContent=lab; lb.classList.add('mwAuto'); r.appendChild(lb);
+          const i=document.createElement('input'); i.type='number'; i.classList.add('w44'); i.value=z[k];
           i.min=(k==='w'||k==='h')?1:-2000; i.max=4000;
           i.onchange=()=>{ let v=Math.round(parseFloat(i.value)||0);
             if((k==='w'||k==='h')&&v<1) v=1;
@@ -9692,28 +9703,28 @@ function buildGridControls(c){
     const mm=G.size/MM2PX, PRESET=[1,2,5,10];
     const near=PRESET.find(v=>Math.abs(mm-v)<1e-6);
     const pr=btnRow(PRESET.map(v=>[v+'mm',()=>setGrid({size:v*MM2PX}),_t('格距 {0}mm',v),near===v]));
-    pr.style.gap='3px';
+    pr.classList.add('gap3');
     PRESET.forEach((v,i)=>{ if(pr.children[i]) pr.children[i].dataset.gsize=v; });
-    for(const b of pr.children) b.style.cssText='flex:1;padding:5px 2px';   // 四顆一列不折行
+    for(const b of pr.children) b.classList.add('gsBtn');   // 四顆一列不折行
     c.appendChild(pr);
     // 自訂格距：值與單位分開，換單位只換顯示不動實際大小（內部一律 px）
     const cr=document.createElement('div'); cr.className='row';
     cr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('格距')}));
     const gu=APP.gridUnit||'mm';
     const ci=document.createElement('input'); ci.type='number'; ci.min='0.1'; ci.step= gu==='px'?1:0.5;
-    ci.value=+(G.size/GRID_UNITS[gu]).toFixed(3); ci.style.width='62px'; ci.dataset.gval='1';
+    ci.value=+(G.size/GRID_UNITS[gu]).toFixed(3); ci.classList.add('w62'); ci.dataset.gval='1';
     ci.onchange=()=>{ const v=parseFloat(ci.value);
       if(!(v>0)){ renderGridPop(); return; }
       setGrid({size:Math.max(1,Math.min(800,v*GRID_UNITS[gu]))}); renderGridPop(); };
     cr.appendChild(ci);
-    const us=document.createElement('select'); us.style.width='auto';
+    const us=document.createElement('select'); us.classList.add('wAuto');
     setHTML(us,Object.keys(GRID_UNITS).map(u=>`<option value="${u}"${u===gu?' selected':''}>${u}</option>`).join(''));
     us.onchange=()=>{ APP.gridUnit=us.value; renderGridPop(); };
     cr.appendChild(us); c.appendChild(cr);
-    const nr=document.createElement('div'); nr.className='row'; nr.style.gap='3px';
+    const nr=document.createElement('div'); nr.className='row gap3';
     for(const [k,lab,tip] of [['sub',_t('細線'),_t('每幾格畫一條細實線')],['major',_t('粗線'),_t('每幾格畫一條粗實線')]]){
-      const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; nr.appendChild(lb);
-      const i=document.createElement('input'); i.type='number'; i.min=1; i.max=200; i.value=G[k]; i.style.width='44px'; i.title=tip;
+      const lb=document.createElement('label'); lb.textContent=lab; lb.classList.add('mwAuto'); nr.appendChild(lb);
+      const i=document.createElement('input'); i.type='number'; i.min=1; i.max=200; i.value=G[k]; i.classList.add('w44'); i.title=tip;
       i.onchange=()=>setGrid({[k]:Math.max(1,Math.min(200,Math.round(+i.value)||G[k]))});
       nr.appendChild(i);
       nr.appendChild(Object.assign(document.createElement('span'),{className:'unit',textContent:_t('格')}));

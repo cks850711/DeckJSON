@@ -81,7 +81,7 @@ function buildDeckSettings(pp){
         if(cfg.fmt==='fixed'){
           const r=document.createElement('div'); r.className='row';
           r.appendChild(Object.assign(document.createElement('label'),{textContent:_t('內容')}));
-          const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+          const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
           i.value=cfg.text||''; i.placeholder=_t('固定顯示的文字');
           i.onchange=()=>{ commitUndo(); cfg.text=i.value.trim().slice(0,60); renderAll(); };
           r.appendChild(i); pp.appendChild(r);
@@ -100,7 +100,7 @@ function buildDeckSettings(pp){
     for(const [key,label,ph] of [['author',_t('作者'),_t('填入 pptx 檔案屬性')],['company',_t('公司'),''],['subject',_t('主旨'),'']]){
       const r=document.createElement('div'); r.className='row';
       r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
-      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
       if(ph) i.placeholder=ph;
       i.value=APP.deck[key]||''; i.title=_t('寫入 docProps（Finder／PowerPoint「資訊」看得到）');
       i.onchange=()=>{ const v=i.value.trim(); if(v) APP.deck[key]=v; else delete APP.deck[key]; };
@@ -158,7 +158,7 @@ function buildDeckSettings(pp){
         ['tableLatin',_t('表格英數'),_t('表格內的英數字體，可與正文不同')]]){
       const r=document.createElement('div'); r.className='row';
       r.appendChild(Object.assign(document.createElement('label'),{textContent:label}));
-      const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='70px';
+      const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw70');
       i.value=APP.deck.fonts[key]||''; i.title=_t('{0}。填本機已安裝的字體名，預覽才會一致；未安裝仍可匯出。',tip);
       i.onchange=()=>{ const v=i.value.trim(); if(!v){ i.value=APP.deck.fonts[key]; return; }
         commitUndo(); APP.deck.fonts={...APP.deck.fonts,[key]:v}; renderAll(); checkFonts(); };
@@ -166,7 +166,7 @@ function buildDeckSettings(pp){
     }
     const lgr=document.createElement('div'); lgr.className='row';
     lgr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('語言')}));
-    const lgi=document.createElement('input'); lgi.type='text'; lgi.style.flex='1'; lgi.style.minWidth='70px';
+    const lgi=document.createElement('input'); lgi.type='text'; lgi.classList.add('fx','mw70');
     lgi.value=APP.deck.lang||''; lgi.placeholder='zh-TW';
     lgi.title=_t('寫入每個文字 run 的 lang 屬性，決定 PowerPoint 用哪國拼字檢查／斷字規則');
     lgi.onchange=()=>{ const v=lgi.value.trim();
@@ -178,7 +178,7 @@ function buildDeckSettings(pp){
     const zs=APP.deck.zones||[];
     zs.forEach((z,zi)=>{
       const hr=document.createElement('div'); hr.className='row';
-      const zn=document.createElement('input'); zn.type='text'; zn.value=z.name; zn.style.flex='1'; zn.style.minWidth='60px';
+      const zn=document.createElement('input'); zn.type='text'; zn.value=z.name; zn.classList.add('fx','mw60');
       zn.title=_t('預留區名稱（侵入時的警告文字用）');
       zn.onchange=()=>{ commitUndo(); z.name=zn.value.trim()||_t('預留區'); renderAll(); };
       const zd=document.createElement('button'); zd.textContent='✕'; zd.title=_t('刪除此預留區');
@@ -186,10 +186,10 @@ function buildDeckSettings(pp){
       hr.appendChild(zn); hr.appendChild(zd); pp.appendChild(hr);
       // 四個座標擠成兩列（面板只有 220px 寬）；改完走 renderAll，虛線框才會跟著移動
       const zRow=(a,b)=>{
-        const r=document.createElement('div'); r.className='row'; r.style.gap='3px';
+        const r=document.createElement('div'); r.className='row gap3';
         for(const [k,lab] of [a,b]){
-          const lb=document.createElement('label'); lb.textContent=lab; lb.style.minWidth='auto'; r.appendChild(lb);
-          const i=document.createElement('input'); i.type='number'; i.style.width='44px'; i.value=z[k];
+          const lb=document.createElement('label'); lb.textContent=lab; lb.classList.add('mwAuto'); r.appendChild(lb);
+          const i=document.createElement('input'); i.type='number'; i.classList.add('w44'); i.value=z[k];
           i.min=(k==='w'||k==='h')?1:-2000; i.max=4000;
           i.onchange=()=>{ let v=Math.round(parseFloat(i.value)||0);
             if((k==='w'||k==='h')&&v<1) v=1;
