@@ -141,7 +141,7 @@ function buildGridControls(c){
   }
 }
 /* 整個重建：換單位、重設這種會動到控件結構的才用它 */
-function renderGridPop(){ const p=$('#gridPop'); if(!p||p.hidden) return; p.innerHTML=''; buildGridControls(p); }
+function renderGridPop(){ const p=$('#gridPop'); if(!p||p.hidden) return; p.replaceChildren(); buildGridControls(p); }
 /* 只回填值與選中態。setGrid 走這條而非 renderGridPop：整個重建會把使用者正在連點的
    spinner 換成新元素，第二下就點空了。 */
 /* 吸附的可用狀態跟著「顯示格線」走，比照浮動列 syncGridBtns 裡對 #btnGridSnap 的處理：

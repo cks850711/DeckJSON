@@ -32,7 +32,7 @@ function layerLabel(el){
 }
 function renderLayers(){
   if(typeof $!=='function'||!layersOpen()) return;
-  const list=$('#layerList'); list.innerHTML='';
+  const list=$('#layerList'); list.replaceChildren();
   const els=curEls();
   for(let i=els.length-1;i>=0;i--){        // 頂層（陣列末端）顯示在最上面
     const el=els[i];

@@ -325,7 +325,7 @@ function openGeomEditor(el,fresh){
   const availH=Math.max(220,Math.min(420,window.innerHeight-330));
   GEO.S=Math.max(0.5,Math.min(availW/GEO.W,availH/GEO.H,4));
   GEO.open=true; $('#geomModal').hidden=false;
-  const wrap=$('#geomWrap'); wrap.innerHTML='';
+  const wrap=$('#geomWrap'); wrap.replaceChildren();
   const svg=document.createElementNS(NS,'svg');
   svg.setAttribute('width',GEO.W*GEO.S+GEO.PAD*2);
   svg.setAttribute('height',GEO.H*GEO.S+GEO.PAD*2);
@@ -352,7 +352,7 @@ function gCanvasMove(e){
   GEO.rubber.setAttribute('d',`M${N3(gX(n.x))},${N3(gY(n.y))}`+gSegD(n,{x:p[0],y:p[1],hIn:null,hOut:null},gX,gY));
 }
 function gCloseEditor(){ GEO.open=false; GEO.el=null; GEO.drag=null; GEO.svg=null;
-  $('#geomWrap').innerHTML=''; $('#geomModal').hidden=true; }
+  $('#geomWrap').replaceChildren(); $('#geomModal').hidden=true; }
 function gSave(){
   const el=GEO.el; if(!el) return;
   const pts=subsToPoints(GEO.subs.filter(s=>s.nodes.length>1));

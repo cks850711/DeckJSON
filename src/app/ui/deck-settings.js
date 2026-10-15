@@ -238,7 +238,7 @@ function mdSyn(m,k,v){   // 語法開關：與預設相同就刪鍵
 }
 function renderDeckSettings(){
   const b=$('#deckBody'); if(!b||$('#deckModal').hidden) return;
-  b.innerHTML=''; buildDeckSettings(b);
+  b.replaceChildren(); buildDeckSettings(b);
   /* 兩欄排版的前置：把 secTitle 到下一個 secTitle 之間的節點包成一格。
      沒有這一步，CSS column 會從區塊中間切開，標題留在左欄、控件跑到右欄。 */
   const kids=[...b.childNodes]; const secs=[]; let cur=null;
@@ -247,7 +247,7 @@ function renderDeckSettings(){
     if(!cur){ cur=document.createElement('div'); cur.className='dsec'; secs.push(cur); }
     cur.appendChild(n);
   }
-  b.innerHTML=''; for(const d of secs) b.appendChild(d);
+  b.replaceChildren(); for(const d of secs) b.appendChild(d);
 }
 function openDeckSettings(){ $('#deckModal').hidden=false; renderDeckSettings(); }
 function closeDeckSettings(){ $('#deckModal').hidden=true; renderAll(); }

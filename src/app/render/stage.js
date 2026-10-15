@@ -144,7 +144,7 @@ function txtBlock(el){
   return t;
 }
 function renderTableInto(box,el){
-  box.innerHTML='';
+  box.replaceChildren();
   const tbl=document.createElement('table');
   const cg=document.createElement('colgroup');
   for(const w of el.colW){ const c=document.createElement('col'); c.style.width=w+'px'; cg.appendChild(c); }
@@ -250,7 +250,7 @@ function textRect(el){
   return {x:L,y:T,w:R-L,h:B-T};
 }
 function renderShapeInto(box,el){
-  box.innerHTML='';
+  box.replaceChildren();
   const kind=LINE_KINDS[el.shape];
   const svg=document.createElementNS(NS,'svg');
   svg.setAttribute('width',Math.max(el.w,1)); svg.setAttribute('height',Math.max(el.h,1));
@@ -373,7 +373,7 @@ function chartDropProtoTypes(op){
   return op;
 }
 function renderChartInto(box,el){
-  box.innerHTML='';
+  box.replaceChildren();
   const cd=document.createElement('div');
   cd.style.cssText=`width:${el.w}px;height:${el.h}px;`;
   box.appendChild(cd);
@@ -430,7 +430,7 @@ function linkLabel(l){ return l? (l.url||_t('本簡報第 {0} 頁',l.slide)) : '
    mode:'online'＝YouTube 連結（匯出走 addMedia type:'online'，pptx 只存外部連結）；
    mode:'local' ＝本機影片（位元組一律不進 JSON，匯出只放封面圖＋待插入提示）。 */
 function renderVideoInto(box,el){
-  box.innerHTML='';
+  box.replaceChildren();
   if(el.cover){
     const im=document.createElement('img'); im.className='vcover'; im.src=el.cover;
     im.alt=el.alt||''; box.appendChild(im);

@@ -86,7 +86,7 @@ function drawThumb(cv,pg){
   }
 }
 function renderPanel(){
-  const panel=$('#pagePanel'); panel.innerHTML='';
+  const panel=$('#pagePanel'); panel.replaceChildren();
   // 圖表縮圖快取的回收：刪頁或刪元素之後，那些 canvas 不該永久留著
   if(THUMB_CHART.size){
     const live=new Set();
@@ -156,7 +156,7 @@ function renderPanel(){
    舊版把入口埋在「右欄 → 頁面 → 母版 → 啟用 → 編輯」五層底下，等於沒有入口。 */
 function renderMasterSlot(){
   const slot=$('#masterSlot'); if(!slot) return;
-  slot.innerHTML='';
+  slot.replaceChildren();
   const on=masterOn(), editing=!!APP.masterEdit;
   const b=document.createElement('button'); b.type='button'; b.className='masterItem';
   if(editing) b.classList.add('on');

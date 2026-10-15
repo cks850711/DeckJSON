@@ -159,7 +159,7 @@ function applyPropTabs(){
     let i=g.t? defs.findIndex(d=>d[1]&&d[1].includes(g.t)) : 0;
     buckets[i<0? fb : i].push(g);
   }
-  pp.innerHTML='';
+  pp.replaceChildren();
   const addFoot=()=>{ if(!actGroups.length) return;
     const foot=document.createElement('div'); foot.id='propFoot';
     actGroups.forEach(g=>g.nodes.forEach(n=>foot.appendChild(n)));
@@ -210,7 +210,7 @@ function syncProps(){
 }
 function renderPropsBody(){
   _propsSig=propsSig();
-  const pp=$('#propPanel'); pp.innerHTML='';
+  const pp=$('#propPanel'); pp.replaceChildren();
   if(APP.selIds.length>1){ renderMultiProps(pp); updateCopyPalWin(); return; }
   const el=selEl();
   if(!el&&APP.masterEdit){ propsMasterPage(pp); return; }

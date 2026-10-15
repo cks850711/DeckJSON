@@ -13,7 +13,7 @@ function updateSelBox(){
     const bb=groupBBox(els);
     sb.style.left=bb.x+'px'; sb.style.top=bb.y+'px'; sb.style.width=bb.w+'px'; sb.style.height=bb.h+'px';
     sb.style.transform='';
-    sb.style.outline='1.5px dashed var(--accent)'; sb.innerHTML='';
+    sb.style.outline='1.5px dashed var(--accent)'; sb.replaceChildren();
     for(const d of ['nw','ne','se','sw']){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; hd.dataset.group='1'; sb.appendChild(hd); }
     return;
   }
@@ -26,7 +26,7 @@ function updateSelBox(){
   // 旋轉時選取框與把手跟著轉（顯示對齊；resize 已把螢幕位移換算回本地座標，故仍正確）
   sb.style.transform=(el.rot&&!isLineEl(el))? `rotate(${el.rot}deg)`:'';
   sb.style.transformOrigin='50% 50%';
-  sb.innerHTML='';
+  sb.replaceChildren();
   if(isLineEl(el)){   // 線條類：兩端點把手，不用包圍盒縮放
     sb.style.outline='1px dashed rgba(77,157,224,.4)';
     const E=lineEnds(el);

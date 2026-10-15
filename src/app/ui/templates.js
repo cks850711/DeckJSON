@@ -22,7 +22,7 @@ const TEMPLATES=[
     tplText(140,360,1000,90,_t('章節名稱'),40,'title',{color:'FFFFFF',bold:true})]})},
 ];
 function openTemplateModal(){
-  const g=$('#tplGrid'); g.innerHTML='';
+  const g=$('#tplGrid'); g.replaceChildren();
   for(const t of TEMPLATES){
     const b=document.createElement('button'); b.textContent=t.name; b.style.cssText='padding:14px 18px';
     b.onclick=()=>{ commitUndo(); const spec=t.build(); const pg=newPage(); if(spec.bg)pg.bg=spec.bg; pg.elements=spec.elements; pg.name=t.name;

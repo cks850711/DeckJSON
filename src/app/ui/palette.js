@@ -29,7 +29,7 @@ const DESIGNER_PALETTES=[
 ];
 let palTab='designer', palTarget=null;
 function buildPalBody(){
-  const body=$('#palBody'); body.innerHTML='';
+  const body=$('#palBody'); body.replaceChildren();
   if(palTab==='designer'){
     for(const p of DESIGNER_PALETTES){
       const row=document.createElement('div'); row.className='palRow';
@@ -88,7 +88,7 @@ function buildCopyPalWin(){
     w=document.createElement('div'); w.id='palCopyWin';
     $('#pageJsonPanel').querySelector('.pjBody').appendChild(w);
   }
-  w.innerHTML='';
+  w.replaceChildren();
   // 圖表的 option 是 raw ECharts，複製時要帶 #；表格等元素層一律裸碼。見本區塊開頭註解。
   const forChart=((selEl()||{}).type==='chart');
   w.dataset.fc=forChart?'1':'0';

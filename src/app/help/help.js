@@ -51,7 +51,7 @@ function applyHelpTabs(){
     if(cur) cur.nodes.push(n);
   }
   if(!groups.length) return;
-  hb.innerHTML='';
+  hb.replaceChildren();
   const bar=document.createElement('div'); bar.className='helpTabs'; hb.appendChild(bar);
   const panes=groups.map(g=>{
     const p=document.createElement('div'); p.className='helpPane';

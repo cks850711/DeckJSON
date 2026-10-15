@@ -40,7 +40,7 @@ function shapeThumb(key,VB,MAX){
   return svg;
 }
 function buildShapeGrid(q){
-  const g=$('#shapeGrid'); g.innerHTML='';
+  const g=$('#shapeGrid'); g.replaceChildren();
   const kw=(q||'').trim().toLowerCase();
   const match=key=>{ if(!kw) return true;
     const def=LINE_KINDS[key]||SHAPES[key];

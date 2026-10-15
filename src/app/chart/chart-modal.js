@@ -182,7 +182,7 @@ function cvNum(v){ const n=(v&&typeof v==='object')?(Array.isArray(v)?v[1]:v.val
 function buildChartVis(){
   const el=chartTarget();
   if(!el){ closeChartModal(); return; }
-  const pane=$('#cvControls'); pane.innerHTML='';
+  const pane=$('#cvControls'); pane.replaceChildren();
   const op=el.option||{};
   const sh=cvShape(op);
   const kind=cvKindOf(op,sh);
