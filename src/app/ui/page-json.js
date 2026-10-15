@@ -111,8 +111,8 @@ $('#btnPageJsonCopyRaw').onclick=async()=>{
   catch(err){
     // 面板的 textarea 裝的是遮罩版，不能拿來當退路，改用臨時節點
     const ta=document.createElement('textarea');
-    ta.value=t; ta.style.cssText='position:fixed;left:-9999px;top:0';
-    document.body.appendChild(ta); ta.select();
+    ta.value=t; ta.className='ghostTa';
+    uiRoot().appendChild(ta); ta.select();
     try{ document.execCommand('copy'); done(); }
     catch(e2){ alert(_t('複製失敗：{0}',e2.message)); }
     finally{ ta.remove(); }

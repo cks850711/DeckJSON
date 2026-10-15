@@ -12,8 +12,8 @@ function updateSelBox(){
     for(const el of els){ const b=stage.querySelector(`.el[data-id="${el.id}"]`); if(b) b.classList.add('multisel'); }
     const bb=groupBBox(els);
     sb.style.left=bb.x+'px'; sb.style.top=bb.y+'px'; sb.style.width=bb.w+'px'; sb.style.height=bb.h+'px';
-    sb.style.transform='';
-    sb.style.outline='1.5px dashed var(--accent)'; sb.replaceChildren();
+    sb.style.removeProperty('transform');   // 清除單選時寫入的旋轉
+    sb.classList.add('multi'); sb.classList.remove('line'); sb.replaceChildren();
     for(const d of ['nw','ne','se','sw']){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; hd.dataset.group='1'; sb.appendChild(hd); }
     return;
   }
@@ -25,10 +25,10 @@ function updateSelBox(){
   sb.style.width=w+'px'; sb.style.height=h+'px';
   // 旋轉時選取框與把手跟著轉（顯示對齊；resize 已把螢幕位移換算回本地座標，故仍正確）
   sb.style.transform=(el.rot&&!isLineEl(el))? `rotate(${el.rot}deg)`:'';
-  sb.style.transformOrigin='50% 50%';
+  sb.classList.remove('multi');
   sb.replaceChildren();
+  sb.classList.toggle('line',isLineEl(el));   // 線條類：淡虛線外框，兩端點把手
   if(isLineEl(el)){   // 線條類：兩端點把手，不用包圍盒縮放
-    sb.style.outline='1px dashed rgba(77,157,224,.4)';
     const E=lineEnds(el);
     for(const [px,py,end] of [[E.x1,E.y1,'1'],[E.x2,E.y2,'2']]){
       const hd=document.createElement('div'); hd.className='lh'; hd.dataset.end=end;
@@ -43,7 +43,6 @@ function updateSelBox(){
     });
     return;
   }
-  sb.style.outline='';
   const dirs= el.type==='image'? ['nw','ne','se','sw'] : ['nw','n','ne','e','se','s','sw','w'];
   for(const d of dirs){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; sb.appendChild(hd); }
   if(el.type==='shape'){   // adj 黃點：位置直接由 preset 的 ahLst pos 求值（翻轉時跟著鏡射）

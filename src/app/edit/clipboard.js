@@ -207,9 +207,9 @@ async function htmlToTableEl(html){
          實測 `<table style="width:100%">` 配 td 的 px 寬（Word 常見組合），330px 的表量成 99998px。
          既然這條路已經確定有絕對寬度可用，百分比就是多餘且有害的資訊，直接拿掉。*/
       for(const el of [tbl, ...cols, ...items.map(it=>it.td)]){
-        if(wOf(el).some(v=>PCT_W.test(v))){ el.style.width='auto'; el.removeAttribute('width'); }
+        if(wOf(el).some(v=>PCT_W.test(v))){ el.style.removeProperty('width'); el.removeAttribute('width'); }   // 清除來源行內的百分比寬
       }
-      box.style.width='99999px';
+      box.classList.add('wide');   // 見 css/stage.css 的 #pasteMeasure.wide
     }
     await waitImgs(box);   // 必須在任何 offsetWidth／offsetHeight 之前
     // 欄寬／列高：只拿「沒有跨格」的格子量，跨格的量到的是合併後的總寬，會把該欄撐爆

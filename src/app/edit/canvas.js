@@ -167,14 +167,12 @@ let dragTip=null;
 function showDragTipText(e,text){
   if(!dragTip){
     dragTip=document.createElement('div');
-    dragTip.style.cssText='position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;'
-      +'padding:3px 7px;border-radius:4px;pointer-events:none;white-space:pre;'
-      +'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4;';
-    document.body.appendChild(dragTip);
+    dragTip.className='dragTip'; dragTip.hidden=true;
+    uiRoot().appendChild(dragTip);
   }
   dragTip.textContent=text;
   dragTip.style.left=(e.clientX+14)+'px'; dragTip.style.top=(e.clientY+18)+'px';
-  dragTip.style.display='block';
+  dragTip.hidden=false;
 }
 // 尺寸懸浮：多行時各欄右對齊、位數不足補空白（等寬字型），順序 px→pt→cm
 function fmtDims(rows){   // rows: [[label,px],...]
@@ -186,7 +184,7 @@ function fmtDims(rows){   // rows: [[label,px],...]
   return cells.map(c=>`${padLab(c[0])} ${c[1].padStart(w[0])}px ${c[2].padStart(w[1])}pt ${c[3].padStart(w[2])}cm`).join('\n');
 }
 function showDragTip(e,label,px){ showDragTipText(e,fmtDims([[label,px]])); }
-function hideDragTip(){ if(dragTip) dragTip.style.display='none'; }
+function hideDragTip(){ if(dragTip) dragTip.hidden=true; }
 /* ================= 吸附 =================
    兩種來源：**輔助線**（投影片中線／邊界／預留區四邊，一直都在）與**格線**（要開才有）。
    容差用螢幕像素換算回畫布：不然縮到 30% 檢視時 6px 的容差在畫面上只有 2px，根本吸不到。 */

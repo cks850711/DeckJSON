@@ -4,8 +4,7 @@ async function snapshotDataUrl(pg,fmt,scale){
   // 裁切模式的暗化與格線是編輯輔助，比照 selIds 一併關掉再拍（不關的話拍到的圖只有 35% 亮度）
   const wasPage=APP.page, wasSel=[...APP.selIds], wasCrop=APP.cropping;
   APP.page=pg.id; APP.selIds=[]; APP.cropping=null; renderStage();
-  const prevT=stage.style.transform, prevM=stage.style.margin;
-  stage.style.transform='none'; stage.style.margin='0'; stage.classList.add('capturing');
+  stage.classList.add('capturing');   // 同時拿掉縮放與外距（行內值由 .capturing 規則壓過，不必存回）
   // 把遮罩/輔助線暫時移出 DOM（html2canvas 1.4.1 對 display:none 半透明層仍會畫），擷取後放回原位
   const hideEls=[...stage.querySelectorAll('.outmask,.safezone,#selBox,#marquee')];
   const anchors=hideEls.map(el=>{ const a=document.createComment(''); el.parentNode.replaceChild(a,el); return a; });
@@ -25,7 +24,7 @@ async function snapshotDataUrl(pg,fmt,scale){
     const sw=Math.max(1,Math.round(im.offsetWidth/s)), sh=Math.max(1,Math.round(im.offsetHeight/s));
     const cv=document.createElement('canvas'); cv.width=sw; cv.height=sh;
     cv.getContext('2d').drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)/2,sw,sh,0,0,sw,sh);
-    cv.style.cssText='width:100%;height:100%;display:block';
+    cv.className='coverCv';
     cv.style.borderRadius=getComputedStyle(im).borderRadius;   // 圓形裁切要跟著搬
     im.parentNode.replaceChild(cv,im);
     covers.push([im,cv]);
@@ -38,7 +37,7 @@ async function snapshotDataUrl(pg,fmt,scale){
   }finally{
     covers.forEach(([im,cv])=>{ if(cv.parentNode) cv.parentNode.replaceChild(im,cv); });
     anchors.forEach((a,i)=>a.parentNode.replaceChild(hideEls[i],a));
-    stage.classList.remove('capturing'); stage.style.transform=prevT; stage.style.margin=prevM;
+    stage.classList.remove('capturing');
     APP.page=wasPage; APP.selIds=wasSel; APP.cropping=wasCrop; renderStage();
   }
   return url;

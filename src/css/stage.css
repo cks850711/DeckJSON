@@ -8,13 +8,15 @@
   /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
   #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
-  #stage.capturing{box-shadow:none!important}
+  /* 畫布的縮放（transform）與置中外距（margin）是 applyStage／setZoom 寫在 #stage 的行內值，
+     擷取時要拿掉（輸出是原尺寸、不位移），所以得用 !important 壓過行內值；不必存回，拿掉 class 就恢復 */
+  #stage.capturing{box-shadow:none!important;transform:none!important;margin:0!important}
   #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
   #stage.capturing :is(.el,.mel){outline:none!important}
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
-  :is(.el,.mel){transform-origin:50% 50%}   /* 旋轉繞框中心 */
+  :is(.el,.mel,#selBox){transform-origin:50% 50%}   /* 旋轉繞框中心；選取框跟著元素轉，原點要一致 */
   /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
   /* ⚠ .mel 只是「不可互動」的標記，排版一律沿用 .el 的規則——
      下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
@@ -99,6 +101,8 @@
      否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。字級值是量測框自己的
      （clipboard.js 依 PASTE_TBL_PT 寫在框上），子孫一律繼承。欄寬屬性（Excel 的 width=）
      不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。 */
+  /* 容器預設寬是 STAGE_W（clipboard.js 寫在行內），來源有絕對欄寬時要放寬到不會壓縮表格，故需壓過行內寬度 */
+  #pasteMeasure.wide{width:99999px!important}
   #pasteMeasure table{border-collapse:collapse}
   #pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}
   /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
@@ -111,6 +115,8 @@
   #pasteMeasure *{font-size:inherit!important;line-height:1.2!important;margin:0!important}
   :is(.el,.mel) svg{display:block;overflow:visible}
   :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+  /* 快照擷取時代替 object-fit:cover 影片封面的 canvas（見 ui/snapshot.js），尺寸與 img 一致 */
+  :is(.el,.mel) canvas.coverCv{width:100%;height:100%;display:block}
   /* 圖片裁切：外層開視窗（overflow:hidden），內層 img 被放大並偏移，只露出 crop 指定的區域。
      這與 OOXML srcRect 的語義一模一樣（裁切後的區域 stretch 填滿整個框），畫布與 pptx 因此
      不需要各算一套。.el 本身不能設 overflow:hidden——形狀的陰影／端點箭頭要溢出。 */
@@ -133,6 +139,8 @@
   :is(.el,.mel) .chartCover{position:absolute;inset:0;z-index:2}
   .el [contenteditable]{outline:1.5px solid var(--accent);cursor:text;min-height:1em}
   #selBox{position:absolute;pointer-events:none;outline:1.5px solid var(--accent);z-index:30}
+  #selBox.multi{outline:1.5px dashed var(--accent)}              /* 多選：群組包圍盒 */
+  #selBox.line{outline:1px dashed rgba(77,157,224,.4)}           /* 線條類：淡虛線，把手在兩端點 */
   .rh{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;pointer-events:auto;z-index:31}
   .rh[data-dir=nw]{left:-6px;top:-6px;cursor:nwse-resize}
   .rh[data-dir=n]{left:calc(50% - 5px);top:-6px;cursor:ns-resize}

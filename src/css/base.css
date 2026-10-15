@@ -43,3 +43,11 @@
   /* 換行提醒：只是提醒，不用警告的紅色；可點，按一下跳到下一處 */
   #breakHint{color:var(--fg-dim);font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   #breakHint:hover{color:var(--fg);text-decoration:underline}
+  /* 離屏的暫時元素（掛在 uiRoot()）：複製退路的 textarea、形狀規則偵測用的 1×1 svg */
+  .ghostTa{position:fixed;left:-9999px;top:0}
+  .ghostSvg{position:absolute;left:-9999px;top:0;width:1px;height:1px}
+  /* 拖曳欄寬／列高時跟著游標的數值懸浮；隱藏靠 hidden 屬性 */
+  .dragTip{position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;
+    padding:3px 7px;border-radius:4px;pointer-events:none;white-space:pre;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4}
+  .dragTip[hidden]{display:none}

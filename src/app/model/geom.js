@@ -578,10 +578,10 @@ function ruleChangesLook(el){
   const withFill=paths.filter(sp=>sp.d&&sp.fill!=='none'&&(sp.d.match(/M/g)||[]).length>1);
   if(!withFill.length) return false;
   const svg=document.createElementNS(NS,'svg');
-  svg.style.cssText='position:absolute;left:-9999px;top:0;width:1px;height:1px';
+  svg.setAttribute('class','ghostSvg');
   const a=document.createElementNS(NS,'path'), b=document.createElementNS(NS,'path');
   a.setAttribute('fill-rule','nonzero'); b.setAttribute('fill-rule','evenodd');
-  svg.appendChild(a); svg.appendChild(b); document.body.appendChild(svg);
+  svg.appendChild(a); svg.appendChild(b); uiRoot().appendChild(svg);
   const pt=svg.createSVGPoint(), W=Math.max(1,el.w), H=Math.max(1,el.h), N=48;
   let differ=false;
   try{

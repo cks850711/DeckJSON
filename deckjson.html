@@ -53,6 +53,14 @@
   /* 換行提醒：只是提醒，不用警告的紅色；可點，按一下跳到下一處 */
   #breakHint{color:var(--fg-dim);font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   #breakHint:hover{color:var(--fg);text-decoration:underline}
+  /* 離屏的暫時元素（掛在 uiRoot()）：複製退路的 textarea、形狀規則偵測用的 1×1 svg */
+  .ghostTa{position:fixed;left:-9999px;top:0}
+  .ghostSvg{position:absolute;left:-9999px;top:0;width:1px;height:1px}
+  /* 拖曳欄寬／列高時跟著游標的數值懸浮；隱藏靠 hidden 屬性 */
+  .dragTip{position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;
+    padding:3px 7px;border-radius:4px;pointer-events:none;white-space:pre;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4}
+  .dragTip[hidden]{display:none}
   /* ── 工具列：單排 46px。舊版靠 flex-wrap 疊成四排（實測 179px，佔視窗高 18%），
        且命令／工具／檢視設定／狀態顯示四類東西長得一模一樣。現在只留命令與工具，
        檢視設定下放畫布浮動列、狀態顯示下放底部狀態列。 ── */
@@ -180,13 +188,15 @@
   /* 格線：純檢視輔助，墊在所有內容之下（含 z-index:0 的母版元素，靠 DOM 順序排在最前） */
   #gridLayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
   /* 快照擷取時隱藏輔助線／把手／淡框、關陰影（html2canvas 1.4.1 會把 box-shadow 誤畫成灰塊），只留投影片內容 */
-  #stage.capturing{box-shadow:none!important}
+  /* 畫布的縮放（transform）與置中外距（margin）是 applyStage／setZoom 寫在 #stage 的行內值，
+     擷取時要拿掉（輸出是原尺寸、不位移），所以得用 !important 壓過行內值；不必存回，拿掉 class 就恢復 */
+  #stage.capturing{box-shadow:none!important;transform:none!important;margin:0!important}
   #stage.capturing .outmask,#stage.capturing .safezone,#stage.capturing #selBox,#stage.capturing #marquee,#stage.capturing #gridLayer{display:none!important}
   #stage.capturing :is(.el,.mel){outline:none!important}
   .safezone{position:absolute;background:rgba(120,120,120,.12);border:1px dashed rgba(120,120,120,.55);color:rgba(90,90,90,.7);font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:40}
   .safezone.hit{background:rgba(224,93,93,.18);border-color:var(--danger);color:var(--danger)}
   .el{position:absolute;cursor:move}
-  :is(.el,.mel){transform-origin:50% 50%}   /* 旋轉繞框中心 */
+  :is(.el,.mel,#selBox){transform-origin:50% 50%}   /* 旋轉繞框中心；選取框跟著元素轉，原點要一致 */
   /* 母版元素在一般頁上的樣子：墊最底、完全不可互動（要改得進「編輯母版」） */
   /* ⚠ .mel 只是「不可互動」的標記，排版一律沿用 .el 的規則——
      下方 `:is(.el,.mel) X` 的 :is 就是為此而寫。寫成 `.el X` 會讓母版元素排版全錯：
@@ -271,6 +281,8 @@
      否則來源 24pt 量出來的列高會比實際渲染高一倍、來源 8pt 又會太窄。字級值是量測框自己的
      （clipboard.js 依 PASTE_TBL_PT 寫在框上），子孫一律繼承。欄寬屬性（Excel 的 width=）
      不受影響，那是版面寬度不是字級推導的。上下標靠 vertical-align 判定，壓字級不影響偵測。 */
+  /* 容器預設寬是 STAGE_W（clipboard.js 寫在行內），來源有絕對欄寬時要放寬到不會壓縮表格，故需壓過行內寬度 */
+  #pasteMeasure.wide{width:99999px!important}
   #pasteMeasure table{border-collapse:collapse}
   #pasteMeasure td,#pasteMeasure th{padding:0 3px;line-height:1.2}
   /* 格內圖片統一成區塊置中，與 md-table-converter 的預覽（.obs-tbl img.cell-img）逐字對齊：
@@ -283,6 +295,8 @@
   #pasteMeasure *{font-size:inherit!important;line-height:1.2!important;margin:0!important}
   :is(.el,.mel) svg{display:block;overflow:visible}
   :is(.el,.mel) img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+  /* 快照擷取時代替 object-fit:cover 影片封面的 canvas（見 ui/snapshot.js），尺寸與 img 一致 */
+  :is(.el,.mel) canvas.coverCv{width:100%;height:100%;display:block}
   /* 圖片裁切：外層開視窗（overflow:hidden），內層 img 被放大並偏移，只露出 crop 指定的區域。
      這與 OOXML srcRect 的語義一模一樣（裁切後的區域 stretch 填滿整個框），畫布與 pptx 因此
      不需要各算一套。.el 本身不能設 overflow:hidden——形狀的陰影／端點箭頭要溢出。 */
@@ -305,6 +319,8 @@
   :is(.el,.mel) .chartCover{position:absolute;inset:0;z-index:2}
   .el [contenteditable]{outline:1.5px solid var(--accent);cursor:text;min-height:1em}
   #selBox{position:absolute;pointer-events:none;outline:1.5px solid var(--accent);z-index:30}
+  #selBox.multi{outline:1.5px dashed var(--accent)}              /* 多選：群組包圍盒 */
+  #selBox.line{outline:1px dashed rgba(77,157,224,.4)}           /* 線條類：淡虛線，把手在兩端點 */
   .rh{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;pointer-events:auto;z-index:31}
   .rh[data-dir=nw]{left:-6px;top:-6px;cursor:nwse-resize}
   .rh[data-dir=n]{left:calc(50% - 5px);top:-6px;cursor:ns-resize}
@@ -3480,6 +3496,8 @@ function defaultProfile(){
 const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
+// 本工具的根容器。浮在畫面上的暫時元素掛這裡，樣式表只作用在根容器底下；單機版它就是 document.body
+const uiRoot=()=>$('main').parentNode;
 const NS='http://www.w3.org/2000/svg';
 /* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
 function setIcoBtn(b,ic,txt,title){
@@ -4437,10 +4455,10 @@ function ruleChangesLook(el){
   const withFill=paths.filter(sp=>sp.d&&sp.fill!=='none'&&(sp.d.match(/M/g)||[]).length>1);
   if(!withFill.length) return false;
   const svg=document.createElementNS(NS,'svg');
-  svg.style.cssText='position:absolute;left:-9999px;top:0;width:1px;height:1px';
+  svg.setAttribute('class','ghostSvg');
   const a=document.createElementNS(NS,'path'), b=document.createElementNS(NS,'path');
   a.setAttribute('fill-rule','nonzero'); b.setAttribute('fill-rule','evenodd');
-  svg.appendChild(a); svg.appendChild(b); document.body.appendChild(svg);
+  svg.appendChild(a); svg.appendChild(b); uiRoot().appendChild(svg);
   const pt=svg.createSVGPoint(), W=Math.max(1,el.w), H=Math.max(1,el.h), N=48;
   let differ=false;
   try{
@@ -5156,8 +5174,8 @@ function updateSelBox(){
     for(const el of els){ const b=stage.querySelector(`.el[data-id="${el.id}"]`); if(b) b.classList.add('multisel'); }
     const bb=groupBBox(els);
     sb.style.left=bb.x+'px'; sb.style.top=bb.y+'px'; sb.style.width=bb.w+'px'; sb.style.height=bb.h+'px';
-    sb.style.transform='';
-    sb.style.outline='1.5px dashed var(--accent)'; sb.replaceChildren();
+    sb.style.removeProperty('transform');   // 清除單選時寫入的旋轉
+    sb.classList.add('multi'); sb.classList.remove('line'); sb.replaceChildren();
     for(const d of ['nw','ne','se','sw']){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; hd.dataset.group='1'; sb.appendChild(hd); }
     return;
   }
@@ -5169,10 +5187,10 @@ function updateSelBox(){
   sb.style.width=w+'px'; sb.style.height=h+'px';
   // 旋轉時選取框與把手跟著轉（顯示對齊；resize 已把螢幕位移換算回本地座標，故仍正確）
   sb.style.transform=(el.rot&&!isLineEl(el))? `rotate(${el.rot}deg)`:'';
-  sb.style.transformOrigin='50% 50%';
+  sb.classList.remove('multi');
   sb.replaceChildren();
+  sb.classList.toggle('line',isLineEl(el));   // 線條類：淡虛線外框，兩端點把手
   if(isLineEl(el)){   // 線條類：兩端點把手，不用包圍盒縮放
-    sb.style.outline='1px dashed rgba(77,157,224,.4)';
     const E=lineEnds(el);
     for(const [px,py,end] of [[E.x1,E.y1,'1'],[E.x2,E.y2,'2']]){
       const hd=document.createElement('div'); hd.className='lh'; hd.dataset.end=end;
@@ -5187,7 +5205,6 @@ function updateSelBox(){
     });
     return;
   }
-  sb.style.outline='';
   const dirs= el.type==='image'? ['nw','ne','se','sw'] : ['nw','n','ne','e','se','s','sw','w'];
   for(const d of dirs){ const hd=document.createElement('div'); hd.className='rh'; hd.dataset.dir=d; sb.appendChild(hd); }
   if(el.type==='shape'){   // adj 黃點：位置直接由 preset 的 ahLst pos 求值（翻轉時跟著鏡射）
@@ -8416,14 +8433,12 @@ let dragTip=null;
 function showDragTipText(e,text){
   if(!dragTip){
     dragTip=document.createElement('div');
-    dragTip.style.cssText='position:fixed;z-index:999;background:rgba(30,32,38,.92);color:#fff;font-size:11px;'
-      +'padding:3px 7px;border-radius:4px;pointer-events:none;white-space:pre;'
-      +'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4;';
-    document.body.appendChild(dragTip);
+    dragTip.className='dragTip'; dragTip.hidden=true;
+    uiRoot().appendChild(dragTip);
   }
   dragTip.textContent=text;
   dragTip.style.left=(e.clientX+14)+'px'; dragTip.style.top=(e.clientY+18)+'px';
-  dragTip.style.display='block';
+  dragTip.hidden=false;
 }
 // 尺寸懸浮：多行時各欄右對齊、位數不足補空白（等寬字型），順序 px→pt→cm
 function fmtDims(rows){   // rows: [[label,px],...]
@@ -8435,7 +8450,7 @@ function fmtDims(rows){   // rows: [[label,px],...]
   return cells.map(c=>`${padLab(c[0])} ${c[1].padStart(w[0])}px ${c[2].padStart(w[1])}pt ${c[3].padStart(w[2])}cm`).join('\n');
 }
 function showDragTip(e,label,px){ showDragTipText(e,fmtDims([[label,px]])); }
-function hideDragTip(){ if(dragTip) dragTip.style.display='none'; }
+function hideDragTip(){ if(dragTip) dragTip.hidden=true; }
 /* ================= 吸附 =================
    兩種來源：**輔助線**（投影片中線／邊界／預留區四邊，一直都在）與**格線**（要開才有）。
    容差用螢幕像素換算回畫布：不然縮到 30% 檢視時 6px 的容差在畫面上只有 2px，根本吸不到。 */
@@ -9425,9 +9440,9 @@ async function htmlToTableEl(html){
          實測 `<table style="width:100%">` 配 td 的 px 寬（Word 常見組合），330px 的表量成 99998px。
          既然這條路已經確定有絕對寬度可用，百分比就是多餘且有害的資訊，直接拿掉。*/
       for(const el of [tbl, ...cols, ...items.map(it=>it.td)]){
-        if(wOf(el).some(v=>PCT_W.test(v))){ el.style.width='auto'; el.removeAttribute('width'); }
+        if(wOf(el).some(v=>PCT_W.test(v))){ el.style.removeProperty('width'); el.removeAttribute('width'); }   // 清除來源行內的百分比寬
       }
-      box.style.width='99999px';
+      box.classList.add('wide');   // 見 css/stage.css 的 #pasteMeasure.wide
     }
     await waitImgs(box);   // 必須在任何 offsetWidth／offsetHeight 之前
     // 欄寬／列高：只拿「沒有跨格」的格子量，跨格的量到的是合併後的總寬，會把該欄撐爆
@@ -11044,8 +11059,8 @@ $('#btnPageJsonCopyRaw').onclick=async()=>{
   catch(err){
     // 面板的 textarea 裝的是遮罩版，不能拿來當退路，改用臨時節點
     const ta=document.createElement('textarea');
-    ta.value=t; ta.style.cssText='position:fixed;left:-9999px;top:0';
-    document.body.appendChild(ta); ta.select();
+    ta.value=t; ta.className='ghostTa';
+    uiRoot().appendChild(ta); ta.select();
     try{ document.execCommand('copy'); done(); }
     catch(e2){ alert(_t('複製失敗：{0}',e2.message)); }
     finally{ ta.remove(); }
@@ -11064,7 +11079,7 @@ function makeDraggable(pnl,head,skipSel){
     if(skipSel&&e.target.closest&&e.target.closest(skipSel)) return;
     const r=pnl.getBoundingClientRect(); d={dx:e.clientX-r.left,dy:e.clientY-r.top};
     // 先把 right/bottom 定位換算成 left/top，之後才能單靠這兩個值移動
-    pnl.style.right='auto'; pnl.style.bottom='auto';
+    pnl.style.removeProperty('right'); pnl.style.removeProperty('bottom');   // 清除 HTML 預設寫的行內位置
     pnl.style.left=r.left+'px'; pnl.style.top=r.top+'px';
     head.setPointerCapture(e.pointerId);
   });
@@ -11623,8 +11638,7 @@ async function snapshotDataUrl(pg,fmt,scale){
   // 裁切模式的暗化與格線是編輯輔助，比照 selIds 一併關掉再拍（不關的話拍到的圖只有 35% 亮度）
   const wasPage=APP.page, wasSel=[...APP.selIds], wasCrop=APP.cropping;
   APP.page=pg.id; APP.selIds=[]; APP.cropping=null; renderStage();
-  const prevT=stage.style.transform, prevM=stage.style.margin;
-  stage.style.transform='none'; stage.style.margin='0'; stage.classList.add('capturing');
+  stage.classList.add('capturing');   // 同時拿掉縮放與外距（行內值由 .capturing 規則壓過，不必存回）
   // 把遮罩/輔助線暫時移出 DOM（html2canvas 1.4.1 對 display:none 半透明層仍會畫），擷取後放回原位
   const hideEls=[...stage.querySelectorAll('.outmask,.safezone,#selBox,#marquee')];
   const anchors=hideEls.map(el=>{ const a=document.createComment(''); el.parentNode.replaceChild(a,el); return a; });
@@ -11644,7 +11658,7 @@ async function snapshotDataUrl(pg,fmt,scale){
     const sw=Math.max(1,Math.round(im.offsetWidth/s)), sh=Math.max(1,Math.round(im.offsetHeight/s));
     const cv=document.createElement('canvas'); cv.width=sw; cv.height=sh;
     cv.getContext('2d').drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)/2,sw,sh,0,0,sw,sh);
-    cv.style.cssText='width:100%;height:100%;display:block';
+    cv.className='coverCv';
     cv.style.borderRadius=getComputedStyle(im).borderRadius;   // 圓形裁切要跟著搬
     im.parentNode.replaceChild(cv,im);
     covers.push([im,cv]);
@@ -11657,7 +11671,7 @@ async function snapshotDataUrl(pg,fmt,scale){
   }finally{
     covers.forEach(([im,cv])=>{ if(cv.parentNode) cv.parentNode.replaceChild(im,cv); });
     anchors.forEach((a,i)=>a.parentNode.replaceChild(hideEls[i],a));
-    stage.classList.remove('capturing'); stage.style.transform=prevT; stage.style.margin=prevM;
+    stage.classList.remove('capturing');
     APP.page=wasPage; APP.selIds=wasSel; APP.cropping=wasCrop; renderStage();
   }
   return url;

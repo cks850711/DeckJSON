@@ -78,6 +78,8 @@ function defaultProfile(){
 const BUILD_PROFILE=null;
 const FONTS=defaultProfile().fonts;   // 字體欄位的補值基準（deck.fonts 缺鍵時填這裡）
 const $=s=>document.querySelector(s);
+// 本工具的根容器。浮在畫面上的暫時元素掛這裡，樣式表只作用在根容器底下；單機版它就是 document.body
+const uiRoot=()=>$('main').parentNode;
 const NS='http://www.w3.org/2000/svg';
 /* 把 sprite 塞進任何按鈕：btnRow 走 {ic,txt}，手工建的按鈕走這支。 */
 function setIcoBtn(b,ic,txt,title){

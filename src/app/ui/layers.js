@@ -8,7 +8,7 @@ function makeDraggable(pnl,head,skipSel){
     if(skipSel&&e.target.closest&&e.target.closest(skipSel)) return;
     const r=pnl.getBoundingClientRect(); d={dx:e.clientX-r.left,dy:e.clientY-r.top};
     // 先把 right/bottom 定位換算成 left/top，之後才能單靠這兩個值移動
-    pnl.style.right='auto'; pnl.style.bottom='auto';
+    pnl.style.removeProperty('right'); pnl.style.removeProperty('bottom');   // 清除 HTML 預設寫的行內位置
     pnl.style.left=r.left+'px'; pnl.style.top=r.top+'px';
     head.setPointerCapture(e.pointerId);
   });
