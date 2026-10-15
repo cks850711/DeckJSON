@@ -41,13 +41,13 @@ function i18nStatic(root){
     return Object.prototype.hasOwnProperty.call(UI_DICT,k)&&typeof UI_DICT[k]==='string'? UI_DICT[k] : null; };
   /* 帶 data-i18n 的元素整段 innerHTML 當鍵：句中夾 <b>／<code> 的長說明拆成碎片各自翻，
      英文語序會亂。瀏覽器序列化 innerHTML 時會改寫寫法（<use/> 變 <use></use>），
-     所以字典裡的鍵也先過一次同樣的解析再比對。 */
-  const ser=h=>{ const t=document.createElement('template'); t.innerHTML=h; return t.innerHTML.replace(/\s+/g,' ').trim(); };
+     所以字典裡的鍵也先過一次同樣的解析再比對（htmlKey）。換上去的字典值走 setHTML。 */
+  const ser=h=>htmlKey(h).replace(/\s+/g,' ').trim();
   const blocks=root.querySelectorAll('[data-i18n]');
   if(blocks.length){
     const byHtml=new Map();
     for(const k of Object.keys(UI_DICT)) if(k.includes('<')&&typeof UI_DICT[k]==='string') byHtml.set(ser(k),UI_DICT[k]);
-    for(const el of blocks){ const v=byHtml.get(ser(el.innerHTML)); if(v!=null) el.innerHTML=v; }
+    for(const el of blocks){ const v=byHtml.get(ser(el.innerHTML)); if(v!=null) setHTML(el,v); }
   }
   const skip=n=>n.closest&&n.closest('#helpBody,script,style,template,[data-i18n],[translate="no"]');
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);

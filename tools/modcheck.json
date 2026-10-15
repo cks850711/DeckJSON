@@ -1,7 +1,7 @@
 {
   "//layers": "由下往上。下層只准被上層引用。模組名是 src/app/ 底下去掉 .js 的路徑，「資料夾/*」代表整個資料夾。",
   "layers": [
-    ["core/i18n", "core/config"],
+    ["core/html", "core/i18n", "core/config"],
     ["model/*", "chart/native-map"],
     ["core/state", "io/*"],
     ["render/*", "media/*", "export/*"],

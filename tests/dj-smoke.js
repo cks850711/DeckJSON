@@ -648,6 +648,67 @@ export default async function run() {
     const kw = DJ.lint('k1');
     ok('security: lint hints never show a function for a prototype-key field name',
       kw.some(w => w.startsWith('kv.constructor')) && !kw.some(w => /native code|function/.test(w)), kw.filter(w => /constructor/.test(w)));
+
+    // ---- 安全：介面寫入 HTML 的出口 setHTML ----
+    // 這一段是本檔唯一直接呼叫內部函式的地方：面板、說明、提示的帶標記字串都經由 setHTML／appendHTML 放進頁面，
+    // 經由 DJ 送不進任意字串，只能直接打出口本身。目標掛在文件上（掛上去才會載入圖片、觸發事件）
+    window.__djx = [];
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(host);
+    const svgHost = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    host.appendChild(svgHost);
+    const hostile = {
+      'img onerror': `<img src=x onerror="${X('h.img')}">`,
+      'svg onload': `<svg onload="${X('h.svg')}"></svg>`,
+      'use data: URL': `<svg><use href="data:image/svg+xml,%3Csvg id='x' xmlns='http://www.w3.org/2000/svg'%3E%3Cimage href='x' onerror='parent.${X('h.use')}'/%3E%3C/svg%3E#x"/></svg>`,
+      'use JAVASCRIPT: URL': `<svg><use href="JAVASCRIPT:${X('h.usejs')}"/></svg>`,
+      'a javascript: URL': `<a id="hA" href="javascript:${X('h.a')}">a</a>`,
+      'svg a xlink:href': `<svg><a xlink:href="javascript:${X('h.xlink')}"><text>t</text></a></svg>`,
+      'iframe srcdoc': `<iframe srcdoc="<script>parent.${X('h.iframe')}</script>"></iframe>`,
+      'script': `<script>${X('h.script')}</script>`,
+      'details ontoggle': `<details open ontoggle="${X('h.details')}">d</details>`,
+      'b onmouseover': `<b onmouseover="${X('h.b')}" onclick="${X('h.b2')}">b</b>`,
+      'svg animate onbegin': `<svg><animate onbegin="${X('h.animate')}" attributeName="x" dur="1s"/></svg>`,
+      'noscript mXSS': `<noscript><p title="</noscript><img src=x onerror=${X('h.noscript')}>"></noscript>`,
+      'style mXSS': `<style><img src=x onerror=${X('h.style1')}></style><style></style><img src=x onerror=${X('h.style2')}>`,
+      'math mXSS': `<math><mtext><table><mglyph><style><img src=x onerror=${X('h.math')}></style></mglyph></table></mtext></math>`,
+      'nested template': `<template><template><img src=x onerror="${X('h.tpl')}"></template></template><div><template shadowrootmode="open"><img src=x onerror="${X('h.shadow')}"></template></div>`,
+      'svg foreignObject': `<svg><foreignObject><img src=x onerror="${X('h.fo')}"></foreignObject></svg>`,
+    };
+    const leftovers = [];
+    for (const [name, html] of Object.entries(hostile)) {
+      setHTML(host, html);
+      const bad = host.querySelectorAll('img,iframe,script,style,a,template,noscript,foreignObject,animate,math,[onerror],[onload],[ontoggle],[onbegin],[onclick],[onmouseover],[id],[href]:not(use),[*|href]:not(use)');
+      const useHrefs = [...host.querySelectorAll('use')].map(u => u.getAttribute('href')).filter(h => h != null);
+      if (bad.length || useHrefs.length) leftovers.push(name);
+    }
+    host.replaceChildren();
+    for (const html of Object.values(hostile)) appendHTML(host, html);
+    await tick(500);
+    ok('security: setHTML/appendHTML run nothing from hostile markup', window.__djx.length === 0, window.__djx);
+    ok('security: setHTML leaves no hostile element, handler, id or URL behind', !leftovers.length, leftovers);
+    setHTML(host, '<span style="background:url(https://example.invalid/a.png);color:red">1</span>'
+      + '<span style="background-image:image-set(\'x.png\' 1x)">2</span><span style="BACKGROUND:URL(x.png)">3</span>'
+      + '<span style="--v:url(x.png);font-size:10px">4</span>');
+    const hst = [...host.children].map(s => s.getAttribute('style'));
+    ok('security: setHTML keeps only allowed CSS properties in style', hst[0] === 'color: red;' && hst[1] === null && hst[2] === null
+      && hst[3] === 'font-size: 10px;', hst);
+    setHTML(svgHost, '<path d="M0 0L9 9" fill="URL(https://example.invalid/#p)" stroke="url(#p)"/><path d="M0 0" stroke="#ADB5BD"/>');
+    const ps = [...svgHost.children];
+    ok('security: setHTML drops url() in SVG paint attributes, any case', ps.length === 2 && !ps[0].hasAttribute('fill')
+      && !ps[0].hasAttribute('stroke') && ps[1].getAttribute('stroke') === '#ADB5BD', svgHost.innerHTML);
+    ok('security: setHTML parses into an SVG target as SVG', ps.every(p => p.namespaceURI === 'http://www.w3.org/2000/svg'));
+    setHTML(host, '<span id="propPanel">x</span><b name="stage">y</b>');
+    ok('security: setHTML strips id and name (no DOM clobbering)', document.querySelectorAll('#propPanel').length === 1
+      && !host.querySelector('[id],[name]'), host.innerHTML);
+    // 允許的內容原樣保留：翻譯字串的標記、圖示、行內樣式的寫法
+    const okHtml = '<span class="unit" style="opacity:.55;font-size:10px">a <b>b</b> <code>c</code> <kbd>d</kbd><br></span>'
+      + '<svg class="ic"><use href="#ic-copy"></use></svg><label style="min-width:auto">e</label>';
+    setHTML(host, okHtml);
+    ok('setHTML: allowed markup comes through unchanged', host.innerHTML === okHtml, host.innerHTML);
+    ok('htmlKey: serializes like the browser', htmlKey('<svg class="ic"><use href="#ic-copy"/></svg>') === '<svg class="ic"><use href="#ic-copy"></use></svg>');
+    host.remove();
     delete window.__djx;
     await DJ.load(fixture());
 
