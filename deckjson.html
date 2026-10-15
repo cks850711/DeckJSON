@@ -480,6 +480,8 @@
   :is(#propPanel,.ppctl) .row.gap3{gap:3px}
   :is(#propPanel,.ppctl) .row label.mwAuto{min-width:auto}
   :is(#propPanel,.ppctl) .row button.gsBtn{flex:1;padding:5px 2px}   /* 格距四顆一列 */
+  :is(#propPanel,.ppctl) .row label.scChk{display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer}   /* 縮放列的「含字級」核取 */
+  .ctlOff{opacity:.5}                                                  /* 停用或鎖定的控件標籤 */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);
     display:flex;align-items:center;justify-content:center;z-index:50}
   .modal[hidden]{display:none}
@@ -5998,7 +6000,7 @@ function gradRows(el){
   g.stops.forEach((st,i)=>{
     const row=colorRow(_t('色標 {0}',i+1),st.color,v=>{ st.color=v||'FFFFFF'; },false);
     const pos=document.createElement('input'); pos.type='number'; pos.min=0; pos.max=100; pos.step=5;
-    pos.value=st.pos; pos.style.width='58px'; pos.title=_t('位置（%）');
+    pos.value=st.pos; pos.classList.add('w58'); pos.title=_t('位置（%）');
     pos.onchange=()=>{ commitUndo();
       st.pos=Math.max(0,Math.min(100,Math.round(+pos.value)||0));
       g.stops.sort((a,b)=>a.pos-b.pos);   // 立刻排序，面板順序與實際漸變順序永遠一致
@@ -6042,7 +6044,7 @@ function shadowRows(el){
 function dashRow(el){
   const row=document.createElement('div'); row.className='row';
   row.appendChild(Object.assign(document.createElement('label'),{textContent:_t('線型')}));
-  const sel=document.createElement('select'); sel.style.flex='1'; sel.style.minWidth='72px';
+  const sel=document.createElement('select'); sel.classList.add('fx','mw72');
   sel.title=_t('匯出為 PPT 原生 prstDash；畫布用 stroke-dasharray 預覽（隨線寬縮放）');
   setHTML(sel,DASH_KINDS.map(d=>`<option value="${d.key}">${d.label}</option>`).join(''));
   sel.value=dashKind(el).key;
@@ -6059,7 +6061,7 @@ function linkRows(el,note){
   wrap.appendChild(subTitle(_t('超連結（整個物件）')));
   const r=document.createElement('div'); r.className='row';
   r.appendChild(Object.assign(document.createElement('label'),{textContent:_t('連結')}));
-  const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='80px';
+  const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw80');
   i.placeholder=_t('https://… 或 #3');
   i.value= el.link? (el.link.url||('#'+el.link.slide)) : '';
   i.title=_t('填網址；或填「#頁碼」跳到本簡報該頁。整個{0}變成可點擊。',note||_t('物件'));
@@ -6073,7 +6075,7 @@ function linkRows(el,note){
   if(el.link){
     const tr=document.createElement('div'); tr.className='row';
     tr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('提示')}));
-    const ti=document.createElement('input'); ti.type='text'; ti.style.flex='1'; ti.style.minWidth='80px';
+    const ti=document.createElement('input'); ti.type='text'; ti.classList.add('fx','mw80');
     ti.placeholder=_t('滑過時顯示（選填）'); ti.value=el.link.tooltip||'';
     ti.title=_t('PowerPoint 中滑鼠停在物件上顯示的提示文字（OOXML hlinkClick 的 tooltip）');
     ti.onchange=()=>{ commitUndo(); const v=ti.value.trim();
@@ -6118,7 +6120,7 @@ function opacityRow(els){
   const row=document.createElement('div'); row.className='row'; setHTML(row,_t('<label>不透明</label>'));
   const cur=(els.length===1&&els[0].opacity!=null)?els[0].opacity:100;
   const inp=document.createElement('input'); inp.type='range'; inp.min=0; inp.max=100; inp.step=1; inp.value=cur;
-  inp.style.flex='1'; inp.style.minWidth='70px';
+  inp.classList.add('fx','mw70');
   const val=Object.assign(document.createElement('span'),{className:'unit'}); val.textContent=cur+'%';
   let dirty=false;
   inp.addEventListener('pointerdown',()=>dirty=false);
@@ -6369,8 +6371,8 @@ function renderPropsBody(){
   ]));
   // 縮放滑桿（0.1–2.0×，停頓於 0.5/0.8/1.0/1.2/1.5）＋含字級（預設開）；放開歸回 1.0×
   pp.appendChild(secTitle(_t('變形')));
-  const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; setHTML(scWrap,_t('<label>縮放</label>'));
-  const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.style.flex='1'; sl.style.minWidth='90px'; sl.setAttribute('list','scaleTicks');
+  const scWrap=document.createElement('div'); scWrap.className='row'; setHTML(scWrap,_t('<label>縮放</label>'));
+  const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.classList.add('fx','mw90'); sl.setAttribute('list','scaleTicks');
   const scVal=Object.assign(document.createElement('span'),{className:'unit'}); scVal.textContent='1.00×';
   const DET=[0.5,0.8,1,1.2,1.5]; let scOrig=null;
   sl.addEventListener('pointerdown',()=>{ scOrig=structuredClone(el); });
@@ -6390,8 +6392,8 @@ function renderPropsBody(){
     }
     scOrig=null; sl.value=1; renderProps();
   };
-  const scChk=document.createElement('label'); scChk.style.cssText='display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer'; scChk.title=_t('縮放時字級一起放大');
-  const scCb=document.createElement('input'); scCb.type='checkbox'; scCb.checked=APP.scaleFont; scCb.style.width='auto'; scCb.onchange=()=>APP.scaleFont=scCb.checked;
+  const scChk=document.createElement('label'); scChk.className='scChk'; scChk.title=_t('縮放時字級一起放大');
+  const scCb=document.createElement('input'); scCb.type='checkbox'; scCb.checked=APP.scaleFont; scCb.classList.add('wAuto'); scCb.onchange=()=>APP.scaleFont=scCb.checked;
   scChk.appendChild(scCb); scChk.appendChild(document.createTextNode(_t('含字級')));
   scWrap.appendChild(sl); scWrap.appendChild(scVal); scWrap.appendChild(scChk);
   pp.appendChild(scWrap);
@@ -6425,7 +6427,7 @@ function renderPropsBody(){
     const r=document.createElement('div'); r.className='row';
     setHTML(r,_t('<label>編輯端點</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('轉成可編輯端點'));
-    b.style.flex='1';
+    b.classList.add('fx');
     b.title=_t('把這個內建形狀拆成端點後進圖形編輯器（同 PowerPoint 的「編輯端點」）。單向不可逆');
     b.onclick=()=>toCustGeom(el);
     r.appendChild(b); pp.appendChild(r);
@@ -6435,7 +6437,7 @@ function renderPropsBody(){
     const r=document.createElement('div'); r.className='row';
     setHTML(r,_t('<label>自訂幾何</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('開啟圖形編輯器'));
-    b.style.flex='1'; b.onclick=()=>openGeomEditor(el);
+    b.classList.add('fx'); b.onclick=()=>openGeomEditor(el);
     r.appendChild(b); pp.appendChild(r);
   }
   // 形狀 adj 控點（黃點微調）：圓角/斜度/箭深/桿寬/尾標等，每參數一條滑桿，即時預覽、匯出注入原生 avLst
@@ -6448,7 +6450,7 @@ function renderPropsBody(){
       const ar=document.createElement('div'); ar.className='row'; setHTML(ar,`<label>${adjLabel(el.shape,mi)}</label>`);
       const ai=document.createElement('input'); ai.type='range';
       ai.min=Math.round(b.lo); ai.max=Math.round(b.hi); ai.step=Math.max(1,Math.round((b.hi-b.lo)/400));
-      ai.value=cur(); ai.style.flex='1'; ai.style.minWidth='70px';
+      ai.value=cur(); ai.classList.add('fx','mw70');
       const av=Object.assign(document.createElement('span'),{className:'unit'}); av.textContent=pct(cur());
       let adjDirty=false;
       ai.addEventListener('pointerdown',()=>adjDirty=false);
@@ -6666,7 +6668,7 @@ function propsText(pp,el){
     _t('文字超出框寬不折行（匯出 bodyPr wrap="none"）；適合單行標籤')]]));
   // 文字方向（直書／旋轉）：匯出為原生 bodyPr vert，不是把文字框整個轉角度
   {const vr=document.createElement('div'); vr.className='row'; setHTML(vr,_t('<label>文字方向</label>'));
-   const vs=document.createElement('select'); vs.style.flex='1';
+   const vs=document.createElement('select'); vs.classList.add('fx');
    setHTML(vs,'<option value="">'+_t('橫書')+'</option>'+Object.entries(VERT_MODES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join(''));
    vs.value=el.vert||'';
    vs.title=_t('匯出為原生 <a:bodyPr vert>：文字在框內轉向，框本身不轉（要轉整個框請用「旋轉」）');
@@ -6679,7 +6681,7 @@ function propsText(pp,el){
   pp.appendChild(numRow(_t('字距'),b.charSpacing||0,v=>setRunOpt(el,'charSpacing',v||undefined),
     {min:-5,max:30,step:0.5,unit:'pt',title:_t('字元間距（正值拉寬、負值收緊）')}));
   const ffr=document.createElement('div'); ffr.className='row'; setHTML(ffr,_t('<label>字型</label>'));
-  const ffi=document.createElement('input'); ffi.type='text'; ffi.style.flex='1'; ffi.style.minWidth='80px';
+  const ffi=document.createElement('input'); ffi.type='text'; ffi.classList.add('fx','mw80');
   ffi.placeholder=_t('沿用全域'); ffi.value=b.fontFace||'';
   ffi.title=_t('只覆寫此元素的字型（留空＝沿用頂端「字體」模式設定）。匯出時 latin/ea/cs 三槽都用此字型。');
   ffi.onchange=()=>{ commitUndo(); setRunOpt(el,'fontFace',ffi.value.trim()||undefined); renderStage(); renderProps(); };
@@ -6721,7 +6723,7 @@ function propsText(pp,el){
   // ── 超連結：外部網址或跳到本簡報某頁 ──
   pp.appendChild(subTitle(_t('超連結')));
   const lkr=document.createElement('div'); lkr.className='row'; setHTML(lkr,_t('<label>連結</label>'));
-  const lki=document.createElement('input'); lki.type='text'; lki.style.flex='1'; lki.style.minWidth='80px';
+  const lki=document.createElement('input'); lki.type='text'; lki.classList.add('fx','mw80');
   lki.placeholder=_t('https://… 或 #3');
   lki.value= b.link? (b.link.url||('#'+b.link.slide)) : '';
   lki.title=_t('填網址；或填「#頁碼」跳到本簡報該頁。PptxGenJS 會自動補底線（預覽同步顯示）。');
@@ -6777,7 +6779,7 @@ function propsImage(pp,el){
   pp.appendChild(checkRow([[_t('圓形裁切'),()=>!!el.round,v=>{ commitUndo();
     if(v) el.round=true; else delete el.round; renderStage(); renderProps(); },_t('裁成圓／橢圓（匯出為 PPT prstGeom ellipse）')]]));
   const alr=document.createElement('div'); alr.className='row'; setHTML(alr,_t('<label>替代文字</label>'));
-  const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+  const ali=document.createElement('input'); ali.type='text'; ali.classList.add('fx','mw80');
   ali.placeholder=_t('無障礙說明'); ali.value=el.alt||''; ali.title=_t('寫入 pptx 的圖片說明（descr），螢幕閱讀器與「替代文字」窗格會讀到');
   ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   alr.appendChild(ali); pp.appendChild(alr);
@@ -6802,7 +6804,7 @@ function propsVideo(pp,el){
   if(isOn){
     const ur=document.createElement('div'); ur.className='row';
     ur.appendChild(Object.assign(document.createElement('label'),{textContent:_t('網址')}));
-    const ui=document.createElement('input'); ui.type='text'; ui.style.flex='1'; ui.style.minWidth='80px';
+    const ui=document.createElement('input'); ui.type='text'; ui.classList.add('fx','mw80');
     ui.value=el.embed||''; ui.title=_t('PowerPoint 需要 embed 形式；貼 watch／youtu.be 也會自動轉換');
     ui.onchange=()=>{ const e2=ytEmbed(ui.value);
       if(!e2){ ui.value=el.embed||''; alert(_t('無法解析成 YouTube 影片網址。可貼 watch?v=、youtu.be/ 或 embed/ 形式。')); return; }
@@ -6823,7 +6825,7 @@ function propsVideo(pp,el){
     ...(el.mode==='local'? [[{ic:'ic-refresh',txt:_t('重抓封面')},()=>{ VID_RECOVER=el.id; $('#vidInput').click(); },_t('重新選同一個影片檔並抓一格畫面')]]:[]),
   ]));
   const alr=document.createElement('div'); alr.className='row'; setHTML(alr,_t('<label>替代文字</label>'));
-  const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+  const ali=document.createElement('input'); ali.type='text'; ali.classList.add('fx','mw80');
   ali.placeholder=_t('無障礙說明'); ali.value=el.alt||'';
   ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   alr.appendChild(ali); pp.appendChild(alr);
@@ -6954,7 +6956,7 @@ function propsChart(pp,el){
     renderStage(); renderProps(); syncPageJson(); },
     _t('在 PPT 內可「編輯資料」、跟隨目標母版；外觀由 PowerPoint 排版，與畫布不會完全一致')]]);
   const ncb=nrow.querySelector('input');
-  if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').style.opacity='.5'; }
+  if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').classList.add('ctlOff'); }
   pp.appendChild(nrow);
   const nn=document.createElement('div'); nn.className='row';
   setHTML(nn,'<span class="unit">'+(!nm.ok
@@ -6968,7 +6970,7 @@ function propsChart(pp,el){
     +'</span>');
   pp.appendChild(nn);
   const car=document.createElement('div'); car.className='row'; setHTML(car,_t('<label>替代文字</label>'));
-  const cai=document.createElement('input'); cai.type='text'; cai.style.flex='1'; cai.style.minWidth='80px';
+  const cai=document.createElement('input'); cai.type='text'; cai.classList.add('fx','mw80');
   cai.placeholder=_t('無障礙說明'); cai.value=el.alt||''; cai.title=_t('寫入無障礙說明：PNG 走圖片 descr，原生圖表走 graphicFrame 的 descr');
   cai.onchange=()=>{ commitUndo(); const v=cai.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   car.appendChild(cai); pp.appendChild(car);

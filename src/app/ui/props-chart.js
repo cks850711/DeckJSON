@@ -10,7 +10,7 @@ function propsChart(pp,el){
     renderStage(); renderProps(); syncPageJson(); },
     _t('在 PPT 內可「編輯資料」、跟隨目標母版；外觀由 PowerPoint 排版，與畫布不會完全一致')]]);
   const ncb=nrow.querySelector('input');
-  if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').style.opacity='.5'; }
+  if(!nm.ok){ ncb.checked=false; ncb.disabled=true; nrow.querySelector('label').classList.add('ctlOff'); }
   pp.appendChild(nrow);
   const nn=document.createElement('div'); nn.className='row';
   setHTML(nn,'<span class="unit">'+(!nm.ok
@@ -24,7 +24,7 @@ function propsChart(pp,el){
     +'</span>');
   pp.appendChild(nn);
   const car=document.createElement('div'); car.className='row'; setHTML(car,_t('<label>替代文字</label>'));
-  const cai=document.createElement('input'); cai.type='text'; cai.style.flex='1'; cai.style.minWidth='80px';
+  const cai=document.createElement('input'); cai.type='text'; cai.classList.add('fx','mw80');
   cai.placeholder=_t('無障礙說明'); cai.value=el.alt||''; cai.title=_t('寫入無障礙說明：PNG 走圖片 descr，原生圖表走 graphicFrame 的 descr');
   cai.onchange=()=>{ commitUndo(); const v=cai.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   car.appendChild(cai); pp.appendChild(car);

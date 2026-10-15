@@ -237,8 +237,8 @@ function renderPropsBody(){
   ]));
   // 縮放滑桿（0.1–2.0×，停頓於 0.5/0.8/1.0/1.2/1.5）＋含字級（預設開）；放開歸回 1.0×
   pp.appendChild(secTitle(_t('變形')));
-  const scWrap=document.createElement('div'); scWrap.className='row'; scWrap.style.flexWrap='wrap'; setHTML(scWrap,_t('<label>縮放</label>'));
-  const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.style.flex='1'; sl.style.minWidth='90px'; sl.setAttribute('list','scaleTicks');
+  const scWrap=document.createElement('div'); scWrap.className='row'; setHTML(scWrap,_t('<label>縮放</label>'));
+  const sl=document.createElement('input'); sl.type='range'; sl.min='0.1'; sl.max='2'; sl.step='0.01'; sl.value='1'; sl.classList.add('fx','mw90'); sl.setAttribute('list','scaleTicks');
   const scVal=Object.assign(document.createElement('span'),{className:'unit'}); scVal.textContent='1.00×';
   const DET=[0.5,0.8,1,1.2,1.5]; let scOrig=null;
   sl.addEventListener('pointerdown',()=>{ scOrig=structuredClone(el); });
@@ -258,8 +258,8 @@ function renderPropsBody(){
     }
     scOrig=null; sl.value=1; renderProps();
   };
-  const scChk=document.createElement('label'); scChk.style.cssText='display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer'; scChk.title=_t('縮放時字級一起放大');
-  const scCb=document.createElement('input'); scCb.type='checkbox'; scCb.checked=APP.scaleFont; scCb.style.width='auto'; scCb.onchange=()=>APP.scaleFont=scCb.checked;
+  const scChk=document.createElement('label'); scChk.className='scChk'; scChk.title=_t('縮放時字級一起放大');
+  const scCb=document.createElement('input'); scCb.type='checkbox'; scCb.checked=APP.scaleFont; scCb.classList.add('wAuto'); scCb.onchange=()=>APP.scaleFont=scCb.checked;
   scChk.appendChild(scCb); scChk.appendChild(document.createTextNode(_t('含字級')));
   scWrap.appendChild(sl); scWrap.appendChild(scVal); scWrap.appendChild(scChk);
   pp.appendChild(scWrap);
@@ -293,7 +293,7 @@ function renderPropsBody(){
     const r=document.createElement('div'); r.className='row';
     setHTML(r,_t('<label>編輯端點</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('轉成可編輯端點'));
-    b.style.flex='1';
+    b.classList.add('fx');
     b.title=_t('把這個內建形狀拆成端點後進圖形編輯器（同 PowerPoint 的「編輯端點」）。單向不可逆');
     b.onclick=()=>toCustGeom(el);
     r.appendChild(b); pp.appendChild(r);
@@ -303,7 +303,7 @@ function renderPropsBody(){
     const r=document.createElement('div'); r.className='row';
     setHTML(r,_t('<label>自訂幾何</label>'));
     const b=setIcoBtn(document.createElement('button'),'ic-pencil',_t('開啟圖形編輯器'));
-    b.style.flex='1'; b.onclick=()=>openGeomEditor(el);
+    b.classList.add('fx'); b.onclick=()=>openGeomEditor(el);
     r.appendChild(b); pp.appendChild(r);
   }
   // 形狀 adj 控點（黃點微調）：圓角/斜度/箭深/桿寬/尾標等，每參數一條滑桿，即時預覽、匯出注入原生 avLst
@@ -316,7 +316,7 @@ function renderPropsBody(){
       const ar=document.createElement('div'); ar.className='row'; setHTML(ar,`<label>${adjLabel(el.shape,mi)}</label>`);
       const ai=document.createElement('input'); ai.type='range';
       ai.min=Math.round(b.lo); ai.max=Math.round(b.hi); ai.step=Math.max(1,Math.round((b.hi-b.lo)/400));
-      ai.value=cur(); ai.style.flex='1'; ai.style.minWidth='70px';
+      ai.value=cur(); ai.classList.add('fx','mw70');
       const av=Object.assign(document.createElement('span'),{className:'unit'}); av.textContent=pct(cur());
       let adjDirty=false;
       ai.addEventListener('pointerdown',()=>adjDirty=false);

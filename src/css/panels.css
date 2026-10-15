@@ -132,3 +132,5 @@
   :is(#propPanel,.ppctl) .row.gap3{gap:3px}
   :is(#propPanel,.ppctl) .row label.mwAuto{min-width:auto}
   :is(#propPanel,.ppctl) .row button.gsBtn{flex:1;padding:5px 2px}   /* 格距四顆一列 */
+  :is(#propPanel,.ppctl) .row label.scChk{display:flex;align-items:center;gap:3px;min-width:auto;cursor:pointer}   /* 縮放列的「含字級」核取 */
+  .ctlOff{opacity:.5}                                                  /* 停用或鎖定的控件標籤 */

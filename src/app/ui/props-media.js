@@ -19,7 +19,7 @@ function propsImage(pp,el){
   pp.appendChild(checkRow([[_t('圓形裁切'),()=>!!el.round,v=>{ commitUndo();
     if(v) el.round=true; else delete el.round; renderStage(); renderProps(); },_t('裁成圓／橢圓（匯出為 PPT prstGeom ellipse）')]]));
   const alr=document.createElement('div'); alr.className='row'; setHTML(alr,_t('<label>替代文字</label>'));
-  const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+  const ali=document.createElement('input'); ali.type='text'; ali.classList.add('fx','mw80');
   ali.placeholder=_t('無障礙說明'); ali.value=el.alt||''; ali.title=_t('寫入 pptx 的圖片說明（descr），螢幕閱讀器與「替代文字」窗格會讀到');
   ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   alr.appendChild(ali); pp.appendChild(alr);
@@ -44,7 +44,7 @@ function propsVideo(pp,el){
   if(isOn){
     const ur=document.createElement('div'); ur.className='row';
     ur.appendChild(Object.assign(document.createElement('label'),{textContent:_t('網址')}));
-    const ui=document.createElement('input'); ui.type='text'; ui.style.flex='1'; ui.style.minWidth='80px';
+    const ui=document.createElement('input'); ui.type='text'; ui.classList.add('fx','mw80');
     ui.value=el.embed||''; ui.title=_t('PowerPoint 需要 embed 形式；貼 watch／youtu.be 也會自動轉換');
     ui.onchange=()=>{ const e2=ytEmbed(ui.value);
       if(!e2){ ui.value=el.embed||''; alert(_t('無法解析成 YouTube 影片網址。可貼 watch?v=、youtu.be/ 或 embed/ 形式。')); return; }
@@ -65,7 +65,7 @@ function propsVideo(pp,el){
     ...(el.mode==='local'? [[{ic:'ic-refresh',txt:_t('重抓封面')},()=>{ VID_RECOVER=el.id; $('#vidInput').click(); },_t('重新選同一個影片檔並抓一格畫面')]]:[]),
   ]));
   const alr=document.createElement('div'); alr.className='row'; setHTML(alr,_t('<label>替代文字</label>'));
-  const ali=document.createElement('input'); ali.type='text'; ali.style.flex='1'; ali.style.minWidth='80px';
+  const ali=document.createElement('input'); ali.type='text'; ali.classList.add('fx','mw80');
   ali.placeholder=_t('無障礙說明'); ali.value=el.alt||'';
   ali.onchange=()=>{ commitUndo(); const v=ali.value.trim(); if(v) el.alt=v; else delete el.alt; renderProps(); };
   alr.appendChild(ali); pp.appendChild(alr);

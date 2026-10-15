@@ -102,7 +102,7 @@ function gradRows(el){
   g.stops.forEach((st,i)=>{
     const row=colorRow(_t('色標 {0}',i+1),st.color,v=>{ st.color=v||'FFFFFF'; },false);
     const pos=document.createElement('input'); pos.type='number'; pos.min=0; pos.max=100; pos.step=5;
-    pos.value=st.pos; pos.style.width='58px'; pos.title=_t('位置（%）');
+    pos.value=st.pos; pos.classList.add('w58'); pos.title=_t('位置（%）');
     pos.onchange=()=>{ commitUndo();
       st.pos=Math.max(0,Math.min(100,Math.round(+pos.value)||0));
       g.stops.sort((a,b)=>a.pos-b.pos);   // 立刻排序，面板順序與實際漸變順序永遠一致
@@ -146,7 +146,7 @@ function shadowRows(el){
 function dashRow(el){
   const row=document.createElement('div'); row.className='row';
   row.appendChild(Object.assign(document.createElement('label'),{textContent:_t('線型')}));
-  const sel=document.createElement('select'); sel.style.flex='1'; sel.style.minWidth='72px';
+  const sel=document.createElement('select'); sel.classList.add('fx','mw72');
   sel.title=_t('匯出為 PPT 原生 prstDash；畫布用 stroke-dasharray 預覽（隨線寬縮放）');
   setHTML(sel,DASH_KINDS.map(d=>`<option value="${d.key}">${d.label}</option>`).join(''));
   sel.value=dashKind(el).key;
@@ -163,7 +163,7 @@ function linkRows(el,note){
   wrap.appendChild(subTitle(_t('超連結（整個物件）')));
   const r=document.createElement('div'); r.className='row';
   r.appendChild(Object.assign(document.createElement('label'),{textContent:_t('連結')}));
-  const i=document.createElement('input'); i.type='text'; i.style.flex='1'; i.style.minWidth='80px';
+  const i=document.createElement('input'); i.type='text'; i.classList.add('fx','mw80');
   i.placeholder=_t('https://… 或 #3');
   i.value= el.link? (el.link.url||('#'+el.link.slide)) : '';
   i.title=_t('填網址；或填「#頁碼」跳到本簡報該頁。整個{0}變成可點擊。',note||_t('物件'));
@@ -177,7 +177,7 @@ function linkRows(el,note){
   if(el.link){
     const tr=document.createElement('div'); tr.className='row';
     tr.appendChild(Object.assign(document.createElement('label'),{textContent:_t('提示')}));
-    const ti=document.createElement('input'); ti.type='text'; ti.style.flex='1'; ti.style.minWidth='80px';
+    const ti=document.createElement('input'); ti.type='text'; ti.classList.add('fx','mw80');
     ti.placeholder=_t('滑過時顯示（選填）'); ti.value=el.link.tooltip||'';
     ti.title=_t('PowerPoint 中滑鼠停在物件上顯示的提示文字（OOXML hlinkClick 的 tooltip）');
     ti.onchange=()=>{ commitUndo(); const v=ti.value.trim();
@@ -222,7 +222,7 @@ function opacityRow(els){
   const row=document.createElement('div'); row.className='row'; setHTML(row,_t('<label>不透明</label>'));
   const cur=(els.length===1&&els[0].opacity!=null)?els[0].opacity:100;
   const inp=document.createElement('input'); inp.type='range'; inp.min=0; inp.max=100; inp.step=1; inp.value=cur;
-  inp.style.flex='1'; inp.style.minWidth='70px';
+  inp.classList.add('fx','mw70');
   const val=Object.assign(document.createElement('span'),{className:'unit'}); val.textContent=cur+'%';
   let dirty=false;
   inp.addEventListener('pointerdown',()=>dirty=false);
