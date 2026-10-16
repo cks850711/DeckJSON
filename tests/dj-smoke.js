@@ -676,6 +676,15 @@ export default async function run() {
       'math mXSS': `<math><mtext><table><mglyph><style><img src=x onerror=${X('h.math')}></style></mglyph></table></mtext></math>`,
       'nested template': `<template><template><img src=x onerror="${X('h.tpl')}"></template></template><div><template shadowrootmode="open"><img src=x onerror="${X('h.shadow')}"></template></div>`,
       'svg foreignObject': `<svg><foreignObject><img src=x onerror="${X('h.fo')}"></foreignObject></svg>`,
+      // 字串在一個 <template> 裡解析：多出來的結束標記、文件層級的標記都不能把內容帶到消毒範圍外
+      'stray </template>': `<b>x</template><img src=x onerror="${X('h.tplend')}"><svg onload="${X('h.tplend2')}"></svg>`,
+      'nested template then </template>': `<template></template></template><img src=x onerror="${X('h.tplend3')}">`,
+      '</template> in svg': `<svg></template><img src=x onerror="${X('h.tplsvg')}"></svg>`,
+      '</template> in table': `<table><tr><td></template><img src=x onerror="${X('h.tpltbl')}"></td></tr></table>`,
+      '</template> in select': `<select></template><img src=x onerror="${X('h.tplsel')}"></select>`,
+      'doctype and document tags': `<!doctype html><html><head><base href="https://example.invalid/"></head><body onload="${X('h.doctype')}"><img src=x onerror="${X('h.doctype2')}"></body></html>`,
+      'doctype then </template>': `<!DOCTYPE html></template><img src=x onerror="${X('h.doctype3')}">`,
+      'unclosed textarea': `<textarea><img src=x onerror="${X('h.textarea')}">`,
     };
     const leftovers = [];
     for (const [name, html] of Object.entries(hostile)) {
@@ -700,6 +709,12 @@ export default async function run() {
     ok('security: setHTML drops url() in SVG paint attributes, any case', ps.length === 2 && !ps[0].hasAttribute('fill')
       && !ps[0].hasAttribute('stroke') && ps[1].getAttribute('stroke') === '#ADB5BD', svgHost.innerHTML);
     ok('security: setHTML parses into an SVG target as SVG', ps.every(p => p.namespaceURI === 'http://www.w3.org/2000/svg'));
+    setHTML(svgHost, `</svg></template><image href="x" onerror="${X('h.svgtpl')}"/><img src=x onerror="${X('h.svgtpl2')}">`);
+    ok('security: closing tags cannot break out of an SVG target', !svgHost.querySelector('image,img') && !svgHost.childNodes.length, svgHost.innerHTML);
+    setHTML(host, 'a<b>b</b></template><i>c</i><b>d</b>');
+    ok('setHTML: whatever follows a stray </template> is dropped, not inserted', host.innerHTML === 'a<b>b</b>', host.innerHTML);
+    await tick(300);
+    ok('security: template and SVG breakouts run nothing', window.__djx.length === 0, window.__djx);
     setHTML(host, '<span id="propPanel">x</span><b name="stage">y</b>');
     ok('security: setHTML strips id and name (no DOM clobbering)', document.querySelectorAll('#propPanel').length === 1
       && !host.querySelector('[id],[name]'), host.innerHTML);

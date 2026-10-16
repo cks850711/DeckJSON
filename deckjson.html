@@ -3299,8 +3299,8 @@ var I18N_PACKS=I18N_PACKS||{};
 /* ================= 寫入 HTML 的出口 =================
    介面上要放帶標記的字串（翻譯裡夾 <b>／<code>、圖示 <svg><use>、說明本文）時一律走 setHTML／appendHTML，
    不直接寫 innerHTML。做法：
-     1. 字串寫進一個 <template> 解析（htmlParse，全程式唯一把字串交給 HTML 解析器的地方）。
-        template 的內容不屬於文件：解析時不執行腳本、不載入圖片、不觸發事件。
+     1. 字串在一份獨立的文件裡解析（htmlParse，全程式唯一把字串交給 HTML 解析器的地方）。
+        那份文件沒有瀏覽環境：解析時不執行腳本、不載入圖片、不觸發事件。
      2. 依下面的白名單走一遍節點樹：不認得的元素拆掉外殼留下子節點，會帶出程式碼或樣式的元素連內容一起拿掉，
         不認得的屬性拿掉，註解拿掉。
      3. 把消毒後的節點本身搬進目標元素，不再序列化回字串、也不重新解析：解析與放進去的是同一棵樹。
@@ -3328,7 +3328,19 @@ const HTML_BAD_VALUE=/\\|url\s*\(|image-set\s*\(|expression\s*\(/i;
 /* <use> 只引用同一份文件裡的圖示（#ic-…），外部或 data: 網址會載入別處的 SVG */
 const HTML_USE_HREF=/^#[a-z][\w-]*$/i;
 
-function htmlParse(html){ const t=document.createElement('template'); t.innerHTML=html; return t; }
+/* 解析改在 DOMParser 產生的獨立文件中進行，不碰目前的頁面。字串包在 <template> 裡解析、回傳那個 template，
+   呼叫端取它的 content（節點）或 innerHTML（序列化）。
+   - 開頭的 <!DOCTYPE html> 讓這份文件和頁面一樣用標準模式解析；少了它會用相容模式，
+     例如 <p>…<table> 不會先收掉 <p>
+   - template 是 <head> 的第一個子節點；內容照片段的規則解析，頂層單獨的 <tr>、<td>、<option> 都保留
+   - 結尾不補 </template>，wrapper 在字串結束時收掉，沒收尾的元素照常處理
+   和在頁面上建 template 寫入不同的地方：內容自帶 </template>（不在 textarea 這類純文字元素裡）時，
+   wrapper 在那裡結束，之後的內容落在 wrapper 外，不會被取用，等於被截掉；頁面上的 template 會忽略這個結束標記、
+   保留後面的內容。另外 template 開著時不記錄所屬表單，巢狀的 <form> 會留成兩層（form 不在白名單，拆殼後一樣）；
+   獨立文件不執行腳本，<noscript> 的內容照一般標記解析（白名單把 noscript 連內容拿掉）。 */
+function htmlParse(html){
+  return new DOMParser().parseFromString('<!DOCTYPE html><template>'+html,'text/html').head.firstChild;
+}
 
 const htmlWarned=new Set();
 function htmlWarn(what){
