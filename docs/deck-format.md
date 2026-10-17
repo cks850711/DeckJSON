@@ -14,7 +14,7 @@ The fastest way to get a shape right is to copy one: `DJ.get(pageId, elementId)`
 | `sizePt`, `linePt`, `inset`, `spaceBefore`, `spaceAfter` | Points |
 | Colours | Six hex digits **without** `#`: `"1F3A5F"`. Chart options are ECharts and use its own `"#1F3A5F"` form |
 | `opacity` | Percent, 0–99; leave it out for fully opaque |
-| `id` | Unique within a page. The same id on two pages is allowed and is how Morph pairs objects between slides |
+| `id` | Letters, digits, `_` and `-` only; any other id is replaced with a new one, without a warning, when the deck is opened or the element is added. Unique within a page. The same id on two pages is allowed and is how Morph pairs objects between slides |
 
 ## Deck and page
 

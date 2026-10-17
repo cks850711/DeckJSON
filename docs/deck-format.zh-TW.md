@@ -14,7 +14,7 @@
 | `sizePt`、`linePt`、`inset`、`spaceBefore`、`spaceAfter` | 點（pt） |
 | 顏色 | 六位十六進位、**不加** `#`：`"1F3A5F"`。圖表的 option 是 ECharts 的格式，用它自己的 `"#1F3A5F"` |
 | `opacity` | 百分比 0–99；完全不透明就省略 |
-| `id` | 同一頁內唯一。不同頁可以同 id，Morph 轉場就是靠它配對物件 |
+| `id` | 只能用英數字、`_` 與 `-`，其他 id 在開檔或加入元素時會換成新 id，不會有 warning。同一頁內唯一。不同頁可以同 id，Morph 轉場就是靠它配對物件 |
 
 ## 簡報與頁面
 

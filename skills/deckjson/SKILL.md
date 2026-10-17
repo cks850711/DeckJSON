@@ -49,7 +49,7 @@ Script results must be plain JSON. A `Blob` (from `toBlob`, `snapshot`, `exportP
 ## 2. Ground rules
 
 - **Only call `DJ`.** Never call the page's internal functions or edit its internal state. They change between versions, and some of them act on whichever page is on screen rather than the one you mean.
-- **Address everything by page id and element id.** Get them from `DJ.list()` and `DJ.outline(pageId)`. Element ids are unique only within a page.
+- **Address everything by page id and element id.** Get them from `DJ.list()` and `DJ.outline(pageId)`. Element ids are unique only within a page, and may use only letters, digits, `_` and `-`: any other id is replaced without a warning, so use the ids `DJ.add` returns.
 - **Work on the deck the user has open.** `DJ.load()` and `DJ.fromTemplate()` replace the whole deck and detach it from the user's file; call them only when the user asked for a new or different deck.
 - **Read `warnings` on every write.** A misspelt or misplaced field is still written but does nothing; `warnings` is the only place that says so.
 - **Every write is one undo step** (Cmd/Ctrl+Z), and a failed call changes nothing. Errors start with `DJ:` and say what was wrong.

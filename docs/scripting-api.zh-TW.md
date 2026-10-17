@@ -36,6 +36,8 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 
 同一個元素 id **可以出現在不同頁**——Morph 轉場就是靠它配對物件——所以元素 id 只在同一頁內唯一。這也是為什麼元素相關的呼叫一定要同時給頁 id。
 
+元素 id 只能用英數字、`_` 與 `-`。其他 id（例如帶點、空格或中文）只要元素一進來就會換成新 id，**而且不會有 warning**：`add()`、帶 `id` 的 `addImage()`、`addPage()`、`replacePage()`、`load()`、`fromTemplate()` 都一樣。數字 id 轉成字串。所以之後要用 `add()` 回傳的 id（或用 `outline()` 讀回來），不要用自己傳進去的。同一次 `load()` 或 `fromTemplate()` 裡，各頁相同的不合法 id 換成同一個新 id，Morph 配對不受影響；但分兩次 `add()` 加到兩頁，會換成兩個不同的 id，所以要靠 Morph 配對的元素請用合法的 id。
+
 ## 讀取
 
 | 呼叫 | 回傳 |
@@ -53,7 +55,7 @@ const blob = await DJ.toBlob()                   // .deck 檔，可直接存檔
 | 呼叫 | 作用 |
 |---|---|
 | `patch(pageId, changes)` | 套用一串修改。每筆是 `{id, set?, unset?, remove?, md?}`：`set` 淺層合併欄位（要改 `paras` 就整個陣列換掉，格式也一起換掉），`unset` 是要刪的鍵，`remove: true` 刪除元素，`md` 換掉文字框或形狀的文字並沿用原本的樣式（見下文〈換文字、留樣式〉；同一段裡有 md 寫不出來的樣式差異時會報錯）。change 裡出現其他鍵一律報錯。`id` 等於頁 id 時改的是頁面欄位：`name`、`bg`、`bgImage`、`notes`、`section`、`skip`、`transition`、`noMaster`。回傳 `{page, changed, overflow}` |
-| `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、或 id 已被該頁用掉的，自動配新的。群組 id 照原樣保留，所以帶了該頁已有的 `groupId` 就會併進那一組（會回 warning；要複製一整組請用 `copy()`）。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
+| `add(pageId, elements)` | 把元素加到該頁最上層。沒給 id、id 已被該頁用掉，或 id 含英數字、`_`、`-` 以外字元的，自動配新的，不會有 warning。群組 id 照原樣保留，所以帶了該頁已有的 `groupId` 就會併進那一組（會回 warning；要複製一整組請用 `copy()`）。回傳 `{page, ids, overflow}`，`ids` 是實際採用的 id，順序同輸入 |
 | `copy(fromPageId, ids, toPageId, opts?)` | 把元素複製到某一頁（同一頁也可以）。圖片直接帶位元組、不經佔位，複製完就與來源無關，之後可以刪掉來源頁。元素一律換新 id，群組 id 也換新：同一組複製兩次是兩組；只複製群組裡的一個成員，它就不再帶群組。`ids` 同 `center()`，保留來源頁的前後順序。`opts`：`{x, y}` 是複製後整組的左上角，或 `{dx, dy}` 位移；都不給＝原座標。回傳 `{page, ids, map: {舊: 新}, groups: {舊: 新}, overflow}` |
 | `addImage(pageId, src, opts?)` | 加一張圖，轉碼、讀原始尺寸、算不變形的框都由它做。見下文〈圖片〉。回傳 `{page, id, natW, natH, kb, overflow, warnings}` |
 | `compress(pageId, ids?, preset?)` | 把已經放上去的圖按顯示尺寸重編碼，框、裁切、群組都不動。見下文〈圖片〉 |
@@ -152,7 +154,7 @@ if (usedHighlight) await DJ.setDeck({markdown: {highlight: usedHighlight}})
 
 ## 圖片
 
-`addImage` 的 `src` 可以是 `Blob`／`File`、瀏覽器 fetch 得到的網址、`data:` URL，或 `assets()` 列出的佔位（重用簡報裡已有的圖）。`opts` 是 `{x, y, w, h, fit, compress, id, alt}`，其他鍵一律報錯：
+`addImage` 的 `src` 可以是 `Blob`／`File`、瀏覽器 fetch 得到的網址、`data:` URL，或 `assets()` 列出的佔位（重用簡報裡已有的圖）。`opts` 是 `{x, y, w, h, fit, compress, id, alt}`（`id` 同上面的元素 id 規則，之後用回傳的 `id`），其他鍵一律報錯：
 
 | 給了什麼 | 結果 |
 |---|---|

@@ -36,6 +36,8 @@ Pages and elements are addressed by `id`. Use `'master'` as the page id to addre
 
 The same element id **may appear on different pages** — that is how Morph transitions pair objects — so element ids are only unique within a page. That is why element calls always take the page id too.
 
+Element ids may contain only letters, digits, `_` and `-`. Any other id (one with a dot, a space or a non-ASCII letter, say) is replaced with a fresh one, **without a warning**, wherever elements come in: `add()`, `addImage()` with `id`, `addPage()`, `replacePage()`, `load()` and `fromTemplate()`. Numeric ids become strings. So use the ids `add()` returns (or read them back with `outline()`), not the ones you passed. Within one `load()` or `fromTemplate()`, the same invalid id on several pages gets the same new id, so Morph pairs survive; separate `add()` calls on two pages give it two different ids, so give Morph partners valid ids.
+
 ## Reading
 
 | Call | Returns |
@@ -53,7 +55,7 @@ The same element id **may appear on different pages** — that is how Morph tran
 | Call | Does |
 |---|---|
 | `patch(pageId, changes)` | Applies a list of changes. Each change is `{id, set?, unset?, remove?, md?}`: `set` merges fields shallowly (to change `paras`, pass the whole array — and its formatting with it), `unset` is a list of keys to delete, `remove: true` deletes the element, and `md` replaces the text of a text box or shape and reuses its styling (see “Changing text, keeping the style” below; it throws when a paragraph mixes styles md cannot write). Any other key in a change is an error. When `id` is the page's own id, the change applies to page fields: `name`, `bg`, `bgImage`, `notes`, `section`, `skip`, `transition`, `noMaster`. Returns `{page, changed, overflow}` |
-| `add(pageId, elements)` | Adds elements on top of the page. Missing ids, or ids already used on that page, get a fresh one. Group ids are kept as given, so a `groupId` already used on that page joins that group (a warning says so; use `copy()` to duplicate a group). Returns `{page, ids, overflow}` with the ids actually used, in input order |
+| `add(pageId, elements)` | Adds elements on top of the page. Missing ids, ids already used on that page, and ids with characters other than letters, digits, `_` and `-` get a fresh one, without a warning. Group ids are kept as given, so a `groupId` already used on that page joins that group (a warning says so; use `copy()` to duplicate a group). Returns `{page, ids, overflow}` with the ids actually used, in input order |
 | `copy(fromPageId, ids, toPageId, opts?)` | Copies elements to a page (the same page is fine). Pictures travel as bytes, not placeholders, so the copy no longer depends on its source — the source page can be removed afterwards. Every copy gets new element ids, and new group ids: a group copied twice becomes two groups; a lone member copied without its group loses the group. `ids` as in `center()`; source stacking order is kept. `opts`: `{x, y}` for the top-left of the copied set, or `{dx, dy}` to shift it; neither keeps the original position. Returns `{page, ids, map: {old: new}, groups: {old: new}, overflow}` |
 | `addImage(pageId, src, opts?)` | Adds a picture, doing the decoding, intrinsic size and undistorted box for you. See “Images” below. Returns `{page, id, natW, natH, kb, overflow, warnings}` |
 | `compress(pageId, ids?, preset?)` | Re-encodes pictures already on the slide down to what they are shown at; frame, crop and group stay as they are. See “Images” |
@@ -152,7 +154,7 @@ To start a page from a template page, copy it and then replace its text: `const 
 
 ## Images
 
-`addImage`'s `src` can be a `Blob`/`File`, a URL the browser can fetch, a `data:` URL, or a placeholder listed by `assets()` (to reuse a picture already in the deck). `opts` is `{x, y, w, h, fit, compress, id, alt}`; any other key is an error:
+`addImage`'s `src` can be a `Blob`/`File`, a URL the browser can fetch, a `data:` URL, or a placeholder listed by `assets()` (to reuse a picture already in the deck). `opts` is `{x, y, w, h, fit, compress, id, alt}` (`id` follows the element id rule above; use the `id` that comes back); any other key is an error:
 
 | Given | Result |
 |---|---|
