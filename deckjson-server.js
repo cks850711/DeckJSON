@@ -53,7 +53,7 @@ const {spawn, spawnSync} = require('child_process');
 const {pipeline} = require('stream/promises');
 const {Transform} = require('stream');
 
-const SERVER_VERSION = '0.3.1';
+const SERVER_VERSION = '0.3.2';
 const SCRIPT = path.resolve(__filename);
 const HOME = process.env.DECKJSON_HOME || path.join(os.homedir(), '.deckjson');
 const REG_DIR = path.join(HOME, 'servers');
